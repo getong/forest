@@ -1374,6 +1374,7 @@
 <a href="#1374" id="1374">1374</a>
 <a href="#1375" id="1375">1375</a>
 <a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2498,13 +2499,14 @@
             <span class="kw">_ </span>=&gt; {
                 <span class="kw">let </span>ts = ts.unwrap_or_else(|| <span class="self">self</span>.chain_store().heaviest_tipset());
                 <span class="comment">// First try to resolve the actor in the parent state, so we don&#39;t have to compute anything.
-                </span><span class="kw">let </span>state =
-                    StateTree::new_from_root(<span class="self">self</span>.chain_store().db.clone(), ts.parent_state())<span class="question-mark">?</span>;
-
-                <span class="kw">if let </span><span class="prelude-val">Ok</span>(address) =
-                    state.resolve_to_deterministic_addr(<span class="self">self</span>.chain_store().blockstore(), address)
+                </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(state) =
+                    StateTree::new_from_root(<span class="self">self</span>.chain_store().db.clone(), ts.parent_state())
                 {
-                    <span class="kw">return </span><span class="prelude-val">Ok</span>(address);
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(address) = state
+                        .resolve_to_deterministic_addr(<span class="self">self</span>.chain_store().blockstore(), address)
+                    {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(address);
+                    }
                 }
 
                 <span class="comment">// If that fails, compute the tip-set and try again.
