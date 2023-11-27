@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.12.0/src/connection.rs`."><title>connection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../yamux/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.12.1/src/connection.rs`."><title>connection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../yamux/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -909,78 +909,6 @@
 <a href="#909" id="909">909</a>
 <a href="#910" id="910">910</a>
 <a href="#911" id="911">911</a>
-<a href="#912" id="912">912</a>
-<a href="#913" id="913">913</a>
-<a href="#914" id="914">914</a>
-<a href="#915" id="915">915</a>
-<a href="#916" id="916">916</a>
-<a href="#917" id="917">917</a>
-<a href="#918" id="918">918</a>
-<a href="#919" id="919">919</a>
-<a href="#920" id="920">920</a>
-<a href="#921" id="921">921</a>
-<a href="#922" id="922">922</a>
-<a href="#923" id="923">923</a>
-<a href="#924" id="924">924</a>
-<a href="#925" id="925">925</a>
-<a href="#926" id="926">926</a>
-<a href="#927" id="927">927</a>
-<a href="#928" id="928">928</a>
-<a href="#929" id="929">929</a>
-<a href="#930" id="930">930</a>
-<a href="#931" id="931">931</a>
-<a href="#932" id="932">932</a>
-<a href="#933" id="933">933</a>
-<a href="#934" id="934">934</a>
-<a href="#935" id="935">935</a>
-<a href="#936" id="936">936</a>
-<a href="#937" id="937">937</a>
-<a href="#938" id="938">938</a>
-<a href="#939" id="939">939</a>
-<a href="#940" id="940">940</a>
-<a href="#941" id="941">941</a>
-<a href="#942" id="942">942</a>
-<a href="#943" id="943">943</a>
-<a href="#944" id="944">944</a>
-<a href="#945" id="945">945</a>
-<a href="#946" id="946">946</a>
-<a href="#947" id="947">947</a>
-<a href="#948" id="948">948</a>
-<a href="#949" id="949">949</a>
-<a href="#950" id="950">950</a>
-<a href="#951" id="951">951</a>
-<a href="#952" id="952">952</a>
-<a href="#953" id="953">953</a>
-<a href="#954" id="954">954</a>
-<a href="#955" id="955">955</a>
-<a href="#956" id="956">956</a>
-<a href="#957" id="957">957</a>
-<a href="#958" id="958">958</a>
-<a href="#959" id="959">959</a>
-<a href="#960" id="960">960</a>
-<a href="#961" id="961">961</a>
-<a href="#962" id="962">962</a>
-<a href="#963" id="963">963</a>
-<a href="#964" id="964">964</a>
-<a href="#965" id="965">965</a>
-<a href="#966" id="966">966</a>
-<a href="#967" id="967">967</a>
-<a href="#968" id="968">968</a>
-<a href="#969" id="969">969</a>
-<a href="#970" id="970">970</a>
-<a href="#971" id="971">971</a>
-<a href="#972" id="972">972</a>
-<a href="#973" id="973">973</a>
-<a href="#974" id="974">974</a>
-<a href="#975" id="975">975</a>
-<a href="#976" id="976">976</a>
-<a href="#977" id="977">977</a>
-<a href="#978" id="978">978</a>
-<a href="#979" id="979">979</a>
-<a href="#980" id="980">980</a>
-<a href="#981" id="981">981</a>
-<a href="#982" id="982">982</a>
-<a href="#983" id="983">983</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2018-2019 Parity Technologies (UK) Ltd.
 //
 // Licensed under the Apache License, Version 2.0 or MIT license, at your option.
@@ -991,84 +919,9 @@
 // at https://www.apache.org/licenses/LICENSE-2.0 and a copy of the MIT license
 // at https://opensource.org/licenses/MIT.
 
-// This module contains the `Connection` type and associated helpers.
-// A `Connection` wraps an underlying (async) I/O resource and multiplexes
-// `Stream`s over it.
-//
-// The overall idea is as follows: The `Connection` makes progress via calls
-// to its `next_stream` method which polls several futures, one that decodes
-// `Frame`s from the I/O resource, one that consumes `ControlCommand`s
-// from an MPSC channel and another one that consumes `StreamCommand`s from
-// yet another MPSC channel. The latter channel is shared with every `Stream`
-// created and whenever a `Stream` wishes to send a `Frame` to the remote end,
-// it enqueues it into this channel (waiting if the channel is full). The
-// former is shared with every `Control` clone and used to open new outbound
-// streams or to trigger a connection close.
-//
-// The `Connection` updates the `Stream` state based on incoming frames, e.g.
-// it pushes incoming data to the `Stream`&#39;s buffer or increases the sending
-// credit if the remote has sent us a corresponding `Frame::&lt;WindowUpdate&gt;`.
-// Updating a `Stream`&#39;s state acquires a `Mutex`, which every `Stream` has
-// around its `Shared` state. While blocking, we make sure the lock is only
-// held for brief moments and *never* while doing I/O. The only contention is
-// between the `Connection` and a single `Stream`, which should resolve
-// quickly. Ideally, we could use `futures::lock::Mutex` but it does not offer
-// a poll-based API as of futures-preview 0.3.0-alpha.19, which makes it
-// difficult to use in a `Stream`&#39;s `AsyncRead` and `AsyncWrite` trait
-// implementations.
-//
-// Closing a `Connection`
-// ----------------------
-//
-// Every `Control` may send a `ControlCommand::Close` at any time and then
-// waits on a `oneshot::Receiver` for confirmation that the connection is
-// closed. The closing proceeds as follows:
-//
-// 1. As soon as we receive the close command we close the MPSC receiver
-//    of `StreamCommand`s. We want to process any stream commands which are
-//    already enqueued at this point but no more.
-// 2. We change the internal shutdown state to `Shutdown::InProgress` which
-//    contains the `oneshot::Sender` of the `Control` which triggered the
-//    closure and which we need to notify eventually.
-// 3. Crucially -- while closing -- we no longer process further control
-//    commands, because opening new streams should no longer be allowed
-//    and further close commands would mean we need to save those
-//    `oneshot::Sender`s for later. On the other hand we also do not simply
-//    close the control channel as this would signal to `Control`s that
-//    try to send close commands, that the connection is already closed,
-//    which it is not. So we just pause processing control commands which
-//    means such `Control`s will wait.
-// 4. We keep processing I/O and stream commands until the remaining stream
-//    commands have all been consumed, at which point we transition the
-//    shutdown state to `Shutdown::Complete`, which entails sending the
-//    final termination frame to the remote, informing the `Control` and
-//    now also closing the control channel.
-// 5. Now that we are closed we go through all pending control commands
-//    and tell the `Control`s that we are closed and we are finally done.
-//
-// While all of this may look complicated, it ensures that `Control`s are
-// only informed about a closed connection when it really is closed.
-//
-// Potential improvements
-// ----------------------
-//
-// There is always more work that can be done to make this a better crate,
-// for example:
-//
-// - Instead of `futures::mpsc` a more efficient channel implementation
-//   could be used, e.g. `tokio-sync`. Unfortunately `tokio-sync` is about
-//   to be merged into `tokio` and depending on this large crate is not
-//   attractive, especially given the dire situation around cargo&#39;s flag
-//   resolution.
-// - Flushing could be optimised. This would also require adding a
-//   `StreamCommand::Flush` so that `Stream`s can trigger a flush, which
-//   they would have to when they run out of credit, or else a series of
-//   send operations might never finish.
-// - If Rust gets async destructors, the `garbage_collect()` method can be
-//   removed. Instead a `Stream` would send a `StreamCommand::Dropped(..)`
-//   or something similar and the removal logic could happen within regular
-//   command processing instead of having to scan the whole collection of
-//   `Stream`s on each loop iteration, which is not great.
+</span><span class="doccomment">//! This module contains the `Connection` type and associated helpers.
+//! A `Connection` wraps an underlying (async) I/O resource and multiplexes
+//! `Stream`s over it.
 
 </span><span class="kw">mod </span>cleanup;
 <span class="kw">mod </span>closing;
@@ -1128,7 +981,12 @@
     }
 }
 
-<span class="attr">#[derive(Debug)]
+<span class="doccomment">/// A Yamux connection object.
+///
+/// Wraps the underlying I/O resource and makes progress via its
+/// [`Connection::poll_next_inbound`] method which must be called repeatedly
+/// until `Ok(None)` signals EOF or an error is encountered.
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Connection&lt;T&gt; {
     inner: ConnectionState&lt;T&gt;,
 }
@@ -1326,11 +1184,7 @@
     }
 }
 
-<span class="doccomment">/// A Yamux connection object.
-///
-/// Wraps the underlying I/O resource and makes progress via its
-/// [`Connection::next_stream`] method which must be called repeatedly
-/// until `Ok(None)` signals EOF or an error is encountered.
+<span class="doccomment">/// The active state of [`Connection`].
 </span><span class="kw">struct </span>Active&lt;T&gt; {
     id: Id,
     mode: Mode,
@@ -1707,7 +1561,8 @@
                 shared.window = shared.window.saturating_sub(frame.body_len());
                 shared.buffer.push(frame.into_body());
 
-                <span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.config.window_update_mode, WindowUpdateMode::OnReceive) {
+                <span class="attr">#[allow(deprecated)]
+                </span><span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.config.window_update_mode, WindowUpdateMode::OnReceive) {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(credit) = shared.next_window_update() {
                         shared.window += credit;
                         <span class="kw">let </span><span class="kw-2">mut </span>frame = Frame::window_update(stream_id, credit);
@@ -1752,7 +1607,8 @@
             <span class="kw">if let </span><span class="prelude-val">Some</span>(w) = shared.reader.take() {
                 w.wake()
             }
-            <span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.config.window_update_mode, WindowUpdateMode::OnReceive) {
+            <span class="attr">#[allow(deprecated)]
+            </span><span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.config.window_update_mode, WindowUpdateMode::OnReceive) {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(credit) = shared.next_window_update() {
                     shared.window += credit;
                     <span class="kw">let </span>frame = Frame::window_update(stream_id, credit);

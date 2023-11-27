@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["car_index","car_stream","car_util"],"trait":["BlockstoreExt","CborStoreExt"]};
+window.SIDEBAR_ITEMS = {"mod":["car_stream","car_util"],"trait":["BlockstoreExt","CborStoreExt"]};

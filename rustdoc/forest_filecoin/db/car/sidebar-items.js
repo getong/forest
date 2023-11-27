@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["any","forest","many","plain"],"struct":["ZstdFrameCache"],"trait":["RandomAccessFileReader"],"type":["CacheKey"]};
+window.SIDEBAR_ITEMS = {"mod":["any","forest","many","plain"],"struct":["ZstdFrameCache"],"trait":["RandomAccessFileReader"],"type":["CacheKey","FrameOffset"]};
