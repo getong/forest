@@ -563,7 +563,7 @@ var srcIndex = JSON.parse('{\
 "unicode_width":["",[],["lib.rs","tables.rs"]],\
 "universal_hash":["",[],["lib.rs"]],\
 "unsafe_libyaml":["",[],["api.rs","dumper.rs","emitter.rs","lib.rs","loader.rs","macros.rs","parser.rs","reader.rs","scanner.rs","success.rs","writer.rs","yaml.rs"]],\
-"unsigned_varint":["",[],["decode.rs","encode.rs","lib.rs"]],\
+"unsigned_varint":["",[],["codec.rs","decode.rs","encode.rs","io.rs","lib.rs"]],\
 "untrusted":["",[],["input.rs","lib.rs","no_panic.rs","reader.rs"]],\
 "url":["",[],["host.rs","lib.rs","origin.rs","parser.rs","path_segments.rs","quirks.rs","slicing.rs"]],\
 "utf16_iter":["",[],["indices.rs","lib.rs"]],\
