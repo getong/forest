@@ -55,14 +55,11 @@ once, instead of calling <code>layer</code> (or <code>route_layer</code>) repeat
 <ul>
 <li><a href="tower_http::trace"><code>TraceLayer</code></a> for high level tracing/logging.</li>
 <li><a href="tower_http::cors"><code>CorsLayer</code></a> for handling CORS.</li>
-<li><a href="tower_http::compression"><code>CompressionLayer</code></a> for automatic compression of
-responses.</li>
+<li><a href="tower_http::compression"><code>CompressionLayer</code></a> for automatic compression of responses.</li>
 <li><a href="tower_http::request_id"><code>RequestIdLayer</code></a> and
 <a href="tower_http::request_id"><code>PropagateRequestIdLayer</code></a> set and propagate request
 ids.</li>
-<li><a href="../../tower/timeout/layer/struct.TimeoutLayer.html" title="struct tower::timeout::layer::TimeoutLayer"><code>TimeoutLayer</code></a> for timeouts. Note this
-requires using <a href="../error_handling/struct.HandleErrorLayer.html" title="struct axum::error_handling::HandleErrorLayer"><code>HandleErrorLayer</code></a>
-to convert timeouts to responses.</li>
+<li><a href="tower_http::timeout::TimeoutLayer"><code>TimeoutLayer</code></a> for timeouts.</li>
 </ul>
 <h2 id="ordering"><a href="#ordering">Ordering</a></h2>
 <p>When you add middleware with <a href="../struct.Router.html#method.layer" title="method axum::Router::layer"><code>Router::layer</code></a> (or similar) all previously added
@@ -180,7 +177,7 @@ your <a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Laye
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{
     response::Response,
     body::Body,
-    http::Request,
+    extract::Request,
 };
 <span class="kw">use </span>futures_util::future::BoxFuture;
 <span class="kw">use </span>tower::{Service, Layer};
@@ -202,9 +199,9 @@ your <a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Laye
     inner: S,
 }
 
-<span class="kw">impl</span>&lt;S&gt; Service&lt;Request&lt;Body&gt;&gt; <span class="kw">for </span>MyMiddleware&lt;S&gt;
+<span class="kw">impl</span>&lt;S&gt; Service&lt;Request&gt; <span class="kw">for </span>MyMiddleware&lt;S&gt;
 <span class="kw">where
-    </span>S: Service&lt;Request&lt;Body&gt;, Response = Response&gt; + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Service&lt;Request, Response = Response&gt; + Send + <span class="lifetime">&#39;static</span>,
     S::Future: Send + <span class="lifetime">&#39;static</span>,
 {
     <span class="kw">type </span>Response = S::Response;
@@ -216,7 +213,7 @@ your <a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Laye
         <span class="self">self</span>.inner.poll_ready(cx)
     }
 
-    <span class="kw">fn </span>call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, request: Request&lt;Body&gt;) -&gt; <span class="self">Self</span>::Future {
+    <span class="kw">fn </span>call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, request: Request) -&gt; <span class="self">Self</span>::Future {
         <span class="kw">let </span>future = <span class="self">self</span>.inner.call(request);
         Box::pin(<span class="kw">async move </span>{
             <span class="kw">let </span>response: Response = future.<span class="kw">await</span><span class="question-mark">?</span>;
@@ -328,8 +325,7 @@ written.</p>
     routing::get,
     middleware::{<span class="self">self</span>, Next},
     response::Response,
-    extract::State,
-    http::Request,
+    extract::{State, Request},
 };
 <span class="kw">use </span>tower::{Layer, Service};
 <span class="kw">use </span>std::task::{Context, Poll};
@@ -394,17 +390,17 @@ written.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{
     Router,
-    http::{Request, StatusCode},
+    http::StatusCode,
     routing::get,
     response::{IntoResponse, Response},
     middleware::{<span class="self">self</span>, Next},
-    extract::Extension,
+    extract::{Request, Extension},
 };
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">struct </span>CurrentUser { <span class="comment">/* ... */ </span>}
 
-<span class="kw">async fn </span>auth&lt;B&gt;(<span class="kw-2">mut </span>req: Request&lt;B&gt;, next: Next&lt;B&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Response, StatusCode&gt; {
+<span class="kw">async fn </span>auth(<span class="kw-2">mut </span>req: Request, next: Next) -&gt; <span class="prelude-ty">Result</span>&lt;Response, StatusCode&gt; {
     <span class="kw">let </span>auth_header = req.headers()
         .get(http::header::AUTHORIZATION)
         .and_then(|header| header.to_str().ok());
@@ -455,15 +451,15 @@ because <code>Router</code> implements <a href="../../tower_service/trait.Servic
     ServiceExt, <span class="comment">// for `into_make_service`
     </span>response::Response,
     middleware::Next,
-    http::Request,
+    extract::Request,
 };
 
-<span class="kw">async fn </span>rewrite_request_uri&lt;B&gt;(req: Request&lt;B&gt;, next: Next&lt;B&gt;) -&gt; Response {
+<span class="kw">fn </span>rewrite_request_uri&lt;B&gt;(req: Request&lt;B&gt;) -&gt; Request&lt;B&gt; {
     <span class="comment">// ...
 </span>}
 
 <span class="comment">// this can be any `tower::Layer`
-</span><span class="kw">let </span>middleware = axum::middleware::from_fn(rewrite_request_uri);
+</span><span class="kw">let </span>middleware = tower::util::MapRequestLayer::new(rewrite_request_uri);
 
 <span class="kw">let </span>app = Router::new();
 
@@ -471,10 +467,8 @@ because <code>Router</code> implements <a href="../../tower_service/trait.Servic
 // this way the middleware will run before `Router` receives the request
 </span><span class="kw">let </span>app_with_middleware = middleware.layer(app);
 
-axum::Server::bind(<span class="kw-2">&amp;</span><span class="string">&quot;0.0.0.0:3000&quot;</span>.parse().unwrap())
-    .serve(app_with_middleware.into_make_service())
-    .<span class="kw">await
-    </span>.unwrap();</code></pre></div>
+<span class="kw">let </span>listener = tokio::net::TcpListener::bind(<span class="string">&quot;0.0.0.0:3000&quot;</span>).<span class="kw">await</span>.unwrap();
+axum::serve(listener, app_with_middleware.into_make_service()).<span class="kw">await</span>.unwrap();</code></pre></div>
 </div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="future/index.html" title="mod axum::middleware::future">future</a></div><div class="desc docblock-short">Future types.</div></li></ul><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.AddExtension.html" title="struct axum::middleware::AddExtension">AddExtension</a></div><div class="desc docblock-short">Middleware for adding some shareable value to <a href="https://docs.rs/http/latest/http/struct.Extensions.html">request extensions</a>.</div></li><li><div class="item-name"><a class="struct" href="struct.FromExtractor.html" title="struct axum::middleware::FromExtractor">FromExtractor</a></div><div class="desc docblock-short">Middleware that runs an extractor and discards the value.</div></li><li><div class="item-name"><a class="struct" href="struct.FromExtractorLayer.html" title="struct axum::middleware::FromExtractorLayer">FromExtractorLayer</a></div><div class="desc docblock-short"><a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Layer"><code>Layer</code></a> that applies <a href="struct.FromExtractor.html" title="struct axum::middleware::FromExtractor"><code>FromExtractor</code></a> that runs an extractor and
 discards the value.</div></li><li><div class="item-name"><a class="struct" href="struct.FromFn.html" title="struct axum::middleware::FromFn">FromFn</a></div><div class="desc docblock-short">A middleware created from an async function.</div></li><li><div class="item-name"><a class="struct" href="struct.FromFnLayer.html" title="struct axum::middleware::FromFnLayer">FromFnLayer</a></div><div class="desc docblock-short">A <a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Layer"><code>tower::Layer</code></a> from an async function.</div></li><li><div class="item-name"><a class="struct" href="struct.MapRequest.html" title="struct axum::middleware::MapRequest">MapRequest</a></div><div class="desc docblock-short">A middleware created from an async function that transforms a request.</div></li><li><div class="item-name"><a class="struct" href="struct.MapRequestLayer.html" title="struct axum::middleware::MapRequestLayer">MapRequestLayer</a></div><div class="desc docblock-short">A <a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Layer"><code>tower::Layer</code></a> from an async function that transforms a request.</div></li><li><div class="item-name"><a class="struct" href="struct.MapResponse.html" title="struct axum::middleware::MapResponse">MapResponse</a></div><div class="desc docblock-short">A middleware created from an async function that transforms a response.</div></li><li><div class="item-name"><a class="struct" href="struct.MapResponseLayer.html" title="struct axum::middleware::MapResponseLayer">MapResponseLayer</a></div><div class="desc docblock-short">A <a href="../../tower_layer/trait.Layer.html" title="trait tower_layer::Layer"><code>tower::Layer</code></a> from an async function that transforms a response.</div></li><li><div class="item-name"><a class="struct" href="struct.Next.html" title="struct axum::middleware::Next">Next</a></div><div class="desc docblock-short">The remainder of a middleware stack, including the handler.</div></li></ul><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.IntoMapRequestResult.html" title="trait axum::middleware::IntoMapRequestResult">IntoMapRequestResult</a></div><div class="desc docblock-short">Trait implemented by types that can be returned from <a href="fn.map_request.html" title="fn axum::middleware::map_request"><code>map_request</code></a>,
 <a href="fn.map_request_with_state.html" title="fn axum::middleware::map_request_with_state"><code>map_request_with_state</code></a>.</div></li></ul><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="fn.from_extractor.html" title="fn axum::middleware::from_extractor">from_extractor</a></div><div class="desc docblock-short">Create a middleware from an extractor.</div></li><li><div class="item-name"><a class="fn" href="fn.from_extractor_with_state.html" title="fn axum::middleware::from_extractor_with_state">from_extractor_with_state</a></div><div class="desc docblock-short">Create a middleware from an extractor with the given state.</div></li><li><div class="item-name"><a class="fn" href="fn.from_fn.html" title="fn axum::middleware::from_fn">from_fn</a></div><div class="desc docblock-short">Create a middleware from an async function.</div></li><li><div class="item-name"><a class="fn" href="fn.from_fn_with_state.html" title="fn axum::middleware::from_fn_with_state">from_fn_with_state</a></div><div class="desc docblock-short">Create a middleware from an async function with the given state.</div></li><li><div class="item-name"><a class="fn" href="fn.map_request.html" title="fn axum::middleware::map_request">map_request</a></div><div class="desc docblock-short">Create a middleware from an async function that transforms a request.</div></li><li><div class="item-name"><a class="fn" href="fn.map_request_with_state.html" title="fn axum::middleware::map_request_with_state">map_request_with_state</a></div><div class="desc docblock-short">Create a middleware from an async function that transforms a request, with the given state.</div></li><li><div class="item-name"><a class="fn" href="fn.map_response.html" title="fn axum::middleware::map_response">map_response</a></div><div class="desc docblock-short">Create a middleware from an async function that transforms a response.</div></li><li><div class="item-name"><a class="fn" href="fn.map_response_with_state.html" title="fn axum::middleware::map_response_with_state">map_response_with_state</a></div><div class="desc docblock-short">Create a middleware from an async function that transforms a response, with the given state.</div></li></ul></section></div></main></body></html>

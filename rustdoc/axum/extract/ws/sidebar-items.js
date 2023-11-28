@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Message"],"mod":["close_code","rejection"],"struct":["CloseFrame","DefaultOnFailedUpdgrade","WebSocket","WebSocketUpgrade"],"trait":["OnFailedUpdgrade"],"type":["CloseCode"]};
+window.SIDEBAR_ITEMS = {"enum":["Message"],"mod":["close_code","rejection"],"struct":["CloseFrame","DefaultOnFailedUpgrade","WebSocket","WebSocketUpgrade"],"trait":["OnFailedUpgrade"],"type":["CloseCode"]};

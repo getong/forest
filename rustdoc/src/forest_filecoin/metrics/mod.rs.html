@@ -138,8 +138,9 @@
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>prometheus::core::{AtomicU64, GenericCounterVec, Opts};
 <span class="kw">use </span>prometheus::{Encoder, TextEncoder};
+<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{net::TcpListener, path::PathBuf};
+<span class="kw">use </span>tokio::net::TcpListener;
 <span class="kw">use </span>tokio::sync::RwLock;
 <span class="kw">use </span>tracing::warn;
 
@@ -195,10 +196,9 @@
         .route(<span class="string">&quot;/metrics&quot;</span>, get(collect_prometheus_metrics))
         .route(<span class="string">&quot;/stats/db&quot;</span>, get(collect_db_metrics::&lt;DB&gt;))
         .with_state(db);
-    <span class="kw">let </span>server = axum::Server::from_tcp(prometheus_listener)<span class="question-mark">?</span>.serve(app.into_make_service());
 
     <span class="comment">// Wait for server to exit
-    </span><span class="prelude-val">Ok</span>(server.<span class="kw">await</span><span class="question-mark">?</span>)
+    </span><span class="prelude-val">Ok</span>(axum::serve(prometheus_listener, app.into_make_service()).<span class="kw">await</span><span class="question-mark">?</span>)
 }
 
 <span class="kw">async fn </span>collect_prometheus_metrics() -&gt; <span class="kw">impl </span>IntoResponse {

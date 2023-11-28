@@ -2,7 +2,7 @@
 <p>For security reasons, <a href="../../bytes/bytes/struct.Bytes.html" title="struct bytes::bytes::Bytes"><code>Bytes</code></a> will, by default, not accept bodies larger than 2MB. This also
 applies to extractors that uses <a href="../../bytes/bytes/struct.Bytes.html" title="struct bytes::bytes::Bytes"><code>Bytes</code></a> internally such as <code>String</code>, <a href="https://docs.rs/axum/0.6.0/axum/struct.Json.html"><code>Json</code></a>, and <a href="https://docs.rs/axum/0.6.0/axum/struct.Form.html"><code>Form</code></a>.</p>
 <p>This middleware provides ways to configure that.</p>
-<p>Note that if an extractor consumes the body directly with <a href="../../http_body/trait.Body.html#method.data" title="method http_body::Body::data"><code>Body::data</code></a>, or similar, the
+<p>Note that if an extractor consumes the body directly with <a href="../../http_body/trait.Body.html#tymethod.poll_frame" title="method http_body::Body::poll_frame"><code>Body::poll_frame</code></a>, or similar, the
 default limit is <em>not</em> applied.</p>
 <h2 id="difference-between-defaultbodylimit-and-requestbodylimit"><a href="#difference-between-defaultbodylimit-and-requestbodylimit">Difference between <code>DefaultBodyLimit</code> and <code>RequestBodyLimit</code></a></h2>
 <p><code>DefaultBodyLimit</code> and <a href="tower_http::limit::RequestBodyLimit"><code>RequestBodyLimit</code></a> serve similar functions but in different ways.</p>
@@ -11,46 +11,43 @@ explicitly apply it (or call another extractor that does). You can apply the lim
 <a href="../trait.RequestExt.html#tymethod.with_limited_body" title="method axum_core::RequestExt::with_limited_body"><code>RequestExt::with_limited_body</code></a> or <a href="../trait.RequestExt.html#tymethod.into_limited_body" title="method axum_core::RequestExt::into_limited_body"><code>RequestExt::into_limited_body</code></a></p>
 <p><a href="tower_http::limit::RequestBodyLimit"><code>RequestBodyLimit</code></a> is applied globally to all requests, regardless of which extractors are
 used or how the body is consumed.</p>
-<p><code>DefaultBodyLimit</code> is also easier to integrate into an existing setup since it doesn’t change
-the request body type:</p>
+<h2 id="example"><a href="#example">Example</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{
+    Router,
+    routing::post,
+    body::Body,
+    extract::{Request, DefaultBodyLimit},
+};
+
+<span class="kw">let </span>app = Router::new()
+    .route(<span class="string">&quot;/&quot;</span>, post(|request: Request| <span class="kw">async </span>{}))
+    <span class="comment">// change the default limit
+    </span>.layer(DefaultBodyLimit::max(<span class="number">1024</span>));</code></pre></div>
+<p>In general using <code>DefaultBodyLimit</code> is recommended but if you need to use third party
+extractors and want to sure a limit is also applied there then <a href="tower_http::limit::RequestBodyLimit"><code>RequestBodyLimit</code></a> should be
+used.</p>
+<h2 id="different-limits-for-different-routes"><a href="#different-limits-for-different-routes">Different limits for different routes</a></h2>
+<p><code>DefaultBodyLimit</code> can also be selectively applied to have different limits for different
+routes:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{
     Router,
     routing::post,
     body::Body,
-    extract::{DefaultBodyLimit, RawBody},
-    http::Request,
+    extract::{Request, DefaultBodyLimit},
 };
 
 <span class="kw">let </span>app = Router::new()
-    .route(
-        <span class="string">&quot;/&quot;</span>,
-        <span class="comment">// even with `DefaultBodyLimit` the request body is still just `Body`
-        </span>post(|request: Request&lt;Body&gt;| <span class="kw">async </span>{}),
-    )
-    .layer(DefaultBodyLimit::max(<span class="number">1024</span>));</code></pre></div>
-
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{Router, routing::post, body::Body, extract::RawBody, http::Request};
-<span class="kw">use </span>tower_http::limit::RequestBodyLimitLayer;
-<span class="kw">use </span>http_body::Limited;
-
-<span class="kw">let </span>app = Router::new()
-    .route(
-        <span class="string">&quot;/&quot;</span>,
-        <span class="comment">// `RequestBodyLimitLayer` changes the request body type to `Limited&lt;Body&gt;`
-        // extracting a different body type wont work
-        </span>post(|request: Request&lt;Limited&lt;Body&gt;&gt;| <span class="kw">async </span>{}),
-    )
-    .layer(RequestBodyLimitLayer::new(<span class="number">1024</span>));</code></pre></div>
-<p>In general using <code>DefaultBodyLimit</code> is recommended but if you need to use third party
-extractors and want to sure a limit is also applied there then <a href="tower_http::limit::RequestBodyLimit"><code>RequestBodyLimit</code></a> should be
-used.</p>
+    <span class="comment">// this route has a different limit
+    </span>.route(<span class="string">&quot;/&quot;</span>, post(|request: Request| <span class="kw">async </span>{}).layer(DefaultBodyLimit::max(<span class="number">1024</span>)))
+    <span class="comment">// this route still has the default limit
+    </span>.route(<span class="string">&quot;/foo&quot;</span>, post(|request: Request| <span class="kw">async </span>{}));</code></pre></div>
 </div></details><h2 id="implementations" class="small-section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-DefaultBodyLimit" class="impl"><a class="src rightside" href="../../src/axum_core/extract/default_body_limit.rs.html#87-157">source</a><a href="#impl-DefaultBodyLimit" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.DefaultBodyLimit.html" title="struct axum_core::extract::DefaultBodyLimit">DefaultBodyLimit</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.disable" class="method"><a class="src rightside" href="../../src/axum_core/extract/default_body_limit.rs.html#119-123">source</a><h4 class="code-header">pub fn <a href="#method.disable" class="fn">disable</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>Disable the default request body limit.</p>
 <p>This must be used to receive bodies larger than the default limit of 2MB using <a href="../../bytes/bytes/struct.Bytes.html" title="struct bytes::bytes::Bytes"><code>Bytes</code></a> or
 an extractor built on it such as <code>String</code>, <a href="https://docs.rs/axum/0.6.0/axum/struct.Json.html"><code>Json</code></a>, <a href="https://docs.rs/axum/0.6.0/axum/struct.Form.html"><code>Form</code></a>.</p>
 <p>Note that if you’re accepting data from untrusted remotes it is recommend to add your own
 limit such as [<code>tower_http::limit</code>].</p>
-<h5 id="example"><a href="#example">Example</a></h5>
+<h5 id="example-1"><a href="#example-1">Example</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{
     Router,
     routing::get,
@@ -58,9 +55,9 @@ limit such as [<code>tower_http::limit</code>].</p>
     extract::DefaultBodyLimit,
 };
 <span class="kw">use </span>tower_http::limit::RequestBodyLimitLayer;
-<span class="kw">use </span>http_body::Limited;
+<span class="kw">use </span>http_body_util::Limited;
 
-<span class="kw">let </span>app: Router&lt;(), Limited&lt;Body&gt;&gt; = Router::new()
+<span class="kw">let </span>app: Router&lt;()&gt; = Router::new()
     .route(<span class="string">&quot;/&quot;</span>, get(|body: Bytes| <span class="kw">async </span>{}))
     <span class="comment">// Disable the default limit
     </span>.layer(DefaultBodyLimit::disable())
@@ -70,7 +67,7 @@ limit such as [<code>tower_http::limit</code>].</p>
 <p>By default the limit of request body sizes that <a href="../../bytes/bytes/struct.Bytes.html" title="struct bytes::bytes::Bytes"><code>Bytes::from_request</code></a> (and other
 extractors built on top of it such as <code>String</code>, <a href="https://docs.rs/axum/0.6.0/axum/struct.Json.html"><code>Json</code></a>, and <a href="https://docs.rs/axum/0.6.0/axum/struct.Form.html"><code>Form</code></a>) is 2MB. This method
 can be used to change that limit.</p>
-<h5 id="example-1"><a href="#example-1">Example</a></h5>
+<h5 id="example-2"><a href="#example-2">Example</a></h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>axum::{
     Router,
     routing::get,
@@ -78,9 +75,9 @@ can be used to change that limit.</p>
     extract::DefaultBodyLimit,
 };
 <span class="kw">use </span>tower_http::limit::RequestBodyLimitLayer;
-<span class="kw">use </span>http_body::Limited;
+<span class="kw">use </span>http_body_util::Limited;
 
-<span class="kw">let </span>app: Router&lt;(), Limited&lt;Body&gt;&gt; = Router::new()
+<span class="kw">let </span>app: Router&lt;()&gt; = Router::new()
     .route(<span class="string">&quot;/&quot;</span>, get(|body: Bytes| <span class="kw">async </span>{}))
     <span class="comment">// Replace the default of 2MB with 1024 bytes.
     </span>.layer(DefaultBodyLimit::max(<span class="number">1024</span>));</code></pre></div>

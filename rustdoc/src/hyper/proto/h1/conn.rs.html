@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-0.14.27/src/proto/h1/conn.rs`."><title>conn.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../hyper/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.0.1/src/proto/h1/conn.rs`."><title>conn.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-fa3bb1812debf86c.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0 (79e9716c9 2023-11-13)" data-channel="1.74.0" data-search-js="search-8be46b629f5f14a8.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-c5bd66d33317d69f.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../hyper/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1409,46 +1409,34 @@
 <a href="#1409" id="1409">1409</a>
 <a href="#1410" id="1410">1410</a>
 <a href="#1411" id="1411">1411</a>
-<a href="#1412" id="1412">1412</a>
-<a href="#1413" id="1413">1413</a>
-<a href="#1414" id="1414">1414</a>
-<a href="#1415" id="1415">1415</a>
-<a href="#1416" id="1416">1416</a>
-<a href="#1417" id="1417">1417</a>
-<a href="#1418" id="1418">1418</a>
-<a href="#1419" id="1419">1419</a>
-<a href="#1420" id="1420">1420</a>
-<a href="#1421" id="1421">1421</a>
-<a href="#1422" id="1422">1422</a>
-<a href="#1423" id="1423">1423</a>
-<a href="#1424" id="1424">1424</a>
-<a href="#1425" id="1425">1425</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::io;
-<span class="kw">use </span>std::marker::PhantomData;
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+<span class="kw">use </span>std::marker::{PhantomData, Unpin};
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::task::{Context, Poll};
+<span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
 </span><span class="kw">use </span>std::time::Duration;
 
+<span class="kw">use </span><span class="kw">crate</span>::rt::{Read, Write};
 <span class="kw">use </span>bytes::{Buf, Bytes};
 <span class="kw">use </span>http::header::{HeaderValue, CONNECTION};
 <span class="kw">use </span>http::{HeaderMap, Method, Version};
 <span class="kw">use </span>httparse::ParserConfig;
-<span class="kw">use </span>tokio::io::{AsyncRead, AsyncWrite};
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
-</span><span class="kw">use </span>tokio::time::Sleep;
-<span class="kw">use </span>tracing::{debug, error, trace};
 
 <span class="kw">use </span><span class="kw">super</span>::io::Buffered;
 <span class="kw">use super</span>::{Decoder, Encode, EncodedBuf, Encoder, Http1Transaction, ParseContext, Wants};
 <span class="kw">use </span><span class="kw">crate</span>::body::DecodedLength;
-<span class="kw">use </span><span class="kw">crate</span>::common::{task, Pin, Poll, Unpin};
+<span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::common::time::Time;
 <span class="kw">use </span><span class="kw">crate</span>::headers::connection_keep_alive;
 <span class="kw">use </span><span class="kw">crate</span>::proto::{BodyLength, MessageHead};
+<span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::rt::Sleep;
 
 <span class="kw">const </span>H2_PREFACE: <span class="kw-2">&amp;</span>[u8] = <span class="string">b&quot;PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n&quot;</span>;
 
 <span class="doccomment">/// This handles a connection, which will have been established over an
-/// `AsyncRead + AsyncWrite` (like a socket), and will likely include multiple
+/// `Read + Write` (like a socket), and will likely include multiple
 /// `Transaction`s over HTTP.
 ///
 /// The connection will determine when a message begins and ends as well as
@@ -1462,7 +1450,7 @@
 
 <span class="kw">impl</span>&lt;I, B, T&gt; Conn&lt;I, B, T&gt;
 <span class="kw">where
-    </span>I: AsyncRead + AsyncWrite + Unpin,
+    </span>I: Read + Write + Unpin,
     B: Buf,
     T: Http1Transaction,
 {
@@ -1476,12 +1464,14 @@
                 keep_alive: KA::Busy,
                 method: <span class="prelude-val">None</span>,
                 h1_parser_config: ParserConfig::default(),
-                <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
                 </span>h1_header_read_timeout: <span class="prelude-val">None</span>,
-                <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
                 </span>h1_header_read_timeout_fut: <span class="prelude-val">None</span>,
-                <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
                 </span>h1_header_read_timeout_running: <span class="bool-val">false</span>,
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+                </span>timer: Time::Empty,
                 preserve_header_case: <span class="bool-val">false</span>,
                 <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
                 </span>preserve_header_order: <span class="bool-val">false</span>,
@@ -1489,8 +1479,6 @@
                 h09_responses: <span class="bool-val">false</span>,
                 <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
                 </span>on_informational: <span class="prelude-val">None</span>,
-                <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
-                </span>raw_headers: <span class="bool-val">false</span>,
                 notify_read: <span class="bool-val">false</span>,
                 reading: Reading::Init,
                 writing: Writing::Init,
@@ -1501,6 +1489,11 @@
             },
             _marker: PhantomData,
         }
+    }
+
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_timer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, timer: Time) {
+        <span class="self">self</span>.state.timer = timer;
     }
 
     <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
@@ -1548,7 +1541,7 @@
         <span class="self">self</span>.state.h09_responses = <span class="bool-val">true</span>;
     }
 
-    <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_http1_header_read_timeout(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: Duration) {
         <span class="self">self</span>.state.h1_header_read_timeout = <span class="prelude-val">Some</span>(val);
     }
@@ -1556,11 +1549,6 @@
     <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_allow_half_close(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.state.allow_half_close = <span class="bool-val">true</span>;
-    }
-
-    <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_raw_headers(<span class="kw-2">&amp;mut </span><span class="self">self</span>, enabled: bool) {
-        <span class="self">self</span>.state.raw_headers = enabled;
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>into_inner(<span class="self">self</span>) -&gt; (I, Bytes) {
@@ -1598,6 +1586,13 @@
         }
     }
 
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>has_initial_read_write_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>.state.reading, Reading::Init)
+            &amp;&amp; <span class="macro">matches!</span>(<span class="self">self</span>.state.writing, Writing::Init)
+            &amp;&amp; <span class="self">self</span>.io.read_buf().is_empty()
+    }
+
     <span class="kw">fn </span>should_error_on_eof(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="comment">// If we&#39;re idle, it&#39;s probably just the connection closing gracefully.
         </span>T::should_error_on_parse_eof() &amp;&amp; !<span class="self">self</span>.state.is_idle()
@@ -1610,7 +1605,7 @@
 
     <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>poll_read_head(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw">crate</span>::Result&lt;(MessageHead&lt;T::Incoming&gt;, DecodedLength, Wants)&gt;&gt;&gt; {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.can_read_head());
         <span class="macro">trace!</span>(<span class="string">&quot;Conn::read_head&quot;</span>);
@@ -1621,20 +1616,20 @@
                 cached_headers: <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.cached_headers,
                 req_method: <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.method,
                 h1_parser_config: <span class="self">self</span>.state.h1_parser_config.clone(),
-                <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
                 </span>h1_header_read_timeout: <span class="self">self</span>.state.h1_header_read_timeout,
-                <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
                 </span>h1_header_read_timeout_fut: <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.h1_header_read_timeout_fut,
-                <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
                 </span>h1_header_read_timeout_running: <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.h1_header_read_timeout_running,
+                <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+                </span>timer: <span class="self">self</span>.state.timer.clone(),
                 preserve_header_case: <span class="self">self</span>.state.preserve_header_case,
                 <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
                 </span>preserve_header_order: <span class="self">self</span>.state.preserve_header_order,
                 h09_responses: <span class="self">self</span>.state.h09_responses,
                 <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
                 </span>on_informational: <span class="kw-2">&amp;mut </span><span class="self">self</span>.state.on_informational,
-                <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
-                </span>raw_headers: <span class="self">self</span>.state.raw_headers,
             }
         )) {
             <span class="prelude-val">Ok</span>(msg) =&gt; msg,
@@ -1673,7 +1668,7 @@
             <span class="kw">if </span>!T::should_read_first() {
                 <span class="self">self</span>.try_keep_alive(cx);
             }
-        } <span class="kw">else if </span>msg.expect_continue {
+        } <span class="kw">else if </span>msg.expect_continue &amp;&amp; msg.head.version.gt(<span class="kw-2">&amp;</span>Version::HTTP_10) {
             <span class="self">self</span>.state.reading = Reading::Continue(Decoder::new(msg.decode));
             wants = wants.add(Wants::EXPECT);
         } <span class="kw">else </span>{
@@ -1711,7 +1706,7 @@
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_read_body(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;io::Result&lt;Bytes&gt;&gt;&gt; {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.can_read_body());
 
@@ -1772,10 +1767,7 @@
         ret
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_read_keep_alive(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-    ) -&gt; Poll&lt;<span class="kw">crate</span>::Result&lt;()&gt;&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_read_keep_alive(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="kw">crate</span>::Result&lt;()&gt;&gt; {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.can_read_head() &amp;&amp; !<span class="self">self</span>.can_read_body());
 
         <span class="kw">if </span><span class="self">self</span>.is_read_closed() {
@@ -1798,7 +1790,7 @@
     //
     // This should only be called for Clients wanting to enter the idle
     // state.
-    </span><span class="kw">fn </span>require_empty_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="kw">crate</span>::Result&lt;()&gt;&gt; {
+    </span><span class="kw">fn </span>require_empty_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="kw">crate</span>::Result&lt;()&gt;&gt; {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.can_read_head() &amp;&amp; !<span class="self">self</span>.can_read_body() &amp;&amp; !<span class="self">self</span>.is_read_closed());
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.is_mid_message());
         <span class="macro">debug_assert!</span>(T::is_client());
@@ -1831,7 +1823,7 @@
         Poll::Ready(<span class="prelude-val">Err</span>(<span class="kw">crate</span>::Error::new_unexpected_message()))
     }
 
-    <span class="kw">fn </span>mid_message_detect_eof(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="kw">crate</span>::Result&lt;()&gt;&gt; {
+    <span class="kw">fn </span>mid_message_detect_eof(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="kw">crate</span>::Result&lt;()&gt;&gt; {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.can_read_head() &amp;&amp; !<span class="self">self</span>.can_read_body() &amp;&amp; !<span class="self">self</span>.is_read_closed());
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_mid_message());
 
@@ -1850,18 +1842,18 @@
         }
     }
 
-    <span class="kw">fn </span>force_io_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;io::Result&lt;usize&gt;&gt; {
+    <span class="kw">fn </span>force_io_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;io::Result&lt;usize&gt;&gt; {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.state.is_read_closed());
 
         <span class="kw">let </span>result = <span class="macro">ready!</span>(<span class="self">self</span>.io.poll_read_from_io(cx));
         Poll::Ready(result.map_err(|e| {
-            <span class="macro">trace!</span>(<span class="string">&quot;force_io_read; io error = {:?}&quot;</span>, e);
+            <span class="macro">trace!</span>(error = %e, <span class="string">&quot;force_io_read; io error&quot;</span>);
             <span class="self">self</span>.state.close();
             e
         }))
     }
 
-    <span class="kw">fn </span>maybe_notify(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>maybe_notify(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
         <span class="comment">// its possible that we returned NotReady from poll() without having
         // exhausted the underlying Io. We would have done this when we
         // determined we couldn&#39;t keep reading until we knew how writing
@@ -1908,7 +1900,7 @@
         }
     }
 
-    <span class="kw">fn </span>try_keep_alive(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>try_keep_alive(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
         <span class="self">self</span>.state.try_keep_alive::&lt;T&gt;();
         <span class="self">self</span>.maybe_notify(cx);
     }
@@ -1944,24 +1936,6 @@
             } <span class="kw">else </span>{
                 Writing::KeepAlive
             };
-        }
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>write_full_msg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, head: MessageHead&lt;T::Outgoing&gt;, body: B) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(encoder) =
-            <span class="self">self</span>.encode_head(head, <span class="prelude-val">Some</span>(BodyLength::Known(body.remaining() <span class="kw">as </span>u64)))
-        {
-            <span class="kw">let </span>is_last = encoder.is_last();
-            <span class="comment">// Make sure we don&#39;t write a body if we weren&#39;t actually allowed
-            // to do so, like because its a HEAD request.
-            </span><span class="kw">if </span>!encoder.is_eof() {
-                encoder.danger_full_buf(body, <span class="self">self</span>.io.write_buf());
-            }
-            <span class="self">self</span>.state.writing = <span class="kw">if </span>is_last {
-                Writing::Closed
-            } <span class="kw">else </span>{
-                Writing::KeepAlive
-            }
         }
     }
 
@@ -2151,14 +2125,14 @@
         </span><span class="prelude-val">Err</span>(err)
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_flush(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;io::Result&lt;()&gt;&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_flush(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;io::Result&lt;()&gt;&gt; {
         <span class="macro">ready!</span>(Pin::new(<span class="kw-2">&amp;mut </span><span class="self">self</span>.io).poll_flush(cx))<span class="question-mark">?</span>;
         <span class="self">self</span>.try_keep_alive(cx);
         <span class="macro">trace!</span>(<span class="string">&quot;flushed({}): {:?}&quot;</span>, T::LOG, <span class="self">self</span>.state);
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_shutdown(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;io::Result&lt;()&gt;&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll_shutdown(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;io::Result&lt;()&gt;&gt; {
         <span class="kw">match </span><span class="macro">ready!</span>(Pin::new(<span class="self">self</span>.io.io_mut()).poll_shutdown(cx)) {
             <span class="prelude-val">Ok</span>(()) =&gt; {
                 <span class="macro">trace!</span>(<span class="string">&quot;shut down IO complete&quot;</span>);
@@ -2172,7 +2146,7 @@
     }
 
     <span class="doccomment">/// If the read side can be cheaply drained, do so. Otherwise, close.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>poll_drain_or_close_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>poll_drain_or_close_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
         <span class="kw">if let </span>Reading::Continue(<span class="kw-2">ref </span>decoder) = <span class="self">self</span>.state.reading {
             <span class="comment">// skip sending the 100-continue
             // just move forward to a read, in case a tiny body was included
@@ -2183,7 +2157,9 @@
 
         <span class="comment">// If still in Reading::Body, just give up
         </span><span class="kw">match </span><span class="self">self</span>.state.reading {
-            Reading::Init | Reading::KeepAlive =&gt; <span class="macro">trace!</span>(<span class="string">&quot;body drained&quot;</span>),
+            Reading::Init | Reading::KeepAlive =&gt; {
+                <span class="macro">trace!</span>(<span class="string">&quot;body drained&quot;</span>)
+            }
             <span class="kw">_ </span>=&gt; <span class="self">self</span>.close_read(),
         }
     }
@@ -2248,12 +2224,14 @@
     /// a body or not.
     </span>method: <span class="prelude-ty">Option</span>&lt;Method&gt;,
     h1_parser_config: ParserConfig,
-    <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
     </span>h1_header_read_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
-    <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
-    </span>h1_header_read_timeout_fut: <span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;Sleep&gt;&gt;&gt;,
-    <span class="attr">#[cfg(all(feature = <span class="string">&quot;server&quot;</span>, feature = <span class="string">&quot;runtime&quot;</span>))]
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    </span>h1_header_read_timeout_fut: <span class="prelude-ty">Option</span>&lt;Pin&lt;Box&lt;<span class="kw">dyn </span>Sleep&gt;&gt;&gt;,
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
     </span>h1_header_read_timeout_running: bool,
+    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    </span>timer: Time,
     preserve_header_case: bool,
     <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
     </span>preserve_header_order: bool,
@@ -2264,8 +2242,6 @@
     /// received.
     </span><span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
     </span>on_informational: <span class="prelude-ty">Option</span>&lt;<span class="kw">crate</span>::ffi::OnInformational&gt;,
-    <span class="attr">#[cfg(feature = <span class="string">&quot;ffi&quot;</span>)]
-    </span>raw_headers: bool,
     <span class="doccomment">/// Set to true when the Dispatcher should poll read operations
     /// again. See the `maybe_notify` method for more.
     </span>notify_read: bool,
@@ -2338,17 +2314,12 @@
     }
 }
 
-<span class="attr">#[derive(Clone, Copy, Debug)]
+<span class="attr">#[derive(Clone, Copy, Debug, Default)]
 </span><span class="kw">enum </span>KA {
     Idle,
-    Busy,
+    <span class="attr">#[default]
+    </span>Busy,
     Disabled,
-}
-
-<span class="kw">impl </span>Default <span class="kw">for </span>KA {
-    <span class="kw">fn </span>default() -&gt; KA {
-        KA::Busy
-    }
 }
 
 <span class="kw">impl </span>KA {
@@ -2474,16 +2445,17 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="attr">#[cfg(feature = <span class="string">&quot;nightly&quot;</span>)]
+    <span class="attr">#[cfg(all(feature = <span class="string">&quot;nightly&quot;</span>, not(miri)))]
     #[bench]
     </span><span class="kw">fn </span>bench_read_head_short(b: <span class="kw-2">&amp;mut </span>::test::Bencher) {
         <span class="kw">use super</span>::<span class="kw-2">*</span>;
+        <span class="kw">use </span><span class="kw">crate</span>::common::io::Compat;
         <span class="kw">let </span>s = <span class="string">b&quot;GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n&quot;</span>;
         <span class="kw">let </span>len = s.len();
         b.bytes = len <span class="kw">as </span>u64;
 
         <span class="comment">// an empty IO, we&#39;ll be skipping and using the read buffer anyways
-        </span><span class="kw">let </span>io = tokio_test::io::Builder::new().build();
+        </span><span class="kw">let </span>io = Compat(tokio_test::io::Builder::new().build());
         <span class="kw">let </span><span class="kw-2">mut </span>conn = Conn::&lt;<span class="kw">_</span>, bytes::Bytes, <span class="kw">crate</span>::proto::h1::ServerTransaction&gt;::new(io);
         <span class="kw-2">*</span>conn.io.read_buf_mut() = ::bytes::BytesMut::from(<span class="kw-2">&amp;</span>s[..]);
         conn.state.cached_headers = <span class="prelude-val">Some</span>(HeaderMap::with_capacity(<span class="number">2</span>));
