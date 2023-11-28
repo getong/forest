@@ -315,6 +315,14 @@
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -327,8 +335,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span>ahash::{HashMap, HashSet};
 <span class="kw">use </span>flume::{Receiver, Sender};
+<span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>rand::seq::SliceRandom;
-<span class="kw">use </span>tokio::sync::RwLock;
 <span class="kw">use </span>tracing::{debug, trace, warn};
 
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::<span class="kw-2">*</span>;
@@ -391,7 +399,7 @@
     <span class="doccomment">/// Peer operation receiver
     </span>peer_ops_rx: Receiver&lt;PeerOperation&gt;,
     <span class="doccomment">/// Peer ban list, key is peer id, value is expiration time
-    </span>peer_ban_list: RwLock&lt;HashMap&lt;PeerId, <span class="prelude-ty">Option</span>&lt;Instant&gt;&gt;&gt;,
+    </span>peer_ban_list: tokio::sync::RwLock&lt;HashMap&lt;PeerId, <span class="prelude-ty">Option</span>&lt;Instant&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>PeerManager {
@@ -410,8 +418,8 @@
 <span class="kw">impl </span>PeerManager {
     <span class="doccomment">/// Updates peer&#39;s heaviest tipset. If the peer does not exist in the set, a
     /// new `PeerInfo` will be generated.
-    </span><span class="kw">pub async fn </span>update_peer_head(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId, ts: Arc&lt;Tipset&gt;) {
-        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write().<span class="kw">await</span>;
+    </span><span class="kw">pub fn </span>update_peer_head(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId, ts: Arc&lt;Tipset&gt;) {
+        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="macro">trace!</span>(<span class="string">&quot;Updating head for PeerId {}&quot;</span>, <span class="kw-2">&amp;</span>peer_id);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(pi) = peers.full_peers.get_mut(<span class="kw-2">&amp;</span>peer_id) {
             pi.head = <span class="prelude-val">Some</span>(ts);
@@ -421,17 +429,26 @@
         }
     }
 
+    <span class="doccomment">/// Gets the head epoch of a peer
+    </span><span class="kw">pub fn </span>get_peer_head_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; <span class="prelude-ty">Option</span>&lt;i64&gt; {
+        <span class="kw">let </span>peers = <span class="self">self</span>.peers.read();
+        peers
+            .full_peers
+            .get(peer_id)
+            .and_then(|pi| pi.head.as_ref().map(|ts| ts.epoch()))
+    }
+
     <span class="doccomment">/// Returns true if peer is not marked as bad or not already in set.
-    </span><span class="kw">pub async fn </span>is_peer_new(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; bool {
-        <span class="kw">let </span>peers = <span class="self">self</span>.peers.read().<span class="kw">await</span>;
+    </span><span class="kw">pub fn </span>is_peer_new(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; bool {
+        <span class="kw">let </span>peers = <span class="self">self</span>.peers.read();
         !peers.bad_peers.contains(peer_id) &amp;&amp; !peers.full_peers.contains_key(peer_id)
     }
 
     <span class="doccomment">/// Sort peers based on a score function with the success rate and latency
     /// of requests.
-    </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::libp2p) <span class="kw">async fn </span>sorted_peers(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerId&gt; {
-        <span class="kw">let </span>peer_lk = <span class="self">self</span>.peers.read().<span class="kw">await</span>;
-        <span class="kw">let </span>average_time = <span class="self">self</span>.avg_global_time.read().<span class="kw">await</span>;
+    </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::libp2p) <span class="kw">fn </span>sorted_peers(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerId&gt; {
+        <span class="kw">let </span>peer_lk = <span class="self">self</span>.peers.read();
+        <span class="kw">let </span>average_time = <span class="self">self</span>.avg_global_time.read();
         <span class="kw">let </span><span class="kw-2">mut </span>peers: Vec&lt;<span class="kw">_</span>&gt; = peer_lk
             .full_peers
             .iter()
@@ -455,11 +472,10 @@
 
     <span class="doccomment">/// Return shuffled slice of ordered peers from the peer manager. Ordering
     /// is based on failure rate and latency of the peer.
-    </span><span class="kw">pub async fn </span>top_peers_shuffled(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerId&gt; {
+    </span><span class="kw">pub fn </span>top_peers_shuffled(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerId&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>peers: Vec&lt;<span class="kw">_</span>&gt; = <span class="self">self
             </span>.sorted_peers()
-            .<span class="kw">await
-            </span>.into_iter()
+            .into_iter()
             .take(SHUFFLE_PEERS_PREFIX)
             .collect();
 
@@ -471,9 +487,9 @@
 
     <span class="doccomment">/// Logs a global request success. This just updates the average for the
     /// peer manager.
-    </span><span class="kw">pub async fn </span>log_global_success(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: Duration) {
+    </span><span class="kw">pub fn </span>log_global_success(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: Duration) {
         <span class="macro">debug!</span>(<span class="string">&quot;logging global success&quot;</span>);
-        <span class="kw">let </span><span class="kw-2">mut </span>avg_global = <span class="self">self</span>.avg_global_time.write().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>avg_global = <span class="self">self</span>.avg_global_time.write();
         <span class="kw">if </span><span class="kw-2">*</span>avg_global == Duration::default() {
             <span class="kw-2">*</span>avg_global = dur;
         } <span class="kw">else if </span>dur &lt; <span class="kw-2">*</span>avg_global {
@@ -487,9 +503,9 @@
 
     <span class="doccomment">/// Logs a success for the given peer, and updates the average request
     /// duration.
-    </span><span class="kw">pub async fn </span>log_success(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, dur: Duration) {
+    </span><span class="kw">pub fn </span>log_success(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, dur: Duration) {
         <span class="macro">debug!</span>(<span class="string">&quot;logging success for {:?}&quot;</span>, peer);
-        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="comment">// Attempt to remove the peer and decrement bad peer count
         </span><span class="kw">if </span>peers.bad_peers.remove(<span class="kw-2">&amp;</span>peer) {
             metrics::BAD_PEERS.dec();
@@ -505,9 +521,9 @@
 
     <span class="doccomment">/// Logs a failure for the given peer, and updates the average request
     /// duration.
-    </span><span class="kw">pub async fn </span>log_failure(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, dur: Duration) {
+    </span><span class="kw">pub fn </span>log_failure(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, dur: Duration) {
         <span class="macro">debug!</span>(<span class="string">&quot;logging failure for {:?}&quot;</span>, peer);
-        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="kw">if </span>!peers.bad_peers.contains(<span class="kw-2">&amp;</span>peer) {
             metrics::PEER_FAILURE_TOTAL.inc();
             <span class="kw">if </span>!peers.full_peers.contains_key(<span class="kw-2">&amp;</span>peer) {
@@ -521,8 +537,8 @@
 
     <span class="doccomment">/// Removes a peer from the set and returns true if the value was present
     /// previously
-    </span><span class="kw">pub async fn </span>mark_peer_bad(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId) -&gt; bool {
-        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write().<span class="kw">await</span>;
+    </span><span class="kw">pub fn </span>mark_peer_bad(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId) -&gt; bool {
+        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="kw">let </span>removed = remove_peer(<span class="kw-2">&amp;mut </span>peers, <span class="kw-2">&amp;</span>peer_id);
         <span class="kw">if </span>removed {
             metrics::FULL_PEERS.dec();
@@ -538,8 +554,8 @@
     }
 
     <span class="doccomment">/// Remove peer from managed set, does not mark as bad
-    </span><span class="kw">pub async fn </span>remove_peer(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; bool {
-        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write().<span class="kw">await</span>;
+    </span><span class="kw">pub fn </span>remove_peer(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; bool {
+        <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="macro">debug!</span>(<span class="string">&quot;removed peer {}&quot;</span>, peer_id);
         <span class="kw">let </span>removed = remove_peer(<span class="kw-2">&amp;mut </span>peers, peer_id);
         <span class="kw">if </span>removed {

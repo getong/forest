@@ -928,7 +928,6 @@
 <a href="#928" id="928">928</a>
 <a href="#929" id="929">929</a>
 <a href="#930" id="930">930</a>
-<a href="#931" id="931">931</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1186,7 +1185,7 @@
     ) {
         <span class="comment">// Query the heaviest TipSet from the store
         </span><span class="kw">let </span>heaviest = chain_store.heaviest_tipset();
-        <span class="kw">if </span>network.peer_manager().is_peer_new(<span class="kw-2">&amp;</span>peer_id).<span class="kw">await </span>{
+        <span class="kw">if </span>network.peer_manager().is_peer_new(<span class="kw-2">&amp;</span>peer_id) {
             <span class="comment">// Since the peer is new, send them a hello request
             </span><span class="kw">let </span>request = HelloRequest {
                 heaviest_tip_set: heaviest.cids(),
@@ -1209,17 +1208,17 @@
             <span class="comment">// Update the peer metadata based on the response
             </span><span class="kw">match </span>response {
                 <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
-                    network.peer_manager().log_success(peer_id, dur).<span class="kw">await</span>;
+                    network.peer_manager().log_success(peer_id, dur);
                 }
                 <span class="prelude-val">None </span>=&gt; {
-                    network.peer_manager().log_failure(peer_id, dur).<span class="kw">await</span>;
+                    network.peer_manager().log_failure(peer_id, dur);
                 }
             }
         }
     }
 
     <span class="kw">async fn </span>handle_peer_disconnected_event(network: SyncNetworkContext&lt;DB&gt;, peer_id: PeerId) {
-        network.peer_manager().remove_peer(<span class="kw-2">&amp;</span>peer_id).<span class="kw">await</span>;
+        network.peer_manager().remove_peer(<span class="kw-2">&amp;</span>peer_id);
     }
 
     <span class="kw">async fn </span>gossipsub_block_to_full_tipset(
@@ -1244,14 +1243,14 @@
         </span><span class="kw">let </span>bls_messages: Vec&lt;<span class="kw">_</span>&gt; = block
             .bls_messages
             .into_iter()
-            .map(|m| network.bitswap_get::&lt;Message&gt;(m))
+            .map(|m| network.bitswap_get::&lt;Message&gt;(m, <span class="prelude-val">Some</span>(epoch)))
             .collect();
 
         <span class="comment">// Get secp_messages in the store or over Bitswap
         </span><span class="kw">let </span>secp_messages: Vec&lt;<span class="kw">_</span>&gt; = block
             .secpk_messages
             .into_iter()
-            .map(|m| network.bitswap_get::&lt;SignedMessage&gt;(m))
+            .map(|m| network.bitswap_get::&lt;SignedMessage&gt;(m, <span class="prelude-val">Some</span>(epoch)))
             .collect();
 
         <span class="kw">let </span>(bls_messages, secp_messages) =
@@ -1442,8 +1441,7 @@
         <span class="comment">// Update the peer head
         </span>network
             .peer_manager()
-            .update_peer_head(source, Arc::new(tipset.clone().into_tipset()))
-            .<span class="kw">await</span>;
+            .update_peer_head(source, Arc::new(tipset.clone().into_tipset()));
         metrics::PEER_TIPSET_EPOCH
             .with_label_values(<span class="kw-2">&amp;</span>[source.to_string().as_str()])
             .set(tipset.epoch());

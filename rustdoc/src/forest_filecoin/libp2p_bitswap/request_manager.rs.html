@@ -302,6 +302,25 @@
 <a href="#302" id="302">302</a>
 <a href="#303" id="303">303</a>
 <a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -325,6 +344,8 @@
 
 <span class="kw">const </span>BITSWAP_BLOCK_REQUEST_INTERVAL: Duration = Duration::from_millis(<span class="number">500</span>);
 
+<span class="kw">pub type </span>ValidatePeerCallback = <span class="kw">dyn </span>Fn(PeerId) -&gt; bool + Send + Sync;
+
 <span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">struct </span>ResponseChannels {
     block_have: flume::Sender&lt;PeerId&gt;,
@@ -333,7 +354,6 @@
 
 <span class="doccomment">/// Request manager implementation that is optimized for Filecoin network
 /// usage
-</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>BitswapRequestManager {
     <span class="comment">// channel for outbound `have` requests
     </span>outbound_have_request_tx: flume::Sender&lt;(PeerId, Cid)&gt;,
@@ -425,6 +445,7 @@
         cid: Cid,
         timeout: Duration,
         responder: <span class="prelude-ty">Option</span>&lt;flume::Sender&lt;bool&gt;&gt;,
+        validate_peer: <span class="prelude-ty">Option</span>&lt;Arc&lt;ValidatePeerCallback&gt;&gt;,
     ) {
         <span class="kw">let </span>start = Instant::now();
         <span class="kw">let </span>timer = metrics::GET_BLOCK_TIME.start_timer();
@@ -433,10 +454,11 @@
             <span class="kw">let </span><span class="kw-2">mut </span>success = store.contains(<span class="kw-2">&amp;</span>cid).unwrap_or_default();
             <span class="kw">if </span>!success {
                 <span class="kw">let </span>deadline = start.checked_add(timeout).expect(<span class="string">&quot;Infallible&quot;</span>);
-                success =
-                    task::spawn_blocking(<span class="kw">move </span>|| <span class="self">self</span>.get_block_sync(store_cloned, cid, deadline))
-                        .<span class="kw">await
-                        </span>.unwrap_or_default();
+                success = task::spawn_blocking(<span class="kw">move </span>|| {
+                    <span class="self">self</span>.get_block_sync(store_cloned, cid, deadline, validate_peer)
+                })
+                .<span class="kw">await
+                </span>.unwrap_or_default();
                 <span class="comment">// Spin check db when `get_block_sync` fails fast,
                 // which means there is other task actually processing the same `cid`
                 </span><span class="kw">while </span>!success &amp;&amp; Instant::now() &lt; deadline {
@@ -466,6 +488,7 @@
         store: Arc&lt;<span class="kw">impl </span>BitswapStoreReadWrite&gt;,
         cid: Cid,
         deadline: Instant,
+        validate_peer: <span class="prelude-ty">Option</span>&lt;Arc&lt;ValidatePeerCallback&gt;&gt;,
     ) -&gt; bool {
         <span class="comment">// Fail fast here when the given `cid` is being processed by other tasks
         </span><span class="kw">if </span><span class="self">self</span>.response_channels.read().contains_key(<span class="kw-2">&amp;</span>cid) {
@@ -482,7 +505,22 @@
             <span class="self">self</span>.response_channels.write().insert(cid, channels);
         }
 
-        <span class="kw">for </span><span class="kw-2">&amp;</span>peer <span class="kw">in </span><span class="self">self</span>.peers.read().iter() {
+        <span class="kw">let </span>peers: Vec&lt;<span class="kw">_</span>&gt; = <span class="self">self</span>.peers.read().iter().cloned().collect();
+        <span class="kw">let </span>validated_peers: Vec&lt;<span class="kw">_</span>&gt; = peers
+            .iter()
+            .filter(|&amp;&amp;p| validate_peer.as_ref().map(|f| f(p)).unwrap_or(<span class="bool-val">true</span>))
+            .cloned()
+            .collect();
+
+        <span class="macro">debug!</span>(<span class="string">&quot;Found {} valid peers for {cid}&quot;</span>, validated_peers.len());
+        <span class="kw">let </span>selected_peers = <span class="kw">if </span>validated_peers.is_empty() {
+            <span class="comment">// Fallback to all peers
+            </span>peers
+        } <span class="kw">else </span>{
+            validated_peers
+        };
+
+        <span class="kw">for </span>peer <span class="kw">in </span>selected_peers {
             <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="self">self</span>.outbound_have_request_tx.send((peer, cid)) {
                 <span class="macro">warn!</span>(<span class="string">&quot;{e}&quot;</span>);
             }
