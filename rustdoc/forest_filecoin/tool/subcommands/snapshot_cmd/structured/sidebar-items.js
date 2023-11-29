@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BuildCallTreeError","CallTreeReturn"],"fn":["call_json","gas_charge_json","json","parse_events"],"struct":["CallTree"]};
+window.SIDEBAR_ITEMS = {"fn":["call_json","json"]};

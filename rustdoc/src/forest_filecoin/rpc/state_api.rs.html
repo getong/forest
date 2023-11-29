@@ -521,6 +521,8 @@
 <a href="#521" id="521">521</a>
 <a href="#522" id="522">522</a>
 <a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -531,7 +533,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
-    ApiActorState, MarketDeal, MessageLookup, RPCState, SectorOnChainInfo,
+    ApiActorState, ApiInvocResult, MarketDeal, MessageLookup, RPCState, SectorOnChainInfo,
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, clock::ChainEpoch, executor::Receipt, message::Message,
@@ -560,14 +562,16 @@
 <span class="doccomment">/// runs the given message and returns its result without any persisted changes.
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_call&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((<span class="kw-2">mut </span>message, key))): Params&lt;LotusJson&lt;(Message, TipsetKeys)&gt;&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;InvocResult, JsonRpcError&gt; {
+    Params(LotusJson((message, key))): Params&lt;LotusJson&lt;(Message, TipsetKeys)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, JsonRpcError&gt; {
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
         .load_required_tipset(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(state_manager.call(<span class="kw-2">&amp;mut </span>message, <span class="prelude-val">Some</span>(tipset))<span class="question-mark">?</span>)
+    <span class="comment">// Handle expensive fork error?
+    // TODO(elmattic): https://github.com/ChainSafe/forest/issues/3733
+    </span><span class="prelude-val">Ok</span>(state_manager.call(<span class="kw-2">&amp;</span>message, <span class="prelude-val">Some</span>(tipset))<span class="question-mark">?</span>)
 }
 
 <span class="doccomment">/// returns the result of executing the indicated message, assuming it was

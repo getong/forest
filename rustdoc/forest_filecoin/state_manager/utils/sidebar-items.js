@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["generate_winning_post_sector_challenge","is_valid_for_sending"]};
+window.SIDEBAR_ITEMS = {"fn":["generate_winning_post_sector_challenge","is_valid_for_sending"],"mod":["structured"]};

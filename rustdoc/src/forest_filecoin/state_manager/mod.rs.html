@@ -1419,13 +1419,40 @@
 <a href="#1419" id="1419">1419</a>
 <a href="#1420" id="1420">1420</a>
 <a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+<a href="#1424" id="1424">1424</a>
+<a href="#1425" id="1425">1425</a>
+<a href="#1426" id="1426">1426</a>
+<a href="#1427" id="1427">1427</a>
+<a href="#1428" id="1428">1428</a>
+<a href="#1429" id="1429">1429</a>
+<a href="#1430" id="1430">1430</a>
+<a href="#1431" id="1431">1431</a>
+<a href="#1432" id="1432">1432</a>
+<a href="#1433" id="1433">1433</a>
+<a href="#1434" id="1434">1434</a>
+<a href="#1435" id="1435">1435</a>
+<a href="#1436" id="1436">1436</a>
+<a href="#1437" id="1437">1437</a>
+<a href="#1438" id="1438">1438</a>
+<a href="#1439" id="1439">1439</a>
+<a href="#1440" id="1440">1440</a>
+<a href="#1441" id="1441">1441</a>
+<a href="#1442" id="1442">1442</a>
+<a href="#1443" id="1443">1443</a>
+<a href="#1444" id="1444">1444</a>
+<a href="#1445" id="1445">1445</a>
+<a href="#1446" id="1446">1446</a>
+<a href="#1447" id="1447">1447</a>
+<a href="#1448" id="1448">1448</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">pub mod </span>chain_rand;
 <span class="kw">mod </span>errors;
 <span class="kw">mod </span>metrics;
-<span class="kw">mod </span>utils;
+<span class="kw">pub mod </span>utils;
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncConfig;
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::{MessageCallbackCtx, VMTrace};
 <span class="kw">use </span><span class="kw">crate</span>::state_migration::run_state_migrations;
@@ -1441,13 +1468,15 @@
     index::{ChainIndex, ResolveNullTipset},
     ChainStore, HeadChange,
 };
-<span class="kw">use </span><span class="kw">crate</span>::interpreter::{resolve_to_key_addr, ExecutionContext, VM};
-<span class="kw">use </span><span class="kw">crate</span>::interpreter::{BlockMessages, CalledAt};
+<span class="kw">use </span><span class="kw">crate</span>::interpreter::{
+    resolve_to_key_addr, BlockMessages, CalledAt, ExecutionContext, IMPLICIT_MESSAGE_GAS_LIMIT, VM,
+};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
-<span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiInvocResult, MessageGasCost};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Payload, Protocol, BLS_PUB_LEN},
+    clock::ChainEpoch,
     econ::TokenAmount,
     executor::{ApplyRet, Receipt},
     message::Message,
@@ -1475,7 +1504,8 @@
 <span class="kw">use </span>std::ops::RangeInclusive;
 <span class="kw">use </span>std::{num::NonZeroUsize, sync::Arc};
 <span class="kw">use </span>tokio::sync::{broadcast::error::RecvError, Mutex <span class="kw">as </span>TokioMutex, RwLock};
-<span class="kw">use </span>tracing::{debug, error, info, instrument, trace, warn};
+<span class="kw">use </span>tracing::{debug, error, info, instrument, warn};
+<span class="kw">use </span>utils::structured;
 <span class="kw">use </span>vm_circ_supply::GenesisInfo;
 
 <span class="kw">const </span>DEFAULT_TIPSET_CACHE_SIZE: NonZeroUsize = <span class="macro">nonzero!</span>(<span class="number">1024usize</span>);
@@ -1594,7 +1624,7 @@
 }
 
 <span class="doccomment">/// Type to represent invocation of state call results.
-</span><span class="attr">#[derive(Serialize, Deserialize)]
+</span><span class="attr">#[derive(PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = <span class="string">&quot;PascalCase&quot;</span>)]
 </span><span class="kw">pub struct </span>InvocResult {
     <span class="attr">#[serde(with = <span class="string">&quot;crate::lotus_json&quot;</span>)]
@@ -1810,56 +1840,80 @@
     <span class="attr">#[instrument(skip(<span class="self">self</span>, rand))]
     </span><span class="kw">fn </span>call_raw(
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
-        msg: <span class="kw-2">&amp;mut </span>Message,
+        msg: <span class="kw-2">&amp;</span>Message,
         rand: ChainRand&lt;DB&gt;,
         tipset: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
-    ) -&gt; StateCallResult {
-        <span class="kw">let </span>bstate = tipset.parent_state();
-        <span class="kw">let </span>bheight = tipset.epoch();
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, Error&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>msg = msg.clone();
+
+        <span class="kw">let </span>state_cid = tipset.parent_state();
+
+        <span class="kw">let </span>tipset_messages = <span class="self">self
+            </span>.chain_store()
+            .messages_for_tipset(tipset)
+            .map_err(|err| Error::Other(err.to_string()))<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>prior_messsages = tipset_messages
+            .iter()
+            .filter(|msg| msg.message().from() == msg.from());
+
+        <span class="comment">// Handle state forks
+        // TODO(elmattic): https://github.com/ChainSafe/forest/issues/3733
+
+        </span><span class="kw">let </span>height = tipset.epoch();
         <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(<span class="self">self</span>.chain_config());
         <span class="kw">let </span><span class="kw-2">mut </span>vm = VM::new(
             ExecutionContext {
                 heaviest_tipset: Arc::clone(tipset),
-                state_tree_root: <span class="kw-2">*</span>bstate,
-                epoch: bheight,
+                state_tree_root: <span class="kw-2">*</span>state_cid,
+                epoch: height,
                 rand: Box::new(rand),
-                base_fee: TokenAmount::zero(),
+                base_fee: tipset.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
                 circ_supply: genesis_info.get_circulating_supply(
-                    bheight,
+                    height,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
-                    bstate,
+                    state_cid,
                 )<span class="question-mark">?</span>,
                 chain_config: <span class="self">self</span>.chain_config().clone(),
                 chain_index: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_store().chain_index),
                 timestamp: tipset.min_timestamp(),
             },
             <span class="kw-2">&amp;</span><span class="self">self</span>.engine,
-            VMTrace::NotTraced,
+            VMTrace::Traced,
         )<span class="question-mark">?</span>;
 
-        <span class="kw">if </span>msg.gas_limit == <span class="number">0 </span>{
-            msg.gas_limit = <span class="number">10000000000</span>;
+        <span class="kw">for </span>m <span class="kw">in </span>prior_messsages {
+            vm.apply_message(m)<span class="question-mark">?</span>;
         }
 
-        <span class="kw">let </span>actor = <span class="self">self
-            </span>.get_actor(<span class="kw-2">&amp;</span>msg.from, <span class="kw-2">*</span>bstate)<span class="question-mark">?
-            </span>.ok_or_else(|| Error::Other(<span class="string">&quot;Could not get actor&quot;</span>.to_string()))<span class="question-mark">?</span>;
-        msg.sequence = actor.sequence;
-        <span class="kw">let </span>apply_ret = vm.apply_implicit_message(msg)<span class="question-mark">?</span>;
-        <span class="macro">trace!</span>(
-            <span class="string">&quot;gas limit {:},gas premium{:?},value {:?}&quot;</span>,
-            msg.gas_limit,
-            msg.gas_premium,
-            msg.value
-        );
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = <span class="kw-2">&amp;</span>apply_ret.failure_info() {
-            <span class="macro">warn!</span>(<span class="string">&quot;chain call failed: {:?}&quot;</span>, err);
-        }
+        <span class="comment">// We flush to get the VM&#39;s view of the state tree after applying the above messages
+        // This is needed to get the correct nonce from the actor state to match the VM
+        </span><span class="kw">let </span>state_cid = vm.flush()<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(InvocResult {
+        <span class="kw">let </span>state = StateTree::new_from_root(<span class="self">self</span>.blockstore_owned(), <span class="kw-2">&amp;</span>state_cid)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>from_actor = state
+            .get_actor(<span class="kw-2">&amp;</span>msg.from())<span class="question-mark">?
+            </span>.ok_or_else(|| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;actor not found&quot;</span>))<span class="question-mark">?</span>;
+        msg.set_sequence(from_actor.sequence);
+
+        <span class="comment">// If the fee cap is set to zero, make gas free
+        // TODO(elmattic): https://github.com/ChainSafe/forest/issues/3733
+
+        // Implicit messages need to set a special gas limit
+        </span><span class="kw">let </span><span class="kw-2">mut </span>msg = msg.clone();
+        msg.gas_limit = IMPLICIT_MESSAGE_GAS_LIMIT <span class="kw">as </span>u64;
+
+        <span class="kw">let </span>apply_ret = vm.apply_implicit_message(<span class="kw-2">&amp;</span>msg)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(ApiInvocResult {
             msg: msg.clone(),
             msg_rct: <span class="prelude-val">Some</span>(apply_ret.msg_receipt()),
-            error: apply_ret.failure_info(),
+            msg_cid: msg.cid().map_err(|err| Error::Other(err.to_string()))<span class="question-mark">?</span>,
+            error: apply_ret.failure_info().unwrap_or_default(),
+            duration: <span class="number">0</span>,
+            gas_cost: MessageGasCost::default(),
+            execution_trace: structured::parse_events(apply_ret.exec_trace()).unwrap_or_default(),
         })
     }
 
@@ -1867,9 +1921,9 @@
     /// changes.
     </span><span class="kw">pub fn </span>call(
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
-        message: <span class="kw-2">&amp;mut </span>Message,
+        message: <span class="kw-2">&amp;</span>Message,
         tipset: <span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;,
-    ) -&gt; StateCallResult {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, Error&gt; {
         <span class="kw">let </span>ts = tipset.unwrap_or_else(|| <span class="self">self</span>.cs.heaviest_tipset());
         <span class="kw">let </span>chain_rand = <span class="self">self</span>.chain_rand(Arc::clone(<span class="kw-2">&amp;</span>ts));
         <span class="self">self</span>.call_raw(message, chain_rand, <span class="kw-2">&amp;</span>ts)
