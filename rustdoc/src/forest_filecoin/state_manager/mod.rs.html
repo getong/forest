@@ -1460,6 +1460,19 @@
 <a href="#1460" id="1460">1460</a>
 <a href="#1461" id="1461">1461</a>
 <a href="#1462" id="1462">1462</a>
+<a href="#1463" id="1463">1463</a>
+<a href="#1464" id="1464">1464</a>
+<a href="#1465" id="1465">1465</a>
+<a href="#1466" id="1466">1466</a>
+<a href="#1467" id="1467">1467</a>
+<a href="#1468" id="1468">1468</a>
+<a href="#1469" id="1469">1469</a>
+<a href="#1470" id="1470">1470</a>
+<a href="#1471" id="1471">1471</a>
+<a href="#1472" id="1472">1472</a>
+<a href="#1473" id="1473">1473</a>
+<a href="#1474" id="1474">1474</a>
+<a href="#1475" id="1475">1475</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1963,36 +1976,41 @@
         // &quot;next&quot; tipset
         </span><span class="kw">let </span>epoch = ts.epoch() + <span class="number">1</span>;
         <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(<span class="self">self</span>.chain_config());
-        <span class="kw">let </span><span class="kw-2">mut </span>vm = VM::new(
-            ExecutionContext {
-                heaviest_tipset: Arc::clone(<span class="kw-2">&amp;</span>ts),
-                state_tree_root: st,
-                epoch,
-                rand: Box::new(chain_rand),
-                base_fee: ts.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
-                circ_supply: genesis_info.get_circulating_supply(
+
+        <span class="comment">// FVM requires a stack size of 64MiB. The alternative is to use `ThreadedExecutor` from
+        // FVM, but that introduces some constraints, and possible deadlocks.
+        </span><span class="kw">let </span>ret = stacker::grow(<span class="number">64 </span>&lt;&lt; <span class="number">20</span>, || -&gt; anyhow::Result&lt;ApplyRet&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>vm = VM::new(
+                ExecutionContext {
+                    heaviest_tipset: Arc::clone(<span class="kw-2">&amp;</span>ts),
+                    state_tree_root: st,
                     epoch,
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
-                    <span class="kw-2">&amp;</span>st,
-                )<span class="question-mark">?</span>,
-                chain_config: <span class="self">self</span>.chain_config().clone(),
-                chain_index: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_store().chain_index),
-                timestamp: ts.min_timestamp(),
-            },
-            <span class="kw-2">&amp;</span><span class="self">self</span>.engine,
-            VMTrace::NotTraced,
-        )<span class="question-mark">?</span>;
+                    rand: Box::new(chain_rand),
+                    base_fee: ts.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
+                    circ_supply: genesis_info.get_circulating_supply(
+                        epoch,
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
+                        <span class="kw-2">&amp;</span>st,
+                    )<span class="question-mark">?</span>,
+                    chain_config: <span class="self">self</span>.chain_config().clone(),
+                    chain_index: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_store().chain_index),
+                    timestamp: ts.min_timestamp(),
+                },
+                <span class="kw-2">&amp;</span><span class="self">self</span>.engine,
+                VMTrace::NotTraced,
+            )<span class="question-mark">?</span>;
 
-        <span class="kw">for </span>msg <span class="kw">in </span>prior_messages {
-            vm.apply_message(msg)<span class="question-mark">?</span>;
-        }
-        <span class="kw">let </span>from_actor = vm
-            .get_actor(<span class="kw-2">&amp;</span>message.from())
-            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not get actor from state: {e}&quot;</span>)))<span class="question-mark">?
-            </span>.ok_or_else(|| Error::Other(<span class="string">&quot;cant find actor in state tree&quot;</span>.to_string()))<span class="question-mark">?</span>;
-        message.set_sequence(from_actor.sequence);
+            <span class="kw">for </span>msg <span class="kw">in </span>prior_messages {
+                vm.apply_message(msg)<span class="question-mark">?</span>;
+            }
+            <span class="kw">let </span>from_actor = vm
+                .get_actor(<span class="kw-2">&amp;</span>message.from())
+                .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not get actor from state: {e}&quot;</span>)))<span class="question-mark">?
+                </span>.ok_or_else(|| Error::Other(<span class="string">&quot;cant find actor in state tree&quot;</span>.to_string()))<span class="question-mark">?</span>;
+            message.set_sequence(from_actor.sequence);
 
-        <span class="kw">let </span>ret = vm.apply_message(message)<span class="question-mark">?</span>;
+            vm.apply_message(message)
+        })<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(InvocResult {
             msg: message.message().clone(),
@@ -2891,13 +2909,17 @@
         <span class="kw">if </span>epoch_i &gt; parent_epoch {
             <span class="comment">// step 2: running cron for any null-tipsets
             </span><span class="kw">let </span>timestamp = genesis_timestamp + ((EPOCH_DURATION_SECONDS * epoch_i) <span class="kw">as </span>u64);
-            <span class="kw">let </span><span class="kw-2">mut </span>vm = create_vm(parent_state, epoch_i, timestamp)<span class="question-mark">?</span>;
-            <span class="comment">// run cron for null rounds if any
-            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = vm.run_cron(epoch_i, callback.as_mut()) {
-                <span class="macro">error!</span>(<span class="string">&quot;Beginning of epoch cron failed to run: {}&quot;</span>, e);
-            }
 
-            parent_state = vm.flush()<span class="question-mark">?</span>;
+            <span class="comment">// FVM requires a stack size of 64MiB. The alternative is to use `ThreadedExecutor` from
+            // FVM, but that introduces some constraints, and possible deadlocks.
+            </span>parent_state = stacker::grow(<span class="number">64 </span>&lt;&lt; <span class="number">20</span>, || -&gt; anyhow::Result&lt;Cid&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>vm = create_vm(parent_state, epoch_i, timestamp)<span class="question-mark">?</span>;
+                <span class="comment">// run cron for null rounds if any
+                </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = vm.run_cron(epoch_i, callback.as_mut()) {
+                    <span class="macro">error!</span>(<span class="string">&quot;Beginning of epoch cron failed to run: {}&quot;</span>, e);
+                }
+                vm.flush()
+            })<span class="question-mark">?</span>;
         }
 
         <span class="comment">// step 3: run migrations
@@ -2911,15 +2933,19 @@
     <span class="kw">let </span>block_messages = BlockMessages::for_tipset(<span class="kw-2">&amp;</span>chain_index.db, <span class="kw-2">&amp;</span>tipset)
         .map_err(|e| Error::Other(e.to_string()))<span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>vm = create_vm(parent_state, epoch, tipset.min_timestamp())<span class="question-mark">?</span>;
+    <span class="comment">// FVM requires a stack size of 64MiB. The alternative is to use `ThreadedExecutor` from
+    // FVM, but that introduces some constraints, and possible deadlocks.
+    </span>stacker::grow(<span class="number">64 </span>&lt;&lt; <span class="number">20</span>, || -&gt; anyhow::Result&lt;(Cid, Cid)&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>vm = create_vm(parent_state, epoch, tipset.min_timestamp())<span class="question-mark">?</span>;
 
-    <span class="comment">// step 4: apply tipset messages
-    </span><span class="kw">let </span>receipts = vm.apply_block_messages(<span class="kw-2">&amp;</span>block_messages, epoch, callback)<span class="question-mark">?</span>;
+        <span class="comment">// step 4: apply tipset messages
+        </span><span class="kw">let </span>receipts = vm.apply_block_messages(<span class="kw-2">&amp;</span>block_messages, epoch, callback)<span class="question-mark">?</span>;
 
-    <span class="comment">// step 5: construct receipt root from receipts and flush the state-tree
-    </span><span class="kw">let </span>receipt_root = Amt::new_from_iter(<span class="kw-2">&amp;</span>chain_index.db, receipts)<span class="question-mark">?</span>;
-    <span class="kw">let </span>state_root = vm.flush()<span class="question-mark">?</span>;
+        <span class="comment">// step 5: construct receipt root from receipts and flush the state-tree
+        </span><span class="kw">let </span>receipt_root = Amt::new_from_iter(<span class="kw-2">&amp;</span>chain_index.db, receipts)<span class="question-mark">?</span>;
+        <span class="kw">let </span>state_root = vm.flush()<span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((state_root, receipt_root))
+        <span class="prelude-val">Ok</span>((state_root, receipt_root))
+    })
 }
 </code></pre></div></section></main></body></html>
