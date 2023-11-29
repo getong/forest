@@ -83,8 +83,11 @@ pub(in crate::rpc) async fn state_get_network_version<DB: Blockstore>(
     data: Data<RPCState<DB>>,
     Params(LotusJson((tsk,))): Params<LotusJson<(TipsetKeys,)>>,
 ) -> Result<NetworkVersion, JsonRpcError> {
-    let ts = data.chain_store.load_required_tipset(&tsk)?;
-    Ok(data.state_manager.get_network_version(ts.epoch()))
+    let ts = data.chain_store.load_required_tipset(&tsk);
+    match ts {
+        Ok(ts) => Ok(data.state_manager.get_network_version(ts.epoch())),
+        Err(_) => Ok(NetworkVersion::MAX),
+    }
 }
 
 /// gets the public key address of the given ID address
