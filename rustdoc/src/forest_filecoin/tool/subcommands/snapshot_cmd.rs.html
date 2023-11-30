@@ -512,6 +512,12 @@
 <a href="#512" id="512">512</a>
 <a href="#513" id="513">513</a>
 <a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -950,7 +956,12 @@
         <span class="kw-2">&amp;</span>MultiEngine::default(),
         tipset,
         <span class="prelude-val">Some</span>(|ctx: <span class="kw-2">&amp;</span>MessageCallbackCtx| {
-            message_calls.push((ctx.message.clone(), ctx.apply_ret.clone(), ctx.at));
+            message_calls.push((
+                ctx.message.clone(),
+                ctx.apply_ret.clone(),
+                ctx.at,
+                ctx.duration,
+            ));
             anyhow::Ok(())
         }),
         <span class="kw">match </span>json {
@@ -979,16 +990,17 @@
         message::{ChainMessage, Message <span class="kw">as _</span>},
         shim::executor::ApplyRet,
     };
+    <span class="kw">use </span>std::time::Duration;
 
     <span class="kw">pub fn </span>json(
         state_root: Cid,
-        contexts: Vec&lt;(ChainMessage, ApplyRet, CalledAt)&gt;,
+        contexts: Vec&lt;(ChainMessage, ApplyRet, CalledAt, Duration)&gt;,
     ) -&gt; anyhow::Result&lt;serde_json::Value&gt; {
         <span class="prelude-val">Ok</span>(<span class="macro">json!</span>({
         <span class="string">&quot;Root&quot;</span>: LotusJson(state_root),
         <span class="string">&quot;Trace&quot;</span>: contexts
             .into_iter()
-            .map(|(message, apply_ret, called_at)| call_json(message, apply_ret, called_at))
+            .map(|(message, apply_ret, called_at, duration)| call_json(message, apply_ret, called_at, duration))
             .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?
         </span>}))
     }
@@ -997,6 +1009,7 @@
         chain_message: ChainMessage,
         apply_ret: ApplyRet,
         called_at: CalledAt,
+        duration: Duration,
     ) -&gt; anyhow::Result&lt;serde_json::Value&gt; {
         <span class="kw">use </span><span class="kw">crate</span>::lotus_json::Stringify;
 
@@ -1021,8 +1034,7 @@
                 <span class="string">&quot;TotalCost&quot;</span>: LotusJson(chain_message.message().required_funds() - <span class="kw-2">&amp;</span>apply_ret.refund())
             },
             <span class="string">&quot;ExecutionTrace&quot;</span>: LotusJson(structured::parse_events(apply_ret.exec_trace())<span class="question-mark">?</span>),
-            <span class="comment">// Only include timing fields for an easier diff with lotus
-            </span><span class="string">&quot;Duration&quot;</span>: null,
+            <span class="string">&quot;Duration&quot;</span>: duration.as_nanos().clamp(<span class="number">0</span>, u64::MAX <span class="kw">as </span>u128) <span class="kw">as </span>u64,
         }))
     }
 }

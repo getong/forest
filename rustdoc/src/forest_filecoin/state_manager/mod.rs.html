@@ -1473,6 +1473,7 @@
 <a href="#1473" id="1473">1473</a>
 <a href="#1474" id="1474">1474</a>
 <a href="#1475" id="1475">1475</a>
+<a href="#1476" id="1476">1476</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1496,7 +1497,8 @@
     ChainStore, HeadChange,
 };
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::{
-    resolve_to_key_addr, BlockMessages, CalledAt, ExecutionContext, IMPLICIT_MESSAGE_GAS_LIMIT, VM,
+    resolve_to_key_addr, ApplyResult, BlockMessages, CalledAt, ExecutionContext,
+    IMPLICIT_MESSAGE_GAS_LIMIT, VM,
 };
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
@@ -1932,14 +1934,14 @@
         </span><span class="kw">let </span><span class="kw-2">mut </span>msg = msg.clone();
         msg.gas_limit = IMPLICIT_MESSAGE_GAS_LIMIT <span class="kw">as </span>u64;
 
-        <span class="kw">let </span>apply_ret = vm.apply_implicit_message(<span class="kw-2">&amp;</span>msg)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(apply_ret, duration) = vm.apply_implicit_message(<span class="kw-2">&amp;</span>msg)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(ApiInvocResult {
             msg: msg.clone(),
             msg_rct: <span class="prelude-val">Some</span>(apply_ret.msg_receipt()),
             msg_cid: msg.cid().map_err(|err| Error::Other(err.to_string()))<span class="question-mark">?</span>,
             error: apply_ret.failure_info().unwrap_or_default(),
-            duration: <span class="number">0</span>,
+            duration: duration.as_nanos().clamp(<span class="number">0</span>, u64::MAX <span class="kw">as </span>u128) <span class="kw">as </span>u64,
             gas_cost: MessageGasCost::default(),
             execution_trace: structured::parse_events(apply_ret.exec_trace()).unwrap_or_default(),
         })
@@ -1979,7 +1981,7 @@
 
         <span class="comment">// FVM requires a stack size of 64MiB. The alternative is to use `ThreadedExecutor` from
         // FVM, but that introduces some constraints, and possible deadlocks.
-        </span><span class="kw">let </span>ret = stacker::grow(<span class="number">64 </span>&lt;&lt; <span class="number">20</span>, || -&gt; anyhow::Result&lt;ApplyRet&gt; {
+        </span><span class="kw">let </span>(ret, <span class="kw">_</span>) = stacker::grow(<span class="number">64 </span>&lt;&lt; <span class="number">20</span>, || -&gt; ApplyResult {
             <span class="kw">let </span><span class="kw-2">mut </span>vm = VM::new(
                 ExecutionContext {
                     heaviest_tipset: Arc::clone(<span class="kw-2">&amp;</span>ts),

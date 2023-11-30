@@ -591,8 +591,6 @@
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -648,6 +646,7 @@
 <span class="kw">use </span>fvm_ipld_encoding::{to_vec, RawBytes};
 <span class="kw">use </span>fvm_shared2::clock::ChainEpoch;
 <span class="kw">use </span>num::Zero;
+<span class="kw">use </span>std::time::{Duration, Instant};
 
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::interpreter) <span class="kw">type </span>ForestMachineV2&lt;DB&gt; =
     DefaultMachine_v2&lt;Arc&lt;DB&gt;, ForestExternsV2&lt;DB&gt;&gt;;
@@ -666,6 +665,8 @@
 <span class="kw">type </span>ForestExecutorV2&lt;DB&gt; = DefaultExecutor_v2&lt;ForestKernelV2&lt;DB&gt;&gt;;
 <span class="kw">type </span>ForestExecutorV3&lt;DB&gt; = DefaultExecutor_v3&lt;ForestKernelV3&lt;DB&gt;&gt;;
 <span class="kw">type </span>ForestExecutorV4&lt;DB&gt; = DefaultExecutor_v4&lt;ForestKernelV4&lt;DB&gt;&gt;;
+
+<span class="kw">pub type </span>ApplyResult = anyhow::Result&lt;(ApplyRet, Duration)&gt;;
 
 <span class="doccomment">/// Comes from &lt;https://github.com/filecoin-project/lotus/blob/v1.23.2/chain/vm/fvm.go#L473&gt;
 </span><span class="kw">pub const </span>IMPLICIT_MESSAGE_GAS_LIMIT: i64 = i64::MAX / <span class="number">2</span>;
@@ -918,7 +919,7 @@
         }
         .into();
 
-        <span class="kw">let </span>ret = <span class="self">self</span>.apply_implicit_message(<span class="kw-2">&amp;</span>cron_msg)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(ret, duration) = <span class="self">self</span>.apply_implicit_message(<span class="kw-2">&amp;</span>cron_msg)<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = ret.failure_info() {
             <span class="macro">anyhow::bail!</span>(<span class="string">&quot;failed to apply block cron message: {}&quot;</span>, err);
         }
@@ -929,6 +930,7 @@
                 message: <span class="kw-2">&amp;</span>ChainMessage::Unsigned(cron_msg),
                 apply_ret: <span class="kw-2">&amp;</span>ret,
                 at: CalledAt::Cron,
+                duration,
             })<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
@@ -957,7 +959,7 @@
                 </span><span class="kw">if </span>processed.contains(<span class="kw-2">&amp;</span>cid) {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
-                <span class="kw">let </span>ret = <span class="self">self</span>.apply_message(message)<span class="question-mark">?</span>;
+                <span class="kw">let </span>(ret, duration) = <span class="self">self</span>.apply_message(message)<span class="question-mark">?</span>;
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(cb) = <span class="kw-2">&amp;mut </span>callback {
                     cb(<span class="kw-2">&amp;</span>MessageCallbackCtx {
@@ -965,6 +967,7 @@
                         message,
                         apply_ret: <span class="kw-2">&amp;</span>ret,
                         at: CalledAt::Applied,
+                        duration,
                     })<span class="question-mark">?</span>;
                 }
 
@@ -987,7 +990,7 @@
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(rew_msg) =
                 <span class="self">self</span>.reward_message(epoch, block.miner, block.win_count, penalty, gas_reward)<span class="question-mark">?
             </span>{
-                <span class="kw">let </span>ret = <span class="self">self</span>.apply_implicit_message(<span class="kw-2">&amp;</span>rew_msg)<span class="question-mark">?</span>;
+                <span class="kw">let </span>(ret, duration) = <span class="self">self</span>.apply_implicit_message(<span class="kw-2">&amp;</span>rew_msg)<span class="question-mark">?</span>;
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = ret.failure_info() {
                     <span class="macro">anyhow::bail!</span>(
                         <span class="string">&quot;failed to apply reward message for miner {}: {}&quot;</span>,
@@ -1009,6 +1012,7 @@
                         message: <span class="kw-2">&amp;</span>ChainMessage::Unsigned(rew_msg),
                         apply_ret: <span class="kw-2">&amp;</span>ret,
                         at: CalledAt::Reward,
+                        duration,
                     })<span class="question-mark">?
                 </span>}
             }
@@ -1022,42 +1026,32 @@
     }
 
     <span class="doccomment">/// Applies single message through VM and returns result from execution.
-    </span><span class="kw">pub fn </span>apply_implicit_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>Message) -&gt; anyhow::Result&lt;ApplyRet&gt; {
+    </span><span class="kw">pub fn </span>apply_implicit_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>Message) -&gt; ApplyResult {
+        <span class="kw">let </span>start = Instant::now();
+
         <span class="comment">// raw_length is not used for Implicit messages.
         </span><span class="kw">let </span>raw_length = to_vec(msg).expect(<span class="string">&quot;encoding error&quot;</span>).len();
 
-        <span class="kw">match </span><span class="self">self </span>{
-            VM::VM2(fvm_executor) =&gt; {
-                <span class="kw">let </span>ret = fvm_executor.execute_message(
-                    msg.into(),
-                    fvm2::executor::ApplyKind::Implicit,
-                    raw_length,
-                )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(ret.into())
-            }
-            VM::VM3(fvm_executor) =&gt; {
-                <span class="kw">let </span>ret = fvm_executor.execute_message(
-                    msg.into(),
-                    fvm3::executor::ApplyKind::Implicit,
-                    raw_length,
-                )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(ret.into())
-            }
-            VM::VM4(fvm_executor) =&gt; {
-                <span class="kw">let </span>ret = fvm_executor.execute_message(
-                    msg.into(),
-                    fvm4::executor::ApplyKind::Implicit,
-                    raw_length,
-                )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(ret.into())
-            }
-        }
+        <span class="kw">let </span>ret = <span class="kw">match </span><span class="self">self </span>{
+            VM::VM2(fvm_executor) =&gt; fvm_executor
+                .execute_message(msg.into(), fvm2::executor::ApplyKind::Implicit, raw_length)<span class="question-mark">?
+                </span>.into(),
+            VM::VM3(fvm_executor) =&gt; fvm_executor
+                .execute_message(msg.into(), fvm3::executor::ApplyKind::Implicit, raw_length)<span class="question-mark">?
+                </span>.into(),
+            VM::VM4(fvm_executor) =&gt; fvm_executor
+                .execute_message(msg.into(), fvm4::executor::ApplyKind::Implicit, raw_length)<span class="question-mark">?
+                </span>.into(),
+        };
+        <span class="prelude-val">Ok</span>((ret, start.elapsed()))
     }
 
     <span class="doccomment">/// Applies the state transition for a single message.
     /// Returns `ApplyRet` structure which contains the message receipt and some
     /// meta data.
-    </span><span class="kw">pub fn </span>apply_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>ChainMessage) -&gt; anyhow::Result&lt;ApplyRet&gt; {
+    </span><span class="kw">pub fn </span>apply_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>ChainMessage) -&gt; ApplyResult {
+        <span class="kw">let </span>start = Instant::now();
+
         <span class="comment">// Basic validity check
         </span>msg.message().check()<span class="question-mark">?</span>;
 
@@ -1104,6 +1098,7 @@
                 ret.into()
             }
         };
+        <span class="kw">let </span>duration = start.elapsed();
 
         <span class="kw">let </span>exit_code = ret.msg_receipt().exit_code();
 
@@ -1111,7 +1106,7 @@
             <span class="macro">tracing::debug!</span>(<span class="question-mark">?</span>exit_code, <span class="string">&quot;VM message execution failure.&quot;</span>)
         }
 
-        <span class="prelude-val">Ok</span>(ret)
+        <span class="prelude-val">Ok</span>((ret, duration))
     }
 
     <span class="kw">fn </span>reward_message(
@@ -1151,6 +1146,7 @@
     <span class="kw">pub </span>message: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ChainMessage,
     <span class="kw">pub </span>apply_ret: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ApplyRet,
     <span class="kw">pub </span>at: CalledAt,
+    <span class="kw">pub </span>duration: Duration,
 }
 
 <span class="attr">#[derive(Debug, Clone, Copy)]
