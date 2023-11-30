@@ -562,6 +562,30 @@
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
 <a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -571,7 +595,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
-    ApiActorState, ApiInvocResult, MarketDeal, MessageLookup, RPCState, SectorOnChainInfo,
+    ApiActorState, ApiDeadline, ApiInvocResult, MarketDeal, MessageLookup, RPCState,
+    SectorOnChainInfo,
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, clock::ChainEpoch, executor::Receipt, message::Message,
@@ -806,6 +831,29 @@
         .miner_power(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>tipset)
         .map(|res| res.into())
         .map_err(|e| e.into())
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_miner_deadlines&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((addr, tsk))): Params&lt;LotusJson&lt;(Address, TipsetKeys)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiDeadline&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
+    <span class="kw">let </span>actor = data
+        .state_manager
+        .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
+        </span>.ok_or(<span class="string">&quot;Miner actor address could not be resolved&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>store = data.state_manager.blockstore();
+    <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>res = Vec::new();
+    state.for_each_deadline(policy, store, |_idx, deadline| {
+        res.push(ApiDeadline {
+            post_submissions: deadline.partitions_posted(),
+            disputable_proof_count: deadline.disputable_proof_count(store)<span class="question-mark">?</span>,
+        });
+        <span class="prelude-val">Ok</span>(())
+    })<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(LotusJson(res))
 }
 
 <span class="doccomment">/// looks up the miner power of the given address.
