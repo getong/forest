@@ -586,6 +586,24 @@
 <a href="#586" id="586">586</a>
 <a href="#587" id="587">587</a>
 <a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -595,14 +613,15 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
-    ApiActorState, ApiDeadline, ApiInvocResult, MarketDeal, MessageLookup, RPCState,
-    SectorOnChainInfo,
+    ApiActorState, ApiDeadline, ApiInvocResult, CirculatingSupply, MarketDeal, MessageLookup,
+    RPCState, SectorOnChainInfo,
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, clock::ChainEpoch, executor::Receipt, message::Message,
     state_tree::ActorState, version::NetworkVersion,
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
+<span class="kw">use </span><span class="kw">crate</span>::state_manager::vm_circ_supply::GenesisInfo;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::{InvocResult, MarketBalance};
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::car_stream::{CarBlock, CarWriter};
 <span class="kw">use </span>ahash::{HashMap, HashMapExt};
@@ -1173,5 +1192,22 @@
             .map(SectorOnChainInfo::from)
             .ok_or(<span class="macro">format!</span>(<span class="string">&quot;Info for sector number {sector_no} not found&quot;</span>))<span class="question-mark">?</span>,
     ))
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_vm_circulating_supply_internal&lt;
+    DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>,
+&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((tsk,))): Params&lt;LotusJson&lt;(TipsetKeys,)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;CirculatingSupply&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(data.state_manager.chain_config());
+
+    <span class="prelude-val">Ok</span>(LotusJson(genesis_info.get_vm_circulating_supply_detailed(
+        ts.epoch(),
+        <span class="kw-2">&amp;</span>data.state_manager.blockstore_owned(),
+        ts.parent_state(),
+    )<span class="question-mark">?</span>))
 }
 </code></pre></div></section></main></body></html>
