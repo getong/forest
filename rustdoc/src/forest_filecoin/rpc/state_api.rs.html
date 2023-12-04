@@ -604,6 +604,26 @@
 <a href="#604" id="604">604</a>
 <a href="#605" id="605">605</a>
 <a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -617,7 +637,7 @@
     RPCState, SectorOnChainInfo,
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
-    address::Address, clock::ChainEpoch, executor::Receipt, message::Message,
+    address::Address, clock::ChainEpoch, econ::TokenAmount, executor::Receipt, message::Message,
     state_tree::ActorState, version::NetworkVersion,
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
@@ -1175,6 +1195,26 @@
         actor.code,
         Ipld::Link(state),
     )))
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_circulating_supply&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((tsk,))): Params&lt;LotusJson&lt;(TipsetKeys,)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>height = ts.epoch();
+
+    <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
+
+    <span class="kw">let </span>root = ts.parent_state();
+
+    <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(state_manager.chain_config());
+
+    <span class="kw">let </span>supply =
+        genesis_info.get_circulating_supply(height, <span class="kw-2">&amp;</span>state_manager.blockstore_owned(), root)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(LotusJson(supply))
 }
 
 <span class="doccomment">/// Get state sector info using sector no

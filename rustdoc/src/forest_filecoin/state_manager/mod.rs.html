@@ -1473,7 +1473,6 @@
 <a href="#1473" id="1473">1473</a>
 <a href="#1474" id="1474">1474</a>
 <a href="#1475" id="1475">1475</a>
-<a href="#1476" id="1476">1476</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1536,7 +1535,7 @@
 <span class="kw">use </span>tokio::sync::{broadcast::error::RecvError, Mutex <span class="kw">as </span>TokioMutex, RwLock};
 <span class="kw">use </span>tracing::{debug, error, info, instrument, warn};
 <span class="kw">use </span>utils::structured;
-<span class="kw">use </span>vm_circ_supply::GenesisInfo;
+<span class="kw">pub use </span>vm_circ_supply::GenesisInfo;
 
 <span class="kw">const </span>DEFAULT_TIPSET_CACHE_SIZE: NonZeroUsize = <span class="macro">nonzero!</span>(<span class="number">1024usize</span>);
 
@@ -1899,7 +1898,7 @@
                 epoch: height,
                 rand: Box::new(rand),
                 base_fee: tipset.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
-                circ_supply: genesis_info.get_circulating_supply(
+                circ_supply: genesis_info.get_vm_circulating_supply(
                     height,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
                     state_cid,
@@ -1978,7 +1977,6 @@
         // &quot;next&quot; tipset
         </span><span class="kw">let </span>epoch = ts.epoch() + <span class="number">1</span>;
         <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(<span class="self">self</span>.chain_config());
-
         <span class="comment">// FVM requires a stack size of 64MiB. The alternative is to use `ThreadedExecutor` from
         // FVM, but that introduces some constraints, and possible deadlocks.
         </span><span class="kw">let </span>(ret, <span class="kw">_</span>) = stacker::grow(<span class="number">64 </span>&lt;&lt; <span class="number">20</span>, || -&gt; ApplyResult {
@@ -1989,7 +1987,7 @@
                     epoch,
                     rand: Box::new(chain_rand),
                     base_fee: ts.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
-                    circ_supply: genesis_info.get_circulating_supply(
+                    circ_supply: genesis_info.get_vm_circulating_supply(
                         epoch,
                         <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
                         <span class="kw-2">&amp;</span>st,
@@ -2884,7 +2882,7 @@
     <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(<span class="kw-2">&amp;</span>chain_config);
     <span class="kw">let </span>create_vm = |state_root: Cid, epoch, timestamp| {
         <span class="kw">let </span>circulating_supply =
-            genesis_info.get_circulating_supply(epoch, <span class="kw-2">&amp;</span>chain_index.db, <span class="kw-2">&amp;</span>state_root)<span class="question-mark">?</span>;
+            genesis_info.get_vm_circulating_supply(epoch, <span class="kw-2">&amp;</span>chain_index.db, <span class="kw-2">&amp;</span>state_root)<span class="question-mark">?</span>;
         VM::new(
             ExecutionContext {
                 heaviest_tipset: Arc::clone(<span class="kw-2">&amp;</span>tipset),
