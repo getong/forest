@@ -288,6 +288,22 @@
 <a href="#288" id="288">288</a>
 <a href="#289" id="289">289</a>
 <a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -295,6 +311,7 @@
 <span class="kw">pub mod </span>beacon_ops;
 <span class="kw">pub mod </span>chain_ops;
 <span class="kw">pub mod </span>common_ops;
+<span class="kw">pub mod </span>eth_ops;
 <span class="kw">pub mod </span>mpool_ops;
 <span class="kw">pub mod </span>net_ops;
 <span class="kw">pub mod </span>node_ops;
@@ -320,7 +337,6 @@
 <span class="kw">pub const </span>DEFAULT_MULTIADDRESS: <span class="kw-2">&amp;</span>str = <span class="string">&quot;/ip4/127.0.0.1/tcp/2345/http&quot;</span>;
 <span class="kw">pub const </span>DEFAULT_PORT: u16 = <span class="number">2345</span>;
 <span class="kw">pub const </span>DEFAULT_PROTOCOL: <span class="kw-2">&amp;</span>str = <span class="string">&quot;http&quot;</span>;
-<span class="kw">pub const </span>RPC_ENDPOINT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rpc/v0&quot;</span>;
 
 <span class="kw">pub use </span><span class="self">self</span>::{
     auth_ops::<span class="kw-2">*</span>, chain_ops::<span class="kw-2">*</span>, common_ops::<span class="kw-2">*</span>, mpool_ops::<span class="kw-2">*</span>, net_ops::<span class="kw-2">*</span>, state_ops::<span class="kw-2">*</span>, sync_ops::<span class="kw-2">*</span>,
@@ -386,7 +402,7 @@
             .with_id(<span class="number">0</span>)
             .finish();
 
-        <span class="kw">let </span>api_url = multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr);
+        <span class="kw">let </span>api_url = multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr, req.rpc_endpoint);
 
         <span class="macro">debug!</span>(<span class="string">&quot;Using JSON-RPC v2 HTTP URL: {}&quot;</span>, api_url);
 
@@ -492,7 +508,7 @@
 }
 
 <span class="doccomment">/// Parses a multi-address into a URL
-</span><span class="kw">fn </span>multiaddress_to_url(multiaddr: <span class="kw-2">&amp;</span>Multiaddr) -&gt; String {
+</span><span class="kw">fn </span>multiaddress_to_url(multiaddr: <span class="kw-2">&amp;</span>Multiaddr, endpoint: <span class="kw-2">&amp;</span>str) -&gt; String {
     <span class="comment">// Fold Multiaddress into a Url struct
     </span><span class="kw">let </span>addr = multiaddr.iter().fold(
         Url {
@@ -538,7 +554,7 @@
     <span class="comment">// Format, print and return the URL
     </span><span class="kw">let </span>url = <span class="macro">format!</span>(
         <span class="string">&quot;{}://{}:{}/{}&quot;</span>,
-        addr.protocol, addr.host, addr.port, RPC_ENDPOINT
+        addr.protocol, addr.host, addr.port, endpoint
     );
 
     url
@@ -554,6 +570,7 @@
     <span class="kw">pub </span>method_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
     params: serde_json::Value,
     result_type: PhantomData&lt;T&gt;,
+    rpc_endpoint: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
 }
 
 <span class="kw">impl</span>&lt;T&gt; RpcRequest&lt;T&gt; {
@@ -566,6 +583,20 @@
                 ),
             ),
             result_type: PhantomData,
+            rpc_endpoint: <span class="string">&quot;rpc/v0&quot;</span>,
+        }
+    }
+
+    <span class="kw">pub fn </span>new_v1&lt;P: HasLotusJson&gt;(method_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, params: P) -&gt; <span class="self">Self </span>{
+        RpcRequest {
+            method_name,
+            params: serde_json::to_value(HasLotusJson::into_lotus_json(params)).unwrap_or(
+                serde_json::Value::String(
+                    <span class="string">&quot;INTERNAL ERROR: Parameters could not be serialized as JSON&quot;</span>.to_string(),
+                ),
+            ),
+            result_type: PhantomData,
+            rpc_endpoint: <span class="string">&quot;rpc/v1&quot;</span>,
         }
     }
 
@@ -575,6 +606,7 @@
             method_name: <span class="self">self</span>.method_name,
             params: <span class="self">self</span>.params,
             result_type: PhantomData,
+            rpc_endpoint: <span class="self">self</span>.rpc_endpoint,
         }
     }
 }

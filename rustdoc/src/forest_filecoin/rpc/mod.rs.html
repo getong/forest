@@ -171,6 +171,11 @@
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -178,6 +183,7 @@
 <span class="kw">mod </span>beacon_api;
 <span class="kw">mod </span>chain_api;
 <span class="kw">mod </span>common_api;
+<span class="kw">mod </span>eth_api;
 <span class="kw">mod </span>gas_api;
 <span class="kw">mod </span>mpool_api;
 <span class="kw">mod </span>net_api;
@@ -192,8 +198,9 @@
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
-    auth_api::<span class="kw-2">*</span>, beacon_api::<span class="kw-2">*</span>, chain_api::<span class="kw-2">*</span>, common_api::<span class="kw-2">*</span>, data_types::RPCState, gas_api::<span class="kw-2">*</span>,
-    mpool_api::<span class="kw-2">*</span>, net_api::<span class="kw-2">*</span>, node_api::NODE_STATUS, state_api::<span class="kw-2">*</span>, sync_api::<span class="kw-2">*</span>, wallet_api::<span class="kw-2">*</span>,
+    auth_api::<span class="kw-2">*</span>, beacon_api::<span class="kw-2">*</span>, chain_api::<span class="kw-2">*</span>, common_api::<span class="kw-2">*</span>, data_types::RPCState,
+    eth_api::ETH_CHAIN_ID, gas_api::<span class="kw-2">*</span>, mpool_api::<span class="kw-2">*</span>, net_api::<span class="kw-2">*</span>, node_api::NODE_STATUS,
+    state_api::<span class="kw-2">*</span>, sync_api::<span class="kw-2">*</span>, wallet_api::<span class="kw-2">*</span>,
 };
 <span class="kw">use </span>axum::routing::{get, post};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -205,7 +212,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{
     beacon_api::beacon_get_entry,
     common_api::{shutdown, start_time, version},
-    rpc_http_handler::rpc_http_handler,
+    rpc_http_handler::{rpc_http_handler, rpc_v0_http_handler},
     rpc_ws_handler::rpc_ws_handler,
     state_api::<span class="kw-2">*</span>,
 };
@@ -329,12 +336,15 @@
             .with_method(NET_DISCONNECT, net_api::net_disconnect::&lt;DB&gt;)
             <span class="comment">// Node API
             </span>.with_method(NODE_STATUS, node_api::node_status::&lt;DB&gt;)
+            <span class="comment">// Eth API
+            </span>.with_method(ETH_CHAIN_ID, eth_api::eth_chain_id::&lt;DB&gt;)
             .finish_unwrapped(),
     );
 
     <span class="kw">let </span>app = axum::Router::new()
         .route(<span class="string">&quot;/rpc/v0&quot;</span>, get(rpc_ws_handler))
-        .route(<span class="string">&quot;/rpc/v0&quot;</span>, post(rpc_http_handler))
+        .route(<span class="string">&quot;/rpc/v0&quot;</span>, post(rpc_v0_http_handler))
+        .route(<span class="string">&quot;/rpc/v1&quot;</span>, post(rpc_http_handler))
         .with_state(rpc_server);
 
     <span class="macro">info!</span>(<span class="string">&quot;Ready for RPC connections&quot;</span>);

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ETH_CHAIN_ID"]};
