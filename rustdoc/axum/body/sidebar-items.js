@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Body"]};
+window.SIDEBAR_ITEMS = {"fn":["to_bytes"],"struct":["Body"]};

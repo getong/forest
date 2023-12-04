@@ -488,7 +488,7 @@ var srcIndex = JSON.parse('{\
 "siphasher":["",[],["lib.rs","sip.rs","sip128.rs"]],\
 "slab":["",[],["builder.rs","lib.rs"]],\
 "slice_group_by":["",[["binary_group",[],["binary_group.rs","binary_group_by.rs","binary_group_by_key.rs","mod.rs"]],["exponential_group",[],["exponential_group.rs","exponential_group_by.rs","exponential_group_by_key.rs","mod.rs"]],["linear_group",[],["linear_group.rs","linear_group_by.rs","linear_group_by_key.rs","mod.rs"]],["linear_str_group",[],["linear_str_group.rs","linear_str_group_by.rs","linear_str_group_by_key.rs","mod.rs"]]],["lib.rs"]],\
-"slotmap":["",[],["basic.rs","dense.rs","hop.rs","lib.rs","secondary.rs","sparse_secondary.rs"]],\
+"slotmap":["",[],["basic.rs","dense.rs","hop.rs","lib.rs","secondary.rs","sparse_secondary.rs","util.rs"]],\
 "smallvec":["",[],["lib.rs"]],\
 "smart_default":["",[],["body_impl.rs","default_attr.rs","lib.rs","util.rs"]],\
 "snap":["",[],["bytes.rs","compress.rs","crc32.rs","crc32_table.rs","decompress.rs","error.rs","frame.rs","lib.rs","raw.rs","read.rs","tag.rs","write.rs"]],\
