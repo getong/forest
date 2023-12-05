@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ETH_CHAIN_ID"]};
+window.SIDEBAR_ITEMS = {"constant":["ETH_BLOCK_NUMBER","ETH_CHAIN_ID"]};
