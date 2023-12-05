@@ -708,6 +708,19 @@
 <a href="#708" id="708">708</a>
 <a href="#709" id="709">709</a>
 <a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -735,7 +748,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{Libp2pConfig, Libp2pService, PeerManager};
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolConfig, MpoolRpcProvider};
-<span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
+<span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::start_rpc;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::RPCState;
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
@@ -932,7 +945,7 @@
     //   initialized
     </span><span class="kw">let </span>genesis_header = read_genesis_header(
         config.client.genesis_file.as_ref(),
-        chain_config.genesis_bytes(),
+        chain_config.genesis_bytes(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>.as_deref(),
         <span class="kw-2">&amp;</span>db,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -979,7 +992,7 @@
     <span class="kw">let </span>network_name = get_network_name_from_genesis(<span class="kw-2">&amp;</span>genesis_header, <span class="kw-2">&amp;</span>state_manager)<span class="question-mark">?</span>;
 
     <span class="macro">info!</span>(<span class="string">&quot;Using network :: {}&quot;</span>, get_actual_chain_name(<span class="kw-2">&amp;</span>network_name));
-
+    display_chain_logo(<span class="kw-2">&amp;</span>config.chain);
     <span class="kw">let </span>(tipset_sink, tipset_stream) = flume::bounded(<span class="number">20</span>);
 
     <span class="comment">// if bootstrap peers are not set, set them
@@ -1417,5 +1430,18 @@
             <span class="string">&quot;Error: the passwords do not match. Try again or press Ctrl+C to abort.&quot;</span>,
         )
         .interact_on(<span class="kw-2">&amp;</span>term)
+}
+
+<span class="doccomment">/// Displays the network logo/ASCII art if available.
+</span><span class="kw">fn </span>display_chain_logo(chain: <span class="kw-2">&amp;</span>NetworkChain) {
+    <span class="kw">let </span>logo = <span class="kw">match </span>chain {
+        NetworkChain::Butterflynet =&gt; {
+            <span class="prelude-val">Some</span>(<span class="macro">include_str!</span>(<span class="string">&quot;../../build/ascii-art/butterfly&quot;</span>).to_string())
+        }
+        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+    };
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(logo) = logo {
+        <span class="macro">info!</span>(<span class="string">&quot;\n{logo}&quot;</span>);
+    }
 }
 </code></pre></div></section></main></body></html>
