@@ -1473,6 +1473,23 @@
 <a href="#1473" id="1473">1473</a>
 <a href="#1474" id="1474">1474</a>
 <a href="#1475" id="1475">1475</a>
+<a href="#1476" id="1476">1476</a>
+<a href="#1477" id="1477">1477</a>
+<a href="#1478" id="1478">1478</a>
+<a href="#1479" id="1479">1479</a>
+<a href="#1480" id="1480">1480</a>
+<a href="#1481" id="1481">1481</a>
+<a href="#1482" id="1482">1482</a>
+<a href="#1483" id="1483">1483</a>
+<a href="#1484" id="1484">1484</a>
+<a href="#1485" id="1485">1485</a>
+<a href="#1486" id="1486">1486</a>
+<a href="#1487" id="1487">1487</a>
+<a href="#1488" id="1488">1488</a>
+<a href="#1489" id="1489">1489</a>
+<a href="#1490" id="1490">1490</a>
+<a href="#1491" id="1491">1491</a>
+<a href="#1492" id="1492">1492</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1516,7 +1533,7 @@
 <span class="kw">use </span>cid::Cid;
 
 <span class="kw">use </span>fil_actor_interface::miner::SectorOnChainInfo;
-<span class="kw">use </span>fil_actor_interface::miner::{MinerInfo, MinerPower};
+<span class="kw">use </span>fil_actor_interface::miner::{MinerInfo, MinerPower, Partition};
 <span class="kw">use </span>fil_actor_interface::<span class="kw-2">*</span>;
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_amt::Amtv0 <span class="kw">as </span>Amt;
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::BitField;
@@ -2522,26 +2539,43 @@
         addr: <span class="kw-2">&amp;</span>Address,
         ts: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;BitField, Error&gt; {
+        <span class="self">self</span>.all_partition_sectors(addr, ts, |partition| partition.faulty_sectors().clone())
+    }
+    <span class="doccomment">/// Retrieves miner recoveries.
+    </span><span class="kw">pub fn </span>miner_recoveries(
+        <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
+        addr: <span class="kw-2">&amp;</span>Address,
+        ts: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;BitField, Error&gt; {
+        <span class="self">self</span>.all_partition_sectors(addr, ts, |partition| partition.recovering_sectors().clone())
+    }
+
+    <span class="kw">fn </span>all_partition_sectors(
+        <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
+        addr: <span class="kw-2">&amp;</span>Address,
+        ts: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
+        get_sector: <span class="kw">impl </span>Fn(Partition&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; BitField,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;BitField, Error&gt; {
         <span class="kw">let </span>actor = <span class="self">self
             </span>.get_actor(addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
             </span>.ok_or_else(|| Error::State(<span class="string">&quot;Miner actor not found&quot;</span>.to_string()))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>state = miner::State::load(<span class="self">self</span>.blockstore(), actor.code, actor.state)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>faults = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>partitions = Vec::new();
 
         state.for_each_deadline(
             <span class="kw-2">&amp;</span><span class="self">self</span>.chain_config.policy,
             <span class="self">self</span>.blockstore(),
             |<span class="kw">_</span>, deadline| {
                 deadline.for_each(<span class="self">self</span>.blockstore(), |<span class="kw">_</span>, partition| {
-                    faults.push(partition.faulty_sectors().clone());
+                    partitions.push(get_sector(partition));
                     <span class="prelude-val">Ok</span>(())
                 })
             },
         )<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(BitField::union(faults.iter()))
+        <span class="prelude-val">Ok</span>(BitField::union(partitions.iter()))
     }
 
     <span class="doccomment">/// Retrieves miner power.
