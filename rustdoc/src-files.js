@@ -571,7 +571,7 @@ var srcIndex = JSON.parse('{\
 "utf8":["",[],["lib.rs","lossy.rs","read.rs"]],\
 "utf8_iter":["",[],["indices.rs","lib.rs"]],\
 "utf8parse":["",[],["lib.rs","types.rs"]],\
-"uuid":["",[],["builder.rs","error.rs","external.rs","fmt.rs","lib.rs","macros.rs","parser.rs","timestamp.rs"]],\
+"uuid":["",[],["builder.rs","error.rs","external.rs","fmt.rs","lib.rs","macros.rs","parser.rs","rng.rs","timestamp.rs","v4.rs"]],\
 "void":["",[],["lib.rs"]],\
 "walkdir":["",[],["dent.rs","error.rs","lib.rs","util.rs"]],\
 "wasm_encoder":["",[["component",[],["aliases.rs","builder.rs","canonicals.rs","components.rs","exports.rs","imports.rs","instances.rs","modules.rs","names.rs","start.rs","types.rs"]],["core",[],["code.rs","custom.rs","data.rs","dump.rs","elements.rs","exports.rs","functions.rs","globals.rs","imports.rs","linking.rs","memories.rs","names.rs","producers.rs","start.rs","tables.rs","tags.rs","types.rs"]]],["component.rs","core.rs","lib.rs","raw.rs"]],\
