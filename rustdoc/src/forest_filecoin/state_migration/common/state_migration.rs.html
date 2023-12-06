@@ -158,10 +158,12 @@
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span>std::sync::Arc;
+</span><span class="kw">use </span>std::num::NonZeroUsize;
+<span class="kw">use </span>std::sync::atomic::AtomicU64;
 
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashMap;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{clock::ChainEpoch, state_tree::StateTree};
@@ -226,7 +228,7 @@
 <span class="kw">impl</span>&lt;BS: Blockstore + Send + Sync&gt; StateMigration&lt;BS&gt; {
     <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::state_migration) <span class="kw">fn </span>migrate_state_tree(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        store: <span class="kw-2">&amp;</span>Arc&lt;BS&gt;,
+        store: <span class="kw-2">&amp;</span>BS,
         prior_epoch: ChainEpoch,
         actors_in: StateTree&lt;BS&gt;,
         <span class="kw-2">mut </span>actors_out: StateTree&lt;BS&gt;,
@@ -236,21 +238,16 @@
             verifier.verify_migration(store, <span class="kw-2">&amp;</span><span class="self">self</span>.migrations, <span class="kw-2">&amp;</span>actors_in)<span class="question-mark">?</span>;
         }
 
-        <span class="comment">// we need at least 3 threads for the migration to work
-        </span><span class="kw">let </span>threads = num_cpus::get().max(<span class="number">3</span>);
-        <span class="kw">let </span>chan_size = threads / <span class="number">2</span>;
-        <span class="kw">let </span>cache = MigrationCache::default();
-
-        <span class="macro">tracing::info!</span>(<span class="string">&quot;Using {threads} threads for migration and channel size of {chan_size}&quot;</span>,);
-
+        <span class="kw">let </span>cache = MigrationCache::new(NonZeroUsize::new(<span class="number">10_000</span>).expect(<span class="string">&quot;infallible&quot;</span>));
         <span class="kw">let </span>pool = rayon::ThreadPoolBuilder::new()
             .thread_name(|id| <span class="macro">format!</span>(<span class="string">&quot;state migration thread: {id}&quot;</span>))
-            .num_threads(threads)
-            .build()<span class="question-mark">?</span>;
+            .num_threads(<span class="number">3</span>) <span class="comment">// minimum needed, more doesn&#39;t increase performance in any way
+            </span>.build()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>(state_tx, state_rx) = crossbeam_channel::bounded(chan_size);
-        <span class="kw">let </span>(job_tx, job_rx) = crossbeam_channel::bounded(chan_size);
+        <span class="kw">let </span>(state_tx, state_rx) = crossbeam_channel::bounded(<span class="number">1</span>);
+        <span class="kw">let </span>(job_tx, job_rx) = crossbeam_channel::bounded(<span class="number">1</span>);
 
+        <span class="kw">let </span>job_counter = AtomicU64::new(<span class="number">0</span>);
         pool.scope(|s| {
             s.spawn(<span class="kw">move </span>|<span class="kw">_</span>| {
                 actors_in
@@ -301,6 +298,11 @@
                                 <span class="string">&quot;Failed setting new actor state at given address: {address}, Reason: {e}&quot;
                             </span>)
                         });
+                    job_counter.fetch_add(<span class="number">1</span>, std::sync::atomic::Ordering::Relaxed);
+                    <span class="kw">let </span>job_counter = job_counter.load(std::sync::atomic::Ordering::Relaxed);
+                    <span class="kw">if </span>job_counter % <span class="number">100_000 </span>== <span class="number">0 </span>{
+                        <span class="macro">tracing::info!</span>(<span class="string">&quot;Processed {job_counter} actors&quot;</span>, job_counter = job_counter);
+                    }
                 }
             }
         });

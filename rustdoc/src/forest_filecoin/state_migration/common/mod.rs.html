@@ -143,16 +143,23 @@
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="doccomment">//! Common code that&#39;s shared across all migration code.
 //! Each network upgrade / state migration code lives in their own module.
 
-</span><span class="kw">use </span>std::sync::Arc;
+</span><span class="kw">use </span>std::{num::NonZeroUsize, sync::Arc};
 
 <span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, clock::ChainEpoch, econ::TokenAmount, state_tree::StateTree};
-<span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 
@@ -162,36 +169,43 @@
 <span class="kw">mod </span>state_migration;
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::state_migration) <span class="kw">mod </span>verifier;
 
+<span class="kw">use </span>lru::LruCache;
 <span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::state_migration) <span class="kw">use </span>state_migration::StateMigration;
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::state_migration) <span class="kw">type </span>Migrator&lt;BS&gt; = Arc&lt;<span class="kw">dyn </span>ActorMigration&lt;BS&gt; + Send + Sync&gt;;
 
 <span class="doccomment">/// Cache of existing CID to CID migrations for an actor.
-</span><span class="attr">#[derive(Clone, Default)]
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::state_migration) <span class="kw">struct </span>MigrationCache {
-    cache: Arc&lt;RwLock&lt;HashMap&lt;String, Cid&gt;&gt;&gt;,
+    cache: Arc&lt;RwLock&lt;LruCache&lt;String, Cid&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>MigrationCache {
+    <span class="kw">pub fn </span>new(size: NonZeroUsize) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            cache: Arc::new(RwLock::new(LruCache::new(size))),
+        }
+    }
+
     <span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Cid&gt; {
-        <span class="self">self</span>.cache.read().get(key).cloned()
+        <span class="self">self</span>.cache.write().get(key).cloned()
     }
 
     <span class="kw">pub fn </span>get_or_insert_with&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: String, f: F) -&gt; anyhow::Result&lt;Cid&gt;
     <span class="kw">where
         </span>F: FnOnce() -&gt; anyhow::Result&lt;Cid&gt;,
     {
-        <span class="kw">if </span><span class="self">self</span>.cache.read().contains_key(<span class="kw-2">&amp;</span>key) {
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.cache.read().get(<span class="kw-2">&amp;</span>key).cloned().unwrap())
+        <span class="kw">if </span><span class="self">self</span>.cache.read().contains(<span class="kw-2">&amp;</span>key) {
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.cache.write().get(<span class="kw-2">&amp;</span>key).cloned().unwrap())
         } <span class="kw">else </span>{
             <span class="kw">let </span>v = f()<span class="question-mark">?</span>;
-            <span class="self">self</span>.cache.write().insert(key, v);
+            <span class="self">self</span>.cache.write().put(key, v);
             <span class="prelude-val">Ok</span>(v)
         }
     }
 
     <span class="kw">pub fn </span>insert(<span class="kw-2">&amp;</span><span class="self">self</span>, key: String, value: Cid) {
-        <span class="self">self</span>.cache.write().insert(key, value);
+        <span class="self">self</span>.cache.write().put(key, value);
     }
 }
 
@@ -259,13 +273,15 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::num::NonZeroUsize;
+
     <span class="kw">use </span><span class="kw">super</span>::MigrationCache;
     <span class="kw">use </span><span class="kw">crate</span>::utils::cid::CidCborExt;
     <span class="kw">use </span>cid::Cid;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_migration_cache() {
-        <span class="kw">let </span>cache = MigrationCache::default();
+        <span class="kw">let </span>cache = MigrationCache::new(NonZeroUsize::new(<span class="number">10</span>).unwrap());
         <span class="kw">let </span>cid = Cid::from_cbor_blake2b256(<span class="kw-2">&amp;</span><span class="number">42</span>).unwrap();
         cache.insert(<span class="string">&quot;Cthulhu&quot;</span>.to_owned(), cid);
         <span class="macro">assert_eq!</span>(cache.get(<span class="string">&quot;Cthulhu&quot;</span>), <span class="prelude-val">Some</span>(cid));
