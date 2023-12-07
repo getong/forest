@@ -569,11 +569,70 @@
 <a href="#569" id="569">569</a>
 <a href="#570" id="570">570</a>
 <a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>ahash::HashMap;
-<span class="kw">use </span>clap::Subcommand;
+<span class="kw">use </span>clap::{Subcommand, ValueEnum};
 <span class="kw">use </span>fil_actors_shared::v10::runtime::DomainSeparationTag;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>std::path::PathBuf;
@@ -612,6 +671,9 @@
         <span class="attr">#[arg(short, long, default_value = <span class="string">&quot;20&quot;</span>)]
         </span><span class="doccomment">/// The number of tipsets to use to generate test cases.
         </span>n_tipsets: usize,
+        <span class="attr">#[arg(long, value_enum, default_value_t = RunIgnored::Default)]
+        </span><span class="doccomment">/// Behavior for tests marked as `ignored`.
+        </span>run_ignored: RunIgnored,
     },
 }
 
@@ -625,10 +687,30 @@
                 filter,
                 fail_fast,
                 n_tipsets,
-            } =&gt; compare_apis(forest, lotus, snapshot_files, filter, fail_fast, n_tipsets).<span class="kw">await</span><span class="question-mark">?</span>,
+                run_ignored,
+            } =&gt; {
+                compare_apis(
+                    forest,
+                    lotus,
+                    snapshot_files,
+                    filter,
+                    fail_fast,
+                    n_tipsets,
+                    run_ignored,
+                )
+                .<span class="kw">await</span><span class="question-mark">?
+            </span>}
         }
         <span class="prelude-val">Ok</span>(())
     }
+}
+
+<span class="attr">#[derive(ValueEnum, Debug, Clone)]
+#[clap(rename_all = <span class="string">&quot;kebab_case&quot;</span>)]
+</span><span class="kw">pub enum </span>RunIgnored {
+    Default,
+    IgnoredOnly,
+    All,
 }
 
 <span class="attr">#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
@@ -664,6 +746,7 @@
     request: RpcRequest,
     check_syntax: Box&lt;<span class="kw">dyn </span>Fn(serde_json::Value) -&gt; bool&gt;,
     check_semantics: Box&lt;<span class="kw">dyn </span>Fn(serde_json::Value, serde_json::Value) -&gt; bool&gt;,
+    ignore: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;,
 }
 
 <span class="kw">impl </span>RpcTest {
@@ -677,6 +760,7 @@
             request: request.lower(),
             check_syntax: Box::new(|value| serde_json::from_value::&lt;T::LotusJson&gt;(value).is_ok()),
             check_semantics: Box::new(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="bool-val">true</span>),
+            ignore: <span class="prelude-val">None</span>,
         }
     }
 
@@ -700,8 +784,14 @@
                     })
                 })
             }),
+            ignore: <span class="prelude-val">None</span>,
         }
     }
+
+    <span class="kw">fn </span>ignore(<span class="kw-2">mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.ignore = <span class="prelude-val">Some</span>(msg);
+        <span class="self">self
+    </span>}
 
     <span class="comment">// Check that an endpoint exist and that Forest returns exactly the same
     // JSON as Lotus.
@@ -760,7 +850,7 @@
     <span class="macro">vec!</span>[
         RpcTest::basic(ApiInfo::version_req()),
         RpcTest::basic(ApiInfo::start_time_req()),
-        RpcTest::basic(ApiInfo::discover_req()),
+        RpcTest::basic(ApiInfo::discover_req()).ignore(<span class="string">&quot;Not implemented yet&quot;</span>),
         RpcTest::basic(ApiInfo::session_req()),
     ]
 }
@@ -809,7 +899,8 @@
     </span><span class="macro">vec!</span>[
         RpcTest::basic(ApiInfo::net_addrs_listen_req()),
         RpcTest::basic(ApiInfo::net_peers_req()),
-        RpcTest::basic(ApiInfo::net_info_req()),
+        RpcTest::basic(ApiInfo::net_info_req())
+            .ignore(<span class="string">&quot;Not implemented in Lotus. Why do we even have this method?&quot;</span>),
     ]
 }
 
@@ -900,7 +991,13 @@
 <span class="kw">fn </span>eth_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
         RpcTest::identity(ApiInfo::eth_accounts_req()),
-        RpcTest::identity(ApiInfo::eth_block_number_req()),
+        RpcTest::validate(ApiInfo::eth_block_number_req(), |forest, lotus| {
+            <span class="kw">fn </span>parse_hex(inp: <span class="kw-2">&amp;</span>str) -&gt; i64 {
+                <span class="kw">let </span>without_prefix = inp.trim_start_matches(<span class="string">&quot;0x&quot;</span>);
+                i64::from_str_radix(without_prefix, <span class="number">16</span>).unwrap_or_default()
+            }
+            parse_hex(<span class="kw-2">&amp;</span>forest).abs_diff(parse_hex(<span class="kw-2">&amp;</span>lotus)) &lt; <span class="number">10
+        </span>}),
         RpcTest::identity(ApiInfo::eth_chain_id_req()),
     ]
 }
@@ -955,11 +1052,17 @@
                     //     msg.cid()?,
                     //     0,
                     // )));
-                    </span>tests.push(RpcTest::identity(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>)));
-                    tests.push(RpcTest::identity(ApiInfo::state_search_msg_limited_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                        shared_tipset_epoch - n_tipsets <span class="kw">as </span>i64,
-                    )));
+                    </span>tests.push(
+                        RpcTest::identity(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>))
+                            .ignore(<span class="string">&quot;Not implemented yet&quot;</span>),
+                    );
+                    tests.push(
+                        RpcTest::identity(ApiInfo::state_search_msg_limited_req(
+                            msg.cid()<span class="question-mark">?</span>,
+                            shared_tipset_epoch - n_tipsets <span class="kw">as </span>i64,
+                        ))
+                        .ignore(<span class="string">&quot;Not implemented yet&quot;</span>),
+                    );
                 }
             }
             <span class="kw">for </span>msg <span class="kw">in </span>secp_messages {
@@ -984,18 +1087,24 @@
                     //     msg.cid()?,
                     //     0,
                     // )));
-                    </span>tests.push(RpcTest::identity(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>)));
-                    tests.push(RpcTest::identity(ApiInfo::state_search_msg_limited_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                        shared_tipset_epoch - n_tipsets <span class="kw">as </span>i64,
-                    )));
+                    </span>tests.push(
+                        RpcTest::identity(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>))
+                            .ignore(<span class="string">&quot;Not implemented yet&quot;</span>),
+                    );
+                    tests.push(
+                        RpcTest::identity(ApiInfo::state_search_msg_limited_req(
+                            msg.cid()<span class="question-mark">?</span>,
+                            shared_tipset_epoch - n_tipsets <span class="kw">as </span>i64,
+                        ))
+                        .ignore(<span class="string">&quot;Not implemented yet&quot;</span>),
+                    );
                     <span class="kw">if </span>!msg.params().is_empty() {
                         tests.push(RpcTest::identity(ApiInfo::state_decode_params_req(
                             msg.to(),
                             msg.method_num(),
                             msg.params().to_vec(),
                             root_tsk.clone(),
-                        )));
+                        )).ignore(<span class="string">&quot;Difficult to implement. Tracking issue: https://github.com/ChainSafe/forest/issues/3769&quot;</span>));
                     }
                 }
             }
@@ -1076,6 +1185,7 @@
     filter: String,
     fail_fast: bool,
     n_tipsets: usize,
+    run_ignored: RunIgnored,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
 
@@ -1099,6 +1209,14 @@
     <span class="kw">let </span><span class="kw-2">mut </span>results = HashMap::default();
 
     <span class="kw">for </span>test <span class="kw">in </span>tests.into_iter() {
+        <span class="comment">// By default, do not run ignored tests.
+        </span><span class="kw">if </span><span class="macro">matches!</span>(run_ignored, RunIgnored::Default) &amp;&amp; test.ignore.is_some() {
+            <span class="kw">continue</span>;
+        }
+        <span class="comment">// If in `IgnoreOnly` mode, only run ignored tests.
+        </span><span class="kw">if </span><span class="macro">matches!</span>(run_ignored, RunIgnored::IgnoredOnly) &amp;&amp; test.ignore.is_none() {
+            <span class="kw">continue</span>;
+        }
         <span class="kw">if </span>!test.request.method_name.contains(<span class="kw-2">&amp;</span>filter) {
             <span class="kw">continue</span>;
         }
