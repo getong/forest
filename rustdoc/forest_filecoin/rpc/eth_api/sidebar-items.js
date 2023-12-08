@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["eth_accounts","eth_block_number","eth_chain_id"]};
+window.SIDEBAR_ITEMS = {"fn":["eth_accounts","eth_block_number","eth_chain_id","eth_gas_price"]};
