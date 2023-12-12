@@ -70,17 +70,99 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span>std::ops::Add;
+</span><span class="kw">use </span>std::{ops::Add, sync::Arc};
 
 <span class="kw">use </span><span class="kw">super</span>::gas_api;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{data_types::RPCState, eth_api::<span class="kw-2">*</span>};
-<span class="kw">use </span>anyhow::Context;
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKeys};
+<span class="kw">use </span><span class="kw">crate</span>::chain::{index::ResolveNullTipset, ChainStore};
+<span class="kw">use </span><span class="kw">crate</span>::cid_collections::FrozenCidVec;
+<span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{data_types::RPCState, eth_api::BigInt <span class="kw">as </span>EthBigInt, eth_api::<span class="kw-2">*</span>};
+<span class="kw">use </span><span class="kw">crate</span>::shim::{clock::ChainEpoch, state_tree::StateTree};
+
+<span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError};
+<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
 <span class="kw">use </span>num_bigint::BigInt;
 <span class="kw">use </span>num_traits::Zero <span class="kw">as _</span>;
 
@@ -140,6 +222,76 @@
         <span class="prelude-val">Ok</span>(GasPriceResult(gas_price.atto().clone()))
     } <span class="kw">else </span>{
         <span class="prelude-val">Ok</span>(GasPriceResult(BigInt::zero()))
+    }
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>eth_get_balance&lt;DB: Blockstore&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((address, block_param))): Params&lt;LotusJson&lt;(Address, BlockNumberOrHash)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;EthBigInt, JsonRpcError&gt; {
+    <span class="kw">let </span>fil_addr = address.to_filecoin_address()<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>data.chain_store, block_param)<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>state = StateTree::new_from_root(data.state_manager.blockstore_owned(), ts.parent_state())<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>actor = state
+        .get_actor(<span class="kw-2">&amp;</span>fil_addr)
+        .map_err(|_e| JsonRpcError::Provided {
+            code: http::StatusCode::SERVICE_UNAVAILABLE.as_u16() <span class="kw">as _</span>,
+            message: <span class="string">&quot;Failed to retrieve actor&quot;</span>,
+        })<span class="question-mark">?
+        </span>.ok_or(JsonRpcError::INTERNAL_ERROR)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(EthBigInt(actor.balance.atto().clone()))
+}
+
+<span class="kw">fn </span>tipset_by_block_number_or_hash&lt;DB: Blockstore&gt;(
+    chain: <span class="kw-2">&amp;</span>Arc&lt;ChainStore&lt;DB&gt;&gt;,
+    block_param: BlockNumberOrHash,
+) -&gt; anyhow::Result&lt;Arc&lt;Tipset&gt;&gt; {
+    <span class="kw">let </span>head = chain.heaviest_tipset();
+
+    <span class="kw">match </span>block_param {
+        BlockNumberOrHash::PredefinedBlock(predefined) =&gt; <span class="kw">match </span>predefined {
+            Predefined::Earliest =&gt; <span class="macro">bail!</span>(<span class="string">&quot;block param \&quot;earliest\&quot; is not supported&quot;</span>),
+            Predefined::Pending =&gt; <span class="prelude-val">Ok</span>(head),
+            Predefined::Latest =&gt; {
+                <span class="kw">let </span>parent = chain.chain_index.load_required_tipset(head.parents())<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(parent)
+            }
+        },
+        BlockNumberOrHash::BlockNumber(number) =&gt; {
+            <span class="kw">let </span>height = ChainEpoch::from(number);
+            <span class="kw">if </span>height &gt; head.epoch() - <span class="number">1 </span>{
+                <span class="macro">bail!</span>(<span class="string">&quot;requested a future epoch (beyond \&quot;latest\&quot;)&quot;</span>);
+            }
+            <span class="kw">let </span>ts =
+                chain
+                    .chain_index
+                    .tipset_by_height(height, head, ResolveNullTipset::TakeOlder)<span class="question-mark">?</span>;
+            <span class="prelude-val">Ok</span>(ts)
+        }
+        BlockNumberOrHash::BlockHash(hash, require_canonical) =&gt; {
+            <span class="kw">let </span>tsk = TipsetKeys {
+                cids: FrozenCidVec::from_iter([hash.to_cid()]),
+            };
+            <span class="kw">let </span>ts = chain.chain_index.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+            <span class="comment">// verify that the tipset is in the canonical chain
+            </span><span class="kw">if </span>require_canonical {
+                <span class="comment">// walk up the current chain (our head) until we reach ts.epoch()
+                </span><span class="kw">let </span>walk_ts = chain.chain_index.tipset_by_height(
+                    ts.epoch(),
+                    head,
+                    ResolveNullTipset::TakeOlder,
+                )<span class="question-mark">?</span>;
+                <span class="comment">// verify that it equals the expected tipset
+                </span><span class="kw">if </span>walk_ts != ts {
+                    <span class="macro">bail!</span>(<span class="string">&quot;tipset is not canonical&quot;</span>);
+                }
+            }
+            <span class="prelude-val">Ok</span>(ts)
+        }
     }
 }
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ETH_ACCOUNTS","ETH_BLOCK_NUMBER","ETH_CHAIN_ID","ETH_GAS_PRICE"],"struct":["GasPriceResult"]};
+window.SIDEBAR_ITEMS = {"constant":["ETH_ACCOUNTS","ETH_BLOCK_NUMBER","ETH_CHAIN_ID","ETH_GAS_PRICE","ETH_GET_BALANCE","MASKED_ID_PREFIX"],"enum":["BlockNumberOrHash","Predefined"],"struct":["Address","BigInt","GasPriceResult","Hash"]};

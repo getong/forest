@@ -641,6 +641,30 @@
 <a href="#641" id="641">641</a>
 <a href="#642" id="642">642</a>
 <a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -658,6 +682,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::db::car::ManyCar;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::Message <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::eth_api::Address <span class="kw">as </span>EthAddress;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::eth_api::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, JsonRpcError, RpcRequest};
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{Address, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::shim::crypto::Signature;
@@ -1015,6 +1041,27 @@
         RpcTest::identity(ApiInfo::eth_chain_id_req()),
         <span class="comment">// There is randomness in the result of this API
         </span>RpcTest::basic(ApiInfo::eth_gas_price_req()),
+        RpcTest::identity(ApiInfo::eth_get_balance_req(
+            EthAddress::from_str(<span class="string">&quot;0xff38c072f286e3b20b3954ca9f99c05fbecc64aa&quot;</span>).unwrap(),
+            BlockNumberOrHash::from_predefined(Predefined::Latest),
+        )),
+        RpcTest::identity(ApiInfo::eth_get_balance_req(
+            EthAddress::from_str(<span class="string">&quot;0xff38c072f286e3b20b3954ca9f99c05fbecc64aa&quot;</span>).unwrap(),
+            BlockNumberOrHash::from_predefined(Predefined::Pending),
+        )),
+    ]
+}
+
+<span class="kw">fn </span>eth_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
+    <span class="macro">vec!</span>[
+        RpcTest::identity(ApiInfo::eth_get_balance_req(
+            EthAddress::from_str(<span class="string">&quot;0xff38c072f286e3b20b3954ca9f99c05fbecc64aa&quot;</span>).unwrap(),
+            BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
+        )),
+        RpcTest::identity(ApiInfo::eth_get_balance_req(
+            EthAddress::from_str(<span class="string">&quot;0xff000000000000000000000000000000000003ec&quot;</span>).unwrap(),
+            BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
+        )),
     ]
 }
 
@@ -1027,6 +1074,7 @@
     <span class="kw">let </span>root_tsk = shared_tipset.key().clone();
     tests.extend(chain_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
     tests.extend(state_tests(<span class="kw-2">&amp;</span>shared_tipset));
+    tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
 
     <span class="kw">let </span><span class="kw-2">mut </span>seen = CidHashSet::default();
     <span class="kw">for </span>tipset <span class="kw">in </span>shared_tipset.clone().chain(<span class="kw-2">&amp;</span>store).take(n_tipsets) {
