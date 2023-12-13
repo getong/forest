@@ -311,18 +311,53 @@
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
 <a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span>std::sync::Arc;
-
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset, TipsetKeys};
+</span><span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset, TipsetKeys};
 <span class="kw">use </span><span class="kw">crate</span>::chain::index::ResolveNullTipset;
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::ChainMessage;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::ApiMessage;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiMessage, ApiReceipt};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
     chain_api::<span class="kw-2">*</span>,
     data_types::{BlockMessages, RPCState},
@@ -331,12 +366,15 @@
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::utils::io::VoidAsyncWriter;
 <span class="kw">use </span>cid::Cid;
+<span class="kw">use </span>fil_actors_shared::fvm_ipld_amt::Amtv0 <span class="kw">as </span>Amt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
+<span class="kw">use </span>fvm_shared4::receipt::Receipt;
 <span class="kw">use </span>hex::ToHex;
 <span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>sha2::Sha256;
+<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>chain_get_message&lt;DB: Blockstore&gt;(
@@ -369,6 +407,42 @@
         <span class="kw">let </span>messages = load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>parent_tipset)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(LotusJson(messages))
     }
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>chain_get_parent_receipts&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((block_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiReceipt&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>store = data.state_manager.blockstore();
+    <span class="kw">let </span>block_header: BlockHeader = store
+        .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
+        </span>.ok_or_else(|| <span class="macro">format!</span>(<span class="string">&quot;can&#39;t find block header with cid {block_cid}&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>receipts = Vec::new();
+    <span class="kw">if </span>block_header.epoch() == <span class="number">0 </span>{
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(LotusJson(<span class="macro">vec!</span>[]));
+    }
+    <span class="kw">let </span>amt = Amt::&lt;Receipt, <span class="kw">_</span>&gt;::load(block_header.message_receipts(), store).map_err(|<span class="kw">_</span>| {
+        JsonRpcError::Full {
+            code: <span class="number">1</span>,
+            message: <span class="macro">format!</span>(
+                <span class="string">&quot;failed to root: ipld: could not find {}&quot;</span>,
+                block_header.message_receipts()
+            ),
+            data: <span class="prelude-val">None</span>,
+        }
+    })<span class="question-mark">?</span>;
+
+    amt.for_each(|<span class="kw">_</span>, receipt| {
+        receipts.push(ApiReceipt {
+            exit_code: receipt.exit_code.into(),
+            return_data: receipt.return_data.clone(),
+            gas_used: receipt.gas_used,
+            events_root: receipt.events_root,
+        });
+        <span class="prelude-val">Ok</span>(())
+    })<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(LotusJson(receipts))
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>chain_get_messages_in_tipset&lt;DB: Blockstore&gt;(
