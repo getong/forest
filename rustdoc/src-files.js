@@ -421,7 +421,7 @@ var srcIndex = JSON.parse('{\
 "psm":["",[],["lib.rs"]],\
 "quick_error":["",[],["lib.rs"]],\
 "quick_protobuf":["",[],["errors.rs","lib.rs","message.rs","reader.rs","sizeofs.rs","writer.rs"]],\
-"quick_protobuf_codec":["",[],["lib.rs"]],\
+"quick_protobuf_codec":["",[["generated",[],["mod.rs","test.rs"]]],["lib.rs"]],\
 "quickcheck":["",[],["arbitrary.rs","lib.rs","tester.rs"]],\
 "quote":["",[],["ext.rs","format.rs","ident_fragment.rs","lib.rs","runtime.rs","spanned.rs","to_tokens.rs"]],\
 "radium":["",[],["lib.rs","macros.rs","types.rs"]],\
@@ -604,7 +604,7 @@ var srcIndex = JSON.parse('{\
 "writeable":["",[],["impls.rs","lib.rs","ops.rs"]],\
 "wyz":["",[],["bidi.rs","comu.rs","fmt.rs","lib.rs","range.rs"]],\
 "x25519_dalek":["",[],["lib.rs","x25519.rs"]],\
-"yamux":["",[["connection",[],["cleanup.rs","closing.rs","stream.rs"]],["frame",[],["header.rs","io.rs"]]],["chunks.rs","connection.rs","error.rs","frame.rs","lib.rs","tagged_stream.rs"]],\
+"yamux":["",[["connection",[["stream",[],["flow_control.rs"]]],["cleanup.rs","closing.rs","rtt.rs","stream.rs"]],["frame",[],["header.rs","io.rs"]]],["chunks.rs","connection.rs","error.rs","frame.rs","lib.rs","tagged_stream.rs"]],\
 "yansi":["",[],["color.rs","lib.rs","macros.rs","paint.rs","style.rs","windows.rs"]],\
 "yastl":["",[],["lib.rs","scope.rs","wait.rs"]],\
 "yoke":["",[],["either.rs","erased.rs","kinda_sorta_dangling.rs","lib.rs","macro_impls.rs","trait_hack.rs","yoke.rs","yokeable.rs","zero_from.rs"]],\
