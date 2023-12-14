@@ -727,6 +727,24 @@
 <a href="#727" id="727">727</a>
 <a href="#728" id="728">728</a>
 <a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -754,7 +772,7 @@
 <span class="kw">use </span>fil_actor_interface::{
     market, miner,
     miner::{MinerInfo, MinerPower},
-    power,
+    multisig, power,
 };
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::BitField;
 <span class="kw">use </span>futures::StreamExt;
@@ -1397,6 +1415,24 @@
         genesis_info.get_circulating_supply(height, <span class="kw-2">&amp;</span>state_manager.blockstore_owned(), root)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(LotusJson(supply))
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>msig_get_available_balance&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((addr, tsk))): Params&lt;LotusJson&lt;(Address, TipsetKeys)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>height = ts.epoch();
+    <span class="kw">let </span>store = data.state_manager.blockstore();
+    <span class="kw">let </span>actor = data
+        .state_manager
+        .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
+        </span>.ok_or(<span class="string">&quot;MultiSig actor not found&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>actor_balance = TokenAmount::from(<span class="kw-2">&amp;</span>actor.balance);
+    <span class="kw">let </span>ms = multisig::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
+    <span class="kw">let </span>locked_balance = ms.locked_balance(height)<span class="question-mark">?</span>.into();
+    <span class="kw">let </span>avail_balance = <span class="kw-2">&amp;</span>actor_balance - locked_balance;
+    <span class="prelude-val">Ok</span>(LotusJson(avail_balance))
 }
 
 <span class="doccomment">/// Get state sector info using sector no
