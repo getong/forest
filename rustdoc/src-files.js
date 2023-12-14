@@ -247,6 +247,7 @@ var srcIndex = JSON.parse('{\
 "http_body_util":["",[["combinators",[],["box_body.rs","collect.rs","frame.rs","map_err.rs","map_frame.rs","mod.rs"]]],["collected.rs","either.rs","empty.rs","full.rs","lib.rs","limited.rs","stream.rs","util.rs"]],\
 "httparse":["",[["simd",[],["avx2.rs","mod.rs","sse42.rs"]]],["iter.rs","lib.rs","macros.rs"]],\
 "httpdate":["",[],["date.rs","lib.rs"]],\
+"human_bytes":["",[],["lib.rs"]],\
 "human_repr":["",[],["human_count.rs","human_duration.rs","human_throughput.rs","lib.rs","utils.rs"]],\
 "humantime":["",[],["date.rs","duration.rs","lib.rs","wrapper.rs"]],\
 "hyper":["",[["body",[],["incoming.rs","length.rs","mod.rs"]],["common",[["io",[],["compat.rs","mod.rs","rewind.rs"]]],["buf.rs","date.rs","mod.rs","task.rs","time.rs","watch.rs"]],["ext",[],["h1_reason_phrase.rs","mod.rs"]],["proto",[["h1",[],["conn.rs","decode.rs","dispatch.rs","encode.rs","io.rs","mod.rs","role.rs"]],["h2",[],["mod.rs","ping.rs","server.rs"]]],["mod.rs"]],["rt",[],["bounds.rs","io.rs","mod.rs","timer.rs"]],["server",[["conn",[],["http1.rs","http2.rs","mod.rs"]]],["mod.rs"]],["service",[],["http.rs","mod.rs","service.rs","util.rs"]]],["cfg.rs","error.rs","headers.rs","lib.rs","trace.rs","upgrade.rs"]],\
