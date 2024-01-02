@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["sleep","spawn","spawn_blocking","timeout"]};
+window.SIDEBAR_ITEMS = {"fn":["sleep","spawn","spawn_blocking"]};
