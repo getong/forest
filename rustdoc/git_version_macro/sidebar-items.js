@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["git_version"]};
+window.SIDEBAR_ITEMS = {"macro":["git_submodule_versions","git_version"]};

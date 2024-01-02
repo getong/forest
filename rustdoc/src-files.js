@@ -225,7 +225,7 @@ var srcIndex = JSON.parse('{\
 "getrandom":["",[],["error.rs","error_impls.rs","lib.rs","linux_android.rs","use_file.rs","util.rs","util_libc.rs"]],\
 "gimli":["",[["read",[],["abbrev.rs","addr.rs","aranges.rs","cfi.rs","dwarf.rs","endian_slice.rs","index.rs","line.rs","lists.rs","loclists.rs","lookup.rs","mod.rs","op.rs","pubnames.rs","pubtypes.rs","reader.rs","rnglists.rs","str.rs","unit.rs","util.rs","value.rs"]]],["arch.rs","common.rs","constants.rs","endianity.rs","leb128.rs","lib.rs"]],\
 "git_version":["",[],["lib.rs"]],\
-"git_version_macro":["",[],["lib.rs","utils.rs"]],\
+"git_version_macro":["",[],["args.rs","lib.rs","utils.rs"]],\
 "glob":["",[],["lib.rs"]],\
 "group":["",[["tests",[],["mod.rs"]]],["cofactor.rs","lib.rs","prime.rs","wnaf.rs"]],\
 "h2":["",[["codec",[],["error.rs","framed_read.rs","framed_write.rs","mod.rs"]],["frame",[],["data.rs","go_away.rs","head.rs","headers.rs","mod.rs","ping.rs","priority.rs","reason.rs","reset.rs","settings.rs","stream_id.rs","util.rs","window_update.rs"]],["hpack",[["huffman",[],["mod.rs","table.rs"]]],["decoder.rs","encoder.rs","header.rs","mod.rs","table.rs"]],["proto",[["streams",[],["buffer.rs","counts.rs","flow_control.rs","mod.rs","prioritize.rs","recv.rs","send.rs","state.rs","store.rs","stream.rs","streams.rs"]]],["connection.rs","error.rs","go_away.rs","mod.rs","peer.rs","ping_pong.rs","settings.rs"]]],["client.rs","error.rs","ext.rs","lib.rs","server.rs","share.rs"]],\
@@ -572,7 +572,7 @@ var srcIndex = JSON.parse('{\
 "unicode_segmentation":["",[],["grapheme.rs","lib.rs","sentence.rs","tables.rs","word.rs"]],\
 "unicode_width":["",[],["lib.rs","tables.rs"]],\
 "universal_hash":["",[],["lib.rs"]],\
-"unsafe_libyaml":["",[],["api.rs","dumper.rs","emitter.rs","lib.rs","loader.rs","macros.rs","parser.rs","reader.rs","scanner.rs","success.rs","writer.rs","yaml.rs"]],\
+"unsafe_libyaml":["",[],["api.rs","dumper.rs","emitter.rs","lib.rs","loader.rs","macros.rs","ops.rs","parser.rs","reader.rs","scanner.rs","success.rs","writer.rs","yaml.rs"]],\
 "unsigned_varint":["",[],["codec.rs","decode.rs","encode.rs","io.rs","lib.rs"]],\
 "untrusted":["",[],["input.rs","lib.rs","no_panic.rs","reader.rs"]],\
 "url":["",[],["host.rs","lib.rs","origin.rs","parser.rs","path_segments.rs","quirks.rs","slicing.rs"]],\
@@ -610,7 +610,7 @@ var srcIndex = JSON.parse('{\
 "yastl":["",[],["lib.rs","scope.rs","wait.rs"]],\
 "yoke":["",[],["either.rs","erased.rs","kinda_sorta_dangling.rs","lib.rs","macro_impls.rs","trait_hack.rs","yoke.rs","yokeable.rs","zero_from.rs"]],\
 "yoke_derive":["",[],["lib.rs","visitor.rs"]],\
-"zerocopy":["",[["third_party",[["rust",[],["layout.rs"]]]]],["lib.rs","macro_util.rs","macros.rs","util.rs","wrappers.rs"]],\
+"zerocopy":["",[["third_party",[["rust",[],["layout.rs"]]]]],["lib.rs","macro_util.rs","macros.rs","post_monomorphization_compile_fail_tests.rs","util.rs","wrappers.rs"]],\
 "zerofrom":["",[],["lib.rs","macro_impls.rs","zero_from.rs"]],\
 "zerofrom_derive":["",[],["lib.rs","visitor.rs"]],\
 "zeroize":["",[],["lib.rs","x86.rs"]],\

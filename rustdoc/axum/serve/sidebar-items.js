@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["serve"],"struct":["IncomingStream","Serve"]};
+window.SIDEBAR_ITEMS = {"fn":["serve"],"struct":["IncomingStream","Serve","WithGracefulShutdown"]};
