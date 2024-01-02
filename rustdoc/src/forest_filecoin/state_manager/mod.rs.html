@@ -1567,12 +1567,6 @@
 <a href="#1567" id="1567">1567</a>
 <a href="#1568" id="1568">1568</a>
 <a href="#1569" id="1569">1569</a>
-<a href="#1570" id="1570">1570</a>
-<a href="#1571" id="1571">1571</a>
-<a href="#1572" id="1572">1572</a>
-<a href="#1573" id="1573">1573</a>
-<a href="#1574" id="1574">1574</a>
-<a href="#1575" id="1575">1575</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2285,12 +2279,14 @@
     </span><span class="kw">fn </span>tipset_executed_message(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         tipset: <span class="kw-2">&amp;</span>Tipset,
-        msg_cid: Cid,
-        (message_from_address, message_sequence): (<span class="kw-2">&amp;</span>Address, <span class="kw-2">&amp;</span>u64),
+        message: <span class="kw-2">&amp;</span>ChainMessage,
+        allow_replaced: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Receipt&gt;, Error&gt; {
         <span class="kw">if </span>tipset.epoch() == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         }
+        <span class="kw">let </span>message_from_address = message.from();
+        <span class="kw">let </span>message_sequence = message.sequence();
         <span class="comment">// Load parent state.
         </span><span class="kw">let </span>pts = <span class="self">self
             </span>.cs
@@ -2303,38 +2299,34 @@
         messages
             .iter()
             .enumerate()
-            <span class="comment">// reverse iteration intentional
+            <span class="comment">// iterate in reverse because we going backwards through the chain
             </span>.rev()
             .filter(|(<span class="kw">_</span>, s)| {
-                <span class="kw-2">&amp;</span>s.from() == message_from_address
+                s.sequence() == message_sequence
+                    &amp;&amp; s.from() == message_from_address
+                    &amp;&amp; s.equal_call(message)
             })
-            .filter_map(|(index, s)| {
-                <span class="kw">if </span>s.sequence() == <span class="kw-2">*</span>message_sequence {
-                    <span class="kw">if </span>s.cid().map(|s|
-                        s == msg_cid
-                    ).unwrap_or_default() {
-                        <span class="comment">// When message Cid has been found, get receipt at index.
-                        </span><span class="kw">let </span>rct = <span class="kw">crate</span>::chain::get_parent_reciept(
-                            <span class="self">self</span>.blockstore(),
-                            tipset.blocks().first().unwrap(),
-                            index,
-                        )
-                            .map_err(|err| {
-                                Error::Other(err.to_string())
-                            });
-                        <span class="kw">return </span><span class="prelude-val">Some</span>(
-                           rct
-                        );
-                    }
-                    <span class="kw">let </span>error_msg = <span class="macro">format!</span>(<span class="string">&quot;found message with equal nonce as the one we are looking for (F:{:} n {:}, TS: `Error Converting message to Cid` n{:})&quot;</span>, msg_cid, message_sequence, s.sequence());
-                    <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(Error::Other(error_msg)))
+            .map(|(index, m)| {
+                <span class="comment">// A replacing message is a message with a different CID, 
+                // any of Gas values, and different signature, but with all 
+                // other parameters matching (source/destination, nonce, params, etc.)
+                </span><span class="kw">if </span>!allow_replaced &amp;&amp; message.cid() != m.cid(){
+                    <span class="prelude-val">Err</span>(Error::Other(<span class="macro">format!</span>(
+                        <span class="string">&quot;found message with equal nonce and call params but different CID. wanted {}, found: {}, nonce: {}, from: {}&quot;</span>,
+                        message.cid().unwrap_or_default(),
+                        m.cid().unwrap_or_default(),
+                        message.sequence(),
+                        message.from(),
+                    )))
+                } <span class="kw">else </span>{
+                    <span class="kw">crate</span>::chain::get_parent_receipt(
+                        <span class="self">self</span>.blockstore(),
+                        <span class="kw-2">&amp;</span>tipset.blocks()[<span class="number">0</span>],
+                        index,
+                    )
+                    .map_err(|err| Error::Other(err.to_string()))
                 }
-                <span class="kw">if </span>s.sequence() &lt; <span class="kw-2">*</span>message_sequence {
-                    <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>));
-                }
-
-                <span class="prelude-val">None
-            </span>})
+            })
             .next()
             .unwrap_or(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>))
     }
@@ -2342,25 +2334,25 @@
     <span class="kw">fn </span>check_search(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>current: Arc&lt;Tipset&gt;,
-        (message_from_address, message_cid, message_sequence): (<span class="kw-2">&amp;</span>Address, <span class="kw-2">&amp;</span>Cid, <span class="kw-2">&amp;</span>u64),
+        message: <span class="kw-2">&amp;</span>ChainMessage,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
+        <span class="kw">let </span>message_from_address = message.from();
+        <span class="kw">let </span>message_sequence = message.sequence();
+        <span class="kw">let </span><span class="kw-2">mut </span>current_actor_state = <span class="self">self
+            </span>.get_actor(<span class="kw-2">&amp;</span>message_from_address, <span class="kw-2">*</span>current.parent_state())
+            .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?
+            </span>.context(<span class="string">&quot;Failed to load actor state&quot;</span>)
+            .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>message_from_id = <span class="self">self
+            </span>.lookup_id(<span class="kw-2">&amp;</span>message_from_address, current.as_ref())<span class="question-mark">?
+            </span>.context(<span class="string">&quot;Failed to lookup id&quot;</span>)
+            .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?</span>;
         <span class="kw">loop </span>{
             <span class="kw">if </span>current.epoch() == <span class="number">0 </span>{
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
-            <span class="kw">let </span>state = StateTree::new_from_root(<span class="self">self</span>.blockstore_owned(), current.parent_state())
-                .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?</span>;
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(actor_state) = state
-                .get_actor(message_from_address)
-                .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?
-            </span>{
-                <span class="kw">if </span>actor_state.sequence == <span class="number">0 </span>|| actor_state.sequence &lt; <span class="kw-2">*</span>message_sequence {
-                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-                }
-            }
-
-            <span class="kw">let </span>tipset = <span class="self">self
+            <span class="kw">let </span>parent_tipset = <span class="self">self
                 </span>.cs
                 .load_required_tipset(current.parents())
                 .map_err(|err| {
@@ -2368,41 +2360,47 @@
                         <span class="string">&quot;failed to load tipset during msg wait searchback: {err:}&quot;
                     </span>))
                 })<span class="question-mark">?</span>;
-            <span class="kw">let </span>r = <span class="self">self</span>.tipset_executed_message(
-                <span class="kw-2">&amp;</span>tipset,
-                <span class="kw-2">*</span>message_cid,
-                (message_from_address, message_sequence),
-            )<span class="question-mark">?</span>;
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(receipt) = r {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, receipt)));
+            <span class="kw">let </span>parent_actor_state = <span class="self">self
+                </span>.get_actor(<span class="kw-2">&amp;</span>message_from_id, <span class="kw-2">*</span>parent_tipset.parent_state())
+                .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?</span>;
+
+            <span class="kw">if </span>parent_actor_state.is_none()
+                || (current_actor_state.sequence &gt; message_sequence
+                    &amp;&amp; parent_actor_state.as_ref().unwrap().sequence &lt;= message_sequence)
+            {
+                <span class="kw">let </span>receipt = <span class="self">self
+                    </span>.tipset_executed_message(current.as_ref(), message, <span class="bool-val">true</span>)<span class="question-mark">?
+                    </span>.context(<span class="string">&quot;Failed to get receipt with tipset_executed_message&quot;</span>)<span class="question-mark">?</span>;
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((current, receipt)));
             }
-            current = tipset;
+
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(parent_actor_state) = parent_actor_state {
+                current = parent_tipset;
+                current_actor_state = parent_actor_state;
+            } <span class="kw">else </span>{
+                <span class="kw">break </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+            }
         }
     }
 
     <span class="kw">fn </span>search_back_for_message(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         current: Arc&lt;Tipset&gt;,
-        params: (<span class="kw-2">&amp;</span>Address, <span class="kw-2">&amp;</span>Cid, <span class="kw-2">&amp;</span>u64),
+        message: <span class="kw-2">&amp;</span>ChainMessage,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
-        <span class="self">self</span>.check_search(current, params)
+        <span class="self">self</span>.check_search(current, message)
     }
     <span class="doccomment">/// Returns a message receipt from a given tipset and message CID.
     </span><span class="kw">pub fn </span>get_receipt(<span class="kw-2">&amp;</span><span class="self">self</span>, tipset: Arc&lt;Tipset&gt;, msg: Cid) -&gt; <span class="prelude-ty">Result</span>&lt;Receipt, Error&gt; {
         <span class="kw">let </span>m = <span class="kw">crate</span>::chain::get_chain_message(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>msg)
             .map_err(|e| Error::Other(e.to_string()))<span class="question-mark">?</span>;
-        <span class="kw">let </span>message_var = (<span class="kw-2">&amp;</span>m.from(), <span class="kw-2">&amp;</span>m.sequence());
-        <span class="kw">let </span>message_receipt = <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>tipset, msg, message_var)<span class="question-mark">?</span>;
-
+        <span class="kw">let </span>message_receipt = <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>tipset, <span class="kw-2">&amp;</span>m, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(receipt) = message_receipt {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(receipt);
         }
-        <span class="kw">let </span>cid = m
-            .cid()
-            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not convert message to cid {e:?}&quot;</span>)))<span class="question-mark">?</span>;
-        <span class="kw">let </span>message_var = (<span class="kw-2">&amp;</span>m.from(), <span class="kw-2">&amp;</span>cid, <span class="kw-2">&amp;</span>m.sequence());
-        <span class="kw">let </span>maybe_tuple = <span class="self">self</span>.search_back_for_message(tipset, message_var)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>maybe_tuple = <span class="self">self</span>.search_back_for_message(tipset, <span class="kw-2">&amp;</span>m)<span class="question-mark">?</span>;
         <span class="kw">let </span>message_receipt = maybe_tuple
             .ok_or_else(|| {
                 Error::Other(<span class="string">&quot;Could not get receipt from search back message&quot;</span>.to_string())
@@ -2424,11 +2422,9 @@
         <span class="kw">let </span>(sender, <span class="kw-2">mut </span>receiver) = oneshot::channel::&lt;()&gt;();
         <span class="kw">let </span>message = <span class="kw">crate</span>::chain::get_chain_message(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>msg_cid)
             .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;failed to load message {err:}&quot;</span>)))<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>message_var = (<span class="kw-2">&amp;</span>message.from(), <span class="kw-2">&amp;</span>message.sequence());
         <span class="kw">let </span>current_tipset = <span class="self">self</span>.cs.heaviest_tipset();
         <span class="kw">let </span>maybe_message_reciept =
-            <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>current_tipset, msg_cid, message_var)<span class="question-mark">?</span>;
+            <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>current_tipset, <span class="kw-2">&amp;</span>message, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = maybe_message_reciept {
             <span class="kw">return </span><span class="prelude-val">Ok</span>((<span class="prelude-val">Some</span>(current_tipset.clone()), <span class="prelude-val">Some</span>(r)));
         }
@@ -2437,19 +2433,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>candidate_receipt: <span class="prelude-ty">Option</span>&lt;Receipt&gt; = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>sm_cloned = Arc::clone(<span class="self">self</span>);
-        <span class="kw">let </span>cid = message
-            .cid()
-            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not get cid from message {e:?}&quot;</span>)))<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>cid_for_task = cid;
-        <span class="kw">let </span>address_for_task = message.from();
-        <span class="kw">let </span>sequence_for_task = message.sequence();
+        <span class="kw">let </span>message_for_task = message.clone();
         <span class="kw">let </span>height_of_head = current_tipset.epoch();
         <span class="kw">let </span>task = tokio::task::spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span>back_tuple = sm_cloned.search_back_for_message(
-                current_tipset,
-                (<span class="kw-2">&amp;</span>address_for_task, <span class="kw-2">&amp;</span>cid_for_task, <span class="kw-2">&amp;</span>sequence_for_task),
-            )<span class="question-mark">?</span>;
+            <span class="kw">let </span>back_tuple =
+                sm_cloned.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message_for_task)<span class="question-mark">?</span>;
             sender
                 .send(())
                 .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not send to channel {e:?}&quot;</span>)))<span class="question-mark">?</span>;
@@ -2481,9 +2470,8 @@
                                     </span>.insert(tipset.key().to_owned(), <span class="bool-val">true</span>);
                             }
 
-                            <span class="kw">let </span>message_var = (<span class="kw-2">&amp;</span>message.from(), <span class="kw-2">&amp;</span>message.sequence());
                             <span class="kw">let </span>maybe_receipt =
-                                sm_cloned.tipset_executed_message(<span class="kw-2">&amp;</span>tipset, msg_cid, message_var)<span class="question-mark">?</span>;
+                                sm_cloned.tipset_executed_message(<span class="kw-2">&amp;</span>tipset, <span class="kw-2">&amp;</span>message, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(receipt) = maybe_receipt {
                                 <span class="kw">if </span>confidence == <span class="number">0 </span>{
                                     <span class="kw">return </span><span class="prelude-val">Ok</span>((<span class="prelude-val">Some</span>(tipset), <span class="prelude-val">Some</span>(receipt)));
