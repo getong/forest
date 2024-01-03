@@ -718,6 +718,16 @@
 <a href="#718" id="718">718</a>
 <a href="#719" id="719">719</a>
 <a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -742,6 +752,7 @@
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tabled::{builder::Builder, settings::Style};
 
 <span class="attr">#[derive(Debug, Subcommand)]
@@ -820,6 +831,7 @@
     </span>InvalidJSON,
     <span class="comment">// Got response with the right JSON schema but it failed sanity checking
     </span>InvalidResponse,
+    Timeout,
     Valid,
 }
 
@@ -831,7 +843,10 @@
             EndpointStatus::MissingMethod
         } <span class="kw">else if </span>err.code == JsonRpcError::PARSE_ERROR.code {
             EndpointStatus::InvalidResponse
+        } <span class="kw">else if </span>err.code == <span class="number">0 </span>&amp;&amp; err.message.contains(<span class="string">&quot;timed out&quot;</span>) {
+            EndpointStatus::Timeout
         } <span class="kw">else </span>{
+            <span class="macro">tracing::debug!</span>(<span class="string">&quot;{err}&quot;</span>);
             EndpointStatus::InternalServerError
         }
     }
@@ -899,6 +914,11 @@
     {
         RpcTest::validate(request, |forest, lotus| forest == lotus)
     }
+
+    <span class="kw">fn </span>with_timeout(<span class="kw-2">mut </span><span class="self">self</span>, timeout: Duration) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.request.set_timeout(timeout);
+        <span class="self">self
+    </span>}
 
     <span class="kw">async fn </span>run(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -1179,10 +1199,10 @@
                         msg.from(),
                         root_tsk.clone(),
                     )));
-                    tests.push(validate_message_lookup(ApiInfo::state_wait_msg_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                        <span class="number">0</span>,
-                    )));
+                    tests.push(
+                        validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
+                            .with_timeout(Duration::from_secs(<span class="number">30</span>)),
+                    );
                     tests.push(
                         validate_message_lookup(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>))
                             .ignore(<span class="string">&quot;Not implemented yet&quot;</span>),
@@ -1213,10 +1233,10 @@
                         msg.from(),
                         root_tsk.clone(),
                     )));
-                    tests.push(validate_message_lookup(ApiInfo::state_wait_msg_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                        <span class="number">0</span>,
-                    )));
+                    tests.push(
+                        validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
+                            .with_timeout(Duration::from_secs(<span class="number">30</span>)),
+                    );
                     tests.push(
                         validate_message_lookup(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>))
                             .ignore(<span class="string">&quot;Not implemented yet&quot;</span>),

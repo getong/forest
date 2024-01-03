@@ -299,6 +299,19 @@
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
 <a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -319,6 +332,7 @@
 <span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::str::FromStr;
+<span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{Multiaddr, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
@@ -332,6 +346,7 @@
 <span class="kw">pub const </span>DEFAULT_MULTIADDRESS: <span class="kw-2">&amp;</span>str = <span class="string">&quot;/ip4/127.0.0.1/tcp/2345/http&quot;</span>;
 <span class="kw">pub const </span>DEFAULT_PORT: u16 = <span class="number">2345</span>;
 <span class="kw">pub const </span>DEFAULT_PROTOCOL: <span class="kw-2">&amp;</span>str = <span class="string">&quot;http&quot;</span>;
+<span class="kw">const </span>DEFAULT_TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
 
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>ApiInfo {
@@ -396,7 +411,10 @@
 
         <span class="macro">debug!</span>(<span class="string">&quot;Using JSON-RPC v2 HTTP URL: {}&quot;</span>, api_url);
 
-        <span class="kw">let </span>request = global_http_client().post(api_url).json(<span class="kw-2">&amp;</span>rpc_req);
+        <span class="kw">let </span>request = global_http_client()
+            .post(api_url)
+            .timeout(req.timeout)
+            .json(<span class="kw-2">&amp;</span>rpc_req);
         <span class="kw">let </span>request = <span class="kw">match </span><span class="self">self</span>.token.as_ref() {
             <span class="prelude-val">Some</span>(token) =&gt; request.header(http0::header::AUTHORIZATION, token),
             <span class="kw">_ </span>=&gt; request,
@@ -561,6 +579,7 @@
     params: serde_json::Value,
     result_type: PhantomData&lt;T&gt;,
     rpc_endpoint: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    timeout: Duration,
 }
 
 <span class="kw">impl</span>&lt;T&gt; RpcRequest&lt;T&gt; {
@@ -574,6 +593,7 @@
             ),
             result_type: PhantomData,
             rpc_endpoint: <span class="string">&quot;rpc/v0&quot;</span>,
+            timeout: DEFAULT_TIMEOUT,
         }
     }
 
@@ -587,7 +607,12 @@
             ),
             result_type: PhantomData,
             rpc_endpoint: <span class="string">&quot;rpc/v1&quot;</span>,
+            timeout: DEFAULT_TIMEOUT,
         }
+    }
+
+    <span class="kw">pub fn </span>set_timeout(<span class="kw-2">&amp;mut </span><span class="self">self</span>, timeout: Duration) {
+        <span class="self">self</span>.timeout = timeout;
     }
 
     <span class="comment">// Discard type information about the response.
@@ -597,6 +622,7 @@
             params: <span class="self">self</span>.params,
             result_type: PhantomData,
             rpc_endpoint: <span class="self">self</span>.rpc_endpoint,
+            timeout: <span class="self">self</span>.timeout,
         }
     }
 }
