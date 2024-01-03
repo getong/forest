@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["color","colors","config","dimension","grid","records","util"]};
+window.SIDEBAR_ITEMS = {"mod":["ansi","colors","config","dimension","grid","records","util"]};

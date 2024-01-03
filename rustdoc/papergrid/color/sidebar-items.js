@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["AnsiColor","StaticColor"],"trait":["Color"]};

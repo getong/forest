@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["AlignmentHorizontal","AlignmentVertical","Entity"],"mod":["compact","spanned"],"struct":["Border","Borders","EntityIterator","Indent","Line","Sides"],"type":["Position"]};
+window.SIDEBAR_ITEMS = {"enum":["AlignmentHorizontal","AlignmentVertical","Entity"],"mod":["compact","spanned"],"struct":["Border","Borders","EntityIterator","Formatting","HorizontalLine","Indent","Sides","VerticalLine"],"type":["Position"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Highlight","HighlightColored"]};
+window.SIDEBAR_ITEMS = {"struct":["Highlight"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["EitherRowIterator"],"struct":["BufColumnIter","BufColumns","BufRowIter","BufRows"]};
+window.SIDEBAR_ITEMS = {"enum":["BufIterator"],"struct":["BufRecords","BufRecordsIter"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ExactValue"],"struct":["TruncateContent","TruncateContentColumnsIter","TruncateContentIter"]};
+window.SIDEBAR_ITEMS = {"struct":["TruncateContent","TruncateContentColumnsIter","TruncateContentIter"]};
