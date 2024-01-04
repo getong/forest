@@ -1567,6 +1567,25 @@
 <a href="#1567" id="1567">1567</a>
 <a href="#1568" id="1568">1568</a>
 <a href="#1569" id="1569">1569</a>
+<a href="#1570" id="1570">1570</a>
+<a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+<a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
+<a href="#1586" id="1586">1586</a>
+<a href="#1587" id="1587">1587</a>
+<a href="#1588" id="1588">1588</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2335,6 +2354,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>current: Arc&lt;Tipset&gt;,
         message: <span class="kw-2">&amp;</span>ChainMessage,
+        look_back_limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
         <span class="kw">let </span>message_from_address = message.from();
         <span class="kw">let </span>message_sequence = message.sequence();
@@ -2347,11 +2367,7 @@
             </span>.lookup_id(<span class="kw-2">&amp;</span>message_from_address, current.as_ref())<span class="question-mark">?
             </span>.context(<span class="string">&quot;Failed to lookup id&quot;</span>)
             .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?</span>;
-        <span class="kw">loop </span>{
-            <span class="kw">if </span>current.epoch() == <span class="number">0 </span>{
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-            }
-
+        <span class="kw">while </span>current.epoch() &gt; look_back_limit.unwrap_or_default() {
             <span class="kw">let </span>parent_tipset = <span class="self">self
                 </span>.cs
                 .load_required_tipset(current.parents())
@@ -2379,18 +2395,22 @@
                 current = parent_tipset;
                 current_actor_state = parent_actor_state;
             } <span class="kw">else </span>{
-                <span class="kw">break </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+                <span class="kw">break</span>;
             }
         }
+
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
     }
 
     <span class="kw">fn </span>search_back_for_message(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         current: Arc&lt;Tipset&gt;,
         message: <span class="kw-2">&amp;</span>ChainMessage,
+        look_back_limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
-        <span class="self">self</span>.check_search(current, message)
+        <span class="self">self</span>.check_search(current, message, look_back_limit)
     }
+
     <span class="doccomment">/// Returns a message receipt from a given tipset and message CID.
     </span><span class="kw">pub fn </span>get_receipt(<span class="kw-2">&amp;</span><span class="self">self</span>, tipset: Arc&lt;Tipset&gt;, msg: Cid) -&gt; <span class="prelude-ty">Result</span>&lt;Receipt, Error&gt; {
         <span class="kw">let </span>m = <span class="kw">crate</span>::chain::get_chain_message(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>msg)
@@ -2400,7 +2420,7 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(receipt);
         }
 
-        <span class="kw">let </span>maybe_tuple = <span class="self">self</span>.search_back_for_message(tipset, <span class="kw-2">&amp;</span>m)<span class="question-mark">?</span>;
+        <span class="kw">let </span>maybe_tuple = <span class="self">self</span>.search_back_for_message(tipset, <span class="kw-2">&amp;</span>m, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>message_receipt = maybe_tuple
             .ok_or_else(|| {
                 Error::Other(<span class="string">&quot;Could not get receipt from search back message&quot;</span>.to_string())
@@ -2438,7 +2458,7 @@
         <span class="kw">let </span>height_of_head = current_tipset.epoch();
         <span class="kw">let </span>task = tokio::task::spawn(<span class="kw">async move </span>{
             <span class="kw">let </span>back_tuple =
-                sm_cloned.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message_for_task)<span class="question-mark">?</span>;
+                sm_cloned.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message_for_task, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
             sender
                 .send(())
                 .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not send to channel {e:?}&quot;</span>)))<span class="question-mark">?</span>;
@@ -2527,6 +2547,24 @@
                     }
                 }
             }
+        }
+    }
+
+    <span class="kw">pub async fn </span>search_for_message(
+        <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
+        from: <span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;,
+        msg_cid: Cid,
+        look_back_limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
+        <span class="kw">let </span>from = from.unwrap_or_else(|| <span class="self">self</span>.chain_store().heaviest_tipset());
+        <span class="kw">let </span>message = <span class="kw">crate</span>::chain::get_chain_message(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>msg_cid)
+            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;failed to load message {err:}&quot;</span>)))<span class="question-mark">?</span>;
+        <span class="kw">let </span>current_tipset = <span class="self">self</span>.cs.heaviest_tipset();
+        <span class="kw">let </span>maybe_message_reciept = <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>message, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = maybe_message_reciept {
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((from, r)))
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message, look_back_limit)
         }
     }
 
