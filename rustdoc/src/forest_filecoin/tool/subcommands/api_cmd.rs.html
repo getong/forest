@@ -718,6 +718,19 @@
 <a href="#718" id="718">718</a>
 <a href="#719" id="719">719</a>
 <a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -744,6 +757,7 @@
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tabled::{builder::Builder, settings::Style};
+<span class="kw">use </span>tokio::sync::Semaphore;
 
 <span class="attr">#[derive(Debug, Subcommand)]
 </span><span class="kw">pub enum </span>ApiCommands {
@@ -770,7 +784,20 @@
         <span class="attr">#[arg(long, value_enum, default_value_t = RunIgnored::Default)]
         </span><span class="doccomment">/// Behavior for tests marked as `ignored`.
         </span>run_ignored: RunIgnored,
+        <span class="doccomment">/// Maximum number of concurrent requests
+        </span><span class="attr">#[arg(long, default_value = <span class="string">&quot;8&quot;</span>)]
+        </span>max_concurrent_requests: usize,
     },
+}
+
+<span class="doccomment">/// For more information about each flag, refer to the Forest documentation at:
+/// &lt;https://docs.forest.chainsafe.io/rustdoc/forest_filecoin/tool/subcommands/api_cmd/enum.ApiCommands.html&gt;
+</span><span class="kw">struct </span>ApiTestFlags {
+    filter: String,
+    fail_fast: bool,
+    n_tipsets: usize,
+    run_ignored: RunIgnored,
+    max_concurrent_requests: usize,
 }
 
 <span class="kw">impl </span>ApiCommands {
@@ -784,17 +811,17 @@
                 fail_fast,
                 n_tipsets,
                 run_ignored,
+                max_concurrent_requests,
             } =&gt; {
-                compare_apis(
-                    forest,
-                    lotus,
-                    snapshot_files,
+                <span class="kw">let </span>config = ApiTestFlags {
                     filter,
                     fail_fast,
                     n_tipsets,
                     run_ignored,
-                )
-                .<span class="kw">await</span><span class="question-mark">?
+                    max_concurrent_requests,
+                };
+
+                compare_apis(forest, lotus, snapshot_files, config).<span class="kw">await</span><span class="question-mark">?
             </span>}
         }
         <span class="prelude-val">Ok</span>(())
@@ -1323,10 +1350,7 @@
     forest: ApiInfo,
     lotus: ApiInfo,
     snapshot_files: Vec&lt;PathBuf&gt;,
-    filter: String,
-    fail_fast: bool,
-    n_tipsets: usize,
-    run_ignored: RunIgnored,
+    config: ApiTestFlags,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
 
@@ -1342,42 +1366,44 @@
 
     <span class="kw">if </span>!snapshot_files.is_empty() {
         <span class="kw">let </span>store = ManyCar::try_from(snapshot_files)<span class="question-mark">?</span>;
-        tests.extend(snapshot_tests(<span class="kw-2">&amp;</span>store, n_tipsets)<span class="question-mark">?</span>);
+        tests.extend(snapshot_tests(<span class="kw-2">&amp;</span>store, config.n_tipsets)<span class="question-mark">?</span>);
     }
 
     tests.sort_by_key(|test| test.request.method_name);
 
-    run_tests(tests, <span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, filter, fail_fast, run_ignored).<span class="kw">await
+    run_tests(tests, <span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, <span class="kw-2">&amp;</span>config).<span class="kw">await
 </span>}
 
 <span class="kw">async fn </span>run_tests(
     tests: Vec&lt;RpcTest&gt;,
     forest: <span class="kw-2">&amp;</span>ApiInfo,
     lotus: <span class="kw-2">&amp;</span>ApiInfo,
-    filter: String,
-    fail_fast: bool,
-    run_ignored: RunIgnored,
+    config: <span class="kw-2">&amp;</span>ApiTestFlags,
 ) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(config.max_concurrent_requests));
     <span class="kw">let </span><span class="kw-2">mut </span>futures = FuturesUnordered::new();
     <span class="kw">for </span>test <span class="kw">in </span>tests.into_iter() {
         <span class="kw">let </span>forest = forest.clone();
         <span class="kw">let </span>lotus = lotus.clone();
 
         <span class="comment">// By default, do not run ignored tests.
-        </span><span class="kw">if </span><span class="macro">matches!</span>(run_ignored, RunIgnored::Default) &amp;&amp; test.ignore.is_some() {
+        </span><span class="kw">if </span><span class="macro">matches!</span>(config.run_ignored, RunIgnored::Default) &amp;&amp; test.ignore.is_some() {
             <span class="kw">continue</span>;
         }
         <span class="comment">// If in `IgnoreOnly` mode, only run ignored tests.
-        </span><span class="kw">if </span><span class="macro">matches!</span>(run_ignored, RunIgnored::IgnoredOnly) &amp;&amp; test.ignore.is_none() {
+        </span><span class="kw">if </span><span class="macro">matches!</span>(config.run_ignored, RunIgnored::IgnoredOnly) &amp;&amp; test.ignore.is_none() {
             <span class="kw">continue</span>;
         }
-        <span class="kw">if </span>!test.request.method_name.contains(<span class="kw-2">&amp;</span>filter) {
+        <span class="kw">if </span>!test.request.method_name.contains(<span class="kw-2">&amp;</span>config.filter) {
             <span class="kw">continue</span>;
         }
 
+        <span class="comment">// Acquire a permit from the semaphore before spawning a test
+        </span><span class="kw">let </span>permit = semaphore.clone().acquire_owned().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>future = tokio::spawn(<span class="kw">async move </span>{
             <span class="kw">let </span>(forest_status, lotus_status) = test.run(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).<span class="kw">await</span>;
-            (test.request.method_name, forest_status, lotus_status)
+            drop(permit); <span class="comment">// Release the permit after test execution
+            </span>(test.request.method_name, forest_status, lotus_status)
         });
 
         futures.push(future);
@@ -1390,7 +1416,7 @@
             .and_modify(|v| <span class="kw-2">*</span>v += <span class="number">1</span>)
             .or_insert(<span class="number">1u32</span>);
         <span class="kw">if </span>(forest_status != EndpointStatus::Valid || lotus_status != EndpointStatus::Valid)
-            &amp;&amp; fail_fast
+            &amp;&amp; config.fail_fast
         {
             <span class="kw">break</span>;
         }
