@@ -121,31 +121,25 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">pub mod </span>db;
 
 <span class="kw">use </span><span class="kw">crate</span>::db::DBStatistics;
-<span class="kw">use </span>ahash::{HashMap, HashMapExt};
 <span class="kw">use </span>axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
 <span class="kw">use </span>once_cell::sync::Lazy;
+<span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>prometheus::core::{AtomicU64, GenericCounterVec, Opts};
 <span class="kw">use </span>prometheus::{Encoder, TextEncoder};
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::net::TcpListener;
-<span class="kw">use </span>tokio::sync::RwLock;
 <span class="kw">use </span>tracing::warn;
 
-<span class="kw">static </span>REGISTRIES_EXT: Lazy&lt;RwLock&lt;HashMap&lt;String, prometheus_client::registry::Registry&gt;&gt;&gt; =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+<span class="kw">pub static </span>DEFAULT_REGISTRY: Lazy&lt;RwLock&lt;prometheus_client::registry::Registry&gt;&gt; =
+    Lazy::new(Default::default);
+
 <span class="kw">pub static </span>LRU_CACHE_HIT: Lazy&lt;Box&lt;GenericCounterVec&lt;AtomicU64&gt;&gt;&gt; = Lazy::new(|| {
     <span class="kw">let </span>lru_cache_hit = Box::new(
         GenericCounterVec::&lt;AtomicU64&gt;::new(
@@ -172,10 +166,6 @@
         .expect(<span class="string">&quot;Registering the lru_cache_miss metric with the metrics registry must succeed&quot;</span>);
     lru_cache_miss
 });
-
-<span class="kw">pub async fn </span>add_metrics_registry(name: String, registry: prometheus_client::registry::Registry) {
-    REGISTRIES_EXT.write().<span class="kw">await</span>.insert(name, registry);
-}
 
 <span class="kw">pub async fn </span>init_prometheus&lt;DB&gt;(
     prometheus_listener: TcpListener,
@@ -211,13 +201,11 @@
         .encode(<span class="kw-2">&amp;</span>metric_families, <span class="kw-2">&amp;mut </span>metrics)
         .expect(<span class="string">&quot;Encoding Prometheus metrics must succeed.&quot;</span>);
 
-    <span class="kw">for </span>(_name, registry) <span class="kw">in </span>REGISTRIES_EXT.read().<span class="kw">await</span>.iter() {
-        <span class="kw">let </span><span class="kw-2">mut </span>part = String::new();
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = prometheus_client::encoding::text::encode(<span class="kw-2">&amp;mut </span>part, registry) {
-            <span class="macro">warn!</span>(<span class="string">&quot;{e}&quot;</span>);
-        }
-        metrics.extend_from_slice(part.as_bytes());
-    }
+    <span class="kw">let </span><span class="kw-2">mut </span>text = String::new();
+    <span class="kw">match </span>prometheus_client::encoding::text::encode(<span class="kw-2">&amp;mut </span>text, <span class="kw-2">&amp;</span>DEFAULT_REGISTRY.read()) {
+        <span class="prelude-val">Ok</span>(()) =&gt; metrics.extend_from_slice(text.as_bytes()),
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">warn!</span>(<span class="string">&quot;{e}&quot;</span>),
+    };
 
     (
         StatusCode::OK,

@@ -1,4 +1,5 @@
 (function() {var implementors = {
+"forest_filecoin":[["impl <a class=\"trait\" href=\"prometheus_client/encoding/trait.EncodeLabelSet.html\" title=\"trait prometheus_client::encoding::EncodeLabelSet\">EncodeLabelSet</a> for <a class=\"struct\" href=\"forest_filecoin/libp2p_bitswap/metrics/struct.TypeLabel.html\" title=\"struct forest_filecoin::libp2p_bitswap::metrics::TypeLabel\">TypeLabel</a>"]],
 "libp2p_gossipsub":[["impl <a class=\"trait\" href=\"prometheus_client/encoding/trait.EncodeLabelSet.html\" title=\"trait prometheus_client::encoding::EncodeLabelSet\">EncodeLabelSet</a> for <a class=\"struct\" href=\"libp2p_gossipsub/struct.TopicHash.html\" title=\"struct libp2p_gossipsub::TopicHash\">TopicHash</a>"]],
 "prometheus_client":[]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
