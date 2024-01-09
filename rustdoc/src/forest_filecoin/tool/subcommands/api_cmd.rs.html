@@ -735,6 +735,33 @@
 <a href="#735" id="735">735</a>
 <a href="#736" id="736">736</a>
 <a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -791,6 +818,9 @@
         <span class="doccomment">/// Maximum number of concurrent requests
         </span><span class="attr">#[arg(long, default_value = <span class="string">&quot;8&quot;</span>)]
         </span>max_concurrent_requests: usize,
+        <span class="doccomment">/// API calls are handled over WebSocket connections.
+        </span><span class="attr">#[arg(long = <span class="string">&quot;ws&quot;</span>)]
+        </span>use_websocket: bool,
     },
 }
 
@@ -802,6 +832,7 @@
     n_tipsets: usize,
     run_ignored: RunIgnored,
     max_concurrent_requests: usize,
+    use_websocket: bool,
 }
 
 <span class="kw">impl </span>ApiCommands {
@@ -816,6 +847,7 @@
                 n_tipsets,
                 run_ignored,
                 max_concurrent_requests,
+                use_websocket,
             } =&gt; {
                 <span class="kw">let </span>config = ApiTestFlags {
                     filter,
@@ -823,6 +855,7 @@
                     n_tipsets,
                     run_ignored,
                     max_concurrent_requests,
+                    use_websocket,
                 };
 
                 compare_apis(forest, lotus, snapshot_files, config).<span class="kw">await</span><span class="question-mark">?
@@ -945,9 +978,19 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         forest_api: <span class="kw-2">&amp;</span>ApiInfo,
         lotus_api: <span class="kw-2">&amp;</span>ApiInfo,
+        use_websocket: bool,
     ) -&gt; (EndpointStatus, EndpointStatus) {
-        <span class="kw">let </span>forest_resp = forest_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>;
-        <span class="kw">let </span>lotus_resp = lotus_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>;
+        <span class="kw">let </span>(forest_resp, lotus_resp) = <span class="kw">if </span>use_websocket {
+            (
+                forest_api.ws_call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
+                lotus_api.ws_call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
+            )
+        } <span class="kw">else </span>{
+            (
+                forest_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
+                lotus_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
+            )
+        };
 
         <span class="kw">match </span>(forest_resp, lotus_resp) {
             (<span class="prelude-val">Ok</span>(forest), <span class="prelude-val">Ok</span>(lotus))
@@ -1337,6 +1380,11 @@
     <span class="prelude-val">Ok</span>(tests)
 }
 
+<span class="kw">fn </span>websocket_tests() -&gt; Vec&lt;RpcTest&gt; {
+    <span class="kw">let </span>test = RpcTest::identity(ApiInfo::chain_notify_req()).ignore(<span class="string">&quot;Not implemented yet&quot;</span>);
+    <span class="macro">vec!</span>[test]
+}
+
 <span class="doccomment">/// Compare two RPC providers. The providers are labeled `forest` and `lotus`,
 /// but other nodes may be used (such as `venus`). The `lotus` node is assumed
 /// to be correct and the `forest` node will be marked as incorrect if it
@@ -1354,6 +1402,7 @@
 /// | Filecoin.ChainGetMessage (67)     | InternalServerError | Valid         |
 /// ```
 /// The number after a method name indicates how many times an RPC call was tested.
+</span><span class="attr">#[allow(clippy::too_many_arguments)]
 </span><span class="kw">async fn </span>compare_apis(
     forest: ApiInfo,
     lotus: ApiInfo,
@@ -1375,6 +1424,10 @@
     <span class="kw">if </span>!snapshot_files.is_empty() {
         <span class="kw">let </span>store = ManyCar::try_from(snapshot_files)<span class="question-mark">?</span>;
         tests.extend(snapshot_tests(<span class="kw-2">&amp;</span>store, config.n_tipsets)<span class="question-mark">?</span>);
+    }
+
+    <span class="kw">if </span>config.use_websocket {
+        tests.extend(websocket_tests());
     }
 
     tests.sort_by_key(|test| test.request.method_name);
@@ -1408,8 +1461,9 @@
 
         <span class="comment">// Acquire a permit from the semaphore before spawning a test
         </span><span class="kw">let </span>permit = semaphore.clone().acquire_owned().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>use_websocket = config.use_websocket;
         <span class="kw">let </span>future = tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span>(forest_status, lotus_status) = test.run(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).<span class="kw">await</span>;
+            <span class="kw">let </span>(forest_status, lotus_status) = test.run(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, use_websocket).<span class="kw">await</span>;
             drop(permit); <span class="comment">// Release the permit after test execution
             </span>(test.request.method_name, forest_status, lotus_status)
         });

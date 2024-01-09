@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["rpc_ws_handler","rpc_ws_handler_inner","rpc_ws_task"]};
+window.SIDEBAR_ITEMS = {"fn":["rpc_v0_ws_handler","rpc_ws_handler","rpc_ws_handler_inner","rpc_ws_task"]};

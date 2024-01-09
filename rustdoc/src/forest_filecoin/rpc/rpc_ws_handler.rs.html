@@ -122,6 +122,51 @@
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -139,9 +184,11 @@
 <span class="kw">use </span>futures::{stream::SplitSink, SinkExt, StreamExt};
 <span class="kw">use </span>http::{HeaderMap, HeaderValue};
 <span class="kw">use </span>tokio::sync::RwLock;
-<span class="kw">use </span>tracing::{debug, error, info, warn};
+<span class="kw">use </span>tracing::{debug, error, warn};
 
-<span class="kw">use </span><span class="kw">crate</span>::rpc::rpc_util::{call_rpc_str, check_permissions, get_auth_header, get_error_str};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::rpc_util::{
+    call_rpc_str, check_permissions, get_auth_header, get_error_str, is_v1_method,
+};
 
 <span class="kw">async fn </span>rpc_ws_task(
     authorization_header: <span class="prelude-ty">Option</span>&lt;HeaderValue&gt;,
@@ -157,7 +204,7 @@
         .<span class="kw">await
         </span>.map_err(|(<span class="kw">_</span>, e)| anyhow::Error::msg(e))<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;RPC WS called method: {}&quot;</span>, call_method);
+    <span class="macro">debug!</span>(<span class="string">&quot;RPC WS called method: {}&quot;</span>, call_method);
     <span class="kw">let </span>response = call_rpc_str(rpc_server.clone(), rpc_call).<span class="kw">await</span><span class="question-mark">?</span>;
     ws_sender
         .write()
@@ -168,6 +215,23 @@
     <span class="prelude-val">Ok</span>(())
 }
 
+<span class="comment">// Lotus exposes two versions of its RPC API: v0 and v1. Version 0 is almost a
+// subset of version 1 (some methods such as `BeaconGetEntry` are only in v0 and
+// not in v1). Forest deviates from Lotus in this regard and our v1 API is
+// strictly a superset of the v0 API.
+//
+// This WS handler rejects RPC calls if they&#39;re not v0 methods.
+</span><span class="kw">pub async fn </span>rpc_v0_ws_handler(
+    headers: HeaderMap,
+    axum::extract::State(rpc_server): axum::extract::State&lt;JsonRpcServerState&gt;,
+    ws: WebSocketUpgrade,
+) -&gt; <span class="kw">impl </span>IntoResponse {
+    <span class="kw">let </span>authorization_header = get_auth_header(headers);
+    ws.on_upgrade(<span class="kw">move </span>|socket| <span class="kw">async </span>{
+        rpc_ws_handler_inner(socket, authorization_header, rpc_server, <span class="bool-val">true</span>).<span class="kw">await
+    </span>})
+}
+
 <span class="kw">pub async fn </span>rpc_ws_handler(
     headers: HeaderMap,
     axum::extract::State(rpc_server): axum::extract::State&lt;JsonRpcServerState&gt;,
@@ -175,7 +239,7 @@
 ) -&gt; <span class="kw">impl </span>IntoResponse {
     <span class="kw">let </span>authorization_header = get_auth_header(headers);
     ws.on_upgrade(<span class="kw">move </span>|socket| <span class="kw">async </span>{
-        rpc_ws_handler_inner(socket, authorization_header, rpc_server).<span class="kw">await
+        rpc_ws_handler_inner(socket, authorization_header, rpc_server, <span class="bool-val">false</span>).<span class="kw">await
     </span>})
 }
 
@@ -183,62 +247,88 @@
     socket: WebSocket,
     authorization_header: <span class="prelude-ty">Option</span>&lt;HeaderValue&gt;,
     rpc_server: JsonRpcServerState,
+    reject_v1_methods: bool,
 ) {
-    <span class="macro">info!</span>(<span class="string">&quot;Accepted WS connection!&quot;</span>);
+    <span class="macro">debug!</span>(<span class="string">&quot;Accepted WS connection!&quot;</span>);
     <span class="kw">let </span>(sender, <span class="kw-2">mut </span>receiver) = socket.split();
     <span class="kw">let </span>ws_sender = Arc::new(RwLock::new(sender));
     <span class="kw">let </span>socket_active = Arc::new(AtomicCell::new(<span class="bool-val">true</span>));
     <span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(message)) = receiver.next().<span class="kw">await </span>{
         <span class="macro">debug!</span>(<span class="string">&quot;Received new WS RPC message: {:?}&quot;</span>, message);
-        <span class="kw">if let </span>Message::Text(request_text) = message {
-            <span class="macro">debug!</span>(<span class="string">&quot;WS RPC Request: {}&quot;</span>, request_text);
-            <span class="kw">if </span>!request_text.is_empty() {
-                <span class="macro">info!</span>(<span class="string">&quot;RPC Request Received: {:?}&quot;</span>, <span class="kw-2">&amp;</span>request_text);
-                <span class="kw">let </span>authorization_header = authorization_header.clone();
-                <span class="kw">let </span>task_rpc_server = rpc_server.clone();
-                <span class="kw">let </span>task_socket_active = socket_active.clone();
-                <span class="kw">let </span>task_ws_sender = ws_sender.clone();
-                <span class="kw">match </span>serde_json::from_str(<span class="kw-2">&amp;</span>request_text)
-                    <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;jsonrpc_v2::RequestObject, serde_json::Error&gt;
-                {
-                    <span class="prelude-val">Ok</span>(rpc_call) =&gt; {
-                        tokio::task::spawn(<span class="kw">async move </span>{
-                            <span class="kw">match </span>rpc_ws_task(
-                                authorization_header,
-                                rpc_call,
-                                task_rpc_server,
-                                task_socket_active,
-                                task_ws_sender.clone(),
-                            )
-                            .<span class="kw">await
-                            </span>{
-                                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                                    <span class="macro">debug!</span>(<span class="string">&quot;WS RPC task success.&quot;</span>);
-                                }
-                                <span class="prelude-val">Err</span>(e) =&gt; {
-                                    <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;WS RPC task error: {e}&quot;</span>);
-                                    <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, msg);
-                                    task_ws_sender
-                                        .write()
-                                        .<span class="kw">await
-                                        </span>.send(Message::Text(get_error_str(<span class="number">3</span>, msg)))
-                                        .<span class="kw">await
-                                        </span>.unwrap();
-                                }
-                            }
-                        });
-                    }
-                    <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;Error deserializing WS request payload: {e}&quot;</span>);
+
+        <span class="kw">let </span>payload: <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;jsonrpc_v2::RequestObject, serde_json::Error&gt;&gt; = <span class="kw">match </span>message {
+            Message::Text(request_text) =&gt; {
+                <span class="kw">if </span>!request_text.is_empty() {
+                    <span class="prelude-val">Some</span>(serde_json::from_str(<span class="kw-2">&amp;</span>request_text))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
+            }
+            Message::Binary(request_data) =&gt; {
+                <span class="kw">if </span>!request_data.is_empty() {
+                    <span class="prelude-val">Some</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>request_data))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
+            }
+            <span class="comment">// We should not need to support other kind of messages.
+            </span><span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        };
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(request_obj) = payload {
+            <span class="macro">debug!</span>(<span class="string">&quot;RPC Request Received: {:?}&quot;</span>, <span class="kw-2">&amp;</span>request_obj);
+            <span class="kw">let </span>authorization_header = authorization_header.clone();
+            <span class="kw">let </span>task_rpc_server = rpc_server.clone();
+            <span class="kw">let </span>task_socket_active = socket_active.clone();
+            <span class="kw">let </span>task_ws_sender = ws_sender.clone();
+            <span class="kw">match </span>request_obj {
+                <span class="prelude-val">Ok</span>(rpc_call) =&gt; {
+                    <span class="kw">if </span>reject_v1_methods &amp;&amp; is_v1_method(rpc_call.method_ref()) {
+                        <span class="kw">let </span>msg = <span class="string">&quot;This endpoint cannot handle v1 (unstable) methods&quot;</span>.into();
                         <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, msg);
-                        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = task_ws_sender
+                        <span class="kw">return </span>task_ws_sender
                             .write()
                             .<span class="kw">await
-                            </span>.send(Message::Text(get_error_str(<span class="number">1</span>, msg)))
+                            </span>.send(Message::Text(get_error_str(<span class="number">3</span>, msg)))
                             .<span class="kw">await
+                            </span>.unwrap();
+                    }
+                    tokio::task::spawn(<span class="kw">async move </span>{
+                        <span class="kw">match </span>rpc_ws_task(
+                            authorization_header,
+                            rpc_call,
+                            task_rpc_server,
+                            task_socket_active,
+                            task_ws_sender.clone(),
+                        )
+                        .<span class="kw">await
                         </span>{
-                            <span class="macro">warn!</span>(<span class="string">&quot;{e}&quot;</span>);
+                            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+                                <span class="macro">debug!</span>(<span class="string">&quot;WS RPC task success.&quot;</span>);
+                            }
+                            <span class="prelude-val">Err</span>(e) =&gt; {
+                                <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;WS RPC task error: {e}&quot;</span>);
+                                <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, msg);
+                                task_ws_sender
+                                    .write()
+                                    .<span class="kw">await
+                                    </span>.send(Message::Text(get_error_str(<span class="number">3</span>, msg)))
+                                    .<span class="kw">await
+                                    </span>.unwrap();
+                            }
                         }
+                    });
+                }
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="kw">let </span>msg = <span class="macro">format!</span>(<span class="string">&quot;Error deserializing WS request payload: {e}&quot;</span>);
+                    <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, msg);
+                    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = task_ws_sender
+                        .write()
+                        .<span class="kw">await
+                        </span>.send(Message::Text(get_error_str(<span class="number">1</span>, msg)))
+                        .<span class="kw">await
+                    </span>{
+                        <span class="macro">warn!</span>(<span class="string">&quot;{e}&quot;</span>);
                     }
                 }
             }
