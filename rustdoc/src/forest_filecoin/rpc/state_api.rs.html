@@ -790,6 +790,33 @@
 <a href="#790" id="790">790</a>
 <a href="#791" id="791">791</a>
 <a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -800,7 +827,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
     ApiActorState, ApiDeadline, ApiInvocResult, CirculatingSupply, MarketDeal, MessageLookup,
-    MinerSectors, MiningBaseInfo, RPCState, SectorOnChainInfo,
+    MinerSectors, MiningBaseInfo, RPCState, SectorOnChainInfo, Transaction,
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, clock::ChainEpoch, econ::TokenAmount, executor::Receipt, message::Message,
@@ -1523,6 +1550,33 @@
     <span class="kw">let </span>locked_balance = ms.locked_balance(height)<span class="question-mark">?</span>.into();
     <span class="kw">let </span>avail_balance = <span class="kw-2">&amp;</span>actor_balance - locked_balance;
     <span class="prelude-val">Ok</span>(LotusJson(avail_balance))
+}
+
+<span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>msig_get_pending&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt;(
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    Params(LotusJson((addr, tsk))): Params&lt;LotusJson&lt;(Address, TipsetKeys)&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Transaction&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>store = data.state_manager.blockstore();
+    <span class="kw">let </span>actor = data
+        .state_manager
+        .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
+        </span>.ok_or(<span class="string">&quot;MultiSig actor not found&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ms = multisig::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
+    <span class="kw">let </span>txns = ms
+        .get_pending_txn(store)<span class="question-mark">?
+        </span>.iter()
+        .map(|txn| Transaction {
+            id: txn.id,
+            to: txn.to.into(),
+            value: txn.value.clone().into(),
+            method: txn.method,
+            params: txn.params.clone(),
+            approved: txn.approved.iter().map(|item| item.into()).collect(),
+        })
+        .collect();
+
+    <span class="prelude-val">Ok</span>(LotusJson(txns))
 }
 
 <span class="doccomment">/// Get state sector info using sector no
