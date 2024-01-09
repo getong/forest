@@ -922,22 +922,22 @@
             // enclosing loop is processing the queue. Once the desired depth has been reached -
             // yield the block without walking the graph it represents.
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(tipset) = this.tipset_iter.next() {
-                <span class="kw">for </span>block <span class="kw">in </span>tipset.into_blocks().into_iter() {
+                <span class="kw">for </span>block <span class="kw">in </span>tipset.into_block_headers().into_iter() {
                     <span class="kw">if </span>this.seen.insert(<span class="kw-2">*</span>block.cid()) {
                         <span class="comment">// Make sure we always yield a block otherwise.
                         </span>this.dfs.push_back(Emit(<span class="kw-2">*</span>block.cid()));
 
-                        <span class="kw">if </span>block.epoch() == <span class="number">0 </span>{
+                        <span class="kw">if </span>block.epoch == <span class="number">0 </span>{
                             <span class="comment">// The genesis block has some kind of dummy parent that needs to be emitted.
-                            </span><span class="kw">for </span>p <span class="kw">in </span>block.parents().cids.clone() {
+                            </span><span class="kw">for </span>p <span class="kw">in </span>block.parents.cids.clone() {
                                 this.dfs.push_back(Emit(p));
                             }
                         }
 
                         <span class="comment">// Process block messages.
-                        </span><span class="kw">if </span>block.epoch() &gt; stateroot_limit {
+                        </span><span class="kw">if </span>block.epoch &gt; stateroot_limit {
                             this.dfs.push_back(Iterate(
-                                DfsIter::from(<span class="kw-2">*</span>block.messages())
+                                DfsIter::from(block.messages)
                                     .filter_map(ipld_to_cid)
                                     .collect(),
                             ));
@@ -945,11 +945,11 @@
 
                         <span class="comment">// Visit the block if it&#39;s within required depth. And a special case for `0`
                         // epoch to match Lotus&#39; implementation.
-                        </span><span class="kw">if </span>block.epoch() == <span class="number">0 </span>|| block.epoch() &gt; stateroot_limit {
+                        </span><span class="kw">if </span>block.epoch == <span class="number">0 </span>|| block.epoch &gt; stateroot_limit {
                             <span class="comment">// NOTE: In the original `walk_snapshot` implementation we walk the dag
                             // immediately. Which is what we do here as well, but using a queue.
                             </span>this.dfs.push_back(Iterate(
-                                DfsIter::from(<span class="kw-2">*</span>block.state_root())
+                                DfsIter::from(block.state_root)
                                     .filter_map(ipld_to_cid)
                                     .collect(),
                             ));
@@ -1159,51 +1159,51 @@
             // the extract queue. The emit queue is processed in the loop above. Once the desired depth
             // has been reached yield a block without walking the graph it represents.
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(tipset) = this.tipset_iter.next() {
-                <span class="kw">for </span>block <span class="kw">in </span>tipset.into_blocks().into_iter() {
+                <span class="kw">for </span>block <span class="kw">in </span>tipset.into_block_headers().into_iter() {
                     <span class="kw">if </span>this.seen.lock().insert(<span class="kw-2">*</span>block.cid()) {
                         <span class="comment">// Make sure we always yield a block, directly to the stream to avoid extra
                         // work.
                         </span>this.queue.push(<span class="kw-2">*</span>block.cid());
 
-                        <span class="kw">if </span>block.epoch() == <span class="number">0 </span>{
+                        <span class="kw">if </span>block.epoch == <span class="number">0 </span>{
                             <span class="comment">// The genesis block has some kind of dummy parent that needs to be emitted.
-                            </span><span class="kw">for </span>p <span class="kw">in </span>block.parents().cids.clone() {
+                            </span><span class="kw">for </span>p <span class="kw">in </span>block.parents.cids.clone() {
                                 this.queue.push(p);
                             }
                         }
 
                         <span class="comment">// Process block messages.
-                        </span><span class="kw">if </span>block.epoch() &gt; stateroot_limit
-                            &amp;&amp; should_save_block_to_snapshot(<span class="kw-2">*</span>block.messages())
+                        </span><span class="kw">if </span>block.epoch &gt; stateroot_limit
+                            &amp;&amp; should_save_block_to_snapshot(block.messages)
                         {
-                            <span class="kw">if </span>this.db.has(block.messages())<span class="question-mark">? </span>{
-                                this.extract_sender.send(<span class="kw-2">*</span>block.messages())<span class="question-mark">?</span>;
+                            <span class="kw">if </span>this.db.has(<span class="kw-2">&amp;</span>block.messages)<span class="question-mark">? </span>{
+                                this.extract_sender.send(block.messages)<span class="question-mark">?</span>;
                                 <span class="comment">// This will simply return an error once we reach that item in
                                 // the queue.
                             </span>} <span class="kw">else if </span><span class="kw-2">*</span>this.fail_on_dead_links {
-                                this.queue.push(<span class="kw-2">*</span>block.messages());
+                                this.queue.push(block.messages);
                             } <span class="kw">else </span>{
                                 <span class="comment">// Make sure we update seen here as we don&#39;t send the block for
                                 // inspection.
-                                </span>this.seen.lock().insert(<span class="kw-2">*</span>block.messages());
+                                </span>this.seen.lock().insert(block.messages);
                             }
                         }
 
                         <span class="comment">// Visit the block if it&#39;s within required depth. And a special case for `0`
                         // epoch to match Lotus&#39; implementation.
-                        </span><span class="kw">if </span>(block.epoch() == <span class="number">0 </span>|| block.epoch() &gt; stateroot_limit)
-                            &amp;&amp; should_save_block_to_snapshot(<span class="kw-2">*</span>block.state_root())
+                        </span><span class="kw">if </span>(block.epoch == <span class="number">0 </span>|| block.epoch &gt; stateroot_limit)
+                            &amp;&amp; should_save_block_to_snapshot(block.state_root)
                         {
-                            <span class="kw">if </span>this.db.has(block.state_root())<span class="question-mark">? </span>{
-                                this.extract_sender.send(<span class="kw-2">*</span>block.state_root())<span class="question-mark">?</span>;
+                            <span class="kw">if </span>this.db.has(<span class="kw-2">&amp;</span>block.state_root)<span class="question-mark">? </span>{
+                                this.extract_sender.send(block.state_root)<span class="question-mark">?</span>;
                                 <span class="comment">// This will simply return an error once we reach that item in
                                 // the queue.
                             </span>} <span class="kw">else if </span><span class="kw-2">*</span>this.fail_on_dead_links {
-                                this.queue.push(<span class="kw-2">*</span>block.state_root());
+                                this.queue.push(block.state_root);
                             } <span class="kw">else </span>{
                                 <span class="comment">// Make sure we update seen here as we don&#39;t send the block for
                                 // inspection.
-                                </span>this.seen.lock().insert(<span class="kw-2">*</span>block.state_root());
+                                </span>this.seen.lock().insert(block.state_root);
                             }
                         }
                     }

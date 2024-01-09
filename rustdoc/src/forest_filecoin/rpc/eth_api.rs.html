@@ -153,7 +153,7 @@
 </span><span class="kw">use </span>std::{ops::Add, sync::Arc};
 
 <span class="kw">use </span><span class="kw">super</span>::gas_api;
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKeys};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{index::ResolveNullTipset, ChainStore};
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::FrozenCidVec;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
@@ -213,10 +213,10 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;GasPriceResult, JsonRpcError&gt; {
     <span class="kw">let </span>ts = data.state_manager.chain_store().heaviest_tipset();
     <span class="kw">let </span>block0 = ts
-        .blocks()
+        .block_headers()
         .first()
         .context(<span class="string">&quot;Failed to get the first block&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>base_fee = block0.parent_base_fee();
+    <span class="kw">let </span>base_fee = <span class="kw-2">&amp;</span>block0.parent_base_fee;
     <span class="kw">if let </span><span class="prelude-val">Ok</span>(premium) = gas_api::estimate_gas_premium(<span class="kw-2">&amp;</span>data, <span class="number">10000</span>).<span class="kw">await </span>{
         <span class="kw">let </span>gas_price = base_fee.add(premium);
         <span class="prelude-val">Ok</span>(GasPriceResult(gas_price.atto().clone()))
@@ -273,7 +273,7 @@
             <span class="prelude-val">Ok</span>(ts)
         }
         BlockNumberOrHash::BlockHash(hash, require_canonical) =&gt; {
-            <span class="kw">let </span>tsk = TipsetKeys {
+            <span class="kw">let </span>tsk = TipsetKey {
                 cids: FrozenCidVec::from_iter([hash.to_cid()]),
             };
             <span class="kw">let </span>ts = chain.chain_index.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;

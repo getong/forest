@@ -1603,7 +1603,7 @@
 <span class="kw">pub mod </span>vm_circ_supply;
 <span class="kw">pub use </span><span class="self">self</span>::errors::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::beacon::{BeaconEntry, BeaconSchedule};
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKeys};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{
     index::{ChainIndex, ResolveNullTipset},
     ChainStore, HeadChange,
@@ -1662,8 +1662,8 @@
 <span class="comment">// Various structures for implementing the tipset state cache
 
 </span><span class="kw">struct </span>TipsetStateCacheInner {
-    values: LruCache&lt;TipsetKeys, CidPair&gt;,
-    pending: Vec&lt;(TipsetKeys, Arc&lt;TokioMutex&lt;()&gt;&gt;)&gt;,
+    values: LruCache&lt;TipsetKey, CidPair&gt;,
+    pending: Vec&lt;(TipsetKey, Arc&lt;TokioMutex&lt;()&gt;&gt;)&gt;,
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>TipsetStateCacheInner {
@@ -1699,7 +1699,7 @@
         func(<span class="kw-2">&amp;mut </span>lock)
     }
 
-    <span class="kw">pub async fn </span>get_or_else&lt;F, Fut&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>TipsetKeys, compute: F) -&gt; anyhow::Result&lt;CidPair&gt;
+    <span class="kw">pub async fn </span>get_or_else&lt;F, Fut&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>TipsetKey, compute: F) -&gt; anyhow::Result&lt;CidPair&gt;
     <span class="kw">where
         </span>F: Fn() -&gt; Fut,
         Fut: core::future::Future&lt;Output = anyhow::Result&lt;CidPair&gt;&gt;,
@@ -1757,11 +1757,11 @@
         }
     }
 
-    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>TipsetKeys) -&gt; <span class="prelude-ty">Option</span>&lt;CidPair&gt; {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Option</span>&lt;CidPair&gt; {
         <span class="self">self</span>.with_inner(|inner| inner.values.get(key).copied())
     }
 
-    <span class="kw">fn </span>insert(<span class="kw-2">&amp;</span><span class="self">self</span>, key: TipsetKeys, value: CidPair) {
+    <span class="kw">fn </span>insert(<span class="kw-2">&amp;</span><span class="self">self</span>, key: TipsetKey, value: CidPair) {
         <span class="self">self</span>.with_inner(|inner| {
             inner.pending.retain(|(k, <span class="kw">_</span>)| k != <span class="kw-2">&amp;</span>key);
             inner.values.put(key, value);
@@ -1821,8 +1821,8 @@
         chain_config: Arc&lt;ChainConfig&gt;,
         sync_config: Arc&lt;SyncConfig&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
-        <span class="kw">let </span>genesis = cs.genesis();
-        <span class="kw">let </span>beacon = Arc::new(chain_config.get_beacon_schedule(genesis.timestamp()));
+        <span class="kw">let </span>genesis = cs.genesis_block_header();
+        <span class="kw">let </span>beacon = Arc::new(chain_config.get_beacon_schedule(genesis.timestamp));
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             cs,
@@ -2014,7 +2014,7 @@
                 state_tree_root: <span class="kw-2">*</span>state_cid,
                 epoch: height,
                 rand: Box::new(rand),
-                base_fee: tipset.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
+                base_fee: tipset.block_headers()[<span class="number">0</span>].parent_base_fee.clone(),
                 circ_supply: genesis_info.get_vm_circulating_supply(
                     height,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
@@ -2103,7 +2103,7 @@
                     state_tree_root: st,
                     epoch,
                     rand: Box::new(chain_rand),
-                    base_fee: ts.blocks()[<span class="number">0</span>].parent_base_fee().clone(),
+                    base_fee: ts.block_headers()[<span class="number">0</span>].parent_base_fee.clone(),
                     circ_supply: genesis_info.get_vm_circulating_supply(
                         epoch,
                         <span class="kw-2">&amp;</span><span class="self">self</span>.blockstore_owned(),
@@ -2282,7 +2282,7 @@
         enable_tracing: VMTrace,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;CidPair, Error&gt; {
         <span class="prelude-val">Ok</span>(apply_block_messages(
-            <span class="self">self</span>.chain_store().genesis().timestamp(),
+            <span class="self">self</span>.chain_store().genesis_block_header().timestamp,
             Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_store().chain_index),
             Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_config),
             <span class="self">self</span>.beacon_schedule(),
@@ -2340,7 +2340,7 @@
                 } <span class="kw">else </span>{
                     <span class="kw">crate</span>::chain::get_parent_receipt(
                         <span class="self">self</span>.blockstore(),
-                        <span class="kw-2">&amp;</span>tipset.blocks()[<span class="number">0</span>],
+                        <span class="kw-2">&amp;</span>tipset.block_headers()[<span class="number">0</span>],
                         index,
                     )
                     .map_err(|err| Error::Other(err.to_string()))
@@ -2465,7 +2465,7 @@
             <span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, Error&gt;(back_tuple)
         });
 
-        <span class="kw">let </span>reverts: Arc&lt;RwLock&lt;HashMap&lt;TipsetKeys, bool&gt;&gt;&gt; = Arc::new(RwLock::new(HashMap::new()));
+        <span class="kw">let </span>reverts: Arc&lt;RwLock&lt;HashMap&lt;TipsetKey, bool&gt;&gt;&gt; = Arc::new(RwLock::new(HashMap::new()));
         <span class="kw">let </span>block_revert = reverts.clone();
         <span class="kw">let </span>sm_cloned = Arc::clone(<span class="self">self</span>);
 
@@ -2890,7 +2890,7 @@
     <span class="kw">where
         </span>T: Iterator&lt;Item = Arc&lt;Tipset&gt;&gt; + Send,
     {
-        <span class="kw">let </span>genesis_timestamp = <span class="self">self</span>.chain_store().genesis().timestamp();
+        <span class="kw">let </span>genesis_timestamp = <span class="self">self</span>.chain_store().genesis_block_header().timestamp;
         validate_tipsets(
             genesis_timestamp,
             <span class="self">self</span>.chain_store().chain_index.clone(),
@@ -2970,9 +2970,9 @@
                 VMTrace::NotTraced,
             )
             .context(<span class="string">&quot;couldn&#39;t compute tipset state&quot;</span>)<span class="question-mark">?</span>;
-            <span class="kw">let </span>expected_receipt = child.min_ticket_block().message_receipts();
+            <span class="kw">let </span>expected_receipt = child.min_ticket_block().message_receipts;
             <span class="kw">let </span>expected_state = child.parent_state();
-            <span class="kw">match </span>(expected_state, expected_receipt) == (<span class="kw-2">&amp;</span>actual_state, <span class="kw-2">&amp;</span>actual_receipt) {
+            <span class="kw">match </span>(expected_state, expected_receipt) == (<span class="kw-2">&amp;</span>actual_state, actual_receipt) {
                 <span class="bool-val">true </span>=&gt; <span class="prelude-val">Ok</span>(()),
                 <span class="bool-val">false </span>=&gt; {
                     <span class="macro">error!</span>(
@@ -3092,8 +3092,8 @@
         // block miner reference a valid miner in the state tree. Unless we create some
         // magical genesis miner, this won&#39;t work properly, so we short circuit here
         // This avoids the question of &#39;who gets paid the genesis block reward&#39;
-        </span><span class="kw">let </span>message_receipts = tipset.min_ticket_block().message_receipts();
-        <span class="kw">return </span><span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tipset.parent_state(), <span class="kw-2">*</span>message_receipts));
+        </span><span class="kw">let </span>message_receipts = tipset.min_ticket_block().message_receipts;
+        <span class="kw">return </span><span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tipset.parent_state(), message_receipts));
     }
 
     <span class="kw">let </span>_timer = metrics::APPLY_BLOCKS_TIME.start_timer();
@@ -3115,7 +3115,7 @@
                 state_tree_root: state_root,
                 epoch,
                 rand: Box::new(rand.clone()),
-                base_fee: tipset.min_ticket_block().parent_base_fee().clone(),
+                base_fee: tipset.min_ticket_block().parent_base_fee.clone(),
                 circ_supply: circulating_supply,
                 chain_config: Arc::clone(<span class="kw-2">&amp;</span>chain_config),
                 chain_index: Arc::clone(<span class="kw-2">&amp;</span>chain_index),

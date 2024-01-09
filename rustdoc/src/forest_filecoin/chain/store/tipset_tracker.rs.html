@@ -162,7 +162,7 @@
 
 </span><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span>cid::Cid;
@@ -190,9 +190,9 @@
     }
 
     <span class="doccomment">/// Adds a block header to the tracker.
-    </span><span class="kw">pub fn </span>add(<span class="kw-2">&amp;</span><span class="self">self</span>, header: <span class="kw-2">&amp;</span>BlockHeader) {
+    </span><span class="kw">pub fn </span>add(<span class="kw-2">&amp;</span><span class="self">self</span>, header: <span class="kw-2">&amp;</span>CachingBlockHeader) {
         <span class="kw">let </span><span class="kw-2">mut </span>map_lock = <span class="self">self</span>.entries.lock();
-        <span class="kw">let </span>cids = map_lock.entry(header.epoch()).or_default();
+        <span class="kw">let </span>cids = map_lock.entry(header.epoch).or_default();
         <span class="kw">if </span>cids.contains(header.cid()) {
             <span class="macro">debug!</span>(<span class="string">&quot;tried to add block to tipset tracker that was already there&quot;</span>);
             <span class="kw">return</span>;
@@ -202,7 +202,7 @@
         drop(map_lock);
 
         <span class="self">self</span>.check_multiple_blocks_from_same_miner(<span class="kw-2">&amp;</span>cids_to_verify, header);
-        <span class="self">self</span>.prune_entries(header.epoch());
+        <span class="self">self</span>.prune_entries(header.epoch);
     }
 
     <span class="doccomment">/// Checks if there are multiple blocks from the same miner at the same
@@ -211,14 +211,14 @@
     /// This should never happen. Something is weird as it&#39;s against the
     /// protocol rules for a miner to produce multiple blocks at the same
     /// height.
-    </span><span class="kw">fn </span>check_multiple_blocks_from_same_miner(<span class="kw-2">&amp;</span><span class="self">self</span>, cids: <span class="kw-2">&amp;</span>[Cid], header: <span class="kw-2">&amp;</span>BlockHeader) {
+    </span><span class="kw">fn </span>check_multiple_blocks_from_same_miner(<span class="kw-2">&amp;</span><span class="self">self</span>, cids: <span class="kw-2">&amp;</span>[Cid], header: <span class="kw-2">&amp;</span>CachingBlockHeader) {
         <span class="kw">for </span>cid <span class="kw">in </span>cids.iter() {
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(block)) = BlockHeader::load(<span class="kw-2">&amp;</span><span class="self">self</span>.db, <span class="kw-2">*</span>cid) {
-                <span class="kw">if </span>header.miner_address() == block.miner_address() {
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(block)) = CachingBlockHeader::load(<span class="kw-2">&amp;</span><span class="self">self</span>.db, <span class="kw-2">*</span>cid) {
+                <span class="kw">if </span>header.miner_address == block.miner_address {
                     <span class="macro">warn!</span>(
                         <span class="string">&quot;Have multiple blocks from miner {} at height {} in our tipset cache {}-{}&quot;</span>,
-                        header.miner_address(),
-                        header.epoch(),
+                        header.miner_address,
+                        header.epoch,
                         header.cid(),
                         cid
                     );
@@ -243,8 +243,8 @@
 
     <span class="doccomment">/// Expands the given block header into the largest possible tipset by
     /// combining it with known blocks at the same height with the same parents.
-    </span><span class="kw">pub fn </span>expand(<span class="kw-2">&amp;</span><span class="self">self</span>, header: BlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;Tipset, Error&gt; {
-        <span class="kw">let </span>epoch = header.epoch();
+    </span><span class="kw">pub fn </span>expand(<span class="kw-2">&amp;</span><span class="self">self</span>, header: CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;Tipset, Error&gt; {
+        <span class="kw">let </span>epoch = header.epoch;
         <span class="kw">let </span><span class="kw-2">mut </span>headers = <span class="macro">vec!</span>[header];
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(entries) = <span class="self">self</span>.entries.lock().get(<span class="kw-2">&amp;</span>epoch).cloned() {
@@ -253,14 +253,14 @@
                     <span class="kw">continue</span>;
                 }
 
-                <span class="kw">let </span>h = BlockHeader::load(<span class="kw-2">&amp;</span><span class="self">self</span>.db, cid)
+                <span class="kw">let </span>h = CachingBlockHeader::load(<span class="kw-2">&amp;</span><span class="self">self</span>.db, cid)
                     .ok()
                     .flatten()
                     .ok_or_else(|| {
                         Error::Other(<span class="macro">format!</span>(<span class="string">&quot;failed to load block ({cid}) for tipset expansion&quot;</span>))
                     })<span class="question-mark">?</span>;
 
-                <span class="kw">if </span>h.parents() == headers[<span class="number">0</span>].parents() {
+                <span class="kw">if </span>h.parents == headers[<span class="number">0</span>].parents {
                     headers.push(h);
                 }
             }

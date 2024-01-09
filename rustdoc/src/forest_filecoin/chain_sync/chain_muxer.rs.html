@@ -982,8 +982,6 @@
 <a href="#982" id="982">982</a>
 <a href="#983" id="983">983</a>
 <a href="#984" id="984">984</a>
-<a href="#985" id="985">985</a>
-<a href="#986" id="986">986</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -994,9 +992,7 @@
     time::SystemTime,
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{
-    Block, Error <span class="kw">as </span>ForestBlockError, FullTipset, GossipBlock, Tipset, TipsetKeys,
-};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Block, Error <span class="kw">as </span>ForestBlockError, FullTipset, GossipBlock, Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{ChainStore, Error <span class="kw">as </span>ChainStoreError};
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{
     hello::HelloRequest, NetworkEvent, NetworkMessage, PeerId, PeerManager, PubsubMessage,
@@ -1201,7 +1197,7 @@
         network: SyncNetworkContext&lt;DB&gt;,
         chain_store: Arc&lt;ChainStore&lt;DB&gt;&gt;,
         peer_id: PeerId,
-        tipset_keys: TipsetKeys,
+        tipset_keys: TipsetKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;FullTipset, ChainMuxerError&gt; {
         <span class="comment">// Attempt to load from the store
         </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(full_tipset) = <span class="self">Self</span>::load_full_tipset(chain_store, tipset_keys.clone()) {
@@ -1216,12 +1212,12 @@
 
     <span class="kw">fn </span>load_full_tipset(
         chain_store: Arc&lt;ChainStore&lt;DB&gt;&gt;,
-        tipset_keys: TipsetKeys,
+        tipset_keys: TipsetKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;FullTipset, ChainMuxerError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>blocks = Vec::new();
-        <span class="comment">// Retrieve tipset from store based on passed in TipsetKeys
+        <span class="comment">// Retrieve tipset from store based on passed in TipsetKey
         </span><span class="kw">let </span>ts = chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tipset_keys)<span class="question-mark">?</span>;
-        <span class="kw">for </span>header <span class="kw">in </span>ts.blocks() {
+        <span class="kw">for </span>header <span class="kw">in </span>ts.block_headers() {
             <span class="comment">// Retrieve bls and secp messages from specified BlockHeader
             </span><span class="kw">let </span>(bls_msgs, secp_msgs) =
                 <span class="kw">crate</span>::chain::block_messages(chain_store.blockstore(), header)<span class="question-mark">?</span>;
@@ -1291,11 +1287,11 @@
         <span class="macro">debug!</span>(
             <span class="string">&quot;Received block over GossipSub: {} height {} from {}&quot;</span>,
             block.header.cid(),
-            block.header.epoch(),
+            block.header.epoch,
             source,
         );
 
-        <span class="kw">let </span>epoch = block.header.epoch();
+        <span class="kw">let </span>epoch = block.header.epoch;
 
         <span class="macro">debug!</span>(
             <span class="string">&quot;Getting messages of gossipblock, epoch: {epoch}, block: {}&quot;</span>,
@@ -1363,7 +1359,7 @@
                 metrics::LIBP2P_MESSAGE_TOTAL
                     .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::HELLO_RESPONSE_OUTBOUND])
                     .inc();
-                <span class="kw">let </span>tipset_keys = TipsetKeys::from_iter(request.heaviest_tip_set);
+                <span class="kw">let </span>tipset_keys = TipsetKey::from_iter(request.heaviest_tip_set);
                 <span class="kw">let </span>tipset = <span class="kw">match </span><span class="self">Self</span>::get_full_tipset(
                     network.clone(),
                     chain_store.clone(),
@@ -1401,7 +1397,7 @@
                     network.clone(),
                     chain_store.clone(),
                     peer_id,
-                    <span class="kw-2">*</span>genesis.blocks()[<span class="number">0</span>].cid(),
+                    <span class="kw-2">*</span>genesis.block_headers()[<span class="number">0</span>].cid(),
                 ));
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }

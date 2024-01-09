@@ -374,14 +374,13 @@
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
 <span class="kw">use </span>std::{cell::Ref, sync::Arc};
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{
     index::{ChainIndex, ResolveNullTipset},
     ChainStore,
@@ -487,11 +486,10 @@
         <span class="prelude-val">Ok</span>((addr, gas_used.round_up() <span class="kw">as </span>i64))
     }
 
-    <span class="kw">fn </span>verify_block_signature(<span class="kw-2">&amp;</span><span class="self">self</span>, bh: <span class="kw-2">&amp;</span>BlockHeader) -&gt; anyhow::Result&lt;i64, Error&gt; {
-        <span class="kw">let </span>(worker_addr, gas_used) =
-            <span class="self">self</span>.worker_key_at_lookback(bh.miner_address(), bh.epoch())<span class="question-mark">?</span>;
+    <span class="kw">fn </span>verify_block_signature(<span class="kw-2">&amp;</span><span class="self">self</span>, bh: <span class="kw-2">&amp;</span>CachingBlockHeader) -&gt; anyhow::Result&lt;i64, Error&gt; {
+        <span class="kw">let </span>(worker_addr, gas_used) = <span class="self">self</span>.worker_key_at_lookback(<span class="kw-2">&amp;</span>bh.miner_address, bh.epoch)<span class="question-mark">?</span>;
 
-        bh.check_block_signature(<span class="kw-2">&amp;</span>worker_addr)<span class="question-mark">?</span>;
+        bh.verify_signature_against(<span class="kw-2">&amp;</span>worker_addr)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(gas_used)
     }
@@ -558,8 +556,8 @@
                 h2
             );
         };
-        <span class="kw">let </span>bh_1 = from_slice_with_fallback::&lt;BlockHeader&gt;(h1)<span class="question-mark">?</span>;
-        <span class="kw">let </span>bh_2 = from_slice_with_fallback::&lt;BlockHeader&gt;(h2)<span class="question-mark">?</span>;
+        <span class="kw">let </span>bh_1 = from_slice_with_fallback::&lt;CachingBlockHeader&gt;(h1)<span class="question-mark">?</span>;
+        <span class="kw">let </span>bh_2 = from_slice_with_fallback::&lt;CachingBlockHeader&gt;(h2)<span class="question-mark">?</span>;
 
         <span class="kw">if </span>bh_1.cid() == bh_2.cid() {
             <span class="macro">bail!</span>(<span class="string">&quot;no consensus fault: submitted blocks are the same&quot;</span>);
@@ -567,20 +565,20 @@
 
         <span class="comment">// (1) check conditions necessary to any consensus fault
 
-        </span><span class="kw">if </span>bh_1.miner_address() != bh_2.miner_address() {
+        </span><span class="kw">if </span>bh_1.miner_address != bh_2.miner_address {
             <span class="macro">bail!</span>(
                 <span class="string">&quot;no consensus fault: blocks not mined by same miner: {:?}, {:?}&quot;</span>,
-                bh_1.miner_address(),
-                bh_2.miner_address()
+                bh_1.miner_address,
+                bh_2.miner_address
             );
         };
         <span class="comment">// block a must be earlier or equal to block b, epoch wise (ie at least as early
         // in the chain).
-        </span><span class="kw">if </span>bh_2.epoch() &lt; bh_1.epoch() {
+        </span><span class="kw">if </span>bh_2.epoch &lt; bh_1.epoch {
             <span class="macro">bail!</span>(
                 <span class="string">&quot;first block must not be of higher height than second: {:?}, {:?}&quot;</span>,
-                bh_1.epoch(),
-                bh_2.epoch()
+                bh_1.epoch,
+                bh_2.epoch
             );
         };
 
@@ -589,14 +587,14 @@
         <span class="comment">// (2) check for the consensus faults themselves
 
         // (a) double-fork mining fault
-        </span><span class="kw">if </span>bh_1.epoch() == bh_2.epoch() {
+        </span><span class="kw">if </span>bh_1.epoch == bh_2.epoch {
             fault_type = <span class="prelude-val">Some</span>(ConsensusFaultType::DoubleForkMining);
         };
 
         <span class="comment">// (b) time-offset mining fault
         // strictly speaking no need to compare heights based on double fork mining
         // check above, but at same height this would be a different fault.
-        </span><span class="kw">if </span>bh_1.parents() == bh_2.parents() &amp;&amp; bh_1.epoch() != bh_2.epoch() {
+        </span><span class="kw">if </span>bh_1.parents == bh_2.parents &amp;&amp; bh_1.epoch != bh_2.epoch {
             fault_type = <span class="prelude-val">Some</span>(ConsensusFaultType::TimeOffsetMining);
         };
 
@@ -606,11 +604,11 @@
         // Specifically, since A is of lower height, it must be that B was mined
         // omitting A from its tipset
         </span><span class="kw">if </span>!extra.is_empty() {
-            <span class="kw">let </span>bh_3 = from_slice_with_fallback::&lt;BlockHeader&gt;(extra)<span class="question-mark">?</span>;
-            <span class="kw">if </span>bh_1.parents() == bh_3.parents()
-                &amp;&amp; bh_1.epoch() == bh_3.epoch()
-                &amp;&amp; bh_2.parents().cids.contains(<span class="kw-2">*</span>bh_3.cid())
-                &amp;&amp; !bh_2.parents().cids.contains(<span class="kw-2">*</span>bh_1.cid())
+            <span class="kw">let </span>bh_3 = from_slice_with_fallback::&lt;CachingBlockHeader&gt;(extra)<span class="question-mark">?</span>;
+            <span class="kw">if </span>bh_1.parents == bh_3.parents
+                &amp;&amp; bh_1.epoch == bh_3.epoch
+                &amp;&amp; bh_2.parents.cids.contains(<span class="kw-2">*</span>bh_3.cid())
+                &amp;&amp; !bh_2.parents.cids.contains(<span class="kw-2">*</span>bh_1.cid())
             {
                 fault_type = <span class="prelude-val">Some</span>(ConsensusFaultType::ParentGrinding);
             }
@@ -646,8 +644,8 @@
                 }
 
                 <span class="kw">let </span>ret = <span class="prelude-val">Some</span>(ConsensusFault {
-                    target: bh_1.miner_address().into(),
-                    epoch: bh_2.epoch(),
+                    target: bh_1.miner_address.into(),
+                    epoch: bh_2.epoch,
                     fault_type,
                 });
 

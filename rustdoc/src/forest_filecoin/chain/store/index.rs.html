@@ -296,14 +296,13 @@
 <a href="#296" id="296">296</a>
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::{num::NonZeroUsize, sync::Arc};
 
 <span class="kw">use </span><span class="kw">crate</span>::beacon::{BeaconEntry, IGNORE_DRAND_VAR};
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKeys};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::metrics;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -316,7 +315,7 @@
 
 <span class="kw">const </span>DEFAULT_TIPSET_CACHE_SIZE: NonZeroUsize = <span class="macro">nonzero!</span>(<span class="number">131072_usize</span>);
 
-<span class="kw">type </span>TipsetCache = Mutex&lt;LruCache&lt;TipsetKeys, Arc&lt;Tipset&gt;&gt;&gt;;
+<span class="kw">type </span>TipsetCache = Mutex&lt;LruCache&lt;TipsetKey, Arc&lt;Tipset&gt;&gt;&gt;;
 
 <span class="doccomment">/// Keeps look-back tipsets in cache at a given interval `skip_length` and can
 /// be used to look-back at the chain to retrieve an old tipset.
@@ -345,7 +344,7 @@
 
     <span class="doccomment">/// Loads a tipset from memory given the tipset keys and cache. Semantically
     /// identical to [`Tipset::load`] but the result is cached.
-    </span><span class="kw">pub fn </span>load_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKeys) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;, Error&gt; {
+    </span><span class="kw">pub fn </span>load_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(ts) = <span class="self">self</span>.ts_cache.lock().get(tsk) {
             metrics::LRU_CACHE_HIT
                 .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::TIPSET])
@@ -367,7 +366,7 @@
     <span class="doccomment">/// Loads a tipset from memory given the tipset keys and cache.
     /// This calls fails if the tipset is missing or invalid. Semantically
     /// identical to [`Tipset::load_required`] but the result is cached.
-    </span><span class="kw">pub fn </span>load_required_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKeys) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Tipset&gt;, Error&gt; {
+    </span><span class="kw">pub fn </span>load_required_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Tipset&gt;, Error&gt; {
         <span class="self">self</span>.load_tipset(tsk)<span class="question-mark">?
             </span>.ok_or_else(|| Error::NotFound(<span class="string">&quot;Key for header&quot;</span>.into()))
     }
@@ -459,7 +458,7 @@
     <span class="doccomment">/// Finds the latest beacon entry given a tipset up to 20 tipsets behind
     </span><span class="kw">pub fn </span>latest_beacon_entry(<span class="kw-2">&amp;</span><span class="self">self</span>, ts: <span class="kw-2">&amp;</span>Tipset) -&gt; <span class="prelude-ty">Result</span>&lt;BeaconEntry, Error&gt; {
         <span class="kw">let </span>check_for_beacon_entry = |ts: <span class="kw-2">&amp;</span>Tipset| {
-            <span class="kw">let </span>cbe = ts.min_ticket_block().beacon_entries();
+            <span class="kw">let </span>cbe = <span class="kw-2">&amp;</span>ts.min_ticket_block().beacon_entries;
             <span class="kw">if let </span><span class="prelude-val">Some</span>(entry) = cbe.last() {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(entry.clone()));
             }
@@ -499,32 +498,31 @@
     <span class="kw">use </span>std::sync::atomic::{AtomicU64, Ordering};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::blocks::BlockHeader;
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::CachingBlockHeader;
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::RawBlockHeader;
     <span class="kw">use </span><span class="kw">crate</span>::db::MemoryDB;
     <span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt;
 
     <span class="kw">fn </span>persist_tipset(tipset: <span class="kw-2">&amp;</span>Tipset, db: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore) {
-        <span class="kw">for </span>block <span class="kw">in </span>tipset.blocks() {
+        <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
             db.put_cbor_default(block).unwrap();
         }
     }
 
     <span class="kw">fn </span>genesis_tipset() -&gt; Tipset {
-        Tipset::from(BlockHeader::default())
+        Tipset::from(CachingBlockHeader::default())
     }
 
     <span class="kw">fn </span>tipset_child(parent: <span class="kw-2">&amp;</span>Tipset, epoch: ChainEpoch) -&gt; Tipset {
         <span class="comment">// Use a static counter to give all tipsets a unique timestamp
         </span><span class="kw">static </span>COUNTER: AtomicU64 = AtomicU64::new(<span class="number">0</span>);
         <span class="kw">let </span>n = COUNTER.fetch_add(<span class="number">1</span>, Ordering::Relaxed);
-        Tipset::from(
-            BlockHeader::builder()
-                .parents(parent.key().clone())
-                .epoch(epoch)
-                .timestamp(n)
-                .build()
-                .unwrap(),
-        )
+        Tipset::from(CachingBlockHeader::new(RawBlockHeader {
+            parents: parent.key().clone(),
+            epoch,
+            timestamp: n,
+            ..Default::default()
+        }))
     }
 
     <span class="attr">#[test]

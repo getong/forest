@@ -569,13 +569,12 @@
 <a href="#569" id="569">569</a>
 <a href="#570" id="570">570</a>
 <a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset, TipsetKeys, TxMeta};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset, TipsetKey, TxMeta};
 <span class="kw">use </span><span class="kw">crate</span>::fil_cns;
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::BlockMessages;
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::VMTrace;
@@ -639,7 +638,7 @@
     <span class="doccomment">/// Tracks blocks for the purpose of forming tipsets.
     </span>tipset_tracker: TipsetTracker&lt;DB&gt;,
 
-    genesis_block_header: BlockHeader,
+    genesis_block_header: CachingBlockHeader,
 
     <span class="doccomment">/// validated blocks
     </span>validated_blocks: Mutex&lt;HashSet&lt;Cid&gt;&gt;,
@@ -677,16 +676,16 @@
         db: Arc&lt;DB&gt;,
         settings: Arc&lt;<span class="kw">dyn </span>SettingsStore + Sync + Send&gt;,
         chain_config: Arc&lt;ChainConfig&gt;,
-        genesis_block_header: BlockHeader,
+        genesis_block_header: CachingBlockHeader,
     ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>(publisher, <span class="kw">_</span>) = broadcast::channel(SINK_CAP);
         <span class="kw">let </span>chain_index = Arc::new(ChainIndex::new(Arc::clone(<span class="kw-2">&amp;</span>db)));
 
         <span class="kw">if </span>!settings
-            .read_obj::&lt;TipsetKeys&gt;(HEAD_KEY)<span class="question-mark">?
+            .read_obj::&lt;TipsetKey&gt;(HEAD_KEY)<span class="question-mark">?
             </span>.is_some_and(|tipset_keys| chain_index.load_tipset(<span class="kw-2">&amp;</span>tipset_keys).is_ok())
         {
-            <span class="kw">let </span>tipset_keys = TipsetKeys::from_iter([<span class="kw-2">*</span>genesis_block_header.cid()]);
+            <span class="kw">let </span>tipset_keys = TipsetKey::from_iter([<span class="kw-2">*</span>genesis_block_header.cid()]);
             settings.write_obj(HEAD_KEY, <span class="kw-2">&amp;</span>tipset_keys)<span class="question-mark">?</span>;
         }
 
@@ -715,16 +714,15 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Adds a [`BlockHeader`] to the tipset tracker, which tracks valid
-    /// headers.
-    </span><span class="kw">pub fn </span>add_to_tipset_tracker(<span class="kw-2">&amp;</span><span class="self">self</span>, header: <span class="kw-2">&amp;</span>BlockHeader) {
+    <span class="doccomment">/// Adds a block header to the tipset tracker, which tracks valid headers.
+    </span><span class="kw">pub fn </span>add_to_tipset_tracker(<span class="kw-2">&amp;</span><span class="self">self</span>, header: <span class="kw-2">&amp;</span>CachingBlockHeader) {
         <span class="self">self</span>.tipset_tracker.add(header);
     }
 
     <span class="doccomment">/// Writes tipset block headers to data store and updates heaviest tipset
     /// with other compatible tracked headers.
     </span><span class="kw">pub fn </span>put_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, ts: <span class="kw-2">&amp;</span>Tipset) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        persist_objects(<span class="self">self</span>.blockstore(), ts.blocks())<span class="question-mark">?</span>;
+        persist_objects(<span class="self">self</span>.blockstore(), ts.block_headers())<span class="question-mark">?</span>;
 
         <span class="comment">// Expand tipset to include other compatible blocks at the epoch.
         </span><span class="kw">let </span>expanded = <span class="self">self</span>.expand_tipset(ts.min_ticket_block().clone())<span class="question-mark">?</span>;
@@ -734,12 +732,11 @@
 
     <span class="doccomment">/// Expands tipset to tipset with all other headers in the same epoch using
     /// the tipset tracker.
-    </span><span class="kw">fn </span>expand_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, header: BlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;Tipset, Error&gt; {
+    </span><span class="kw">fn </span>expand_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, header: CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;Tipset, Error&gt; {
         <span class="self">self</span>.tipset_tracker.expand(header)
     }
 
-    <span class="doccomment">/// Returns genesis [`BlockHeader`].
-    </span><span class="kw">pub fn </span>genesis(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>BlockHeader {
+    <span class="kw">pub fn </span>genesis_block_header(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CachingBlockHeader {
         <span class="kw-2">&amp;</span><span class="self">self</span>.genesis_block_header
     }
 
@@ -748,7 +745,7 @@
         <span class="self">self</span>.load_required_tipset(
             <span class="kw-2">&amp;</span><span class="self">self
                 </span>.settings
-                .require_obj::&lt;TipsetKeys&gt;(HEAD_KEY)
+                .require_obj::&lt;TipsetKey&gt;(HEAD_KEY)
                 .expect(<span class="string">&quot;failed to load heaviest tipset&quot;</span>),
         )
         .expect(<span class="string">&quot;failed to load heaviest tipset&quot;</span>)
@@ -766,7 +763,7 @@
 
     <span class="doccomment">/// Returns Tipset from key-value store from provided CIDs
     </span><span class="attr">#[tracing::instrument(skip_all)]
-    </span><span class="kw">pub fn </span>load_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKeys) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;, Error&gt; {
+    </span><span class="kw">pub fn </span>load_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;, Error&gt; {
         <span class="kw">if </span>tsk.cids.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">self</span>.heaviest_tipset()));
         }
@@ -776,7 +773,7 @@
     <span class="doccomment">/// Returns Tipset from key-value store from provided CIDs.
     /// This calls fails if the tipset is missing or invalid.
     </span><span class="attr">#[tracing::instrument(skip_all)]
-    </span><span class="kw">pub fn </span>load_required_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKeys) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Tipset&gt;, Error&gt; {
+    </span><span class="kw">pub fn </span>load_required_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Tipset&gt;, Error&gt; {
         <span class="kw">if </span>tsk.cids.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.heaviest_tipset());
         }
@@ -855,7 +852,7 @@
         </span><span class="kw">if </span>lbr &gt;= heaviest_tipset.epoch() {
             <span class="comment">// This situation is extremely rare so it&#39;s fine to compute the
             // state-root without caching.
-            </span><span class="kw">let </span>genesis_timestamp = heaviest_tipset.genesis(<span class="kw-2">&amp;</span>chain_index.db)<span class="question-mark">?</span>.timestamp();
+            </span><span class="kw">let </span>genesis_timestamp = heaviest_tipset.genesis(<span class="kw-2">&amp;</span>chain_index.db)<span class="question-mark">?</span>.timestamp;
             <span class="kw">let </span>beacon = Arc::new(chain_config.get_beacon_schedule(genesis_timestamp));
             <span class="kw">let </span>(state, <span class="kw">_</span>) = <span class="kw">crate</span>::state_manager::apply_block_messages(
                 genesis_timestamp,
@@ -902,12 +899,12 @@
 /// of type `SignedMessage`
 </span><span class="kw">pub fn </span>block_messages&lt;DB&gt;(
     db: <span class="kw-2">&amp;</span>DB,
-    bh: <span class="kw-2">&amp;</span>BlockHeader,
+    bh: <span class="kw-2">&amp;</span>CachingBlockHeader,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;Message&gt;, Vec&lt;SignedMessage&gt;), Error&gt;
 <span class="kw">where
     </span>DB: Blockstore,
 {
-    <span class="kw">let </span>(bls_cids, secpk_cids) = read_msg_cids(db, bh.messages())<span class="question-mark">?</span>;
+    <span class="kw">let </span>(bls_cids, secpk_cids) = read_msg_cids(db, <span class="kw-2">&amp;</span>bh.messages)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>bls_msgs: Vec&lt;Message&gt; = messages_from_cids(db, <span class="kw-2">&amp;</span>bls_cids)<span class="question-mark">?</span>;
     <span class="kw">let </span>secp_msgs: Vec&lt;SignedMessage&gt; = messages_from_cids(db, <span class="kw-2">&amp;</span>secpk_cids)<span class="question-mark">?</span>;
@@ -995,45 +992,46 @@
     <span class="kw">let </span>state = StateTree::new_from_root(Arc::clone(<span class="kw-2">&amp;</span>db), ts.parent_state())<span class="question-mark">?</span>;
 
     <span class="comment">// message to get all messages for block_header into a single iterator
-    </span><span class="kw">let </span><span class="kw-2">mut </span>get_message_for_block_header = |b: <span class="kw-2">&amp;</span>BlockHeader| -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ChainMessage&gt;, Error&gt; {
-        <span class="kw">let </span>(unsigned, signed) = block_messages(<span class="kw-2">&amp;</span>db, b)<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>messages = Vec::with_capacity(unsigned.len() + signed.len());
-        <span class="kw">let </span>unsigned_box = unsigned.into_iter().map(ChainMessage::Unsigned);
-        <span class="kw">let </span>signed_box = signed.into_iter().map(ChainMessage::Signed);
+    </span><span class="kw">let </span><span class="kw-2">mut </span>get_message_for_block_header =
+        |b: <span class="kw-2">&amp;</span>CachingBlockHeader| -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ChainMessage&gt;, Error&gt; {
+            <span class="kw">let </span>(unsigned, signed) = block_messages(<span class="kw-2">&amp;</span>db, b)<span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>messages = Vec::with_capacity(unsigned.len() + signed.len());
+            <span class="kw">let </span>unsigned_box = unsigned.into_iter().map(ChainMessage::Unsigned);
+            <span class="kw">let </span>signed_box = signed.into_iter().map(ChainMessage::Signed);
 
-        <span class="kw">for </span>message <span class="kw">in </span>unsigned_box.chain(signed_box) {
-            <span class="kw">let </span>from_address = <span class="kw-2">&amp;</span>message.from();
-            <span class="kw">if </span>applied.contains_key(from_address) {
-                <span class="kw">let </span>actor_state = state
-                    .get_actor(from_address)<span class="question-mark">?
-                    </span>.ok_or_else(|| Error::Other(<span class="string">&quot;Actor state not found&quot;</span>.to_string()))<span class="question-mark">?</span>;
-                applied.insert(<span class="kw-2">*</span>from_address, actor_state.sequence);
-                balances.insert(<span class="kw-2">*</span>from_address, actor_state.balance.clone().into());
-            }
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(seq) = applied.get_mut(from_address) {
-                <span class="kw">if </span><span class="kw-2">*</span>seq != message.sequence() {
+            <span class="kw">for </span>message <span class="kw">in </span>unsigned_box.chain(signed_box) {
+                <span class="kw">let </span>from_address = <span class="kw-2">&amp;</span>message.from();
+                <span class="kw">if </span>applied.contains_key(from_address) {
+                    <span class="kw">let </span>actor_state = state
+                        .get_actor(from_address)<span class="question-mark">?
+                        </span>.ok_or_else(|| Error::Other(<span class="string">&quot;Actor state not found&quot;</span>.to_string()))<span class="question-mark">?</span>;
+                    applied.insert(<span class="kw-2">*</span>from_address, actor_state.sequence);
+                    balances.insert(<span class="kw-2">*</span>from_address, actor_state.balance.clone().into());
+                }
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(seq) = applied.get_mut(from_address) {
+                    <span class="kw">if </span><span class="kw-2">*</span>seq != message.sequence() {
+                        <span class="kw">continue</span>;
+                    }
+                    <span class="kw-2">*</span>seq += <span class="number">1</span>;
+                } <span class="kw">else </span>{
                     <span class="kw">continue</span>;
                 }
-                <span class="kw-2">*</span>seq += <span class="number">1</span>;
-            } <span class="kw">else </span>{
-                <span class="kw">continue</span>;
-            }
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(bal) = balances.get_mut(from_address) {
-                <span class="kw">if </span><span class="kw-2">*</span>bal &lt; message.required_funds() {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(bal) = balances.get_mut(from_address) {
+                    <span class="kw">if </span><span class="kw-2">*</span>bal &lt; message.required_funds() {
+                        <span class="kw">continue</span>;
+                    }
+                    <span class="kw-2">*</span>bal -= message.required_funds();
+                } <span class="kw">else </span>{
                     <span class="kw">continue</span>;
                 }
-                <span class="kw-2">*</span>bal -= message.required_funds();
-            } <span class="kw">else </span>{
-                <span class="kw">continue</span>;
+
+                messages.push(message)
             }
 
-            messages.push(message)
-        }
+            <span class="prelude-val">Ok</span>(messages)
+        };
 
-        <span class="prelude-val">Ok</span>(messages)
-    };
-
-    ts.blocks()
+    ts.block_headers()
         .iter()
         .try_fold(Vec::new(), |<span class="kw-2">mut </span>message_vec, b| {
             <span class="kw">let </span><span class="kw-2">mut </span>messages = get_message_for_block_header(b)<span class="question-mark">?</span>;
@@ -1059,12 +1057,12 @@
 <span class="doccomment">/// Returns parent message receipt given `block_header` and message index.
 </span><span class="kw">pub fn </span>get_parent_receipt(
     db: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore,
-    block_header: <span class="kw-2">&amp;</span>BlockHeader,
+    block_header: <span class="kw-2">&amp;</span>CachingBlockHeader,
     i: usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Receipt&gt;, Error&gt; {
     <span class="prelude-val">Ok</span>(Receipt::get_receipt(
         db,
-        block_header.message_receipts(),
+        <span class="kw-2">&amp;</span>block_header.message_receipts,
         i <span class="kw">as </span>u64,
     )<span class="question-mark">?</span>)
 }
@@ -1093,7 +1091,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
+    <span class="kw">use crate</span>::{blocks::RawBlockHeader, shim::address::Address};
     <span class="kw">use </span>cid::{
         multihash::{
             Code::{Blake2b256, Identity},
@@ -1110,28 +1108,28 @@
         <span class="kw">let </span>db = Arc::new(<span class="kw">crate</span>::db::MemoryDB::default());
         <span class="kw">let </span>chain_config = Arc::new(ChainConfig::default());
 
-        <span class="kw">let </span>gen_block = BlockHeader::builder()
-            .epoch(<span class="number">1</span>)
-            .weight(<span class="number">2_u32</span>.into())
-            .messages(Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])))
-            .message_receipts(Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])))
-            .state_root(Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])))
-            .miner_address(Address::new_id(<span class="number">0</span>))
-            .build()
-            .unwrap();
+        <span class="kw">let </span>gen_block = CachingBlockHeader::new(RawBlockHeader {
+            miner_address: Address::new_id(<span class="number">0</span>),
+            state_root: Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])),
+            epoch: <span class="number">1</span>,
+            weight: <span class="number">2u32</span>.into(),
+            messages: Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])),
+            message_receipts: Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])),
+            ..Default::default()
+        });
         <span class="kw">let </span>cs = ChainStore::new(db.clone(), db, chain_config, gen_block.clone()).unwrap();
 
-        <span class="macro">assert_eq!</span>(cs.genesis(), <span class="kw-2">&amp;</span>gen_block);
+        <span class="macro">assert_eq!</span>(cs.genesis_block_header(), <span class="kw-2">&amp;</span>gen_block);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>block_validation_cache_basic() {
         <span class="kw">let </span>db = Arc::new(<span class="kw">crate</span>::db::MemoryDB::default());
         <span class="kw">let </span>chain_config = Arc::new(ChainConfig::default());
-        <span class="kw">let </span>gen_block = BlockHeader::builder()
-            .miner_address(Address::new_id(<span class="number">0</span>))
-            .build()
-            .unwrap();
+        <span class="kw">let </span>gen_block = CachingBlockHeader::new(RawBlockHeader {
+            miner_address: Address::new_id(<span class="number">0</span>),
+            ..Default::default()
+        });
 
         <span class="kw">let </span>cs = ChainStore::new(db.clone(), db, chain_config, gen_block).unwrap();
 

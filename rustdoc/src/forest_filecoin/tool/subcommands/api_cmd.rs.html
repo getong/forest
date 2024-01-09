@@ -766,7 +766,7 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
-<span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKeys;
+<span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKey;
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::db::car::ManyCar;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
@@ -1066,7 +1066,7 @@
         RpcTest::identity(ApiInfo::chain_get_block_req(<span class="kw-2">*</span>shared_block.cid())),
         RpcTest::identity(ApiInfo::chain_get_tipset_by_height_req(
             shared_tipset.epoch(),
-            TipsetKeys::default(),
+            TipsetKey::default(),
         )),
         RpcTest::identity(ApiInfo::chain_get_tipset_req(shared_tipset.key().clone())),
         RpcTest::identity(ApiInfo::chain_read_obj_req(<span class="kw-2">*</span>shared_block.cid())),
@@ -1123,14 +1123,14 @@
         )),
         RpcTest::identity(ApiInfo::state_read_state_req(
             Address::SYSTEM_ACTOR,
-            TipsetKeys::from_iter(Vec::new()),
+            TipsetKey::from_iter(Vec::new()),
         )),
         RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
-            <span class="kw-2">*</span>shared_block.miner_address(),
+            shared_block.miner_address,
             shared_tipset.key().clone(),
         )),
         RpcTest::identity(ApiInfo::state_lookup_id_req(
-            <span class="kw-2">*</span>shared_block.miner_address(),
+            shared_block.miner_address,
             shared_tipset.key().clone(),
         )),
         <span class="comment">// This should return `Address::new_id(0xdeadbeef)`
@@ -1143,7 +1143,7 @@
         )),
         RpcTest::identity(ApiInfo::state_list_miners_req(shared_tipset.key().clone())),
         RpcTest::identity(ApiInfo::state_sector_get_info_req(
-            <span class="kw-2">*</span>shared_block.miner_address(),
+            shared_block.miner_address,
             <span class="number">101</span>,
             shared_tipset.key().clone(),
         )),
@@ -1234,7 +1234,7 @@
         tests.push(RpcTest::identity(
             ApiInfo::chain_get_messages_in_tipset_req(tipset.key().clone()),
         ));
-        <span class="kw">for </span>block <span class="kw">in </span>tipset.blocks() {
+        <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
             tests.push(RpcTest::identity(ApiInfo::chain_get_block_messages_req(
                 <span class="kw-2">*</span>block.cid(),
             )));
@@ -1245,7 +1245,7 @@
                 <span class="kw-2">*</span>block.cid(),
             )));
             tests.push(RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 root_tsk.clone(),
             )));
 
@@ -1319,38 +1319,38 @@
                 }
             }
             tests.push(RpcTest::identity(ApiInfo::state_miner_info_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 tipset.key().clone(),
             )));
             tests.push(RpcTest::identity(ApiInfo::state_miner_power_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 tipset.key().clone(),
             )));
             tests.push(RpcTest::identity(ApiInfo::state_miner_deadlines_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 tipset.key().clone(),
             )));
             tests.push(RpcTest::identity(
                 ApiInfo::state_miner_proving_deadline_req(
-                    <span class="kw-2">*</span>block.miner_address(),
+                    block.miner_address,
                     tipset.key().clone(),
                 ),
             ));
             tests.push(RpcTest::identity(ApiInfo::state_miner_faults_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 tipset.key().clone(),
             )));
             tests.push(RpcTest::identity(ApiInfo::miner_get_base_info_req(
-                <span class="kw-2">*</span>block.miner_address(),
-                block.epoch(),
+                block.miner_address,
+                block.epoch,
                 tipset.key().clone(),
             )));
             tests.push(RpcTest::identity(ApiInfo::state_miner_recoveries_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 tipset.key().clone(),
             )));
             tests.push(RpcTest::identity(ApiInfo::state_miner_sector_count_req(
-                <span class="kw-2">*</span>block.miner_address(),
+                block.miner_address,
                 tipset.key().clone(),
             )));
         }
@@ -1361,7 +1361,7 @@
             ApiInfo::state_vm_circulating_supply_internal_req(tipset.key().clone()),
         ));
 
-        <span class="kw">for </span>block <span class="kw">in </span>tipset.blocks() {
+        <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
             <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
             <span class="kw">for </span>msg <span class="kw">in </span>secp_messages {
                 tests.push(RpcTest::identity(ApiInfo::state_call_req(

@@ -234,7 +234,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKeys};
+</span><span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{ChainStore, Error <span class="kw">as </span>ChainError};
 <span class="kw">use </span>ahash::{HashMap, HashMapExt};
 <span class="kw">use </span>cid::Cid;
@@ -263,7 +263,7 @@
     }
 
     <span class="kw">let </span>inner = <span class="kw">move </span>|| {
-        <span class="kw">let </span>root = <span class="kw">match </span>cs.load_tipset(<span class="kw-2">&amp;</span>TipsetKeys::from_iter(request.start.clone()))<span class="question-mark">? </span>{
+        <span class="kw">let </span>root = <span class="kw">match </span>cs.load_tipset(<span class="kw-2">&amp;</span>TipsetKey::from_iter(request.start.clone()))<span class="question-mark">? </span>{
             <span class="prelude-val">Some</span>(tipset) =&gt; tipset,
             <span class="prelude-val">None </span>=&gt; {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(ChainExchangeResponse {
@@ -285,7 +285,7 @@
                 }
 
                 <span class="kw">if </span>request.include_blocks() {
-                    tipset_bundle.blocks = tipset.blocks().to_vec();
+                    tipset_bundle.blocks = tipset.block_headers().to_vec();
                 }
 
                 anyhow::Ok(tipset_bundle)
@@ -325,8 +325,8 @@
     <span class="kw">let </span><span class="kw-2">mut </span>bls_msg_includes: Vec&lt;Vec&lt;u64&gt;&gt; = <span class="macro">vec!</span>[];
     <span class="kw">let </span><span class="kw-2">mut </span>secp_msg_includes: Vec&lt;Vec&lt;u64&gt;&gt; = <span class="macro">vec!</span>[];
 
-    <span class="kw">for </span>block_header <span class="kw">in </span>tipset.blocks().iter() {
-        <span class="kw">let </span>(bls_cids, secp_cids) = <span class="kw">crate</span>::chain::read_msg_cids(db, block_header.messages())<span class="question-mark">?</span>;
+    <span class="kw">for </span>block_header <span class="kw">in </span>tipset.block_headers().iter() {
+        <span class="kw">let </span>(bls_cids, secp_cids) = <span class="kw">crate</span>::chain::read_msg_cids(db, <span class="kw-2">&amp;</span>block_header.messages)<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>bls_include = Vec::with_capacity(bls_cids.len());
         <span class="kw">for </span>bls_cid <span class="kw">in </span>bls_cids.into_iter() {
@@ -377,7 +377,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::sync::Arc;
 
-    <span class="kw">use </span><span class="kw">crate</span>::blocks::BlockHeader;
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, RawBlockHeader};
     <span class="kw">use </span><span class="kw">crate</span>::db::MemoryDB;
     <span class="kw">use </span><span class="kw">crate</span>::genesis::EXPORT_SR_40;
     <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
@@ -400,10 +400,10 @@
     </span><span class="kw">async fn </span>compact_messages_test() {
         <span class="kw">let </span>(cids, db) = populate_db().<span class="kw">await</span>;
 
-        <span class="kw">let </span>gen_block = BlockHeader::builder()
-            .miner_address(Address::new_id(<span class="number">0</span>))
-            .build()
-            .unwrap();
+        <span class="kw">let </span>gen_block = CachingBlockHeader::new(RawBlockHeader {
+            miner_address: Address::new_id(<span class="number">0</span>),
+            ..Default::default()
+        });
 
         <span class="kw">let </span>response = make_chain_exchange_response(
             <span class="kw-2">&amp;</span>ChainStore::new(db.clone(), db, Arc::new(ChainConfig::default()), gen_block).unwrap(),

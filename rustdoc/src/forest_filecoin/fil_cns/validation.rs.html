@@ -453,15 +453,13 @@
 <a href="#453" id="453">453</a>
 <a href="#454" id="454">454</a>
 <a href="#455" id="455">455</a>
-<a href="#456" id="456">456</a>
-<a href="#457" id="457">457</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
 
 <span class="kw">use </span><span class="kw">crate</span>::beacon::{BeaconEntry, BeaconSchedule, IGNORE_DRAND_VAR};
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{Block, BlockHeader, Tipset};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Block, CachingBlockHeader, Tipset};
 <span class="kw">use </span><span class="kw">crate</span>::chain::ChainStore;
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::collect_errs;
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, Height};
@@ -512,7 +510,7 @@
     block_sanity_checks(header).map_err(to_errs)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>base_tipset = chain_store
-        .load_required_tipset(header.parents())
+        .load_required_tipset(<span class="kw-2">&amp;</span>header.parents)
         .map_err(to_errs)<span class="question-mark">?</span>;
 
     block_timestamp_checks(
@@ -529,7 +527,7 @@
         state_manager.chain_store().chain_index.clone(),
         state_manager.chain_config().clone(),
         base_tipset.clone(),
-        block.header().epoch(),
+        block.header().epoch,
     )
     .map_err(to_errs)<span class="question-mark">?</span>;
 
@@ -544,7 +542,7 @@
     <span class="comment">// Work address needed for async validations, so necessary
     // to do sync to avoid duplication
     </span><span class="kw">let </span>work_addr = state_manager
-        .get_miner_work_addr(<span class="kw-2">*</span>lookback_state, header.miner_address())
+        .get_miner_work_addr(<span class="kw-2">*</span>lookback_state, <span class="kw-2">&amp;</span>header.miner_address)
         .map_err(to_errs)<span class="question-mark">?</span>;
 
     <span class="comment">// Async validations
@@ -557,7 +555,7 @@
     validations.push(tokio::task::spawn_blocking(<span class="kw">move </span>|| {
         validate_miner(
             v_state_manager.as_ref(),
-            v_header.miner_address(),
+            <span class="kw-2">&amp;</span>v_header.miner_address,
             v_base_tipset.parent_state(),
         )
     }));
@@ -635,11 +633,11 @@
 ///
 /// In particular it looks for an election proof and a ticket,
 /// which are needed for Filecoin consensus.
-</span><span class="kw">fn </span>block_sanity_checks(header: <span class="kw-2">&amp;</span>BlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), FilecoinConsensusError&gt; {
-    <span class="kw">if </span>header.election_proof().is_none() {
+</span><span class="kw">fn </span>block_sanity_checks(header: <span class="kw-2">&amp;</span>CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), FilecoinConsensusError&gt; {
+    <span class="kw">if </span>header.election_proof.is_none() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::BlockWithoutElectionProof);
     }
-    <span class="kw">if </span>header.ticket().is_none() {
+    <span class="kw">if </span>header.ticket.is_none() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::BlockWithoutTicket);
     }
     <span class="prelude-val">Ok</span>(())
@@ -648,17 +646,17 @@
 <span class="doccomment">/// Check the timestamp corresponds exactly to the number of epochs since the
 /// parents.
 </span><span class="kw">fn </span>block_timestamp_checks(
-    header: <span class="kw-2">&amp;</span>BlockHeader,
+    header: <span class="kw-2">&amp;</span>CachingBlockHeader,
     base_tipset: <span class="kw-2">&amp;</span>Tipset,
     chain_config: <span class="kw-2">&amp;</span>ChainConfig,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FilecoinConsensusError&gt; {
     <span class="comment">// Timestamp checks
     </span><span class="kw">let </span>block_delay = chain_config.block_delay_secs;
-    <span class="kw">let </span>nulls = (header.epoch() - (base_tipset.epoch() + <span class="number">1</span>)) <span class="kw">as </span>u64;
+    <span class="kw">let </span>nulls = (header.epoch - (base_tipset.epoch() + <span class="number">1</span>)) <span class="kw">as </span>u64;
     <span class="kw">let </span>target_timestamp = base_tipset.min_timestamp() + block_delay <span class="kw">as </span>u64 * (nulls + <span class="number">1</span>);
-    <span class="kw">if </span>target_timestamp != header.timestamp() {
+    <span class="kw">if </span>target_timestamp != header.timestamp {
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::UnequalBlockTimestamps(
-            header.timestamp(),
+            header.timestamp,
             target_timestamp,
         ));
     }
@@ -692,7 +690,7 @@
 }
 
 <span class="kw">fn </span>validate_winner_election&lt;DB: Blockstore + Sync + Send + <span class="lifetime">&#39;static</span>&gt;(
-    header: <span class="kw-2">&amp;</span>BlockHeader,
+    header: <span class="kw-2">&amp;</span>CachingBlockHeader,
     base_tipset: <span class="kw-2">&amp;</span>Tipset,
     lookback_tipset: <span class="kw-2">&amp;</span>Tipset,
     lookback_state: <span class="kw-2">&amp;</span>Cid,
@@ -705,36 +703,35 @@
         .start_timer();
 
     <span class="comment">// Safe to unwrap because checked to `Some` in sanity check
-    </span><span class="kw">let </span>election_proof = header.election_proof().as_ref().unwrap();
+    </span><span class="kw">let </span>election_proof = header.election_proof.as_ref().unwrap();
     <span class="kw">if </span>election_proof.win_count &lt; <span class="number">1 </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::NotClaimingWin);
     }
-    <span class="kw">let </span>hp =
-        state_manager.eligible_to_mine(header.miner_address(), base_tipset, lookback_tipset)<span class="question-mark">?</span>;
+    <span class="kw">let </span>hp = state_manager.eligible_to_mine(<span class="kw-2">&amp;</span>header.miner_address, base_tipset, lookback_tipset)<span class="question-mark">?</span>;
     <span class="kw">if </span>!hp {
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::MinerNotEligibleToMine);
     }
 
-    <span class="kw">let </span>beacon = header.beacon_entries().last().unwrap_or(prev_beacon);
-    <span class="kw">let </span>miner_address = header.miner_address();
+    <span class="kw">let </span>beacon = header.beacon_entries.last().unwrap_or(prev_beacon);
+    <span class="kw">let </span>miner_address = <span class="kw-2">&amp;</span>header.miner_address;
     <span class="kw">let </span>miner_address_buf = to_vec(miner_address)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>vrf_base = <span class="kw">crate</span>::state_manager::chain_rand::draw_randomness(
         beacon.data(),
         DomainSeparationTag::ElectionProofProduction <span class="kw">as </span>i64,
-        header.epoch(),
+        header.epoch,
         <span class="kw-2">&amp;</span>miner_address_buf,
     )
     .map_err(|e| FilecoinConsensusError::DrawingChainRandomness(e.to_string()))<span class="question-mark">?</span>;
 
     verify_election_post_vrf(work_addr, <span class="kw-2">&amp;</span>vrf_base, election_proof.vrfproof.as_bytes())<span class="question-mark">?</span>;
 
-    <span class="kw">if </span>state_manager.is_miner_slashed(header.miner_address(), base_tipset.parent_state())<span class="question-mark">? </span>{
+    <span class="kw">if </span>state_manager.is_miner_slashed(<span class="kw-2">&amp;</span>header.miner_address, base_tipset.parent_state())<span class="question-mark">? </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::InvalidOrSlashedMiner);
     }
 
     <span class="kw">let </span>(mpow, tpow) = state_manager
-        .get_power(lookback_state, <span class="prelude-val">Some</span>(header.miner_address()))<span class="question-mark">?
+        .get_power(lookback_state, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>header.miner_address))<span class="question-mark">?
         </span>.ok_or(FilecoinConsensusError::MinerPowerNotAvailable)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>j = election_proof.compute_win_count(<span class="kw-2">&amp;</span>mpow.quality_adj_power, <span class="kw-2">&amp;</span>tpow.quality_adj_power);
@@ -750,7 +747,7 @@
 }
 
 <span class="kw">fn </span>validate_ticket_election(
-    header: <span class="kw-2">&amp;</span>BlockHeader,
+    header: <span class="kw-2">&amp;</span>CachingBlockHeader,
     base_tipset: <span class="kw-2">&amp;</span>Tipset,
     prev_beacon: <span class="kw-2">&amp;</span>BeaconEntry,
     work_addr: <span class="kw-2">&amp;</span>Address,
@@ -760,10 +757,10 @@
         .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::VALIDATE_TICKET_ELECTION])
         .start_timer();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>miner_address_buf = to_vec(header.miner_address())<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>miner_address_buf = to_vec(<span class="kw-2">&amp;</span>header.miner_address)<span class="question-mark">?</span>;
     <span class="kw">let </span>smoke_height = chain_config.epoch(Height::Smoke);
 
-    <span class="kw">if </span>header.epoch() &gt; smoke_height {
+    <span class="kw">if </span>header.epoch &gt; smoke_height {
         <span class="kw">let </span>vrf_proof = base_tipset
             .min_ticket()
             .ok_or(FilecoinConsensusError::TipsetWithoutTicket)<span class="question-mark">?
@@ -773,12 +770,12 @@
         miner_address_buf.extend_from_slice(vrf_proof);
     }
 
-    <span class="kw">let </span>beacon_base = header.beacon_entries().last().unwrap_or(prev_beacon);
+    <span class="kw">let </span>beacon_base = header.beacon_entries.last().unwrap_or(prev_beacon);
 
     <span class="kw">let </span>vrf_base = <span class="kw">crate</span>::state_manager::chain_rand::draw_randomness(
         beacon_base.data(),
         DomainSeparationTag::TicketProduction <span class="kw">as </span>i64,
-        header.epoch() - TICKET_RANDOMNESS_LOOKBACK,
+        header.epoch - TICKET_RANDOMNESS_LOOKBACK,
         <span class="kw-2">&amp;</span>miner_address_buf,
     )
     .map_err(|e| FilecoinConsensusError::DrawingChainRandomness(e.to_string()))<span class="question-mark">?</span>;
@@ -787,7 +784,7 @@
         work_addr,
         <span class="kw-2">&amp;</span>vrf_base,
         <span class="comment">// Safe to unwrap here because of block sanity checks
-        </span>header.ticket().as_ref().unwrap().vrfproof.as_bytes(),
+        </span>header.ticket.as_ref().unwrap().vrfproof.as_bytes(),
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -804,7 +801,7 @@
 <span class="kw">fn </span>verify_winning_post_proof&lt;DB: Blockstore&gt;(
     state_manager: <span class="kw-2">&amp;</span>StateManager&lt;DB&gt;,
     network_version: NetworkVersion,
-    header: <span class="kw-2">&amp;</span>BlockHeader,
+    header: <span class="kw-2">&amp;</span>CachingBlockHeader,
     prev_beacon_entry: <span class="kw-2">&amp;</span>BeaconEntry,
     lookback_state: <span class="kw-2">&amp;</span>Cid,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FilecoinConsensusError&gt; {
@@ -812,25 +809,24 @@
         .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::VERIFY_WINNING_POST_PROOF])
         .start_timer();
 
-    <span class="kw">let </span>miner_addr_buf = to_vec(header.miner_address())<span class="question-mark">?</span>;
+    <span class="kw">let </span>miner_addr_buf = to_vec(<span class="kw-2">&amp;</span>header.miner_address)<span class="question-mark">?</span>;
     <span class="kw">let </span>rand_base = header
-        .beacon_entries()
+        .beacon_entries
         .iter()
         .last()
         .unwrap_or(prev_beacon_entry);
     <span class="kw">let </span>rand = <span class="kw">crate</span>::state_manager::chain_rand::draw_randomness(
         rand_base.data(),
         DomainSeparationTag::WinningPoStChallengeSeed <span class="kw">as </span>i64,
-        header.epoch(),
+        header.epoch,
         <span class="kw-2">&amp;</span>miner_addr_buf,
     )
     .map_err(|e| FilecoinConsensusError::DrawingChainRandomness(e.to_string()))<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>id = header.miner_address().id().map_err(|e| {
+    <span class="kw">let </span>id = header.miner_address.id().map_err(|e| {
         FilecoinConsensusError::WinningPoStValidation(<span class="macro">format!</span>(
             <span class="string">&quot;failed to get ID from miner address {}: {}&quot;</span>,
-            header.miner_address(),
-            e
+            header.miner_address, e
         ))
     })<span class="question-mark">?</span>;
 
@@ -838,14 +834,14 @@
         .get_sectors_for_winning_post(
             lookback_state,
             network_version,
-            header.miner_address(),
+            <span class="kw-2">&amp;</span>header.miner_address,
             Randomness::new(rand.to_vec()),
         )
         .map_err(|e| FilecoinConsensusError::WinningPoStValidation(e.to_string()))<span class="question-mark">?</span>;
 
     verify_winning_post(
         Randomness::new(rand.to_vec()),
-        header.winning_post_proof(),
+        <span class="kw-2">&amp;</span>header.winning_post_proof,
         sectors.as_slice(),
         id,
     )

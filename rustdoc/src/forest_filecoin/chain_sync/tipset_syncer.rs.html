@@ -1593,6 +1593,8 @@
 <a href="#1593" id="1593">1593</a>
 <a href="#1594" id="1594">1594</a>
 <a href="#1595" id="1595">1595</a>
+<a href="#1596" id="1596">1596</a>
+<a href="#1597" id="1597">1597</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1618,7 +1620,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::{is_valid_for_sending, Error <span class="kw">as </span>StateManagerError, StateManager};
 <span class="kw">use </span><span class="kw">crate</span>::utils::io::WithProgressRaw;
 <span class="kw">use crate</span>::{
-    blocks::{Block, BlockHeader, Error <span class="kw">as </span>ForestBlockError, FullTipset, Tipset, TipsetKeys},
+    blocks::{Block, CachingBlockHeader, Error <span class="kw">as </span>ForestBlockError, FullTipset, Tipset, TipsetKey},
     fil_cns::{<span class="self">self</span>, FilecoinConsensus, FilecoinConsensusError},
 };
 <span class="kw">use </span>ahash::{HashMap, HashMapExt, HashSet};
@@ -1730,7 +1732,7 @@
 <span class="kw">struct </span>TipsetGroup {
     tipsets: NonEmpty&lt;Arc&lt;Tipset&gt;&gt;,
     epoch: ChainEpoch,
-    parents: TipsetKeys,
+    parents: TipsetKey,
 }
 
 <span class="kw">impl </span>TipsetGroup {
@@ -1748,7 +1750,7 @@
         <span class="self">self</span>.epoch
     }
 
-    <span class="kw">fn </span>parents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TipsetKeys {
+    <span class="kw">fn </span>parents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TipsetKey {
         <span class="self">self</span>.parents.clone()
     }
 
@@ -1902,7 +1904,7 @@
     FindRange {
         range_finder: <span class="prelude-ty">Option</span>&lt;TipsetRangeSyncer&lt;DB&gt;&gt;,
         epoch: i64,
-        parents: TipsetKeys,
+        parents: TipsetKey,
         current_sync: <span class="prelude-ty">Option</span>&lt;TipsetGroup&gt;,
         next_sync: <span class="prelude-ty">Option</span>&lt;TipsetGroup&gt;,
     },
@@ -1935,7 +1937,7 @@
         // checks were run
 
         // Read all of the tipsets available on the stream
-        </span><span class="kw">let </span><span class="kw-2">mut </span>grouped_tipsets: HashMap&lt;(i64, TipsetKeys), TipsetGroup&gt; = HashMap::new();
+        </span><span class="kw">let </span><span class="kw-2">mut </span>grouped_tipsets: HashMap&lt;(i64, TipsetKey), TipsetGroup&gt; = HashMap::new();
         <span class="kw">loop </span>{
             <span class="kw">match </span><span class="self">self</span>.tipsets.as_mut().poll_next(cx) {
                 Poll::Ready(<span class="prelude-val">Some</span>(tipset)) =&gt; {
@@ -2174,7 +2176,7 @@
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::chain_sync) <span class="kw">struct </span>TipsetRangeSyncer&lt;DB&gt; {
     <span class="kw">pub </span>proposed_head: Arc&lt;Tipset&gt;,
     <span class="kw">pub </span>current_head: Arc&lt;Tipset&gt;,
-    tipsets_included: HashSet&lt;TipsetKeys&gt;,
+    tipsets_included: HashSet&lt;TipsetKey&gt;,
     tipset_tasks: JoinSet&lt;<span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt;&gt;,
     state_manager: Arc&lt;StateManager&lt;DB&gt;&gt;,
     network: SyncNetworkContext&lt;DB&gt;,
@@ -2275,7 +2277,7 @@
         <span class="self">self</span>.proposed_head.epoch()
     }
 
-    <span class="kw">pub fn </span>proposed_head_parents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TipsetKeys {
+    <span class="kw">pub fn </span>proposed_head_parents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TipsetKey {
         <span class="self">self</span>.proposed_head.parents().clone()
     }
 }
@@ -2344,7 +2346,10 @@
 
     <span class="comment">// Persist the blocks from the synced Tipsets into the store
     </span>tracker.write().set_stage(SyncStage::Headers);
-    <span class="kw">let </span>headers: Vec&lt;<span class="kw-2">&amp;</span>BlockHeader&gt; = parent_tipsets.iter().flat_map(|t| t.blocks()).collect();
+    <span class="kw">let </span>headers: Vec&lt;<span class="kw-2">&amp;</span>CachingBlockHeader&gt; = parent_tipsets
+        .iter()
+        .flat_map(|t| t.block_headers())
+        .collect();
     <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = persist_objects(chain_store.blockstore(), <span class="kw-2">&amp;</span>headers) {
         tracker.write().error(why.to_string());
         <span class="kw">return </span><span class="prelude-val">Err</span>(why.into());
@@ -2518,7 +2523,7 @@
     genesis: Arc&lt;Tipset&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
     <span class="comment">// Persist the blocks from the proposed tipsets into the store
-    </span><span class="kw">let </span>headers: Vec&lt;<span class="kw-2">&amp;</span>BlockHeader&gt; = proposed_head.blocks().iter().collect();
+    </span><span class="kw">let </span>headers: Vec&lt;<span class="kw-2">&amp;</span>CachingBlockHeader&gt; = proposed_head.block_headers().iter().collect();
     persist_objects(chain_store.blockstore(), <span class="kw-2">&amp;</span>headers)<span class="question-mark">?</span>;
 
     <span class="comment">// Sync and validate messages from the tipsets
@@ -2592,7 +2597,7 @@
             .map(|(messages, tipset)| {
                 <span class="comment">// Construct full tipset from fetched messages
                 </span><span class="kw">let </span>bundle = TipsetBundle {
-                    blocks: tipset.blocks().to_vec(),
+                    blocks: tipset.block_headers().to_vec(),
                     messages: <span class="prelude-val">Some</span>(messages),
                 };
 
@@ -2753,8 +2758,8 @@
     <span class="kw">let </span>consensus = FilecoinConsensus::new(state_manager.beacon_schedule());
     <span class="macro">trace!</span>(
         <span class="string">&quot;Validating block: epoch = {}, weight = {}, key = {}&quot;</span>,
-        block.header().epoch(),
-        block.header().weight(),
+        block.header().epoch,
+        block.header().weight,
         block.header().cid(),
     );
     <span class="kw">let </span>chain_store = state_manager.chain_store().clone();
@@ -2775,7 +2780,7 @@
     block_timestamp_checks(header).map_err(|e| (<span class="kw-2">*</span>block_cid, e))<span class="question-mark">?</span>;
 
     <span class="kw">let </span>base_tipset = chain_store
-        .load_required_tipset(header.parents())
+        .load_required_tipset(<span class="kw-2">&amp;</span>header.parents)
         <span class="comment">// The parent tipset will always be there when calling validate_block
         // as part of the sync_tipset_range flow because all of the headers in the range
         // have been committed to the store. When validate_block is called from sync_tipset
@@ -2793,7 +2798,7 @@
         state_manager.chain_store().chain_index.clone(),
         state_manager.chain_config().clone(),
         base_tipset.clone(),
-        block.header().epoch(),
+        block.header().epoch,
     )
     .map_err(|e| (<span class="kw-2">*</span>block_cid, e.into()))
     .map(|(<span class="kw">_</span>, s)| Arc::new(s))<span class="question-mark">?</span>;
@@ -2801,7 +2806,7 @@
     <span class="comment">// Work address needed for async validations, so necessary
     // to do sync to avoid duplication
     </span><span class="kw">let </span>work_addr = state_manager
-        .get_miner_work_addr(<span class="kw-2">*</span>lookback_state, header.miner_address())
+        .get_miner_work_addr(<span class="kw-2">*</span>lookback_state, <span class="kw-2">&amp;</span>header.miner_address)
         .map_err(|e| (<span class="kw-2">*</span>block_cid, e.into()))<span class="question-mark">?</span>;
 
     <span class="comment">// Async validations
@@ -2827,8 +2832,8 @@
             .map_err(|e| {
                 TipsetRangeSyncerError::Validation(<span class="macro">format!</span>(<span class="string">&quot;Could not compute base fee: {e}&quot;</span>))
             })<span class="question-mark">?</span>;
-        <span class="kw">let </span>parent_base_fee = v_block.header.parent_base_fee();
-        <span class="kw">if </span>base_fee != parent_base_fee.clone() {
+        <span class="kw">let </span>parent_base_fee = <span class="kw-2">&amp;</span>v_block.header.parent_base_fee;
+        <span class="kw">if </span><span class="kw-2">&amp;</span>base_fee != parent_base_fee {
             <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::Validation(<span class="macro">format!</span>(
                 <span class="string">&quot;base fee doesn&#39;t match: {parent_base_fee} (header), {base_fee} (computed)&quot;
             </span>)));
@@ -2839,7 +2844,7 @@
     <span class="comment">// Parent weight calculation check
     </span><span class="kw">let </span>v_block_store = state_manager.blockstore_owned();
     <span class="kw">let </span>v_base_tipset = Arc::clone(<span class="kw-2">&amp;</span>base_tipset);
-    <span class="kw">let </span>weight = header.weight().clone();
+    <span class="kw">let </span>weight = header.weight.clone();
     validations.push(tokio::task::spawn_blocking(<span class="kw">move </span>|| {
         <span class="kw">let </span>_timer = metrics::BLOCK_VALIDATION_TASKS_TIME
             .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::PARENT_WEIGHT_CAL])
@@ -2868,19 +2873,17 @@
                 TipsetRangeSyncerError::Calculation(<span class="macro">format!</span>(<span class="string">&quot;Failed to calculate state: {e}&quot;</span>))
             })<span class="question-mark">?</span>;
 
-        <span class="kw">if </span><span class="kw-2">&amp;</span>state_root != header.state_root() {
+        <span class="kw">if </span>state_root != header.state_root {
             <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::Validation(<span class="macro">format!</span>(
                 <span class="string">&quot;Parent state root did not match computed state: {} (header), {} (computed)&quot;</span>,
-                header.state_root(),
-                state_root,
+                header.state_root, state_root,
             )));
         }
 
-        <span class="kw">if </span><span class="kw-2">&amp;</span>receipt_root != header.message_receipts() {
+        <span class="kw">if </span>receipt_root != header.message_receipts {
             <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::Validation(<span class="macro">format!</span>(
                 <span class="string">&quot;Parent receipt root did not match computed root: {} (header), {} (computed)&quot;</span>,
-                header.message_receipts(),
-                receipt_root
+                header.message_receipts, receipt_root
             )));
         }
         <span class="prelude-val">Ok</span>(())
@@ -2892,7 +2895,7 @@
         <span class="kw">let </span>_timer = metrics::BLOCK_VALIDATION_TASKS_TIME
             .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::BLOCK_SIGNATURE_CHECK])
             .start_timer();
-        v_block.header().check_block_signature(<span class="kw-2">&amp;</span>work_addr)<span class="question-mark">?</span>;
+        v_block.header().verify_signature_against(<span class="kw-2">&amp;</span>work_addr)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }));
 
@@ -2940,7 +2943,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
     <span class="kw">let </span>network_version = state_manager
         .chain_config()
-        .network_version(block.header.epoch());
+        .network_version(block.header.epoch);
 
     <span class="comment">// Do the initial loop here
     // check block message and signatures in them
@@ -2953,7 +2956,7 @@
         cids.push(m.cid().unwrap().to_bytes());
     }
 
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(sig) = block.header().bls_aggregate() {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(sig) = <span class="kw-2">&amp;</span>block.header().bls_aggregate {
         <span class="kw">if </span>!verify_bls_aggregate(
             cids.iter()
                 .map(|x| x.as_slice())
@@ -3004,7 +3007,7 @@
                 })<span class="question-mark">?</span>;
                 <span class="kw">let </span>network_version = state_manager
                     .chain_config()
-                    .network_version(block.header.epoch());
+                    .network_version(block.header.epoch);
                 <span class="kw">if </span>!is_valid_for_sending(network_version, <span class="kw-2">&amp;</span>actor) {
                     <span class="macro">anyhow::bail!</span>(<span class="string">&quot;not valid for sending!&quot;</span>);
                 }
@@ -3070,9 +3073,9 @@
         block.secp_msgs(),
     )
     .map_err(|err| TipsetRangeSyncerError::ComputingMessageRoot(err.to_string()))<span class="question-mark">?</span>;
-    <span class="kw">if </span>block.header().messages() != <span class="kw-2">&amp;</span>msg_root {
+    <span class="kw">if </span>block.header().messages != msg_root {
         <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::BlockMessageRootInvalid(
-            <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, block.header().messages()),
+            <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, block.header().messages),
             <span class="macro">format!</span>(<span class="string">&quot;{msg_root:?}&quot;</span>),
         ));
     }
@@ -3083,32 +3086,31 @@
 <span class="doccomment">/// Checks optional values in header.
 ///
 /// It only looks for fields which are common to all consensus types.
-</span><span class="kw">fn </span>block_sanity_checks(header: <span class="kw-2">&amp;</span>BlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
-    <span class="kw">if </span>header.signature().is_none() {
+</span><span class="kw">fn </span>block_sanity_checks(header: <span class="kw-2">&amp;</span>CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
+    <span class="kw">if </span>header.signature.is_none() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::BlockWithoutSignature);
     }
-    <span class="kw">if </span>header.bls_aggregate().is_none() {
+    <span class="kw">if </span>header.bls_aggregate.is_none() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::BlockWithoutBlsAggregate);
     }
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Check the clock drift.
-</span><span class="kw">fn </span>block_timestamp_checks(header: <span class="kw-2">&amp;</span>BlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
+</span><span class="kw">fn </span>block_timestamp_checks(header: <span class="kw-2">&amp;</span>CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
     <span class="kw">let </span>time_now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect(<span class="string">&quot;Retrieved system time before UNIX epoch&quot;</span>)
         .as_secs();
-    <span class="kw">if </span>header.timestamp() &gt; time_now + ALLOWABLE_CLOCK_DRIFT {
+    <span class="kw">if </span>header.timestamp &gt; time_now + ALLOWABLE_CLOCK_DRIFT {
         <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::TimeTravellingBlock(
             time_now,
-            header.timestamp(),
+            header.timestamp,
         ));
-    } <span class="kw">else if </span>header.timestamp() &gt; time_now {
+    } <span class="kw">else if </span>header.timestamp &gt; time_now {
         <span class="macro">warn!</span>(
             <span class="string">&quot;Got block from the future, but within clock drift threshold, {} &gt; {}&quot;</span>,
-            header.timestamp(),
-            time_now
+            header.timestamp, time_now
         );
     }
     <span class="prelude-val">Ok</span>(())
@@ -3118,7 +3120,7 @@
 /// If so, add all their descendants to the bad block cache and return an error.
 </span><span class="kw">fn </span>validate_tipset_against_cache(
     bad_block_cache: <span class="kw-2">&amp;</span>BadBlockCache,
-    tipset: <span class="kw-2">&amp;</span>TipsetKeys,
+    tipset: <span class="kw-2">&amp;</span>TipsetKey,
     descendant_blocks: <span class="kw-2">&amp;</span>[Cid],
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
     <span class="kw">for </span>cid <span class="kw">in </span>tipset.cids.clone() {
@@ -3134,15 +3136,16 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::RawBlockHeader;
     <span class="kw">use </span><span class="kw">crate</span>::blocks::VRFProof;
-    <span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, ElectionProof, Ticket, Tipset};
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, ElectionProof, Ticket, Tipset};
     <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
     <span class="kw">use </span>cid::Cid;
     <span class="kw">use </span>num_bigint::BigInt;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">pub fn </span>mock_block(id: u64, weight: u64, ticket_sequence: u64) -&gt; BlockHeader {
+    <span class="kw">pub fn </span>mock_block(id: u64, weight: u64, ticket_sequence: u64) -&gt; CachingBlockHeader {
         <span class="kw">let </span>addr = Address::new_id(id);
         <span class="kw">let </span>cid =
             Cid::try_from(<span class="string">&quot;bafyreicmaj5hhoy5mgqvamfhgexxyergw7hdeshizghodwkjg6qmpoco7i&quot;</span>).unwrap();
@@ -3154,16 +3157,17 @@
             vrfproof: VRFProof::new(fmt_str.into_bytes()),
         };
         <span class="kw">let </span>weight_inc = BigInt::from(weight);
-        BlockHeader::builder()
-            .miner_address(addr)
-            .election_proof(<span class="prelude-val">Some</span>(election_proof))
-            .ticket(<span class="prelude-val">Some</span>(ticket))
-            .message_receipts(cid)
-            .messages(cid)
-            .state_root(cid)
-            .weight(weight_inc)
-            .build()
-            .unwrap()
+
+        CachingBlockHeader::new(RawBlockHeader {
+            miner_address: addr,
+            election_proof: <span class="prelude-val">Some</span>(election_proof),
+            ticket: <span class="prelude-val">Some</span>(ticket),
+            message_receipts: cid,
+            messages: cid,
+            state_root: cid,
+            weight: weight_inc,
+            ..Default::default()
+        })
     }
 
     <span class="attr">#[test]

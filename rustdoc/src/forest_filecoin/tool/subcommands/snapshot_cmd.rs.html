@@ -815,9 +815,9 @@
             data.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Broken IPLD link at epoch: {height}&quot;</span>))
         };
 
-        <span class="kw">for </span>h <span class="kw">in </span>tipset.blocks() {
-            recurse_links_hash(<span class="kw-2">&amp;mut </span>seen, <span class="kw-2">*</span>h.state_root(), <span class="kw-2">&amp;mut </span>assert_cid_exists, <span class="kw-2">&amp;</span>|<span class="kw">_</span>| ()).<span class="kw">await</span><span class="question-mark">?</span>;
-            recurse_links_hash(<span class="kw-2">&amp;mut </span>seen, <span class="kw-2">*</span>h.messages(), <span class="kw-2">&amp;mut </span>assert_cid_exists, <span class="kw-2">&amp;</span>|<span class="kw">_</span>| ()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">for </span>h <span class="kw">in </span>tipset.block_headers() {
+            recurse_links_hash(<span class="kw-2">&amp;mut </span>seen, h.state_root, <span class="kw-2">&amp;mut </span>assert_cid_exists, <span class="kw-2">&amp;</span>|<span class="kw">_</span>| ()).<span class="kw">await</span><span class="question-mark">?</span>;
+            recurse_links_hash(<span class="kw-2">&amp;mut </span>seen, h.messages, <span class="kw-2">&amp;mut </span>assert_cid_exists, <span class="kw-2">&amp;</span>|<span class="kw">_</span>| ()).<span class="kw">await</span><span class="question-mark">?</span>;
         }
     }
 
@@ -902,12 +902,12 @@
             pb.set_message(<span class="macro">format!</span>(<span class="string">&quot;epoch queue: {}&quot;</span>, tipset.epoch() - last_epoch));
         });
 
-    <span class="kw">let </span>beacon = Arc::new(chain_config.get_beacon_schedule(genesis.timestamp()));
+    <span class="kw">let </span>beacon = Arc::new(chain_config.get_beacon_schedule(genesis.timestamp));
 
     <span class="comment">// ProgressBar::wrap_iter believes the progress has been abandoned once the
     // iterator is consumed.
     </span><span class="kw">crate</span>::state_manager::validate_tipsets(
-        genesis.timestamp(),
+        genesis.timestamp,
         chain_index.clone(),
         chain_config,
         beacon,
@@ -941,7 +941,7 @@
     <span class="kw">let </span>genesis = ts.genesis(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
     <span class="kw">let </span>network = NetworkChain::from_genesis_or_devnet_placeholder(genesis.cid());
 
-    <span class="kw">let </span>timestamp = genesis.timestamp();
+    <span class="kw">let </span>timestamp = genesis.timestamp;
     <span class="kw">let </span>chain_index = ChainIndex::new(Arc::clone(<span class="kw-2">&amp;</span>store));
     <span class="kw">let </span>chain_config = ChainConfig::from_chain(<span class="kw-2">&amp;</span>network);
     <span class="kw">if </span>chain_config.is_testnet() {

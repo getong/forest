@@ -176,6 +176,7 @@
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -246,7 +247,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>seen = HashSet::new();
 
     <span class="comment">// Add all unique messages&#39; gas limit to get the total for the Tipset.
-    </span><span class="kw">for </span>b <span class="kw">in </span>ts.blocks() {
+    </span><span class="kw">for </span>b <span class="kw">in </span>ts.block_headers() {
         <span class="kw">let </span>(msg1, msg2) = <span class="kw">crate</span>::chain::block_messages(db, b)<span class="question-mark">?</span>;
         <span class="kw">for </span>m <span class="kw">in </span>msg1 {
             <span class="kw">let </span>m_cid = m.cid()<span class="question-mark">?</span>;
@@ -265,11 +266,11 @@
     }
 
     <span class="comment">// Compute next base fee based on the current gas limit and parent base fee.
-    </span><span class="kw">let </span>parent_base_fee = ts.blocks()[<span class="number">0</span>].parent_base_fee();
+    </span><span class="kw">let </span>parent_base_fee = <span class="kw-2">&amp;</span>ts.block_headers()[<span class="number">0</span>].parent_base_fee;
     <span class="prelude-val">Ok</span>(compute_next_base_fee(
         parent_base_fee,
         total_limit,
-        ts.blocks().len(),
+        ts.block_headers().len(),
         ts.epoch(),
         smoke_height,
     ))
@@ -277,7 +278,8 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset};
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::RawBlockHeader;
+    <span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
     <span class="kw">use </span><span class="kw">crate</span>::db::MemoryDB;
     <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, Height};
     <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
@@ -345,10 +347,10 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>compute_base_fee_shouldnt_panic_on_bad_input() {
         <span class="kw">let </span>blockstore = MemoryDB::default();
-        <span class="kw">let </span>h0 = BlockHeader::builder()
-            .miner_address(Address::new_id(<span class="number">0</span>))
-            .build()
-            .unwrap();
+        <span class="kw">let </span>h0 = CachingBlockHeader::new(RawBlockHeader {
+            miner_address: Address::new_id(<span class="number">0</span>),
+            ..Default::default()
+        });
         <span class="kw">let </span>ts = Tipset::from(h0);
         <span class="kw">let </span>smoke_height = ChainConfig::default().epoch(Height::Smoke);
         <span class="macro">assert!</span>(compute_base_fee(<span class="kw-2">&amp;</span>blockstore, <span class="kw-2">&amp;</span>ts, smoke_height).is_err());

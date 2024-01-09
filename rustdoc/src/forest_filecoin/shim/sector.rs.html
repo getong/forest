@@ -336,10 +336,30 @@
 <a href="#336" id="336">336</a>
 <a href="#337" id="337">337</a>
 <a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::shim::version::NetworkVersion;
+</span><span class="kw">pub use </span>fvm_shared3::sector::StoragePower;
+<span class="kw">pub use </span>fvm_shared3::sector::{
+    RegisteredPoStProof <span class="kw">as </span>RegisteredPoStProofV3, RegisteredSealProof <span class="kw">as </span>RegisteredSealProofV3,
+};
+<span class="kw">pub use </span>fvm_shared4::sector::RegisteredSealProof <span class="kw">as </span>RegisteredSealProofV4;
+
+<span class="kw">use </span><span class="kw">crate</span>::shim::version::NetworkVersion;
 <span class="kw">use </span>fvm_ipld_encoding::repr::{Deserialize_repr, Serialize_repr};
 <span class="kw">use </span>fvm_shared2::sector::{
     RegisteredPoStProof <span class="kw">as </span>RegisteredPoStProofV2, RegisteredSealProof <span class="kw">as </span>RegisteredSealProofV2,
@@ -348,15 +368,10 @@
 <span class="kw">use </span>fvm_shared3::sector::{
     PoStProof <span class="kw">as </span>PoStProofV3, SectorInfo <span class="kw">as </span>SectorInfoV3, SectorSize <span class="kw">as </span>SectorSizeV3,
 };
-<span class="kw">pub use </span>fvm_shared3::sector::{
-    RegisteredPoStProof <span class="kw">as </span>RegisteredPoStProofV3, RegisteredSealProof <span class="kw">as </span>RegisteredSealProofV3,
-};
-<span class="kw">pub use </span>fvm_shared4::sector::RegisteredSealProof <span class="kw">as </span>RegisteredSealProofV4;
 <span class="kw">use </span>num_derive::FromPrimitive;
-<span class="kw">use </span>std::ops::Deref;
-
-<span class="kw">pub use </span>fvm_shared3::sector::StoragePower;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>std::hash::{Hash, Hasher};
+<span class="kw">use </span>std::ops::Deref;
 
 <span class="kw">pub type </span>SectorNumber = fvm_shared3::sector::SectorNumber;
 
@@ -605,9 +620,22 @@
     PartialEq,
     derive_more::From,
     derive_more::Into,
+    Eq,
 )]
 #[cfg_attr(test, derive(derive_quickcheck_arbitrary::Arbitrary))]
 </span><span class="kw">pub struct </span>PoStProof(PoStProofV3);
+
+<span class="kw">impl </span>Hash <span class="kw">for </span>PoStProof {
+    <span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
+        <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/3852
+        </span><span class="kw">let </span>PoStProofV3 {
+            post_proof,
+            proof_bytes,
+        } = <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>;
+        post_proof.hash(state);
+        proof_bytes.hash(state);
+    }
+}
 
 <span class="kw">impl </span>PoStProof {
     <span class="kw">pub fn </span>new(reg_post_proof: RegisteredPoStProof, proof_bytes: Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{

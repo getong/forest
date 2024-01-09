@@ -680,6 +680,9 @@
 <a href="#680" id="680">680</a>
 <a href="#681" id="681">681</a>
 <a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -690,7 +693,7 @@
 
 </span><span class="kw">use </span>std::{num::NonZeroUsize, sync::Arc, time::Duration};
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{BlockHeader, Tipset};
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{HeadChange, MINIMUM_BASE_FEE};
 <span class="attr">#[cfg(test)]
 </span><span class="kw">use </span><span class="kw">crate</span>::db::SettingsStore;
@@ -1072,7 +1075,10 @@
     }
 
     <span class="doccomment">/// Return Vector of signed messages given a block header for self.
-    </span><span class="kw">pub fn </span>messages_for_blocks(<span class="kw-2">&amp;</span><span class="self">self</span>, blks: <span class="kw-2">&amp;</span>[BlockHeader]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;SignedMessage&gt;, Error&gt; {
+    </span><span class="kw">pub fn </span>messages_for_blocks(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        blks: <span class="kw-2">&amp;</span>[CachingBlockHeader],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;SignedMessage&gt;, Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>msg_vec: Vec&lt;SignedMessage&gt; = Vec::new();
 
         <span class="kw">for </span>block <span class="kw">in </span>blks {
@@ -1324,8 +1330,8 @@
     <span class="kw">let </span>min_gas = price_list_by_network_version(chain_config.network_version(epoch))
         .on_chain_message(to_vec(m)<span class="question-mark">?</span>.len());
     valid_for_block_inclusion(m.message(), min_gas.total(), NEWEST_NETWORK_VERSION)<span class="question-mark">?</span>;
-    <span class="kw">if </span>!cur_ts.blocks().is_empty() {
-        <span class="kw">let </span>base_fee = cur_ts.blocks()[<span class="number">0</span>].parent_base_fee();
+    <span class="kw">if </span>!cur_ts.block_headers().is_empty() {
+        <span class="kw">let </span>base_fee = <span class="kw-2">&amp;</span>cur_ts.block_headers()[<span class="number">0</span>].parent_base_fee;
         <span class="kw">let </span>base_fee_lower_bound =
             get_base_fee_lower_bound(base_fee, BASE_FEE_LOWER_BOUND_FACTOR_CONSERVATIVE);
         <span class="kw">if </span>m.gas_fee_cap() &lt; base_fee_lower_bound {

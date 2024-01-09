@@ -240,7 +240,7 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKeys;
+</span><span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKey;
 <span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET, MINIMUM_BASE_FEE};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait};
@@ -259,7 +259,7 @@
 <span class="doccomment">/// Estimate the fee cap
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>gas_estimate_fee_cap&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(params): Params&lt;LotusJson&lt;(Message, i64, TipsetKeys)&gt;&gt;,
+    Params(params): Params&lt;LotusJson&lt;(Message, i64, TipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((msg, max_queue_blks, tsk)) = params;
 
@@ -270,11 +270,11 @@
     data: <span class="kw-2">&amp;</span>Data&lt;RPCState&lt;DB&gt;&gt;,
     msg: Message,
     max_queue_blks: i64,
-    _tsk: TipsetKeys,
+    _tsk: TipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;TokenAmount, JsonRpcError&gt; {
     <span class="kw">let </span>ts = data.state_manager.chain_store().heaviest_tipset();
 
-    <span class="kw">let </span>parent_base_fee = ts.blocks()[<span class="number">0</span>].parent_base_fee();
+    <span class="kw">let </span>parent_base_fee = <span class="kw-2">&amp;</span>ts.block_headers()[<span class="number">0</span>].parent_base_fee;
     <span class="kw">let </span>increase_factor =
         (<span class="number">1.0 </span>+ (BASE_FEE_MAX_CHANGE_DENOM <span class="kw">as </span>f64).recip()).powf(max_queue_blks <span class="kw">as </span>f64);
 
@@ -289,7 +289,7 @@
 <span class="doccomment">/// Estimate the fee cap
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>gas_estimate_gas_premium&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(params): Params&lt;LotusJson&lt;(u64, Address, i64, TipsetKeys)&gt;&gt;,
+    Params(params): Params&lt;LotusJson&lt;(u64, Address, i64, TipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
     <span class="kw">let </span>(nblocksincl, _sender, _gas_limit, <span class="kw">_</span>) = params.<span class="number">0</span>;
     estimate_gas_premium::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, nblocksincl)
@@ -323,7 +323,7 @@
             .state_manager
             .chain_store()
             .load_required_tipset(ts.parents())<span class="question-mark">?</span>;
-        blocks += pts.blocks().len();
+        blocks += pts.block_headers().len();
         <span class="kw">let </span>msgs = <span class="kw">crate</span>::chain::messages_for_tipset(data.state_manager.blockstore_owned(), <span class="kw-2">&amp;</span>pts)<span class="question-mark">?</span>;
 
         prices.append(
@@ -381,7 +381,7 @@
 <span class="doccomment">/// Estimate the gas limit
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>gas_estimate_gas_limit&lt;DB&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((msg, tsk))): Params&lt;LotusJson&lt;(Message, TipsetKeys)&gt;&gt;,
+    Params(LotusJson((msg, tsk))): Params&lt;LotusJson&lt;(Message, TipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;i64, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>,
@@ -392,7 +392,7 @@
 <span class="kw">async fn </span>estimate_gas_limit&lt;DB&gt;(
     data: <span class="kw-2">&amp;</span>Data&lt;RPCState&lt;DB&gt;&gt;,
     msg: Message,
-    <span class="kw">_</span>: TipsetKeys,
+    <span class="kw">_</span>: TipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;i64, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>,
@@ -436,7 +436,7 @@
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>gas_estimate_message_gas&lt;DB&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
     Params(LotusJson((msg, spec, tsk))): Params&lt;
-        LotusJson&lt;(Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;, TipsetKeys)&gt;,
+        LotusJson&lt;(Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;, TipsetKey)&gt;,
     &gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Message&gt;, JsonRpcError&gt;
 <span class="kw">where
@@ -451,7 +451,7 @@
     data: <span class="kw-2">&amp;</span>Data&lt;RPCState&lt;DB&gt;&gt;,
     msg: Message,
     _spec: <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;,
-    tsk: TipsetKeys,
+    tsk: TipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Message, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>,

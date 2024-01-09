@@ -73,7 +73,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::BlockHeader;
+</span><span class="kw">use </span><span class="kw">crate</span>::blocks::CachingBlockHeader;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::car_util::load_car;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
@@ -90,7 +90,7 @@
     genesis_fp: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>String&gt;,
     genesis_bytes: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[u8]&gt;,
     db: <span class="kw-2">&amp;</span>DB,
-) -&gt; <span class="prelude-ty">Result</span>&lt;BlockHeader, anyhow::Error&gt;
+) -&gt; <span class="prelude-ty">Result</span>&lt;CachingBlockHeader, anyhow::Error&gt;
 <span class="kw">where
     </span>DB: Blockstore,
 {
@@ -107,12 +107,12 @@
         </span>}
     };
 
-    <span class="macro">info!</span>(<span class="string">&quot;Initialized genesis: {}&quot;</span>, genesis);
+    <span class="macro">info!</span>(<span class="string">&quot;Initialized genesis: {}&quot;</span>, genesis.cid());
     <span class="prelude-val">Ok</span>(genesis)
 }
 
 <span class="kw">pub fn </span>get_network_name_from_genesis&lt;BS&gt;(
-    genesis_header: <span class="kw-2">&amp;</span>BlockHeader,
+    genesis_header: <span class="kw-2">&amp;</span>CachingBlockHeader,
     state_manager: <span class="kw-2">&amp;</span>StateManager&lt;BS&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, anyhow::Error&gt;
 <span class="kw">where
@@ -120,12 +120,12 @@
 {
     <span class="comment">// Get network name from genesis state.
     </span><span class="kw">let </span>network_name = state_manager
-        .get_network_name(genesis_header.state_root())
+        .get_network_name(<span class="kw-2">&amp;</span>genesis_header.state_root)
         .map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Failed to retrieve network name from genesis: {}&quot;</span>, e))<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(network_name)
 }
 
-<span class="kw">async fn </span>process_car&lt;R, BS&gt;(reader: R, db: <span class="kw-2">&amp;</span>BS) -&gt; <span class="prelude-ty">Result</span>&lt;BlockHeader, anyhow::Error&gt;
+<span class="kw">async fn </span>process_car&lt;R, BS&gt;(reader: R, db: <span class="kw-2">&amp;</span>BS) -&gt; <span class="prelude-ty">Result</span>&lt;CachingBlockHeader, anyhow::Error&gt;
 <span class="kw">where
     </span>R: AsyncBufRead + Unpin,
     BS: Blockstore,
@@ -136,7 +136,7 @@
         <span class="macro">panic!</span>(<span class="string">&quot;Invalid Genesis. Genesis Tipset must have only 1 Block.&quot;</span>);
     }
 
-    <span class="kw">let </span>genesis_block = BlockHeader::load(db, header.roots[<span class="number">0</span>])<span class="question-mark">?</span>.ok_or_else(|| {
+    <span class="kw">let </span>genesis_block = CachingBlockHeader::load(db, header.roots[<span class="number">0</span>])<span class="question-mark">?</span>.ok_or_else(|| {
         <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Could not find genesis block despite being loaded using a genesis file&quot;</span>)
     })<span class="question-mark">?</span>;
 
