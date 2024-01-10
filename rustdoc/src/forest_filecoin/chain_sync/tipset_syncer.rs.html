@@ -1595,6 +1595,8 @@
 <a href="#1595" id="1595">1595</a>
 <a href="#1596" id="1596">1596</a>
 <a href="#1597" id="1597">1597</a>
+<a href="#1598" id="1598">1598</a>
+<a href="#1599" id="1599">1599</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1629,6 +1631,7 @@
 <span class="kw">use </span>futures::{stream, stream::FuturesUnordered, StreamExt, TryFutureExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::to_vec;
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>nonempty::{nonempty, NonEmpty};
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tokio::task::JoinSet;
@@ -2350,7 +2353,7 @@
         .iter()
         .flat_map(|t| t.block_headers())
         .collect();
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = persist_objects(chain_store.blockstore(), <span class="kw-2">&amp;</span>headers) {
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = persist_objects(chain_store.blockstore(), headers.iter()) {
         tracker.write().error(why.to_string());
         <span class="kw">return </span><span class="prelude-val">Err</span>(why.into());
     };
@@ -2523,8 +2526,10 @@
     genesis: Arc&lt;Tipset&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
     <span class="comment">// Persist the blocks from the proposed tipsets into the store
-    </span><span class="kw">let </span>headers: Vec&lt;<span class="kw-2">&amp;</span>CachingBlockHeader&gt; = proposed_head.block_headers().iter().collect();
-    persist_objects(chain_store.blockstore(), <span class="kw-2">&amp;</span>headers)<span class="question-mark">?</span>;
+    </span>persist_objects(
+        chain_store.blockstore(),
+        proposed_head.block_headers().iter(),
+    )<span class="question-mark">?</span>;
 
     <span class="comment">// Sync and validate messages from the tipsets
     </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = sync_messages_check_state(
@@ -2595,9 +2600,8 @@
             .rev()
             .zip(batch.iter())
             .map(|(messages, tipset)| {
-                <span class="comment">// Construct full tipset from fetched messages
-                </span><span class="kw">let </span>bundle = TipsetBundle {
-                    blocks: tipset.block_headers().to_vec(),
+                <span class="kw">let </span>bundle = TipsetBundle {
+                    blocks: tipset.block_headers().iter().cloned().collect_vec(),
                     messages: <span class="prelude-val">Some</span>(messages),
                 };
 
@@ -2606,8 +2610,8 @@
 
                 <span class="comment">// Persist the messages in the store
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(m) = bundle.messages {
-                    <span class="kw">crate</span>::chain::persist_objects(db, <span class="kw-2">&amp;</span>m.bls_msgs)<span class="question-mark">?</span>;
-                    <span class="kw">crate</span>::chain::persist_objects(db, <span class="kw-2">&amp;</span>m.secp_msgs)<span class="question-mark">?</span>;
+                    <span class="kw">crate</span>::chain::persist_objects(db, m.bls_msgs.iter())<span class="question-mark">?</span>;
+                    <span class="kw">crate</span>::chain::persist_objects(db, m.secp_msgs.iter())<span class="question-mark">?</span>;
                 } <span class="kw">else </span>{
                     <span class="macro">warn!</span>(<span class="string">&quot;ChainExchange request for messages returned null messages&quot;</span>);
                 }

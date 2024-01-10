@@ -710,8 +710,6 @@
 <a href="#710" id="710">710</a>
 <a href="#711" id="711">711</a>
 <a href="#712" id="712">712</a>
-<a href="#713" id="713">713</a>
-<a href="#714" id="714">714</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -727,6 +725,7 @@
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
+<span class="kw">use </span>nonempty::{nonempty, NonEmpty};
 <span class="kw">use </span>num::BigInt;
 <span class="kw">use </span>once_cell::sync::OnceCell;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -780,25 +779,25 @@
 
 <span class="doccomment">/// An immutable set of blocks at the same height with the same parent set.
 /// Blocks in a tipset are canonically ordered by ticket size.
+///
+/// Represents non-null tipsets, see the documentation on [`crate::state_manager::apply_block_messages`]
+/// for more.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>Tipset {
-    headers: Vec&lt;CachingBlockHeader&gt;,
+    headers: NonEmpty&lt;CachingBlockHeader&gt;,
     key: OnceCell&lt;TipsetKey&gt;,
 }
 
 <span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>CachingBlockHeader&gt; <span class="kw">for </span>Tipset {
     <span class="kw">fn </span>from(value: <span class="kw-2">&amp;</span>CachingBlockHeader) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            headers: <span class="macro">vec!</span>[value.clone()],
-            key: OnceCell::new(),
-        }
+        value.clone().into()
     }
 }
 
 <span class="kw">impl </span>From&lt;CachingBlockHeader&gt; <span class="kw">for </span>Tipset {
     <span class="kw">fn </span>from(value: CachingBlockHeader) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            headers: <span class="macro">vec!</span>[value],
+            headers: <span class="macro">nonempty!</span>[value],
             key: OnceCell::new(),
         }
     }
@@ -822,11 +821,7 @@
 <span class="kw">impl </span>From&lt;FullTipset&gt; <span class="kw">for </span>Tipset {
     <span class="kw">fn </span>from(full_tipset: FullTipset) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>key = full_tipset.key;
-        <span class="kw">let </span>headers: Vec&lt;CachingBlockHeader&gt; = full_tipset
-            .blocks
-            .into_iter()
-            .map(|block| block.header)
-            .collect();
+        <span class="kw">let </span>headers = full_tipset.blocks.map(|block| block.header);
 
         Tipset { headers, key }
     }
@@ -847,7 +842,7 @@
         <span class="comment">// return tipset where sorted headers have smallest ticket size in the 0th index
         // and the distinct keys
         </span><span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            headers,
+            headers: NonEmpty::from_vec(headers).ok_or(Error::NoBlocks)<span class="question-mark">?</span>,
             key: OnceCell::new(),
         })
     }
@@ -919,10 +914,10 @@
     </span><span class="kw">pub fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ChainEpoch {
         <span class="self">self</span>.min_ticket_block().epoch
     }
-    <span class="kw">pub fn </span>block_headers(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[CachingBlockHeader] {
+    <span class="kw">pub fn </span>block_headers(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>NonEmpty&lt;CachingBlockHeader&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.headers
     }
-    <span class="kw">pub fn </span>into_block_headers(<span class="self">self</span>) -&gt; Vec&lt;CachingBlockHeader&gt; {
+    <span class="kw">pub fn </span>into_block_headers(<span class="self">self</span>) -&gt; NonEmpty&lt;CachingBlockHeader&gt; {
         <span class="self">self</span>.headers
     }
     <span class="doccomment">/// Returns the smallest ticket of all blocks in the tipset
@@ -931,8 +926,7 @@
     }
     <span class="doccomment">/// Returns the block with the smallest ticket of all blocks in the tipset
     </span><span class="kw">pub fn </span>min_ticket_block(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CachingBlockHeader {
-        <span class="comment">// `Tipset::new` guarantees that `blocks` isn&#39;t empty
-        </span><span class="self">self</span>.headers.first().unwrap()
+        <span class="self">self</span>.headers.first()
     }
     <span class="doccomment">/// Returns the smallest timestamp of all blocks in the tipset
     </span><span class="kw">pub fn </span>min_timestamp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
@@ -1045,7 +1039,7 @@
 /// and messages
 </span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>FullTipset {
-    blocks: Vec&lt;Block&gt;,
+    blocks: NonEmpty&lt;Block&gt;,
     key: OnceCell&lt;TipsetKey&gt;,
 }
 
@@ -1053,7 +1047,7 @@
 </span><span class="kw">impl </span>From&lt;Block&gt; <span class="kw">for </span>FullTipset {
     <span class="kw">fn </span>from(block: Block) -&gt; <span class="self">Self </span>{
         FullTipset {
-            blocks: <span class="macro">vec!</span>[block],
+            blocks: <span class="macro">nonempty!</span>[block],
             key: OnceCell::new(),
         }
     }
@@ -1073,21 +1067,20 @@
         // FullTipset and Tipset
         </span>blocks.sort_by_cached_key(|block| block.header().tipset_sort_key());
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            blocks,
+            blocks: NonEmpty::from_vec(blocks).ok_or(Error::NoBlocks)<span class="question-mark">?</span>,
             key: OnceCell::new(),
         })
     }
     <span class="doccomment">/// Returns the first block of the tipset.
     </span><span class="kw">fn </span>first_block(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Block {
-        <span class="comment">// `FullTipset::new` guarantees that `blocks` isn&#39;t empty
-        </span><span class="self">self</span>.blocks.first().unwrap()
+        <span class="self">self</span>.blocks.first()
     }
     <span class="doccomment">/// Returns reference to all blocks in a full tipset.
-    </span><span class="kw">pub fn </span>blocks(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[Block] {
+    </span><span class="kw">pub fn </span>blocks(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>NonEmpty&lt;Block&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.blocks
     }
     <span class="doccomment">/// Returns all blocks in a full tipset.
-    </span><span class="kw">pub fn </span>into_blocks(<span class="self">self</span>) -&gt; Vec&lt;Block&gt; {
+    </span><span class="kw">pub fn </span>into_blocks(<span class="self">self</span>) -&gt; NonEmpty&lt;Block&gt; {
         <span class="self">self</span>.blocks
     }
     <span class="doccomment">/// Converts the full tipset into a [Tipset] which removes the messages
@@ -1159,6 +1152,7 @@
 
     </span><span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
     <span class="kw">use </span><span class="kw">crate</span>::lotus_json::<span class="kw-2">*</span>;
+    <span class="kw">use </span>nonempty::NonEmpty;
     <span class="kw">use </span>serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     <span class="kw">use </span><span class="kw">super</span>::TipsetKey;
@@ -1169,7 +1163,7 @@
     #[serde(rename_all = <span class="string">&quot;PascalCase&quot;</span>)]
     </span><span class="kw">struct </span>TipsetLotusJsonInner {
         cids: LotusJson&lt;TipsetKey&gt;,
-        blocks: LotusJson&lt;Vec&lt;CachingBlockHeader&gt;&gt;,
+        blocks: LotusJson&lt;NonEmpty&lt;CachingBlockHeader&gt;&gt;,
         height: LotusJson&lt;i64&gt;,
     }
 
@@ -1183,9 +1177,11 @@
                 blocks,
                 height: _ignored1,
             } = Deserialize::deserialize(deserializer)<span class="question-mark">?</span>;
-            Tipset::new(blocks.into_inner())
-                .map_err(serde::de::Error::custom)
-                .map(<span class="self">Self</span>)
+
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>(Tipset {
+                headers: blocks.into_inner(),
+                key: Default::default(),
+            }))
         }
     }
 

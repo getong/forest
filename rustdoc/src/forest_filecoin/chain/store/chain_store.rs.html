@@ -569,6 +569,10 @@
 <a href="#569" id="569">569</a>
 <a href="#570" id="570">570</a>
 <a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -592,6 +596,7 @@
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_amt::Amtv0 <span class="kw">as </span>Amt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
 <span class="kw">use </span>tokio::sync::broadcast::{<span class="self">self</span>, Sender <span class="kw">as </span>Publisher};
@@ -722,7 +727,7 @@
     <span class="doccomment">/// Writes tipset block headers to data store and updates heaviest tipset
     /// with other compatible tracked headers.
     </span><span class="kw">pub fn </span>put_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, ts: <span class="kw-2">&amp;</span>Tipset) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        persist_objects(<span class="self">self</span>.blockstore(), ts.block_headers())<span class="question-mark">?</span>;
+        persist_objects(<span class="self">self</span>.blockstore(), ts.block_headers().iter())<span class="question-mark">?</span>;
 
         <span class="comment">// Expand tipset to include other compatible blocks at the epoch.
         </span><span class="kw">let </span>expanded = <span class="self">self</span>.expand_tipset(ts.min_ticket_block().clone())<span class="question-mark">?</span>;
@@ -944,12 +949,15 @@
 }
 
 <span class="doccomment">/// Persists slice of `serializable` objects to `blockstore`.
-</span><span class="kw">pub fn </span>persist_objects&lt;DB, C&gt;(db: <span class="kw-2">&amp;</span>DB, headers: <span class="kw-2">&amp;</span>[C]) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt;
+</span><span class="kw">pub fn </span>persist_objects&lt;<span class="lifetime">&#39;a</span>, DB, C&gt;(
+    db: <span class="kw-2">&amp;</span>DB,
+    headers: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>C&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt;
 <span class="kw">where
     </span>DB: Blockstore,
-    C: Serialize,
+    C: <span class="lifetime">&#39;a </span>+ Serialize,
 {
-    <span class="kw">for </span>chunk <span class="kw">in </span>headers.chunks(<span class="number">256</span>) {
+    <span class="kw">for </span>chunk <span class="kw">in </span><span class="kw-2">&amp;</span>headers.chunks(<span class="number">256</span>) {
         db.bulk_put(chunk, DB::default_code())<span class="question-mark">?</span>;
     }
     <span class="prelude-val">Ok</span>(())

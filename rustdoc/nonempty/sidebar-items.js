@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["nonempty"],"mod":["nonzero"],"struct":["Iter","NonEmpty"]};
+window.SIDEBAR_ITEMS = {"macro":["nonempty"],"mod":["nonzero","serialize"],"struct":["Iter","NonEmpty"]};
