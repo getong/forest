@@ -710,6 +710,14 @@
 <a href="#710" id="710">710</a>
 <a href="#711" id="711">711</a>
 <a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -718,20 +726,22 @@
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::FrozenCidVec;
 <span class="kw">use </span><span class="kw">crate</span>::db::{SettingsStore, SettingsStoreExt};
 <span class="kw">use </span><span class="kw">crate</span>::networks::{calibnet, mainnet};
-<span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, clock::ChainEpoch};
+<span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span><span class="kw">crate</span>::utils::cid::CidCborExt;
-<span class="kw">use </span>ahash::{HashMap, HashSet, HashSetExt};
+<span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
+<span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>nonempty::{nonempty, NonEmpty};
 <span class="kw">use </span>num::BigInt;
 <span class="kw">use </span>once_cell::sync::OnceCell;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tracing::info;
 
-<span class="kw">use super</span>::{Block, CachingBlockHeader, Error, Ticket};
+<span class="kw">use super</span>::{Block, CachingBlockHeader, Ticket};
 
 <span class="doccomment">/// A set of `CIDs` forming a unique key for a Tipset.
 /// Equal keys will have equivalent iteration order, but note that the `CIDs`
@@ -784,7 +794,8 @@
 /// for more.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>Tipset {
-    headers: NonEmpty&lt;CachingBlockHeader&gt;,
+    <span class="doccomment">/// Sorted
+    </span>headers: NonEmpty&lt;CachingBlockHeader&gt;,
     key: OnceCell&lt;TipsetKey&gt;,
 }
 
@@ -827,6 +838,20 @@
     }
 }
 
+<span class="attr">#[derive(Error, Debug, PartialEq)]
+</span><span class="kw">pub enum </span>CreateTipsetError {
+    <span class="attr">#[error(<span class="string">&quot;tipsets must not be empty&quot;</span>)]
+    </span>Empty,
+    <span class="attr">#[error(<span class="string">&quot;parent CID is inconsistent. All block headers in a tipset must agree on their parent tipset&quot;</span>)]
+    </span>BadParents,
+    <span class="attr">#[error(<span class="string">&quot;state root is inconsistent. All block headers in a tipset must agree on their parent state root&quot;</span>)]
+    </span>BadStateRoot,
+    <span class="attr">#[error(<span class="string">&quot;epoch is inconsistent. All block headers in a tipset must agree on their epoch&quot;</span>)]
+    </span>BadEpoch,
+    <span class="attr">#[error(<span class="string">&quot;duplicate miner address. All miners in a tipset must be unique.&quot;</span>)]
+    </span>DuplicateMiner,
+}
+
 <span class="attr">#[allow(clippy::len_without_is_empty)]
 </span><span class="kw">impl </span>Tipset {
     <span class="doccomment">/// Builds a new Tipset from a collection of blocks.
@@ -834,15 +859,21 @@
     /// distinct miners and all specify identical epoch, parents, weight,
     /// height, state root, receipt root; content-id for headers are
     /// supposed to be distinct but until encoding is added will be equal.
-    </span><span class="kw">pub fn </span>new(<span class="kw-2">mut </span>headers: Vec&lt;CachingBlockHeader&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
-        verify_blocks(<span class="kw-2">&amp;</span>headers)<span class="question-mark">?</span>;
+    </span><span class="kw">pub fn </span>new&lt;H: Into&lt;CachingBlockHeader&gt;&gt;(
+        headers: <span class="kw">impl </span>IntoIterator&lt;Item = H&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CreateTipsetError&gt; {
+        <span class="kw">let </span>headers = NonEmpty::collect(
+            headers
+                .into_iter()
+                .map(Into::&lt;CachingBlockHeader&gt;::into)
+                .sorted_by_cached_key(|it| it.tipset_sort_key()),
+        )
+        .ok_or(CreateTipsetError::Empty)<span class="question-mark">?</span>;
 
-        headers.sort_by_cached_key(|h| h.tipset_sort_key());
+        verify_block_headers(<span class="kw-2">&amp;</span>headers)<span class="question-mark">?</span>;
 
-        <span class="comment">// return tipset where sorted headers have smallest ticket size in the 0th index
-        // and the distinct keys
-        </span><span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            headers: NonEmpty::from_vec(headers).ok_or(Error::NoBlocks)<span class="question-mark">?</span>,
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            headers,
             key: OnceCell::new(),
         })
     }
@@ -855,7 +886,7 @@
             .clone()
             .into_iter()
             .map(|key| CachingBlockHeader::load(<span class="kw-2">&amp;</span>store, key))
-            .collect::&lt;anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?
+            .collect::&lt;anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;&gt;()<span class="question-mark">?
             </span>.map(Tipset::new)
             .transpose()<span class="question-mark">?</span>)
     }
@@ -871,7 +902,7 @@
                     .cids
                     .into_iter()
                     .map(|key| CachingBlockHeader::load(store, key))
-                    .collect::&lt;anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?
+                    .collect::&lt;anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;&gt;()<span class="question-mark">?
                     </span>.map(Tipset::new)
                     .transpose()<span class="question-mark">?</span>,
                 <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
@@ -1060,14 +1091,20 @@
 }
 
 <span class="kw">impl </span>FullTipset {
-    <span class="kw">pub fn </span>new(<span class="kw-2">mut </span>blocks: Vec&lt;Block&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
-        verify_blocks(blocks.iter().map(Block::header))<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>new(blocks: <span class="kw">impl </span>IntoIterator&lt;Item = Block&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CreateTipsetError&gt; {
+        <span class="kw">let </span>blocks = NonEmpty::collect(
+            <span class="comment">// sort blocks on creation to allow for more seamless conversions between
+            // FullTipset and Tipset
+            </span>blocks
+                .into_iter()
+                .sorted_by_cached_key(|it| it.header.tipset_sort_key()),
+        )
+        .ok_or(CreateTipsetError::Empty)<span class="question-mark">?</span>;
 
-        <span class="comment">// sort blocks on creation to allow for more seamless conversions between
-        // FullTipset and Tipset
-        </span>blocks.sort_by_cached_key(|block| block.header().tipset_sort_key());
+        verify_block_headers(blocks.iter().map(|it| <span class="kw-2">&amp;</span>it.header))<span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            blocks: NonEmpty::from_vec(blocks).ok_or(Error::NoBlocks)<span class="question-mark">?</span>,
+            blocks,
             key: OnceCell::new(),
         })
     }
@@ -1107,39 +1144,24 @@
     }
 }
 
-<span class="kw">fn </span>verify_blocks&lt;<span class="lifetime">&#39;a</span>, I&gt;(headers: I) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt;
-<span class="kw">where
-    </span>I: IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>CachingBlockHeader&gt;,
-{
-    <span class="kw">let </span><span class="kw-2">mut </span>headers = headers.into_iter();
-    <span class="kw">let </span>first_header = headers.next().ok_or(Error::NoBlocks)<span class="question-mark">?</span>;
+<span class="kw">fn </span>verify_block_headers&lt;<span class="lifetime">&#39;a</span>&gt;(
+    headers: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>CachingBlockHeader&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), CreateTipsetError&gt; {
+    <span class="kw">use </span>itertools::all;
 
-    <span class="kw">let </span>verify = |predicate: bool, message: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str| {
-        <span class="kw">if </span>predicate {
-            <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Err</span>(Error::InvalidTipset(message.to_string()))
-        }
-    };
+    <span class="kw">let </span>headers = NonEmpty::collect(headers).ok_or(CreateTipsetError::Empty)<span class="question-mark">?</span>;
+    <span class="kw">if </span>!all(<span class="kw-2">&amp;</span>headers, |it| it.parents == headers.first().parents) {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(CreateTipsetError::BadParents);
+    }
+    <span class="kw">if </span>!all(<span class="kw-2">&amp;</span>headers, |it| it.state_root == headers.first().state_root) {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(CreateTipsetError::BadStateRoot);
+    }
+    <span class="kw">if </span>!all(<span class="kw-2">&amp;</span>headers, |it| it.epoch == headers.first().epoch) {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(CreateTipsetError::BadEpoch);
+    }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>headers_set: HashSet&lt;Address&gt; = HashSet::new();
-    headers_set.insert(first_header.miner_address);
-
-    <span class="kw">for </span>header <span class="kw">in </span>headers {
-        verify(
-            header.parents == first_header.parents,
-            <span class="string">&quot;parent cids are not equal&quot;</span>,
-        )<span class="question-mark">?</span>;
-        verify(
-            header.state_root == first_header.state_root,
-            <span class="string">&quot;state_roots are not equal&quot;</span>,
-        )<span class="question-mark">?</span>;
-        verify(header.epoch == first_header.epoch, <span class="string">&quot;epochs are not equal&quot;</span>)<span class="question-mark">?</span>;
-
-        verify(
-            headers_set.insert(header.miner_address),
-            <span class="string">&quot;miner_addresses are not distinct&quot;</span>,
-        )<span class="question-mark">?</span>;
+    <span class="kw">if </span>!headers.iter().map(|it| it.miner_address).all_unique() {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(CreateTipsetError::DuplicateMiner);
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -1256,6 +1278,9 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::iter;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::blocks::VRFProof;
     <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
     <span class="kw">use </span>cid::{
@@ -1266,7 +1291,7 @@
     <span class="kw">use </span>num_bigint::BigInt;
 
     <span class="kw">use </span><span class="kw">crate</span>::blocks::{
-        header::RawBlockHeader, CachingBlockHeader, ElectionProof, Error, Ticket, Tipset, TipsetKey,
+        header::RawBlockHeader, CachingBlockHeader, ElectionProof, Ticket, Tipset, TipsetKey,
     };
 
     <span class="kw">pub fn </span>mock_block(id: u64, weight: u64, ticket_sequence: u64) -&gt; CachingBlockHeader {
@@ -1327,99 +1352,90 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ensure_miner_addresses_are_distinct() {
-        <span class="kw">let </span>h0 = CachingBlockHeader::new(RawBlockHeader {
+        <span class="kw">let </span>h0 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">0</span>),
             ..Default::default()
-        });
-        <span class="kw">let </span>h1 = CachingBlockHeader::new(RawBlockHeader {
+        };
+        <span class="kw">let </span>h1 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">0</span>),
             ..Default::default()
-        });
+        };
         <span class="macro">assert_eq!</span>(
-            Tipset::new(<span class="macro">vec!</span>[h0, h1]).unwrap_err(),
-            Error::InvalidTipset(<span class="string">&quot;miner_addresses are not distinct&quot;</span>.to_string())
+            Tipset::new([h0.clone(), h1.clone()]).unwrap_err(),
+            CreateTipsetError::DuplicateMiner
         );
-    }
 
-    <span class="comment">// specifically test the case when we are distinct from miner_address 0, but not
-    // 1
-    </span><span class="attr">#[test]
-    </span><span class="kw">fn </span>ensure_multiple_miner_addresses_are_distinct() {
-        <span class="kw">let </span>h0 = CachingBlockHeader::new(RawBlockHeader {
+        <span class="kw">let </span>h_unique = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">1</span>),
             ..Default::default()
-        });
-        <span class="kw">let </span>h1 = CachingBlockHeader::new(RawBlockHeader {
-            miner_address: Address::new_id(<span class="number">0</span>),
-            ..Default::default()
-        });
-        <span class="kw">let </span>h2 = CachingBlockHeader::new(RawBlockHeader {
-            miner_address: Address::new_id(<span class="number">0</span>),
-            ..Default::default()
-        });
+        };
+
         <span class="macro">assert_eq!</span>(
-            Tipset::new(<span class="macro">vec!</span>[h0, h1, h2]).unwrap_err(),
-            Error::InvalidTipset(<span class="string">&quot;miner_addresses are not distinct&quot;</span>.to_string())
+            Tipset::new([h_unique, h0, h1]).unwrap_err(),
+            CreateTipsetError::DuplicateMiner
         );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ensure_epochs_are_equal() {
-        <span class="kw">let </span>h0 = CachingBlockHeader::new(RawBlockHeader {
+        <span class="kw">let </span>h0 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">0</span>),
             epoch: <span class="number">1</span>,
             ..Default::default()
-        });
-        <span class="kw">let </span>h1 = CachingBlockHeader::new(RawBlockHeader {
+        };
+        <span class="kw">let </span>h1 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">1</span>),
             epoch: <span class="number">2</span>,
             ..Default::default()
-        });
+        };
         <span class="macro">assert_eq!</span>(
-            Tipset::new(<span class="macro">vec!</span>[h0, h1]).unwrap_err(),
-            Error::InvalidTipset(<span class="string">&quot;epochs are not equal&quot;</span>.to_string())
+            Tipset::new([h0, h1]).unwrap_err(),
+            CreateTipsetError::BadEpoch
         );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ensure_state_roots_are_equal() {
-        <span class="kw">let </span>h0 = CachingBlockHeader::new(RawBlockHeader {
+        <span class="kw">let </span>h0 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">0</span>),
             state_root: Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])),
             ..Default::default()
-        });
-        <span class="kw">let </span>h1 = CachingBlockHeader::new(RawBlockHeader {
+        };
+        <span class="kw">let </span>h1 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">1</span>),
             state_root: Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[<span class="number">1</span>])),
             ..Default::default()
-        });
+        };
         <span class="macro">assert_eq!</span>(
-            Tipset::new(<span class="macro">vec!</span>[h0, h1]).unwrap_err(),
-            Error::InvalidTipset(<span class="string">&quot;state_roots are not equal&quot;</span>.to_string())
+            Tipset::new([h0, h1]).unwrap_err(),
+            CreateTipsetError::BadStateRoot
         );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ensure_parent_cids_are_equal() {
-        <span class="kw">let </span>h0 = CachingBlockHeader::new(RawBlockHeader {
+        <span class="kw">let </span>h0 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">0</span>),
             parents: TipsetKey::default(),
             ..Default::default()
-        });
-        <span class="kw">let </span>h1 = CachingBlockHeader::new(RawBlockHeader {
+        };
+        <span class="kw">let </span>h1 = RawBlockHeader {
             miner_address: Address::new_id(<span class="number">1</span>),
             parents: TipsetKey::from_iter([Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[]))]),
             ..Default::default()
-        });
+        };
         <span class="macro">assert_eq!</span>(
-            Tipset::new(<span class="macro">vec!</span>[h0, h1]).unwrap_err(),
-            Error::InvalidTipset(<span class="string">&quot;parent cids are not equal&quot;</span>.to_string())
+            Tipset::new([h0, h1]).unwrap_err(),
+            CreateTipsetError::BadParents
         );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ensure_there_are_blocks() {
-        <span class="macro">assert_eq!</span>(Tipset::new(<span class="macro">vec!</span>[]).unwrap_err(), Error::NoBlocks);
+        <span class="macro">assert_eq!</span>(
+            Tipset::new(iter::empty::&lt;RawBlockHeader&gt;()).unwrap_err(),
+            CreateTipsetError::Empty
+        );
     }
 }
 </code></pre></div></section></main></body></html>

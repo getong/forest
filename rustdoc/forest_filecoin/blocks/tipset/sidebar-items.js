@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["__CFG_VIS_ACCUMULATOR_MUST_EXPAND_ONCE_OTHERWISE_IS_A_BUG_2633470583269875123"],"fn":["verify_blocks"],"mod":["lotus_json"],"struct":["FullTipset","Tipset","TipsetKey"]};
+window.SIDEBAR_ITEMS = {"constant":["__CFG_VIS_ACCUMULATOR_MUST_EXPAND_ONCE_OTHERWISE_IS_A_BUG_2633470583269875123"],"enum":["CreateTipsetError"],"fn":["verify_block_headers"],"mod":["lotus_json"],"struct":["FullTipset","Tipset","TipsetKey"]};
