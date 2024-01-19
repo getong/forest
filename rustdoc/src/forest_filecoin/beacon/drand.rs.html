@@ -329,33 +329,22 @@
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a>
-<a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a>
-<a href="#339" id="339">339</a>
-<a href="#340" id="340">340</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span><span class="kw">super</span>::beacon_entries::BeaconEntry;
+<span class="kw">use super</span>::{beacon_entries::BeaconEntry, signatures::verify_messages_chained};
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span><span class="kw">crate</span>::shim::version::NetworkVersion;
 <span class="kw">use </span><span class="kw">crate</span>::utils::net::global_http_client;
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>bls_signatures::{PublicKey, Serialize, Signature};
-<span class="kw">use </span>byteorder::{BigEndian, ByteOrder};
+<span class="kw">use </span>bls_signatures::{PublicKey, Serialize <span class="kw">as _</span>, Signature};
 <span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>serde::{Deserialize <span class="kw">as </span>SerdeDeserialize, Serialize <span class="kw">as </span>SerdeSerialize};
-<span class="kw">use </span>sha2::Digest;
 
 <span class="doccomment">/// Environmental Variable to ignore `Drand`. Lotus parallel is
 /// `LOTUS_IGNORE_DRAND`
@@ -607,17 +596,10 @@
         }
 
         <span class="comment">// Hash the messages (H(prev sig | curr_round))
-        </span><span class="kw">let </span>digest = {
-            <span class="kw">let </span><span class="kw-2">mut </span>round_bytes = [<span class="number">0</span>; std::mem::size_of::&lt;u64&gt;()];
-            BigEndian::write_u64(<span class="kw-2">&amp;mut </span>round_bytes, curr.round());
-            <span class="kw">let </span><span class="kw-2">mut </span>hasher = sha2::Sha256::default();
-            hasher.update(prev.data());
-            hasher.update(round_bytes);
-            hasher.finalize()
-        };
+        </span><span class="kw">let </span>digest = BeaconEntry::message_chained(curr.round(), prev.data());
         <span class="comment">// Signature
         </span><span class="kw">let </span>sig = Signature::from_bytes(curr.data())<span class="question-mark">?</span>;
-        <span class="kw">let </span>sig_match = bls_signatures::verify_messages(<span class="kw-2">&amp;</span>sig, <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>digest], <span class="kw-2">&amp;</span>[<span class="self">self</span>.pub_key.key()<span class="question-mark">?</span>]);
+        <span class="kw">let </span>sig_match = verify_messages_chained(<span class="kw-2">&amp;</span><span class="self">self</span>.pub_key.key()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>[digest.as_ref()], <span class="kw-2">&amp;</span>[sig]);
 
         <span class="comment">// Cache the result
         </span><span class="kw">let </span>contains_curr = <span class="self">self</span>.local_cache.read().contains_key(<span class="kw-2">&amp;</span>curr.round());

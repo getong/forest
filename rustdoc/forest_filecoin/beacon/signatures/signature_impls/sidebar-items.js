@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["g1_from_slice"]};
