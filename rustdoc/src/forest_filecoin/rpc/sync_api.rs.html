@@ -187,6 +187,12 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -197,6 +203,7 @@
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>nonempty::nonempty;
 <span class="kw">use </span>parking_lot::RwLock;
 
 <span class="doccomment">/// Checks if a given block is marked as bad.
@@ -225,7 +232,7 @@
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>sync_state&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;RPCSyncState, JsonRpcError&gt; {
-    <span class="kw">let </span>active_syncs = <span class="macro">vec!</span>[clone_state(data.sync_state.as_ref()).<span class="kw">await</span>];
+    <span class="kw">let </span>active_syncs = <span class="macro">nonempty!</span>[clone_state(data.sync_state.as_ref()).<span class="kw">await</span>];
     <span class="prelude-val">Ok</span>(RPCSyncState { active_syncs })
 }
 
@@ -359,7 +366,10 @@
         <span class="kw">let </span>st_copy = state.sync_state.clone();
 
         <span class="kw">match </span>sync_state(Data(state.clone())).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(ret) =&gt; <span class="macro">assert_eq!</span>(ret.active_syncs, <span class="macro">vec!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]),
+            <span class="prelude-val">Ok</span>(ret) =&gt; <span class="macro">assert_eq!</span>(
+                ret.active_syncs,
+                <span class="macro">nonempty!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]
+            ),
             <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
         }
 
@@ -369,8 +379,10 @@
 
         <span class="kw">match </span>sync_state(Data(state.clone())).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(ret) =&gt; {
-                <span class="macro">assert_ne!</span>(ret.active_syncs, <span class="macro">vec!</span>[]);
-                <span class="macro">assert_eq!</span>(ret.active_syncs, <span class="macro">vec!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]);
+                <span class="macro">assert_eq!</span>(
+                    ret.active_syncs,
+                    <span class="macro">nonempty!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]
+                );
             }
             <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
         }

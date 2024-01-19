@@ -162,15 +162,15 @@
 
 </span><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
 
+<span class="kw">use </span><span class="kw">super</span>::Error;
 <span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
+<span class="kw">use </span>nonempty::nonempty;
 <span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>tracing::{debug, warn};
-
-<span class="kw">use </span><span class="kw">super</span>::Error;
 
 <span class="doccomment">/// Tracks blocks by their height for the purpose of forming tipsets.
 </span><span class="attr">#[derive(Default)]
@@ -245,11 +245,11 @@
     /// combining it with known blocks at the same height with the same parents.
     </span><span class="kw">pub fn </span>expand(<span class="kw-2">&amp;</span><span class="self">self</span>, header: CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;Tipset, Error&gt; {
         <span class="kw">let </span>epoch = header.epoch;
-        <span class="kw">let </span><span class="kw-2">mut </span>headers = <span class="macro">vec!</span>[header];
+        <span class="kw">let </span><span class="kw-2">mut </span>headers = <span class="macro">nonempty!</span>[header];
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(entries) = <span class="self">self</span>.entries.lock().get(<span class="kw-2">&amp;</span>epoch).cloned() {
             <span class="kw">for </span>cid <span class="kw">in </span>entries {
-                <span class="kw">if </span><span class="kw-2">&amp;</span>cid == headers[<span class="number">0</span>].cid() {
+                <span class="kw">if </span><span class="kw-2">&amp;</span>cid == headers.first().cid() {
                     <span class="kw">continue</span>;
                 }
 
@@ -260,7 +260,7 @@
                         Error::Other(<span class="macro">format!</span>(<span class="string">&quot;failed to load block ({cid}) for tipset expansion&quot;</span>))
                     })<span class="question-mark">?</span>;
 
-                <span class="kw">if </span>h.parents == headers[<span class="number">0</span>].parents {
+                <span class="kw">if </span>h.parents == headers.first().parents {
                     headers.push(h);
                 }
             }
