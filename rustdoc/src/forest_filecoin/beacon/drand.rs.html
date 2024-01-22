@@ -356,6 +356,33 @@
 <a href="#356" id="356">356</a>
 <a href="#357" id="357">357</a>
 <a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -374,10 +401,11 @@
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>bls_signatures::Serialize <span class="kw">as _</span>;
-<span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>lru::LruCache;
 <span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>serde::{Deserialize <span class="kw">as </span>SerdeDeserialize, Serialize <span class="kw">as </span>SerdeSerialize};
+<span class="kw">use </span>url::Url;
 
 <span class="doccomment">/// Environmental Variable to ignore `Drand`. Lotus parallel is
 /// `LOTUS_IGNORE_DRAND`
@@ -401,8 +429,9 @@
 <span class="attr">#[derive(Clone)]
 </span><span class="doccomment">/// Configuration used when initializing a `Drand` beacon.
 </span><span class="kw">pub struct </span>DrandConfig&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="doccomment">/// URL endpoint to send JSON HTTP requests to.
-    </span><span class="kw">pub </span>server: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    <span class="doccomment">/// Public endpoints of the `Drand` service.
+    /// See &lt;https://drand.love/developer/http-api/#public-endpoints&gt;
+    </span><span class="kw">pub </span>servers: Vec&lt;Url&gt;,
     <span class="doccomment">/// Info about the beacon chain, used to verify correctness of endpoint.
     </span><span class="kw">pub </span>chain_info: ChainInfo&lt;<span class="lifetime">&#39;a</span>&gt;,
     <span class="doccomment">/// Network type
@@ -560,7 +589,7 @@
 <span class="doccomment">/// `Drand` randomness beacon that can be used to generate randomness for the
 /// Filecoin chain. Primary use is to satisfy the [Beacon] trait.
 </span><span class="kw">pub struct </span>DrandBeacon {
-    server: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    servers: Vec&lt;Url&gt;,
     hash: String,
     network: DrandNetwork,
 
@@ -581,7 +610,7 @@
         <span class="macro">assert_ne!</span>(genesis_ts, <span class="number">0</span>, <span class="string">&quot;Genesis timestamp cannot be 0&quot;</span>);
         <span class="kw">const </span>CACHE_SIZE: usize = <span class="number">1000</span>;
         <span class="self">Self </span>{
-            server: config.server,
+            servers: config.servers.clone(),
             hash: config.chain_info.hash.to_string(),
             network: config.network_type,
             public_key: hex::decode(config.chain_info.public_key.as_ref())
@@ -667,10 +696,13 @@
         <span class="kw">match </span>cached {
             <span class="prelude-val">Some</span>(cached_entry) =&gt; <span class="prelude-val">Ok</span>(cached_entry),
             <span class="prelude-val">None </span>=&gt; {
-                <span class="kw">async fn </span>fetch_entry(url: <span class="kw">impl </span>reqwest::IntoUrl) -&gt; anyhow::Result&lt;BeaconEntry&gt; {
+                <span class="kw">async fn </span>fetch_entry_from_url(
+                    url: <span class="kw">impl </span>reqwest::IntoUrl,
+                ) -&gt; anyhow::Result&lt;BeaconEntry&gt; {
                     <span class="kw">let </span>resp: BeaconEntryJson = global_http_client()
                         .get(url)
-                        .timeout(Duration::from_secs(<span class="number">1</span>))
+                        <span class="comment">// More tolerance on slow networks
+                        </span>.timeout(Duration::from_secs(<span class="number">5</span>))
                         .send()
                         .<span class="kw">await</span><span class="question-mark">?
                         </span>.error_for_status()<span class="question-mark">?
@@ -679,10 +711,32 @@
                     anyhow::Ok(BeaconEntry::new(resp.round, hex::decode(resp.signature)<span class="question-mark">?</span>))
                 }
 
-                <span class="kw">let </span>url = <span class="macro">format!</span>(<span class="string">&quot;{}/{}/public/{round}&quot;</span>, <span class="self">self</span>.server, <span class="self">self</span>.hash);
+                <span class="kw">async fn </span>fetch_entry(
+                    urls: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw">impl </span>reqwest::IntoUrl&gt;,
+                ) -&gt; anyhow::Result&lt;BeaconEntry&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>errors = <span class="macro">vec!</span>[];
+                    <span class="kw">for </span>url <span class="kw">in </span>urls {
+                        <span class="kw">match </span>fetch_entry_from_url(url).<span class="kw">await </span>{
+                            <span class="prelude-val">Ok</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(e),
+                            <span class="prelude-val">Err</span>(e) =&gt; errors.push(e),
+                        }
+                    }
+                    <span class="macro">anyhow::bail!</span>(
+                        <span class="string">&quot;Aggregated errors:\n{}&quot;</span>,
+                        errors.into_iter().map(|e| e.to_string()).join(<span class="string">&quot;\n\n&quot;</span>)
+                    );
+                }
+
+                <span class="kw">let </span>urls: Vec&lt;<span class="kw">_</span>&gt; = <span class="self">self
+                    </span>.servers
+                    .iter()
+                    .map(|server| {
+                        anyhow::Ok(server.join(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}/public/{round}&quot;</span>, <span class="self">self</span>.hash))<span class="question-mark">?</span>)
+                    })
+                    .try_collect()<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(
                     backoff::future::retry(backoff::ExponentialBackoff::default(), || <span class="kw">async </span>{
-                        <span class="prelude-val">Ok</span>(fetch_entry(<span class="kw-2">&amp;</span>url).<span class="kw">await</span><span class="question-mark">?</span>)
+                        <span class="prelude-val">Ok</span>(fetch_entry(urls.iter().cloned()).<span class="kw">await</span><span class="question-mark">?</span>)
                     })
                     .<span class="kw">await</span><span class="question-mark">?</span>,
                 )
