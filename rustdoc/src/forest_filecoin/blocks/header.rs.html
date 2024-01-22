@@ -332,11 +332,6 @@
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a>
-<a href="#337" id="337">337</a>
-<a href="#338" id="338">338</a>
-<a href="#339" id="339">339</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -425,38 +420,37 @@
         parent_epoch: ChainEpoch,
         prev_entry: <span class="kw-2">&amp;</span>BeaconEntry,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="kw">let </span>(cb_epoch, curr_beacon) = b_schedule
+        <span class="kw">let </span>(_cb_epoch, curr_beacon) = b_schedule
             .beacon_for_epoch(<span class="self">self</span>.epoch)
             .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?</span>;
-        <span class="kw">let </span>(pb_epoch, <span class="kw">_</span>) = b_schedule
+        <span class="kw">let </span>(_pb_epoch, <span class="kw">_</span>) = b_schedule
             .beacon_for_epoch(parent_epoch)
             .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?</span>;
 
-        <span class="kw">if </span>cb_epoch != pb_epoch {
-            <span class="comment">// Fork logic
-            </span><span class="kw">if </span><span class="self">self</span>.beacon_entries.len() != <span class="number">2 </span>{
+        <span class="kw">let </span>max_round = curr_beacon.max_beacon_round_for_epoch(network_version, <span class="self">self</span>.epoch);
+        <span class="comment">// We don&#39;t expect to ever actually meet this condition
+        </span><span class="kw">if </span>max_round == prev_entry.round() {
+            <span class="kw">if </span>!<span class="self">self</span>.beacon_entries.is_empty() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Validation(<span class="macro">format!</span>(
-                    <span class="string">&quot;Expected two beacon entries at beacon fork, got {}&quot;</span>,
+                    <span class="string">&quot;expected not to have any beacon entries in this block, got: {}&quot;</span>,
                     <span class="self">self</span>.beacon_entries.len()
                 )));
             }
-
-            curr_beacon
-                .verify_entry(<span class="kw-2">&amp;</span><span class="self">self</span>.beacon_entries[<span class="number">1</span>], <span class="kw-2">&amp;</span><span class="self">self</span>.beacon_entries[<span class="number">0</span>])
-                .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?</span>;
-
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>max_round = curr_beacon.max_beacon_round_for_epoch(network_version, <span class="self">self</span>.epoch);
-        <span class="kw">if </span>max_round == prev_entry.round() {
-            <span class="kw">if </span>!<span class="self">self</span>.beacon_entries.is_empty() {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Validation(<span class="macro">format!</span>(
-                    <span class="string">&quot;expected not to have any beacon entries in this block, got: {:?}&quot;</span>,
-                    <span class="self">self</span>.beacon_entries.len()
-                )));
-            }
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        <span class="kw">if </span>network_version &gt; NetworkVersion::V21 &amp;&amp; <span class="self">self</span>.beacon_entries.len() != <span class="number">1 </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Validation(<span class="macro">format!</span>(
+                <span class="string">&quot;exactly one beacon entry expected for network version {}, got: {}&quot;</span>,
+                network_version.deref(),
+                <span class="self">self</span>.beacon_entries.len()
+            )));
+        }
+
+        <span class="kw">if </span>network_version &lt;= NetworkVersion::V21 &amp;&amp; prev_entry.round() == <span class="number">0 </span>{
+            <span class="comment">// This basically means that the drand entry of the first non-genesis tipset isn&#39;t verified IF we are starting on Drand mainnet (the &quot;chained&quot; drand)
+            // Networks that start on drand quicknet, or other unchained randomness sources, will still verify it
+            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
         <span class="kw">let </span>last = <span class="kw">match </span><span class="self">self</span>.beacon_entries.last() {
@@ -467,6 +461,7 @@
                 ));
             }
         };
+
         <span class="kw">if </span>last.round() != max_round {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Validation(<span class="macro">format!</span>(
                 <span class="string">&quot;expected final beacon entry in block to be at round {}, got: {}&quot;</span>,
@@ -475,18 +470,13 @@
             )));
         }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>prev = prev_entry;
-        <span class="kw">for </span>curr <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.beacon_entries {
-            <span class="kw">if </span>!curr_beacon
-                .verify_entry(curr, prev)
-                .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?
-            </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Validation(<span class="macro">format!</span>(
-                    <span class="string">&quot;beacon entry was invalid: curr:{curr:?}, prev: {prev:?}&quot;
-                </span>)));
-            }
-            prev = curr;
+        <span class="kw">if </span>!curr_beacon
+            .verify_entries(<span class="kw-2">&amp;</span><span class="self">self</span>.beacon_entries, prev_entry)
+            .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?
+        </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Validation(<span class="string">&quot;beacon entry was invalid&quot;</span>.into()));
         }
+
         <span class="prelude-val">Ok</span>(())
     }
 

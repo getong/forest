@@ -1597,6 +1597,7 @@
 <a href="#1597" id="1597">1597</a>
 <a href="#1598" id="1598">1598</a>
 <a href="#1599" id="1599">1599</a>
+<a href="#1600" id="1600">1600</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2949,28 +2950,29 @@
         .chain_config()
         .network_version(block.header.epoch);
 
-    <span class="comment">// Do the initial loop here
-    // check block message and signatures in them
-    </span><span class="kw">let </span><span class="kw-2">mut </span>pub_keys = Vec::new();
-    <span class="kw">let </span><span class="kw-2">mut </span>cids = Vec::new();
-    <span class="kw">let </span>db = state_manager.blockstore_owned();
-    <span class="kw">for </span>m <span class="kw">in </span>block.bls_msgs() {
-        <span class="kw">let </span>pk = StateManager::get_bls_public_key(<span class="kw-2">&amp;</span>db, <span class="kw-2">&amp;</span>m.from, <span class="kw-2">*</span>base_tipset.parent_state())<span class="question-mark">?</span>;
-        pub_keys.push(pk);
-        cids.push(m.cid().unwrap().to_bytes());
-    }
-
     <span class="kw">if let </span><span class="prelude-val">Some</span>(sig) = <span class="kw-2">&amp;</span>block.header().bls_aggregate {
+        <span class="comment">// Do the initial loop here
+        // check block message and signatures in them
+        </span><span class="kw">let </span><span class="kw-2">mut </span>pub_keys = Vec::with_capacity(block.bls_msgs().len());
+        <span class="kw">let </span><span class="kw-2">mut </span>cids = Vec::with_capacity(block.bls_msgs().len());
+        <span class="kw">let </span>db = state_manager.blockstore_owned();
+        <span class="kw">for </span>m <span class="kw">in </span>block.bls_msgs() {
+            <span class="kw">let </span>pk = StateManager::get_bls_public_key(<span class="kw-2">&amp;</span>db, <span class="kw-2">&amp;</span>m.from, <span class="kw-2">*</span>base_tipset.parent_state())<span class="question-mark">?</span>;
+            pub_keys.push(pk);
+            cids.push(
+                m.cid()
+                    .map_err(|e| {
+                        TipsetRangeSyncerError::Validation(<span class="macro">format!</span>(
+                            <span class="string">&quot;Failed to get bls message cid: {e}&quot;
+                        </span>))
+                    })<span class="question-mark">?
+                    </span>.to_bytes(),
+            );
+        }
+
         <span class="kw">if </span>!verify_bls_aggregate(
-            cids.iter()
-                .map(|x| x.as_slice())
-                .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>[u8]&gt;&gt;()
-                .as_slice(),
-            pub_keys
-                .iter()
-                .map(|x| <span class="kw-2">&amp;</span>x[..])
-                .collect::&lt;Vec&lt;<span class="kw-2">&amp;</span>[u8]&gt;&gt;()
-                .as_slice(),
+            <span class="kw-2">&amp;</span>cids.iter().map(|x| x.as_slice()).collect_vec(),
+            <span class="kw-2">&amp;</span>pub_keys,
             sig,
         ) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::BlsAggregateSignatureInvalid(

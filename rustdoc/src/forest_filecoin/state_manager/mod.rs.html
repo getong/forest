@@ -1617,6 +1617,8 @@
 <a href="#1617" id="1617">1617</a>
 <a href="#1618" id="1618">1618</a>
 <a href="#1619" id="1619">1619</a>
+<a href="#1620" id="1620">1620</a>
+<a href="#1621" id="1621">1621</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1624,30 +1626,27 @@
 <span class="kw">mod </span>errors;
 <span class="kw">mod </span>metrics;
 <span class="kw">pub mod </span>utils;
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncConfig;
-<span class="kw">use </span><span class="kw">crate</span>::interpreter::{MessageCallbackCtx, VMTrace};
-<span class="kw">use </span><span class="kw">crate</span>::state_migration::run_state_migrations;
-<span class="kw">use </span>anyhow::{bail, Context <span class="kw">as _</span>};
-<span class="kw">use </span>fil_actor_interface::init::{<span class="self">self</span>, State};
-<span class="kw">use </span>rayon::prelude::ParallelBridge;
-<span class="kw">pub use </span>utils::is_valid_for_sending;
 <span class="kw">pub mod </span>vm_circ_supply;
 <span class="kw">pub use </span><span class="self">self</span>::errors::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="self">self</span>::utils::structured;
+
 <span class="kw">use </span><span class="kw">crate</span>::beacon::{BeaconEntry, BeaconSchedule};
 <span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{
     index::{ChainIndex, ResolveNullTipset},
     ChainStore, HeadChange,
 };
+<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncConfig;
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::{
     resolve_to_key_addr, ApplyResult, BlockMessages, CalledAt, ExecutionContext,
     IMPLICIT_MESSAGE_GAS_LIMIT, VM,
 };
+<span class="kw">use </span><span class="kw">crate</span>::interpreter::{MessageCallbackCtx, VMTrace};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiInvocResult, MessageGasCost, MiningBaseInfo};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
-    address::{Address, Payload, Protocol, BLS_PUB_LEN},
+    address::{Address, Payload, Protocol},
     clock::ChainEpoch,
     econ::TokenAmount,
     executor::{ApplyRet, Receipt},
@@ -1656,11 +1655,14 @@
     state_tree::{ActorState, StateTree},
     version::NetworkVersion,
 };
+<span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::draw_randomness;
+<span class="kw">use </span><span class="kw">crate</span>::state_migration::run_state_migrations;
 <span class="kw">use </span>ahash::{HashMap, HashMapExt};
+<span class="kw">use </span>anyhow::{bail, Context <span class="kw">as _</span>};
+<span class="kw">use </span>bls_signatures::{PublicKey <span class="kw">as </span>BlsPublicKey, Serialize <span class="kw">as _</span>};
 <span class="kw">use </span>chain_rand::ChainRand;
 <span class="kw">use </span>cid::Cid;
-
-<span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::draw_randomness;
+<span class="kw">use </span>fil_actor_interface::init::{<span class="self">self</span>, State};
 <span class="kw">use </span>fil_actor_interface::miner::SectorOnChainInfo;
 <span class="kw">use </span>fil_actor_interface::miner::{MinerInfo, MinerPower, Partition};
 <span class="kw">use </span>fil_actor_interface::<span class="kw-2">*</span>;
@@ -1678,12 +1680,13 @@
 <span class="kw">use </span>num::BigInt;
 <span class="kw">use </span>num_traits::identities::Zero;
 <span class="kw">use </span>parking_lot::Mutex <span class="kw">as </span>SyncMutex;
+<span class="kw">use </span>rayon::prelude::ParallelBridge;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::ops::RangeInclusive;
 <span class="kw">use </span>std::{num::NonZeroUsize, sync::Arc};
 <span class="kw">use </span>tokio::sync::{broadcast::error::RecvError, Mutex <span class="kw">as </span>TokioMutex, RwLock};
 <span class="kw">use </span>tracing::{debug, error, info, instrument, warn};
-<span class="kw">use </span>utils::structured;
+<span class="kw">pub use </span>utils::is_valid_for_sending;
 <span class="kw">pub use </span>vm_circ_supply::GenesisInfo;
 
 <span class="kw">const </span>DEFAULT_TIPSET_CACHE_SIZE: NonZeroUsize = <span class="macro">nonzero!</span>(<span class="number">1024usize</span>);
@@ -2605,14 +2608,15 @@
         db: <span class="kw-2">&amp;</span>Arc&lt;DB&gt;,
         addr: <span class="kw-2">&amp;</span>Address,
         state_cid: Cid,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;[u8; BLS_PUB_LEN], Error&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;BlsPublicKey, Error&gt; {
         <span class="kw">let </span>state = StateTree::new_from_root(Arc::clone(db), <span class="kw-2">&amp;</span>state_cid)
             .map_err(|e| Error::Other(e.to_string()))<span class="question-mark">?</span>;
         <span class="kw">let </span>kaddr = resolve_to_key_addr(<span class="kw-2">&amp;</span>state, db, addr)
             .map_err(|e| <span class="macro">format!</span>(<span class="string">&quot;Failed to resolve key address, error: {e}&quot;</span>))<span class="question-mark">?</span>;
 
         <span class="kw">match </span>kaddr.into_payload() {
-            Payload::BLS(key) =&gt; <span class="prelude-val">Ok</span>(key),
+            Payload::BLS(key) =&gt; BlsPublicKey::from_bytes(<span class="kw-2">&amp;</span>key)
+                .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Failed to construct bls public key: {e}&quot;</span>))),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::State(
                 <span class="string">&quot;Address must be BLS address to load bls public key&quot;</span>.to_owned(),
             )),
@@ -2813,7 +2817,7 @@
 
         <span class="kw">let </span>addr_buf = to_vec(<span class="kw-2">&amp;</span>addr)<span class="question-mark">?</span>;
         <span class="kw">let </span>rand = draw_randomness(
-            base.data(),
+            base.signature(),
             DomainSeparationTag::WinningPoStChallengeSeed <span class="kw">as </span>i64,
             epoch,
             <span class="kw-2">&amp;</span>addr_buf,
