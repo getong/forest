@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["load_actor_bundles"]};
+window.SIDEBAR_ITEMS = {"fn":["load_actor_bundles","load_actor_bundles_from_path","load_actor_bundles_from_server"]};
