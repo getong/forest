@@ -1594,10 +1594,6 @@
 <a href="#1594" id="1594">1594</a>
 <a href="#1595" id="1595">1595</a>
 <a href="#1596" id="1596">1596</a>
-<a href="#1597" id="1597">1597</a>
-<a href="#1598" id="1598">1598</a>
-<a href="#1599" id="1599">1599</a>
-<a href="#1600" id="1600">1600</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1608,7 +1604,6 @@
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::chain::{persist_objects, ChainStore, Error <span class="kw">as </span>ChainStoreError};
@@ -3104,11 +3099,8 @@
 
 <span class="doccomment">/// Check the clock drift.
 </span><span class="kw">fn </span>block_timestamp_checks(header: <span class="kw-2">&amp;</span>CachingBlockHeader) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
-    <span class="kw">let </span>time_now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect(<span class="string">&quot;Retrieved system time before UNIX epoch&quot;</span>)
-        .as_secs();
-    <span class="kw">if </span>header.timestamp &gt; time_now + ALLOWABLE_CLOCK_DRIFT {
+    <span class="kw">let </span>time_now = chrono::Utc::now().timestamp() <span class="kw">as </span>u64;
+    <span class="kw">if </span>header.timestamp &gt; time_now.saturating_add(ALLOWABLE_CLOCK_DRIFT) {
         <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::TimeTravellingBlock(
             time_now,
             header.timestamp,
