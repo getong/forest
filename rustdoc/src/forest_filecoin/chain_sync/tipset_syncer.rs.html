@@ -1594,6 +1594,9 @@
 <a href="#1594" id="1594">1594</a>
 <a href="#1595" id="1595">1595</a>
 <a href="#1596" id="1596">1596</a>
+<a href="#1597" id="1597">1597</a>
+<a href="#1598" id="1598">1598</a>
+<a href="#1599" id="1599">1599</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1606,7 +1609,6 @@
     task::{Context, Poll},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::chain::{persist_objects, ChainStore, Error <span class="kw">as </span>ChainStoreError};
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::chain_exchange::TipsetBundle;
 <span class="kw">use </span><span class="kw">crate</span>::message::{valid_for_block_inclusion, Message <span class="kw">as </span>MessageTrait};
 <span class="kw">use </span><span class="kw">crate</span>::networks::Height;
@@ -1620,6 +1622,10 @@
 <span class="kw">use crate</span>::{
     blocks::{Block, CachingBlockHeader, Error <span class="kw">as </span>ForestBlockError, FullTipset, Tipset, TipsetKey},
     fil_cns::{<span class="self">self</span>, FilecoinConsensus, FilecoinConsensusError},
+};
+<span class="kw">use crate</span>::{
+    chain::{persist_objects, ChainStore, Error <span class="kw">as </span>ChainStoreError},
+    metrics::HistogramTimerExt,
 };
 <span class="kw">use </span>ahash::{HashMap, HashMapExt, HashSet};
 <span class="kw">use </span>cid::Cid;
@@ -2128,7 +2134,7 @@
                     <span class="comment">// Drive the range_syncer to completion
                     </span><span class="kw">match </span>range_syncer.as_mut().poll(cx) {
                         Poll::Ready(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-                            metrics::HEAD_EPOCH.set(proposed_head_epoch <span class="kw">as </span>u64);
+                            metrics::HEAD_EPOCH.set(proposed_head_epoch);
                             <span class="macro">info!</span>(
                                 <span class="string">&quot;Successfully synced tipset range: [{}, {}]&quot;</span>,
                                 current_head_epoch, proposed_head_epoch,
@@ -2661,7 +2667,7 @@
                 drop(timer);
                 chainstore.set_heaviest_tipset(Arc::new(full_tipset.into_tipset()))<span class="question-mark">?</span>;
                 tracker.write().set_epoch(current_epoch);
-                metrics::LAST_VALIDATED_TIPSET_EPOCH.set(current_epoch <span class="kw">as </span>u64);
+                metrics::LAST_VALIDATED_TIPSET_EPOCH.set(current_epoch);
             }
             <span class="prelude-val">Ok</span>(())
         })
@@ -2825,9 +2831,9 @@
     <span class="kw">let </span>v_block_store = state_manager.blockstore_owned();
     <span class="kw">let </span>v_block = Arc::clone(<span class="kw-2">&amp;</span>block);
     validations.push(tokio::task::spawn_blocking(<span class="kw">move </span>|| {
-        <span class="kw">let </span>_timer = metrics::BLOCK_VALIDATION_TASKS_TIME
-            .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::BASE_FEE_CHECK])
-            .start_timer();
+        <span class="kw">let </span>metric =
+            <span class="kw-2">&amp;*</span>metrics::BLOCK_VALIDATION_TASKS_TIME.get_or_create(<span class="kw-2">&amp;</span>metrics::values::BASE_FEE_CHECK);
+        <span class="kw">let </span>_timer = metric.start_timer();
         <span class="kw">let </span>base_fee = <span class="kw">crate</span>::chain::compute_base_fee(<span class="kw-2">&amp;</span>v_block_store, <span class="kw-2">&amp;</span>v_base_tipset, smoke_height)
             .map_err(|e| {
                 TipsetRangeSyncerError::Validation(<span class="macro">format!</span>(<span class="string">&quot;Could not compute base fee: {e}&quot;</span>))
@@ -2846,9 +2852,9 @@
     <span class="kw">let </span>v_base_tipset = Arc::clone(<span class="kw-2">&amp;</span>base_tipset);
     <span class="kw">let </span>weight = header.weight.clone();
     validations.push(tokio::task::spawn_blocking(<span class="kw">move </span>|| {
-        <span class="kw">let </span>_timer = metrics::BLOCK_VALIDATION_TASKS_TIME
-            .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::PARENT_WEIGHT_CAL])
-            .start_timer();
+        <span class="kw">let </span>metric = <span class="kw-2">&amp;*</span>metrics::BLOCK_VALIDATION_TASKS_TIME
+            .get_or_create(<span class="kw-2">&amp;</span>metrics::values::PARENT_WEIGHT_CAL);
+        <span class="kw">let </span>_timer = metric.start_timer();
         <span class="kw">let </span>calc_weight = fil_cns::weight(<span class="kw-2">&amp;</span>v_block_store, <span class="kw-2">&amp;</span>v_base_tipset).map_err(|e| {
             TipsetRangeSyncerError::Calculation(<span class="macro">format!</span>(<span class="string">&quot;Error calculating weight: {e}&quot;</span>))
         })<span class="question-mark">?</span>;
@@ -2892,9 +2898,9 @@
     <span class="comment">// Block signature check
     </span><span class="kw">let </span>v_block = block.clone();
     validations.push(tokio::task::spawn_blocking(<span class="kw">move </span>|| {
-        <span class="kw">let </span>_timer = metrics::BLOCK_VALIDATION_TASKS_TIME
-            .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::BLOCK_SIGNATURE_CHECK])
-            .start_timer();
+        <span class="kw">let </span>metric = <span class="kw-2">&amp;*</span>metrics::BLOCK_VALIDATION_TASKS_TIME
+            .get_or_create(<span class="kw-2">&amp;</span>metrics::values::BLOCK_SIGNATURE_CHECK);
+        <span class="kw">let </span>_timer = metric.start_timer();
         v_block.header().verify_signature_against(<span class="kw-2">&amp;</span>work_addr)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }));

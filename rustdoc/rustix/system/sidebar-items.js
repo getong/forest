@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["RebootCommand"],"fn":["reboot","sethostname","sysinfo","uname"],"struct":["Uname"],"type":["Sysinfo"]};

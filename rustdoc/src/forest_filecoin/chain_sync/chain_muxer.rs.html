@@ -998,10 +998,6 @@
 <a href="#998" id="998">998</a>
 <a href="#999" id="999">999</a>
 <a href="#1000" id="1000">1000</a>
-<a href="#1001" id="1001">1001</a>
-<a href="#1002" id="1002">1002</a>
-<a href="#1003" id="1003">1003</a>
-<a href="#1004" id="1004">1004</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1368,16 +1364,16 @@
         <span class="kw">let </span>(tipset, source) = <span class="kw">match </span>event {
             NetworkEvent::HelloRequestInbound { source, request } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::HELLO_REQUEST_INBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::HELLO_REQUEST_INBOUND)
                     .inc();
                 metrics::PEER_TIPSET_EPOCH
-                    .with_label_values(<span class="kw-2">&amp;</span>[source.to_string().as_str()])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::PeerLabel::new(source))
                     .set(request.heaviest_tipset_height);
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::HelloResponseOutbound { request, source } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::HELLO_RESPONSE_OUTBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::HELLO_RESPONSE_OUTBOUND)
                     .inc();
                 <span class="kw">let </span>tipset_keys = TipsetKey::from_iter(request.heaviest_tip_set);
                 <span class="kw">let </span>tipset = <span class="kw">match </span><span class="self">Self</span>::get_full_tipset(
@@ -1398,19 +1394,19 @@
             }
             NetworkEvent::HelloRequestOutbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::HELLO_REQUEST_OUTBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::HELLO_REQUEST_OUTBOUND)
                     .inc();
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::HelloResponseInbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::HELLO_RESPONSE_INBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::HELLO_RESPONSE_INBOUND)
                     .inc();
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::PeerConnected(peer_id) =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::PEER_CONNECTED])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::PEER_CONNECTED)
                     .inc();
                 <span class="comment">// Spawn and immediately move on to the next event
                 </span>tokio::task::spawn(<span class="self">Self</span>::handle_peer_connected_event(
@@ -1423,14 +1419,10 @@
             }
             NetworkEvent::PeerDisconnected(peer_id) =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::PEER_DISCONNECTED])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::PEER_DISCONNECTED)
                     .inc();
                 <span class="comment">// Remove peer id labels for disconnected peers
-                </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) =
-                    metrics::PEER_TIPSET_EPOCH.remove_label_values(<span class="kw-2">&amp;</span>[peer_id.to_string().as_str()])
-                {
-                    <span class="macro">debug!</span>(<span class="string">&quot;{e}&quot;</span>);
-                }
+                </span>metrics::PEER_TIPSET_EPOCH.remove(<span class="kw-2">&amp;</span>metrics::PeerLabel::new(peer_id));
                 <span class="comment">// Spawn and immediately move on to the next event
                 </span>tokio::task::spawn(<span class="self">Self</span>::handle_peer_disconnected_event(
                     network.clone(),
@@ -1441,7 +1433,7 @@
             NetworkEvent::PubsubMessage { source, message } =&gt; <span class="kw">match </span>message {
                 PubsubMessage::Block(b) =&gt; {
                     metrics::LIBP2P_MESSAGE_TOTAL
-                        .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::PUBSUB_BLOCK])
+                        .get_or_create(<span class="kw-2">&amp;</span>metrics::values::PUBSUB_BLOCK)
                         .inc();
                     <span class="comment">// Assemble full tipset from block
                     </span><span class="kw">let </span>tipset =
@@ -1450,7 +1442,7 @@
                 }
                 PubsubMessage::Message(m) =&gt; {
                     metrics::LIBP2P_MESSAGE_TOTAL
-                        .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::PUBSUB_MESSAGE])
+                        .get_or_create(<span class="kw-2">&amp;</span>metrics::values::PUBSUB_MESSAGE)
                         .inc();
                     <span class="kw">if let </span>PubsubMessageProcessingStrategy::Process = message_processing_strategy {
                         <span class="self">Self</span>::handle_pubsub_message(mem_pool, m);
@@ -1460,25 +1452,25 @@
             },
             NetworkEvent::ChainExchangeRequestOutbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::CHAIN_EXCHANGE_REQUEST_OUTBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::CHAIN_EXCHANGE_REQUEST_OUTBOUND)
                     .inc();
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::ChainExchangeResponseInbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::CHAIN_EXCHANGE_RESPONSE_INBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::CHAIN_EXCHANGE_RESPONSE_INBOUND)
                     .inc();
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::ChainExchangeRequestInbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::CHAIN_EXCHANGE_REQUEST_INBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::CHAIN_EXCHANGE_REQUEST_INBOUND)
                     .inc();
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::ChainExchangeResponseOutbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
-                    .with_label_values(<span class="kw-2">&amp;</span>[metrics::values::CHAIN_EXCHANGE_RESPONSE_OUTBOUND])
+                    .get_or_create(<span class="kw-2">&amp;</span>metrics::values::CHAIN_EXCHANGE_RESPONSE_OUTBOUND)
                     .inc();
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
@@ -1519,7 +1511,7 @@
             .peer_manager()
             .update_peer_head(source, Arc::new(tipset.clone().into_tipset()));
         metrics::PEER_TIPSET_EPOCH
-            .with_label_values(<span class="kw-2">&amp;</span>[source.to_string().as_str()])
+            .get_or_create(<span class="kw-2">&amp;</span>metrics::PeerLabel::new(source))
             .set(tipset.epoch());
 
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, source)))
@@ -1700,7 +1692,7 @@
                 .<span class="kw">await
                 </span>.map_err(ChainMuxerError::TipsetRangeSyncer)<span class="question-mark">?</span>;
 
-            metrics::HEAD_EPOCH.set(network_head_epoch <span class="kw">as </span>u64);
+            metrics::HEAD_EPOCH.set(network_head_epoch);
 
             <span class="prelude-val">Ok</span>(())
         });

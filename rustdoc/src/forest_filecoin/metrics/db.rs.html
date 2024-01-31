@@ -49,63 +49,55 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
-<a href="#52" id="52">52</a>
-<a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span>std::path::PathBuf;
-
-<span class="kw">use </span>prometheus::{
-    core::{Collector, Desc},
-    proto, Gauge, Opts,
+</span><span class="kw">use </span>prometheus_client::{
+    collector::Collector,
+    encoding::{DescriptorEncoder, EncodeMetric},
+    metrics::gauge::Gauge,
 };
+<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>tracing::error;
 
-<span class="kw">pub struct </span>DBCollector {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>DBCollector {
     db_directory: PathBuf,
-    descs: Vec&lt;Desc&gt;,
     db_size: Gauge,
 }
 
 <span class="kw">impl </span>DBCollector {
     <span class="kw">pub fn </span>new(db_directory: PathBuf) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>descs: Vec&lt;Desc&gt; = <span class="macro">vec!</span>[];
-        <span class="kw">let </span>db_size = Gauge::with_opts(Opts::new(
-            <span class="string">&quot;forest_db_size&quot;</span>,
-            <span class="string">&quot;Size of Forest database in bytes&quot;</span>,
-        ))
-        .expect(<span class="string">&quot;Creating forest_db_size gauge must succeed&quot;</span>);
-        descs.extend(db_size.desc().into_iter().cloned());
         <span class="self">Self </span>{
             db_directory,
-            descs,
-            db_size,
+            db_size: Gauge::default(),
         }
     }
 }
 
 <span class="kw">impl </span>Collector <span class="kw">for </span>DBCollector {
-    <span class="kw">fn </span>desc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>Desc&gt; {
-        <span class="self">self</span>.descs.iter().collect()
-    }
-
-    <span class="kw">fn </span>collect(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;proto::MetricFamily&gt; {
+    <span class="kw">fn </span>encode(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>encoder: DescriptorEncoder) -&gt; <span class="prelude-ty">Result</span>&lt;(), std::fmt::Error&gt; {
         <span class="kw">let </span>db_size = <span class="kw">match </span>fs_extra::dir::get_size(<span class="self">self</span>.db_directory.clone()) {
             <span class="prelude-val">Ok</span>(db_size) =&gt; db_size,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">error!</span>(<span class="string">&quot;Calculating DB size for metrics failed: {:?}&quot;</span>, e);
-                <span class="kw">return </span><span class="macro">vec!</span>[];
-            }
+                <span class="number">0
+            </span>}
         };
-
-        <span class="self">self</span>.db_size.set(db_size <span class="kw">as </span>f64);
-
-        <span class="kw">let </span><span class="kw-2">mut </span>metric_families = <span class="macro">vec!</span>[];
-        metric_families.extend(<span class="self">self</span>.db_size.collect());
-        metric_families
+        <span class="self">self</span>.db_size.set(db_size <span class="kw">as _</span>);
+        <span class="kw">let </span>metric_encoder = encoder.encode_descriptor(
+            <span class="string">&quot;forest_db_size&quot;</span>,
+            <span class="string">&quot;Size of Forest database in bytes&quot;</span>,
+            <span class="comment">// Using Some(&amp;Unit::Bytes) here changes the output to
+            // # HELP forest_db_size_bytes Size of Forest database in bytes
+            // # TYPE forest_db_size_bytes gauge
+            // # UNIT forest_db_size_bytes bytes
+            // forest_db_size_bytes 9281452850
+            </span><span class="prelude-val">None</span>,
+            <span class="self">self</span>.db_size.metric_type(),
+        )<span class="question-mark">?</span>;
+        <span class="self">self</span>.db_size.encode(metric_encoder)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div></section></main></body></html>

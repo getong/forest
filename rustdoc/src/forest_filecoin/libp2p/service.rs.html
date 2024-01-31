@@ -865,12 +865,6 @@
 <a href="#865" id="865">865</a>
 <a href="#866" id="866">866</a>
 <a href="#867" id="867">867</a>
-<a href="#868" id="868">868</a>
-<a href="#869" id="869">869</a>
-<a href="#870" id="870">870</a>
-<a href="#871" id="871">871</a>
-<a href="#872" id="872">872</a>
-<a href="#873" id="873">873</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -923,33 +917,27 @@
 
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::libp2p) <span class="kw">mod </span>metrics {
     <span class="kw">use </span>once_cell::sync::Lazy;
-    <span class="kw">use </span>prometheus::core::{AtomicU64, GenericGaugeVec, Opts};
-    <span class="kw">pub static </span>NETWORK_CONTAINER_CAPACITIES: Lazy&lt;Box&lt;GenericGaugeVec&lt;AtomicU64&gt;&gt;&gt; = {
+    <span class="kw">use </span>prometheus_client::metrics::{family::Family, gauge::Gauge};
+
+    <span class="kw">use </span><span class="kw">crate</span>::metrics::KindLabel;
+
+    <span class="kw">pub static </span>NETWORK_CONTAINER_CAPACITIES: Lazy&lt;Family&lt;KindLabel, Gauge&gt;&gt; = {
         Lazy::new(|| {
-            <span class="kw">let </span>network_container_capacities = Box::new(
-                GenericGaugeVec::&lt;AtomicU64&gt;::new(
-                    Opts::new(
-                        <span class="string">&quot;network_container_capacities&quot;</span>,
-                        <span class="string">&quot;Capacity for each container&quot;</span>,
-                    ),
-                    <span class="kw-2">&amp;</span>[labels::KIND],
-                )
-                .expect(<span class="string">&quot;Defining the network_container_capacities metric must succeed&quot;</span>),
+            <span class="kw">let </span>metric = Family::default();
+            <span class="kw">crate</span>::metrics::default_registry().register(
+                <span class="string">&quot;network_container_capacities&quot;</span>,
+                <span class="string">&quot;Capacity for each container&quot;</span>,
+                metric.clone(),
             );
-            prometheus::default_registry().register(network_container_capacities.clone()).expect(
-            <span class="string">&quot;Registering the network_container_capacities metric with the metrics registry must succeed&quot;
-        </span>);
-            network_container_capacities
+            metric
         })
     };
 
     <span class="kw">pub mod </span>values {
-        <span class="kw">pub const </span>HELLO_REQUEST_TABLE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;hello_request_table&quot;</span>;
-        <span class="kw">pub const </span>CHAIN_EXCHANGE_REQUEST_TABLE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;cx_request_table&quot;</span>;
-    }
+        <span class="kw">use </span><span class="kw">crate</span>::metrics::KindLabel;
 
-    <span class="kw">pub mod </span>labels {
-        <span class="kw">pub const </span>KIND: <span class="kw-2">&amp;</span>str = <span class="string">&quot;kind&quot;</span>;
+        <span class="kw">pub const </span>HELLO_REQUEST_TABLE: KindLabel = KindLabel::new(<span class="string">&quot;hello_request_table&quot;</span>);
+        <span class="kw">pub const </span>CHAIN_EXCHANGE_REQUEST_TABLE: KindLabel = KindLabel::new(<span class="string">&quot;cx_request_table&quot;</span>);
     }
 }
 
@@ -1163,7 +1151,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>bitswap_outbound_request_stream =
             bitswap_request_manager.outbound_request_stream().fuse();
         <span class="kw">let </span><span class="kw-2">mut </span>peer_ops_rx_stream = <span class="self">self</span>.peer_manager.peer_ops_rx().stream().fuse();
-        <span class="kw">let </span>metrics = Metrics::new(<span class="kw-2">&amp;mut </span><span class="kw">crate</span>::metrics::DEFAULT_REGISTRY.write());
+        <span class="kw">let </span>metrics = Metrics::new(<span class="kw-2">&amp;mut </span><span class="kw">crate</span>::metrics::default_registry());
         <span class="kw">loop </span>{
             <span class="macro">select! </span>{
                 swarm_event = swarm_stream.next() =&gt; <span class="kw">match </span>swarm_event {

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["collect_db_metrics","collect_prometheus_metrics","init_prometheus"],"mod":["db","labels","values"],"static":["DEFAULT_REGISTRY","LRU_CACHE_HIT","LRU_CACHE_MISS"]};
+window.SIDEBAR_ITEMS = {"fn":["collect_db_metrics","collect_prometheus_metrics","default_histogram","default_registry","init_prometheus"],"mod":["db","values"],"static":["DEFAULT_REGISTRY","LRU_CACHE_HIT","LRU_CACHE_MISS"],"struct":["HistogramTimer","KindLabel","TypeLabel"],"trait":["HistogramTimerExt"]};

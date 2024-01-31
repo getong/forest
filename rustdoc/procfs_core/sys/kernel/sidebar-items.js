@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["THREADS_MAX","THREADS_MIN"],"enum":["SysRq"],"struct":["AllowedFunctions","BuildInfo","SemaphoreLimits","Type","Version"]};

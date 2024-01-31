@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"forest_filecoin":[["impl <a class=\"trait\" href=\"prometheus_client/collector/trait.Collector.html\" title=\"trait prometheus_client::collector::Collector\">Collector</a> for <a class=\"struct\" href=\"forest_filecoin/metrics/db/struct.DBCollector.html\" title=\"struct forest_filecoin::metrics::db::DBCollector\">DBCollector</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ReflectFieldRef","ReflectValueRef"],"struct":["EnumDescriptor","EnumValueDescriptor","FieldDescriptor","MessageDescriptor"],"trait":["ProtobufValue"]};

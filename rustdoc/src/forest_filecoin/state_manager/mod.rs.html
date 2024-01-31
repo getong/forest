@@ -1619,6 +1619,7 @@
 <a href="#1619" id="1619">1619</a>
 <a href="#1620" id="1620">1620</a>
 <a href="#1621" id="1621">1621</a>
+<a href="#1622" id="1622">1622</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1643,6 +1644,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::{MessageCallbackCtx, VMTrace};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait};
+<span class="kw">use </span><span class="kw">crate</span>::metrics::HistogramTimerExt;
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiInvocResult, MessageGasCost, MiningBaseInfo};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
@@ -1760,7 +1762,7 @@
         <span class="kw">match </span>status {
             Status::Done(x) =&gt; {
                 <span class="kw">crate</span>::metrics::LRU_CACHE_HIT
-                    .with_label_values(<span class="kw-2">&amp;</span>[<span class="kw">crate</span>::metrics::values::STATE_MANAGER_TIPSET])
+                    .get_or_create(<span class="kw-2">&amp;</span><span class="kw">crate</span>::metrics::values::STATE_MANAGER_TIPSET)
                     .inc();
                 <span class="prelude-val">Ok</span>(x)
             }
@@ -1770,7 +1772,7 @@
                     <span class="prelude-val">Some</span>(v) =&gt; {
                         <span class="comment">// While locking someone else computed the pending task
                         </span><span class="kw">crate</span>::metrics::LRU_CACHE_HIT
-                            .with_label_values(<span class="kw-2">&amp;</span>[<span class="kw">crate</span>::metrics::values::STATE_MANAGER_TIPSET])
+                            .get_or_create(<span class="kw-2">&amp;</span><span class="kw">crate</span>::metrics::values::STATE_MANAGER_TIPSET)
                             .inc();
 
                         <span class="prelude-val">Ok</span>(v)
@@ -1778,7 +1780,7 @@
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="comment">// Entry does not have state computed yet, compute value and fill the cache
                         </span><span class="kw">crate</span>::metrics::LRU_CACHE_MISS
-                            .with_label_values(<span class="kw-2">&amp;</span>[<span class="kw">crate</span>::metrics::values::STATE_MANAGER_TIPSET])
+                            .get_or_create(<span class="kw-2">&amp;</span><span class="kw">crate</span>::metrics::values::STATE_MANAGER_TIPSET)
                             .inc();
 
                         <span class="kw">let </span>cid_pair = compute().<span class="kw">await</span><span class="question-mark">?</span>;
