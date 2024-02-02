@@ -1,0 +1,131 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Delegate the implementation of a trait to methods on a type that are defined elsewhere."><title>delegate_to_remote_methods in ambassador - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="ambassador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc attr"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../ambassador/index.html">ambassador</a><span class="version">0.3.6</span></h2></div><div class="sidebar-elems"></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Attribute Macro <a href="index.html">ambassador</a>::<wbr><a class="attr" href="#">delegate_to_remote_methods</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/ambassador/lib.rs.html#679-681">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>#[delegate_to_remote_methods]</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Delegate the implementation of a trait to methods on a type that are defined
+<em>elsewhere</em>.</p>
+<p>This macro is identical to <a href="attr.delegate_to_methods.html" title="attr ambassador::delegate_to_methods"><code>delegate_to_methods</code></a> except that it does not
+actually produce an <code>impl</code> block on the type for the target methods; instead
+it assumes that the methods are implemented elsewhere.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>ambassador::{delegate_to_remote_methods, delegatable_trait};
+
+<span class="attr">#[delegatable_trait]
+</span><span class="kw">pub trait </span>Shout {
+    <span class="kw">fn </span>shout(<span class="kw-2">&amp;</span><span class="self">self</span>, input: <span class="kw-2">&amp;</span>str) -&gt; String;
+}
+
+<span class="kw">pub struct </span>Cat;
+
+<span class="kw">impl </span>Shout <span class="kw">for </span>Cat {
+    <span class="kw">fn </span>shout(<span class="kw-2">&amp;</span><span class="self">self</span>, input: <span class="kw-2">&amp;</span>str) -&gt; String {
+        <span class="macro">format!</span>(<span class="string">&quot;{} - meow!&quot;</span>, input)
+    }
+}
+
+<span class="kw">pub struct </span>BoxedCat(Box&lt;Cat&gt;);
+
+<span class="kw">impl </span>BoxedCat {
+   <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Cat { <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>}
+}
+
+<span class="attr">#[delegate_to_remote_methods]
+#[delegate(Shout, target_ref = <span class="string">&quot;inner&quot;</span>)]
+</span><span class="kw">impl </span>BoxedCat {
+    <span class="comment">// `inner` can be defined anywhere: trait method or inherent method, in
+    // this crate or elsewhere
+    </span><span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Cat;
+}</code></pre></div>
+<p>As such, this macro will actually error if you provide it with methods with
+blocks, method signatures that aren’t used by a <code>delegate</code> attribute on the
+impl, or other impl items:</p>
+
+<div class="example-wrap compile_fail"><a href="#" class="tooltip" title="This example deliberately fails to compile">ⓘ</a><pre class="rust rust-example-rendered"><code>
+<span class="attr">#[delegate_to_remote_methods]
+#[delegate(Shout, target_ref = <span class="string">&quot;inner&quot;</span>)]
+</span><span class="kw">impl </span>BoxedCat {
+    <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Cat { <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>} <span class="comment">// This is an error, method bodies
+                                        // aren&#39;t accepted
+
+    </span><span class="kw">fn </span>extra(<span class="kw-2">&amp;</span><span class="self">self</span>);                    <span class="comment">// Extra methods are also error since no
+                                        // `impl BoxedCat { ... }` is actually
+                                        // emitted
+
+    </span><span class="kw">const </span>CONST: () = ();               <span class="comment">// This is also an error.
+</span>}</code></pre></div>
+<p>Target methods can come from a trait or be inherent methods whose actual
+implementation lives elsewhere. You can mix and match:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::ops::{Deref, DerefMut};
+
+<span class="kw">impl </span>Deref <span class="kw">for </span>BoxedCat {
+    <span class="kw">type </span>Target = Cat;
+
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target { <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>}
+}
+
+<span class="kw">impl </span>DerefMut <span class="kw">for </span>BoxedCat {
+    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Target { <span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0 </span>}
+}
+
+<span class="attr">#[delegate_to_remote_methods]
+#[delegate(Shout, target_ref = <span class="string">&quot;inner&quot;</span>, target_mut = <span class="string">&quot;deref_mut&quot;</span>)]
+</span><span class="kw">impl </span>BoxedCat {
+    <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Cat;
+    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Cat;
+}</code></pre></div>
+<p>Note that if you do use target methods from a trait, the trait must be in
+scope.</p>
+<p>Because this macro does not implement any inherent methods on the type being
+delegated to, the type can be remote (like with <a href="attr.delegate_remote.html" title="attr ambassador::delegate_remote"><code>delegate_remote</code></a>):</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::ops::{Deref, DerefMut};
+
+<span class="comment">// Note that this impl says `Deref for Box&lt;Cat&gt;`.
+//
+// The trait in this impl is ignored and only serves as documentation here.
+</span><span class="attr">#[delegate_to_remote_methods]
+#[delegate(Shout, target_ref = <span class="string">&quot;deref&quot;</span>)]
+</span><span class="kw">impl </span>Deref <span class="kw">for </span>Box&lt;Cat&gt; {
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Cat;
+}
+
+<span class="kw">fn </span>shout(<span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw">impl </span>Shout) { }
+
+<span class="kw">fn </span>main() {
+    <span class="kw">let </span>c = Cat;
+    shout(<span class="kw-2">&amp;</span>c);
+
+    <span class="kw">let </span>boxed: Box&lt;Cat&gt; = Box::new(c);
+    shout(<span class="kw-2">&amp;</span>boxed);
+}</code></pre></div>
+<p>This can be used in conjunction with generics to provide blanket delegated
+implementations of a local trait without needing to create intermediary
+local traits that provide target methods to use:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>std::{sync::Arc, rc::Rc};
+
+<span class="kw">pub struct </span>Dog;
+<span class="kw">impl </span>Shout <span class="kw">for </span>Dog {
+    <span class="kw">fn </span>shout(<span class="kw-2">&amp;</span><span class="self">self</span>, input: <span class="kw-2">&amp;</span>str) -&gt; String { <span class="macro">format!</span>(<span class="string">&quot;{} - wuff!&quot;</span>, input) }
+}
+
+<span class="attr">#[delegate_to_remote_methods]
+#[delegate(Shout, target_ref = <span class="string">&quot;deref&quot;</span>)]
+</span><span class="kw">impl</span>&lt;S: <span class="question-mark">?</span>Sized + Shout, T: Deref&lt;Target = S&gt;&gt; T {
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>S;
+}
+
+<span class="kw">pub fn </span>shout(pet: <span class="kw-2">&amp;</span><span class="kw">impl </span>Shout) { <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, pet.shout(<span class="string">&quot;hi&quot;</span>)); }
+
+<span class="kw">pub fn </span>main() {
+    shout(<span class="kw-2">&amp;</span>Cat);
+    shout(<span class="kw-2">&amp;</span>Dog);
+
+    <span class="kw">let </span>a: Box&lt;<span class="kw">dyn </span>Shout&gt; = Box::new(Cat);
+    <span class="kw">let </span>b: Arc&lt;<span class="kw">dyn </span>Shout + Send&gt; = Arc::new(Dog);
+    <span class="kw">let </span>c: Rc&lt;<span class="kw">dyn </span>Shout + Send + Sync + <span class="lifetime">&#39;static</span>&gt; = Rc::new(Cat);
+    shout(<span class="kw-2">&amp;</span>a);
+    shout(<span class="kw-2">&amp;</span>b);
+    shout(<span class="kw-2">&amp;</span>c);
+
+    <span class="kw">let </span>d: Box&lt;Cat&gt; = Box::new(Cat);
+    shout(<span class="kw-2">&amp;</span>d);
+}</code></pre></div>
+</div></details></section></div></main></body></html>

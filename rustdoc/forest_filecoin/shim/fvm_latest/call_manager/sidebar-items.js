@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["NO_DATA_BLOCK_ID"],"mod":["backtrace"],"struct":["Backtrace","DefaultCallManager","FinishRet","InvocationResult"],"trait":["CallManager"]};
+window.SIDEBAR_ITEMS = {"constant":["NO_DATA_BLOCK_ID"],"enum":["Entrypoint"],"mod":["backtrace"],"static":["INVOKE_FUNC_NAME","UPGRADE_FUNC_NAME"],"struct":["Backtrace","DefaultCallManager","FinishRet","InvocationResult"],"trait":["CallManager"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"attr":["delegatable_trait","delegatable_trait_remote","delegate_remote","delegate_to_methods","delegate_to_remote_methods"],"derive":["Delegate"]};

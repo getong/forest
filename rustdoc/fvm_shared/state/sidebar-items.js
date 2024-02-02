@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["StateTreeVersion"],"struct":["StateInfo0","StateRoot"]};
+window.SIDEBAR_ITEMS = {"enum":["InvalidTransfer","StateTreeVersion"],"struct":["ActorState","StateInfo0","StateRoot"]};

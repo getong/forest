@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ActorState","StateTree"]};
+window.SIDEBAR_ITEMS = {"enum":["StateTreeVersion"],"struct":["ActorState","StateTree"]};

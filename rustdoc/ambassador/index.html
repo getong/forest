@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Ambassador - Delegate trait implementations via procedural macros"><title>ambassador - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="ambassador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../ambassador/index.html">ambassador</a><span class="version">0.3.6</span></h2></div><div class="sidebar-elems"><ul class="block">
+            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#attributes">Attribute Macros</a></li><li><a href="#derives">Derive Macros</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">ambassador</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/ambassador/lib.rs.html#1-787">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="ambassador---delegate-trait-implementations-via-procedural-macros"><a href="#ambassador---delegate-trait-implementations-via-procedural-macros">Ambassador - Delegate trait implementations via procedural macros</a></h2><!-- Crates version -->
+<a href="https://crates.io/crates/ambassador">
+  <img src="https://img.shields.io/crates/v/ambassador.svg?style=flat-square"
+  alt="Crates.io version" />
+</a>
+<!-- docs.rs docs -->
+<a href="https://docs.rs/ambassador">
+  <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square"
+    alt="docs.rs docs" />
+</a>
+<br/>
+<p>Delegating the implementation of traits to enum variants or fields of a struct normally requires a lot of boilerplate code. Ambassador is an attempt to eliminate that boilerplate by deriving the delegating trait implementation via procedural macros.</p>
+<p><strong>The minimum supported Rust version is 1.53.0.</strong></p>
+<p>See individual macro documentation for detailed instructions.</p>
+<p>This is one example combining a large number of features:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">extern crate </span>ambassador;
+
+<span class="kw">use </span>std::collections::{HashMap, BTreeMap};
+<span class="kw">use </span>std::borrow::Borrow;
+<span class="kw">use </span>std::cmp::{Eq, Ord};
+<span class="kw">use </span>std::hash::{Hash, BuildHasher};
+<span class="kw">use </span>std::ops::Deref;
+<span class="kw">use </span>ambassador::{delegatable_trait, delegate_remote, delegate_to_remote_methods, Delegate};
+
+<span class="attr">#[delegatable_trait]
+</span><span class="kw">pub trait </span>Map {
+    <span class="kw">type </span>K;
+    <span class="kw">type </span>V;
+}
+
+<span class="attr">#[delegatable_trait]
+</span><span class="kw">pub trait </span>Get&lt;Q: <span class="question-mark">?</span>Sized&gt;: Map {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Q) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="self">Self</span>::V&gt;;
+}
+
+<span class="kw">impl</span>&lt;K, V, S&gt; Map <span class="kw">for </span>HashMap&lt;K, V, S&gt;  {
+    <span class="kw">type </span>K = K;
+    <span class="kw">type </span>V = V;
+}
+
+<span class="kw">impl</span>&lt;K, V&gt; Map <span class="kw">for </span>BTreeMap&lt;K, V&gt;  {
+    <span class="kw">type </span>K = K;
+    <span class="kw">type </span>V = V;
+}
+
+
+<span class="comment">// No automatic where clause provided for target = &quot;self&quot;
+</span><span class="attr">#[delegate_remote]
+#[delegate(Get&lt;X&gt;, target = <span class="string">&quot;self&quot;</span>, generics = <span class="string">&quot;X&quot;</span>, <span class="kw">where </span>= <span class="string">&quot;K: Hash + Eq + Borrow&lt;X&gt;, S: BuildHasher, X: Hash + Eq + ?Sized&quot;</span>)]
+</span><span class="kw">struct </span>HashMap&lt;K, V, S&gt;();
+
+<span class="attr">#[delegate_remote]
+#[delegate(Get&lt;X&gt;, target = <span class="string">&quot;self&quot;</span>, generics = <span class="string">&quot;X&quot;</span>, <span class="kw">where </span>= <span class="string">&quot;K: Ord + Borrow&lt;X&gt;, X: Ord + ?Sized&quot;</span>)]
+</span><span class="kw">struct </span>BTreeMap&lt;K, V&gt;();
+
+<span class="attr">#[derive(Delegate)]
+#[delegate(Map)]
+#[delegate(Get&lt;X&gt;, generics = <span class="string">&quot;X&quot;</span>, <span class="kw">where </span>= <span class="string">&quot;X: ?Sized, B: Map&lt;K=A::K, V=A::V&gt;&quot;</span>)]  </span><span class="comment">//auto where clause misses required on super trait
+</span><span class="kw">pub enum </span>Either&lt;A, B&gt; {
+    Left(A),
+    Right(B),
+}
+
+<span class="attr">#[delegate_to_remote_methods]
+#[delegate(Map, target_ref = <span class="string">&quot;deref&quot;</span>)]
+</span><span class="kw">impl</span>&lt;M: <span class="question-mark">?</span>Sized + Map&gt; Map <span class="kw">for </span>Box&lt;M&gt; {
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>M;
+}
+
+<span class="kw">fn </span>takes_map(_m: <span class="kw-2">&amp;</span><span class="kw">impl </span>Map&lt;K = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, V = u32&gt;) { }
+
+<span class="kw">pub fn </span>main() {
+    <span class="kw">let </span>my_map: Either&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, u32&gt;, BTreeMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, u32&gt;&gt; = Either::Left([(<span class="string">&quot;a&quot;</span>, <span class="number">1</span>)].into());
+    <span class="macro">assert_eq!</span>(my_map.get(<span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">1</span>));
+
+    <span class="kw">let </span>boxed: Box&lt;<span class="kw">dyn </span>Map&lt;K = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, V = u32&gt;&gt; = Box::new(my_map);
+    takes_map(<span class="kw-2">&amp;</span>boxed);
+}</code></pre></div>
+<h2 id="backwards-compatibility"><a href="#backwards-compatibility">Backwards Compatibility</a></h2>
+<p>Since delegateable traits from one crate can be used in anther crate backwards compatibility of switching to 0.3.x depends on the use case</p>
+<h3 id="self-contained-crate"><a href="#self-contained-crate">Self Contained Crate</a></h3>
+<p>Switching to 0.3.x should just work,
+in this case it safe to disable the “backward_compatible” feature</p>
+<h3 id="library-with-public-delegatable-traits"><a href="#library-with-public-delegatable-traits">Library with public delegatable traits</a></h3>
+<p>Make sure use the “backward_compatible” feature (enabled by default),
+this makes sure users of your library using an older version of ambassador aren’t affected by the upgrade</p>
+<h3 id="users-of-a-library-with-public-delegatable-traits"><a href="#users-of-a-library-with-public-delegatable-traits">Users of a library with public delegatable traits</a></h3>
+<p>Try to use the same version of ambassador as the library you’re using</p>
+</div></details><h2 id="attributes" class="small-section-header"><a href="#attributes">Attribute Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="attr" href="attr.delegatable_trait.html" title="attr ambassador::delegatable_trait">delegatable_trait</a></div><div class="desc docblock-short">Make a trait available for delegation</div></li><li><div class="item-name"><a class="attr" href="attr.delegatable_trait_remote.html" title="attr ambassador::delegatable_trait_remote">delegatable_trait_remote</a></div><div class="desc docblock-short">Make an existing trait that lives outside you crate available for delegation.</div></li><li><div class="item-name"><a class="attr" href="attr.delegate_remote.html" title="attr ambassador::delegate_remote">delegate_remote</a></div><div class="desc docblock-short">Make an existing type that lives outside you crate delegate traits to it’s members</div></li><li><div class="item-name"><a class="attr" href="attr.delegate_to_methods.html" title="attr ambassador::delegate_to_methods">delegate_to_methods</a></div><div class="desc docblock-short">Delegate the implementation of a trait to a type’s methods by adding <code>#[delegate_to_methods]</code> and its associated attribute <code>#[delegate(Trait)]</code> to the relevant impl block</div></li><li><div class="item-name"><a class="attr" href="attr.delegate_to_remote_methods.html" title="attr ambassador::delegate_to_remote_methods">delegate_to_remote_methods</a></div><div class="desc docblock-short">Delegate the implementation of a trait to methods on a type that are defined
+<em>elsewhere</em>.</div></li></ul><h2 id="derives" class="small-section-header"><a href="#derives">Derive Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="derive" href="derive.Delegate.html" title="derive ambassador::Delegate">Delegate</a></div><div class="desc docblock-short">Delegate the implementation of a trait to a struct field/enum variants by adding <code>#[derive(Delegate)]</code> and its associated attribute <code>#[delegate(Trait)]</code> to it:</div></li></ul></section></div></main></body></html>

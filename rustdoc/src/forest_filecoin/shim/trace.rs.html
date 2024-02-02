@@ -137,13 +137,24 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="kw">use </span><span class="self">self</span>::ExecutionEvent <span class="kw">as </span>EShim;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address <span class="kw">as </span>ShimAddress, econ::TokenAmount <span class="kw">as </span>ShimTokenAmount,
     error::ExitCode <span class="kw">as </span>ShimExitCode, gas::GasCharge <span class="kw">as </span>ShimGasCharge,
-    kernel::SyscallError <span class="kw">as </span>ShimSyscallError,
+    kernel::SyscallError <span class="kw">as </span>ShimSyscallError, state_tree::ActorID <span class="kw">as </span>ShimActorId,
+    state_tree::ActorState <span class="kw">as </span>ShimActorState,
 };
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm2::trace::ExecutionEvent <span class="kw">as </span>E2;
@@ -160,7 +171,7 @@
     CallAbort(ShimExitCode),
     CallError(ShimSyscallError),
     Log(String),
-    InvokeActor(Cid),
+    InvokeActor(Either&lt;Cid, InvokeActor&gt;),
     Unknown(Either&lt;E3, Either&lt;E4, E2&gt;&gt;),
 }
 
@@ -180,6 +191,12 @@
     <span class="kw">pub </span>value: ShimTokenAmount,
     <span class="kw">pub </span>gas_limit: <span class="prelude-ty">Option</span>&lt;u64&gt;,
     <span class="kw">pub </span>read_only: <span class="prelude-ty">Option</span>&lt;bool&gt;,
+}
+
+<span class="attr">#[derive(Debug, Clone, Eq, PartialEq)]
+</span><span class="kw">pub struct </span>InvokeActor {
+    <span class="kw">pub </span>id: ShimActorId,
+    <span class="kw">pub </span>state: ShimActorState,
 }
 
 <span class="kw">impl </span>From&lt;E2&gt; <span class="kw">for </span>ExecutionEvent {
@@ -239,7 +256,7 @@
                 data: Either::Right(data),
             }),
             E3::CallError(err) =&gt; EShim::CallError(err.into()),
-            E3::InvokeActor(cid) =&gt; EShim::InvokeActor(cid),
+            E3::InvokeActor(cid) =&gt; EShim::InvokeActor(Either::Left(cid)),
             e =&gt; EShim::Unknown(Either::Left(e)),
         }
     }
@@ -271,7 +288,10 @@
                 data: Either::Right(data),
             }),
             E4::CallError(err) =&gt; EShim::CallError(err.into()),
-            E4::InvokeActor(cid) =&gt; EShim::InvokeActor(cid),
+            E4::InvokeActor { id, state } =&gt; EShim::InvokeActor(Either::Right(InvokeActor {
+                id,
+                state: state.into(),
+            })),
             e =&gt; EShim::Unknown(Either::Right(Either::Left(e))),
         }
     }

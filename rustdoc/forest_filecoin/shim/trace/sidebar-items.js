@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ExecutionEvent"],"struct":["Call","CallReturn"]};
+window.SIDEBAR_ITEMS = {"enum":["ExecutionEvent"],"struct":["Call","CallReturn","InvokeActor"]};
