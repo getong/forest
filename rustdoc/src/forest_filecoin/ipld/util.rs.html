@@ -611,6 +611,8 @@
 <a href="#611" id="611">611</a>
 <a href="#612" id="612">612</a>
 <a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -626,8 +628,8 @@
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>futures::Stream;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>kanal::{Receiver, Sender};
 
+<span class="kw">use </span>flume::TryRecvError;
 <span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>pin_project_lite::pin_project;
 <span class="kw">use </span>std::pin::Pin;
@@ -970,8 +972,8 @@
         db: Arc&lt;DB&gt;,
         seen: Arc&lt;Mutex&lt;CidHashSet&gt;&gt;,
         worker_handle: JoinHandle&lt;anyhow::Result&lt;()&gt;&gt;,
-        block_receiver: kanal::Receiver&lt;anyhow::Result&lt;CarBlock&gt;&gt;,
-        extract_sender: kanal::Sender&lt;Cid&gt;,
+        block_receiver: flume::Receiver&lt;anyhow::Result&lt;CarBlock&gt;&gt;,
+        extract_sender: flume::Sender&lt;Cid&gt;,
         stateroot_limit: ChainEpoch,
         queue: Vec&lt;Cid&gt;,
         fail_on_dead_links: bool,
@@ -1010,8 +1012,8 @@
     tipset_iter: T,
     stateroot_limit: ChainEpoch,
 ) -&gt; UnorderedChainStream&lt;DB, T&gt; {
-    <span class="kw">let </span>(sender, receiver) = kanal::bounded(BLOCK_CHANNEL_LIMIT);
-    <span class="kw">let </span>(extract_sender, extract_receiver) = kanal::unbounded();
+    <span class="kw">let </span>(sender, receiver) = flume::bounded(BLOCK_CHANNEL_LIMIT);
+    <span class="kw">let </span>(extract_sender, extract_receiver) = flume::unbounded();
     <span class="kw">let </span>fail_on_dead_links = <span class="bool-val">true</span>;
     <span class="kw">let </span>seen = Arc::new(Mutex::new(CidHashSet::default()));
     <span class="kw">let </span>handle = UnorderedChainStream::&lt;DB, T&gt;::start_workers(
@@ -1045,8 +1047,8 @@
     tipset_iter: T,
     stateroot_limit: ChainEpoch,
 ) -&gt; UnorderedChainStream&lt;DB, T&gt; {
-    <span class="kw">let </span>(sender, receiver) = kanal::bounded(<span class="number">2048</span>);
-    <span class="kw">let </span>(extract_sender, extract_receiver) = kanal::unbounded();
+    <span class="kw">let </span>(sender, receiver) = flume::bounded(<span class="number">2048</span>);
+    <span class="kw">let </span>(extract_sender, extract_receiver) = flume::unbounded();
     <span class="kw">let </span>fail_on_dead_links = <span class="bool-val">false</span>;
     <span class="kw">let </span>seen = Arc::new(Mutex::new(CidHashSet::default()));
     <span class="kw">let </span>handle = UnorderedChainStream::&lt;DB, T&gt;::start_workers(
@@ -1075,8 +1077,8 @@
 {
     <span class="kw">fn </span>start_workers(
         db: Arc&lt;DB&gt;,
-        block_sender: Sender&lt;anyhow::Result&lt;CarBlock&gt;&gt;,
-        extract_receiver: Receiver&lt;Cid&gt;,
+        block_sender: flume::Sender&lt;anyhow::Result&lt;CarBlock&gt;&gt;,
+        extract_receiver: flume::Receiver&lt;Cid&gt;,
         seen: Arc&lt;Mutex&lt;CidHashSet&gt;&gt;,
         fail_on_dead_links: bool,
     ) -&gt; JoinHandle&lt;anyhow::Result&lt;()&gt;&gt; {
@@ -1085,12 +1087,11 @@
 
             <span class="kw">for _ in </span><span class="number">0</span>..num_cpus::get() {
                 <span class="kw">let </span>seen = seen.clone();
-                <span class="kw">let </span>extract_receiver: kanal::AsyncReceiver&lt;Cid&gt; =
-                    extract_receiver.clone().to_async();
+                <span class="kw">let </span>extract_receiver = extract_receiver.clone();
                 <span class="kw">let </span>db = db.clone();
                 <span class="kw">let </span>block_sender = block_sender.clone();
                 handles.spawn(<span class="kw">async move </span>{
-                    <span class="kw">while let </span><span class="prelude-val">Ok</span>(cid) = extract_receiver.recv().<span class="kw">await </span>{
+                    <span class="kw">while let </span><span class="prelude-val">Ok</span>(cid) = extract_receiver.recv_async().<span class="kw">await </span>{
                         <span class="kw">let </span><span class="kw-2">mut </span>cid_vec = <span class="macro">vec!</span>[cid];
                         <span class="kw">while let </span><span class="prelude-val">Some</span>(cid) = cid_vec.pop() {
                             <span class="kw">if </span>should_save_block_to_snapshot(cid) &amp;&amp; seen.lock().insert(cid) {
@@ -1137,7 +1138,7 @@
         <span class="kw">let </span>this = <span class="self">self</span>.project();
         <span class="kw">let </span>receive_block = || {
             <span class="kw">if let </span><span class="prelude-val">Ok</span>(item) = this.block_receiver.try_recv() {
-                <span class="kw">return </span>item;
+                <span class="kw">return </span><span class="prelude-val">Some</span>(item);
             }
             <span class="prelude-val">None
         </span>};
@@ -1208,19 +1209,22 @@
                         }
                     }
                 }
-            } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(item) = this.block_receiver.try_recv() {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(item) = item {
-                    <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(item));
-                }
-                <span class="comment">// Close the sender when it&#39;s empty and exit.
-                </span><span class="kw">if </span>this.extract_sender.is_empty() &amp;&amp; this.block_receiver.is_empty() {
-                    this.worker_handle.abort();
-                    <span class="kw">return </span>Poll::Ready(<span class="prelude-val">None</span>);
-                }
             } <span class="kw">else </span>{
-                <span class="comment">// That&#39;s it, nothing else to do. End of stream.
-                </span><span class="kw">return </span>Poll::Ready(<span class="prelude-val">None</span>);
-            };
+                <span class="kw">match </span>this.block_receiver.try_recv() {
+                    <span class="prelude-val">Ok</span>(item) =&gt; <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(item)),
+                    <span class="prelude-val">Err</span>(err) =&gt; {
+                        <span class="kw">if </span>this.extract_sender.is_empty() {
+                            this.worker_handle.abort();
+                            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">None</span>);
+                            <span class="comment">// This should never happen.
+                        </span>} <span class="kw">else if </span>err == TryRecvError::Disconnected {
+                            <span class="macro">panic!</span>(
+                                <span class="string">&quot;block_receiver can only be closed after extract_sender is empty&quot;
+                            </span>)
+                        }
+                    }
+                }
+            }
         }
     }
 }

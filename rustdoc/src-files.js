@@ -279,7 +279,6 @@ var srcIndex = JSON.parse('{\
 "jsonrpc_v2":["",[],["lib.rs"]],\
 "jsonrpc_v2_macros":["",[],["lib.rs"]],\
 "jsonwebtoken":["",[["crypto",[],["ecdsa.rs","eddsa.rs","mod.rs","rsa.rs"]],["pem",[],["decoder.rs","mod.rs"]]],["algorithms.rs","decoding.rs","encoding.rs","errors.rs","header.rs","jwk.rs","lib.rs","serialization.rs","validation.rs"]],\
-"kanal":["",[],["backoff.rs","error.rs","future.rs","internal.rs","lib.rs","mutex.rs","oneshot.rs","pointer.rs","signal.rs"]],\
 "kubert_prometheus_process":["",[],["lib.rs"]],\
 "lazy_static":["",[],["core_lazy.rs","lib.rs"]],\
 "leb128":["",[],["lib.rs"]],\
