@@ -525,6 +525,16 @@
 <a href="#525" id="525">525</a>
 <a href="#526" id="526">526</a>
 <a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -586,6 +596,7 @@
 <span class="kw">use </span>futures::{Stream, TryStream, TryStreamExt <span class="kw">as _</span>};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::to_vec;
+<span class="kw">use </span>nonempty::NonEmpty;
 <span class="kw">use </span>parking_lot::{Mutex, RwLock};
 <span class="kw">use </span>positioned_io::{Cursor, ReadAt, SizeCursor};
 <span class="kw">use </span>std::io::{Seek, SeekFrom};
@@ -619,7 +630,7 @@
     indexed: index::Reader&lt;positioned_io::Slice&lt;ReaderT&gt;&gt;,
     frame_cache: Arc&lt;Mutex&lt;ZstdFrameCache&gt;&gt;,
     write_cache: Arc&lt;RwLock&lt;ahash::HashMap&lt;Cid, Vec&lt;u8&gt;&gt;&gt;&gt;,
-    roots: Vec&lt;Cid&gt;,
+    roots: NonEmpty&lt;Cid&gt;,
 }
 
 <span class="kw">impl</span>&lt;ReaderT: <span class="kw">super</span>::RandomAccessFileReader&gt; ForestCar&lt;ReaderT&gt; {
@@ -666,12 +677,12 @@
         <span class="prelude-val">Ok</span>((header, footer))
     }
 
-    <span class="kw">pub fn </span>roots(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Cid&gt; {
-        <span class="self">self</span>.roots.clone()
+    <span class="kw">pub fn </span>roots(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>NonEmpty&lt;Cid&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.roots
     }
 
     <span class="kw">pub fn </span>heaviest_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Tipset&gt; {
-        Tipset::load_required(<span class="self">self</span>, <span class="kw-2">&amp;</span>TipsetKey::from_iter(<span class="self">self</span>.roots()))
+        Tipset::load_required(<span class="self">self</span>, <span class="kw-2">&amp;</span>TipsetKey::from_iter(<span class="self">self</span>.roots().clone()))
     }
 
     <span class="kw">pub fn </span>into_dyn(<span class="self">self</span>) -&gt; ForestCar&lt;Box&lt;<span class="kw">dyn </span><span class="kw">super</span>::RandomAccessFileReader&gt;&gt; {
@@ -781,7 +792,7 @@
 <span class="kw">impl </span>Encoder {
     <span class="kw">pub async fn </span>write(
         <span class="kw-2">mut </span>sink: <span class="kw">impl </span>AsyncWrite + Unpin,
-        roots: Vec&lt;Cid&gt;,
+        roots: NonEmpty&lt;Cid&gt;,
         <span class="kw-2">mut </span>stream: <span class="kw">impl </span>TryStream&lt;<span class="prelude-val">Ok </span>= (Vec&lt;Cid&gt;, Bytes), Error = anyhow::Error&gt; + Unpin,
     ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>offset = <span class="number">0</span>;
@@ -949,19 +960,20 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::block_on;
+    <span class="kw">use </span>nonempty::nonempty;
     <span class="kw">use </span>quickcheck_macros::quickcheck;
 
     <span class="kw">fn </span>mk_encoded_car(
         zstd_frame_size_tripwire: usize,
         zstd_compression_level: u16,
-        roots: Vec&lt;Cid&gt;,
-        block: Vec&lt;CarBlock&gt;,
+        roots: NonEmpty&lt;Cid&gt;,
+        blocks: NonEmpty&lt;CarBlock&gt;,
     ) -&gt; Vec&lt;u8&gt; {
         block_on(<span class="kw">async </span>{
             <span class="kw">let </span>frame_stream = Encoder::compress_stream(
                 zstd_frame_size_tripwire,
                 zstd_compression_level,
-                futures::stream::iter(block.into_iter().map(<span class="prelude-val">Ok</span>)),
+                futures::stream::iter(blocks.into_iter().map(<span class="prelude-val">Ok</span>)),
             );
             <span class="kw">let </span><span class="kw-2">mut </span>encoded = <span class="macro">vec!</span>[];
             Encoder::write(<span class="kw-2">&amp;mut </span>encoded, roots, frame_stream)
@@ -972,12 +984,13 @@
     }
 
     <span class="attr">#[quickcheck]
-    </span><span class="kw">fn </span>forest_car_create_basic(head: CarBlock, <span class="kw-2">mut </span>tail: Vec&lt;CarBlock&gt;, roots: Vec&lt;Cid&gt;) {
-        tail.push(head);
+    </span><span class="kw">fn </span>forest_car_create_basic(head: CarBlock, tail: Vec&lt;CarBlock&gt;) {
+        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>(head.cid);
+        <span class="kw">let </span>blocks = NonEmpty { head, tail };
         <span class="kw">let </span>forest_car =
-            ForestCar::new(mk_encoded_car(<span class="number">1024 </span>* <span class="number">4</span>, <span class="number">3</span>, roots.clone(), tail.clone())).unwrap();
-        <span class="macro">assert_eq!</span>(forest_car.roots(), roots);
-        <span class="kw">for </span>block <span class="kw">in </span>tail {
+            ForestCar::new(mk_encoded_car(<span class="number">1024 </span>* <span class="number">4</span>, <span class="number">3</span>, roots.clone(), blocks.clone())).unwrap();
+        <span class="macro">assert_eq!</span>(forest_car.roots(), <span class="kw-2">&amp;</span>roots);
+        <span class="kw">for </span>block <span class="kw">in </span>blocks {
             <span class="macro">assert_eq!</span>(forest_car.get(<span class="kw-2">&amp;</span>block.cid).unwrap(), <span class="prelude-val">Some</span>(block.data));
         }
     }
@@ -985,23 +998,24 @@
     <span class="attr">#[quickcheck]
     </span><span class="kw">fn </span>forest_car_create_options(
         head: CarBlock,
-        <span class="kw-2">mut </span>tail: Vec&lt;CarBlock&gt;,
-        roots: Vec&lt;Cid&gt;,
+        tail: Vec&lt;CarBlock&gt;,
         frame_size: usize,
         <span class="kw-2">mut </span>compression_level: u16,
     ) {
         compression_level %= <span class="number">15</span>;
-        tail.push(head);
+
+        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>(head.cid);
+        <span class="kw">let </span>blocks = NonEmpty { head, tail };
 
         <span class="kw">let </span>forest_car = ForestCar::new(mk_encoded_car(
             frame_size,
             compression_level.max(<span class="number">1</span>),
             roots.clone(),
-            tail.clone(),
+            blocks.clone(),
         ))
         .unwrap();
-        <span class="macro">assert_eq!</span>(forest_car.roots(), roots);
-        <span class="kw">for </span>block <span class="kw">in </span>tail {
+        <span class="macro">assert_eq!</span>(forest_car.roots(), <span class="kw-2">&amp;</span>roots);
+        <span class="kw">for </span>block <span class="kw">in </span>blocks {
             <span class="macro">assert_eq!</span>(forest_car.get(<span class="kw-2">&amp;</span>block.cid).unwrap(), <span class="prelude-val">Some</span>(block.data));
         }
     }
@@ -1033,7 +1047,7 @@
 
         <span class="comment">// For testing purposes, we ignore that the data doesn&#39;t map to the
         // CIDs.
-        </span><span class="kw">let </span>blocks = <span class="macro">vec!</span>[
+        </span><span class="kw">let </span>blocks = <span class="macro">nonempty!</span>[
             CarBlock {
                 cid: cid_a,
                 data: Vec::from_iter(<span class="kw-2">*</span><span class="string">b&quot;bill and ben&quot;</span>),
@@ -1045,7 +1059,13 @@
         ];
 
         <span class="comment">// Setting the desired frame size to 0 means each block will be put in a separate frame.
-        </span><span class="kw">let </span>forest_car = ForestCar::new(mk_encoded_car(<span class="number">0</span>, <span class="number">3</span>, Vec::new(), blocks.clone())).unwrap();
+        </span><span class="kw">let </span>forest_car = ForestCar::new(mk_encoded_car(
+            <span class="number">0</span>,
+            <span class="number">3</span>,
+            <span class="macro">nonempty!</span>[blocks.first().cid],
+            blocks.clone(),
+        ))
+        .unwrap();
 
         <span class="comment">// Even with colliding hashes, the CIDs can still be queried:
         </span><span class="macro">assert_eq!</span>(forest_car.get(<span class="kw-2">&amp;</span>cid_a).unwrap().unwrap(), blocks[<span class="number">0</span>].data);

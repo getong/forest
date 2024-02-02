@@ -242,16 +242,31 @@
 <a href="#242" id="242">242</a>
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::path::{Path, PathBuf};
 
+<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>clap::Subcommand;
 <span class="kw">use </span>futures::{StreamExt, TryStreamExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>indicatif::{ProgressBar, ProgressStyle};
 <span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>nonempty::NonEmpty;
 <span class="kw">use </span>tokio::{
     fs::File,
     io::{AsyncWriteExt, BufReader},
@@ -299,12 +314,15 @@
                     .try_collect()
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span>all_roots = car_streams
-                    .iter()
-                    .flat_map(|it| it.header.roots.iter())
-                    .unique()
-                    .cloned()
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                <span class="kw">let </span>all_roots = NonEmpty::from_vec(
+                    car_streams
+                        .iter()
+                        .flat_map(|it| it.header.roots.iter())
+                        .unique()
+                        .cloned()
+                        .collect_vec(),
+                )
+                .context(<span class="string">&quot;car roots cannot be empty&quot;</span>)<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>frames = <span class="kw">crate</span>::db::car::forest::Encoder::compress_stream_default(
                     dedup_block_stream(merge_car_streams(car_streams)).map_err(anyhow::Error::from),
@@ -371,6 +389,7 @@
     <span class="kw">use </span>cid::multihash::{Code, MultihashDigest};
     <span class="kw">use </span>cid::Cid;
     <span class="kw">use </span>futures::{stream::iter, StreamExt, TryStreamExt};
+    <span class="kw">use </span>nonempty::{nonempty, NonEmpty};
     <span class="kw">use </span>std::io::Write;
     <span class="kw">use </span>tempfile::{Builder, TempPath};
     <span class="kw">use </span>tokio::io::AsyncWriteExt;
@@ -424,10 +443,14 @@
         CarBlock { cid, data }
     }
 
-    <span class="kw">async fn </span>create_raw_car_file(car_blocks: Vec&lt;CarBlock&gt;, ignored_cids: Vec&lt;Cid&gt;) -&gt; TempPath {
+    <span class="kw">async fn </span>create_raw_car_file(
+        car_blocks: NonEmpty&lt;CarBlock&gt;,
+        ignored_cids: Vec&lt;Cid&gt;,
+    ) -&gt; TempPath {
         <span class="kw">let </span>temp_path = Builder::new().tempfile().unwrap().into_temp_path();
         <span class="kw">let </span><span class="kw-2">mut </span>writer = tokio::fs::File::create(<span class="kw-2">&amp;</span>temp_path).<span class="kw">await</span>.unwrap();
 
+        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>[car_blocks.first().cid];
         <span class="kw">let </span>frames = forest::Encoder::compress_stream_default(iter(car_blocks).map(<span class="prelude-val">Ok</span>)).map_ok(
             |(cids, bytes)| {
                 (
@@ -440,7 +463,7 @@
         );
 
         <span class="comment">// Write zstd frames and include a skippable index
-        </span>forest::Encoder::write(<span class="kw-2">&amp;mut </span>writer, <span class="macro">vec!</span>[], frames)
+        </span>forest::Encoder::write(<span class="kw-2">&amp;mut </span>writer, roots, frames)
             .<span class="kw">await
             </span>.unwrap();
 
@@ -453,8 +476,11 @@
     <span class="comment">// Sanity check to verify that we can create valid forest.car.zst files
     </span><span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>validate_valid_file() {
-        <span class="kw">let </span>temp_path =
-            create_raw_car_file(<span class="macro">vec!</span>[valid_block(<span class="string">&quot;this data _does_ match the CID&quot;</span>)], <span class="macro">vec!</span>[]).<span class="kw">await</span>;
+        <span class="kw">let </span>temp_path = create_raw_car_file(
+            <span class="macro">nonempty!</span>[valid_block(<span class="string">&quot;this data _does_ match the CID&quot;</span>)],
+            <span class="macro">vec!</span>[],
+        )
+        .<span class="kw">await</span>;
 
         <span class="macro">assert!</span>(validate(<span class="kw-2">&amp;</span>temp_path, <span class="bool-val">false</span>, <span class="bool-val">false</span>).<span class="kw">await</span>.is_ok());
     }
@@ -462,7 +488,7 @@
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>validate_invalid_blocks() {
         <span class="kw">let </span>temp_path = create_raw_car_file(
-            <span class="macro">vec!</span>[
+            <span class="macro">nonempty!</span>[
                 valid_block(<span class="string">&quot;car_stream checks the first block&quot;</span>),
                 invalid_block(<span class="string">&quot;this data doesn&#39;t match the CID&quot;</span>),
             ],
@@ -479,7 +505,7 @@
     </span><span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>validate_invalid_index() {
         <span class="kw">let </span>block = valid_block(<span class="string">&quot;this data _does_ match the CID&quot;</span>);
-        <span class="kw">let </span>temp_path = create_raw_car_file(<span class="macro">vec!</span>[block.clone()], <span class="macro">vec!</span>[block.cid]).<span class="kw">await</span>;
+        <span class="kw">let </span>temp_path = create_raw_car_file(<span class="macro">nonempty!</span>[block.clone()], <span class="macro">vec!</span>[block.cid]).<span class="kw">await</span>;
 
         <span class="macro">assert!</span>(validate(<span class="kw-2">&amp;</span>temp_path, <span class="bool-val">false</span>, <span class="bool-val">false</span>).<span class="kw">await</span>.is_err());
         <span class="comment">// Ignoring index validity should make the test pass.

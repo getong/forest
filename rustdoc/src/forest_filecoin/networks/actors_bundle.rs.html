@@ -229,18 +229,21 @@
 <a href="#229" id="229">229</a>
 <a href="#230" id="230">230</a>
 <a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::io::{<span class="self">self</span>, Cursor};
 <span class="kw">use </span>std::path::Path;
 
-<span class="kw">use </span>anyhow::ensure;
+<span class="kw">use </span>anyhow::{ensure, Context <span class="kw">as _</span>};
 <span class="kw">use </span>async_compression::tokio::write::ZstdEncoder;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>futures::stream::FuturesUnordered;
 <span class="kw">use </span>futures::{stream, StreamExt, TryStreamExt};
 <span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>nonempty::NonEmpty;
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>reqwest::Url;
 <span class="kw">use </span>tokio::fs::File;
@@ -330,7 +333,7 @@
             <span class="kw">let </span>car = CarStream::new(Cursor::new(bytes)).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="macro">ensure!</span>(car.header.version == <span class="number">1</span>);
             <span class="macro">ensure!</span>(car.header.roots.len() == <span class="number">1</span>);
-            <span class="macro">ensure!</span>(<span class="kw-2">&amp;</span>car.header.roots[<span class="number">0</span>] == root);
+            <span class="macro">ensure!</span>(car.header.roots.first() == root);
             anyhow::Ok((<span class="kw-2">*</span>root, car.try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().<span class="kw">await</span><span class="question-mark">?</span>))
         },
     ))
@@ -358,7 +361,7 @@
     stream::iter(blocks)
         .map(io::Result::Ok)
         .forward(CarWriter::new_carv1(
-            roots.into_iter().collect(),
+            NonEmpty::from_vec(roots).context(<span class="string">&quot;car roots cannot be empty&quot;</span>)<span class="question-mark">?</span>,
             ZstdEncoder::with_quality(
                 File::create(<span class="kw-2">&amp;</span>output).<span class="kw">await</span><span class="question-mark">?</span>,
                 async_compression::Level::Precise(<span class="number">17</span>),
@@ -440,7 +443,8 @@
                     <span class="string">&quot;Roots for {url} and {alt_url} do not match&quot;
                 </span>);
                 <span class="macro">assert_eq!</span>(
-                    car_primary.header.roots[<span class="number">0</span>], <span class="kw-2">*</span>manifest,
+                    car_primary.header.roots.first(),
+                    manifest,
                     <span class="string">&quot;Manifest for {url} and {alt_url} does not match&quot;
                 </span>);
 

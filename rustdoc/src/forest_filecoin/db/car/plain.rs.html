@@ -440,6 +440,7 @@
 <a href="#440" id="440">440</a>
 <a href="#441" id="441">441</a>
 <a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -513,6 +514,7 @@
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>integer_encoding::VarIntReader;
 
+<span class="kw">use </span>nonempty::NonEmpty;
 <span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>positioned_io::ReadAt;
 <span class="kw">use </span>std::ops::DerefMut;
@@ -554,7 +556,7 @@
     reader: ReaderT,
     write_cache: RwLock&lt;CidHashMap&lt;Vec&lt;u8&gt;&gt;&gt;,
     index: RwLock&lt;CidHashMap&lt;UncompressedBlockDataLocation&gt;&gt;,
-    roots: Vec&lt;Cid&gt;,
+    roots: NonEmpty&lt;Cid&gt;,
 }
 
 <span class="kw">impl</span>&lt;ReaderT: <span class="kw">super</span>::RandomAccessFileReader&gt; PlainCar&lt;ReaderT&gt; {
@@ -593,12 +595,12 @@
         }
     }
 
-    <span class="kw">pub fn </span>roots(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Cid&gt; {
-        <span class="self">self</span>.roots.clone()
+    <span class="kw">pub fn </span>roots(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>NonEmpty&lt;Cid&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.roots
     }
 
     <span class="kw">pub fn </span>heaviest_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Tipset&gt; {
-        Tipset::load_required(<span class="self">self</span>, <span class="kw-2">&amp;</span>TipsetKey::from_iter(<span class="self">self</span>.roots()))
+        Tipset::load_required(<span class="self">self</span>, <span class="kw-2">&amp;</span>TipsetKey::from_iter(<span class="self">self</span>.roots().clone()))
     }
 
     <span class="doccomment">/// In an arbitrary order
@@ -723,12 +725,12 @@
     }
 }
 
-<span class="kw">fn </span>get_roots_from_v1_header(reader: <span class="kw">impl </span>Read) -&gt; io::Result&lt;Vec&lt;Cid&gt;&gt; {
+<span class="kw">fn </span>get_roots_from_v1_header(reader: <span class="kw">impl </span>Read) -&gt; io::Result&lt;NonEmpty&lt;Cid&gt;&gt; {
     <span class="kw">match </span>read_header(reader)<span class="question-mark">? </span>{
-        CarHeader { roots, version: <span class="number">1 </span>} <span class="kw">if </span>!roots.is_empty() =&gt; <span class="prelude-val">Ok</span>(roots),
-        _other_version =&gt; <span class="prelude-val">Err</span>(io::Error::new(
+        CarHeader { roots, version: <span class="number">1 </span>} =&gt; <span class="prelude-val">Ok</span>(roots),
+        other_version =&gt; <span class="prelude-val">Err</span>(io::Error::new(
             Unsupported,
-            <span class="string">&quot;header must be CARv1 with non-empty roots&quot;</span>,
+            <span class="macro">format!</span>(<span class="string">&quot;unsupported CARv1 version {}&quot;</span>, other_version.version),
         )),
     }
 }
