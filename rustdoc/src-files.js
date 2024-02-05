@@ -265,7 +265,7 @@ var srcIndex = JSON.parse('{\
 "if_watch":["",[],["lib.rs","linux.rs"]],\
 "impl_rlp":["",[],["lib.rs"]],\
 "impl_serde":["",[],["lib.rs","serialize.rs"]],\
-"indexmap":["",[["map",[["core",[],["raw.rs"]]],["core.rs","iter.rs","serde_seq.rs","slice.rs"]],["set",[],["iter.rs","slice.rs"]]],["arbitrary.rs","lib.rs","macros.rs","map.rs","mutable_keys.rs","serde.rs","set.rs","util.rs"]],\
+"indexmap":["",[["map",[["core",[],["entry.rs","raw.rs","raw_entry_v1.rs"]]],["core.rs","iter.rs","serde_seq.rs","slice.rs"]],["set",[],["iter.rs","slice.rs"]]],["arbitrary.rs","lib.rs","macros.rs","map.rs","mutable_keys.rs","serde.rs","set.rs","util.rs"]],\
 "indicatif":["",[],["draw_target.rs","format.rs","iter.rs","lib.rs","multi.rs","progress_bar.rs","state.rs","style.rs","term_like.rs"]],\
 "inout":["",[],["errors.rs","inout.rs","inout_buf.rs","lib.rs","reserved.rs"]],\
 "instant":["",[],["lib.rs","native.rs"]],\
