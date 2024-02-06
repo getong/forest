@@ -518,7 +518,7 @@ var srcIndex = JSON.parse('{\
 "tabled_derive":["",[],["attributes.rs","casing_style.rs","error.rs","lib.rs","parse.rs"]],\
 "tap":["",[],["conv.rs","lib.rs","pipe.rs","tap.rs"]],\
 "target_lexicon":["",[],["data_model.rs","host.rs","lib.rs","parse_error.rs","targets.rs","triple.rs"]],\
-"tempfile":["",[["file",[["imp",[],["mod.rs","unix.rs"]]],["mod.rs"]]],["dir.rs","error.rs","lib.rs","spooled.rs","util.rs"]],\
+"tempfile":["",[["dir",[["imp",[],["mod.rs","unix.rs"]]],["mod.rs"]],["file",[["imp",[],["mod.rs","unix.rs"]]],["mod.rs"]]],["error.rs","lib.rs","spooled.rs","util.rs"]],\
 "termios":["",[["os",[],["linux.rs","mod.rs"]]],["ffi.rs","lib.rs"]],\
 "thin_vec":["",[],["lib.rs"]],\
 "thiserror":["",[],["aserror.rs","display.rs","lib.rs"]],\
