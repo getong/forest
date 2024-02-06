@@ -272,6 +272,11 @@
 <a href="#272" id="272">272</a>
 <a href="#273" id="273">273</a>
 <a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -421,6 +426,8 @@
         <span class="kw">let </span>message = <span class="kw-2">&amp;</span><span class="self">self</span>.message;
         <span class="kw">let </span>elapsed_secs = (now - <span class="self">self</span>.start).as_secs_f64();
         <span class="kw">let </span>elapsed_duration = format_duration(Duration::from_secs(elapsed_secs <span class="kw">as </span>u64));
+        <span class="comment">// limit minimum duration to 0.1s to avoid inifinities.
+        </span><span class="kw">let </span>seconds_since_last_msg = (now - <span class="self">self</span>.last_logged).as_secs_f64().max(<span class="number">0.1</span>);
 
         <span class="kw">let </span>at = <span class="kw">match </span><span class="self">self</span>.item_type {
             ItemType::Bytes =&gt; human_bytes(<span class="self">self</span>.completed_items <span class="kw">as </span>f64),
@@ -435,17 +442,17 @@
                     ItemType::Bytes =&gt; human_bytes(total <span class="kw">as </span>f64),
                     ItemType::Items =&gt; total.to_string(),
                 };
-                output += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;, {:0}%&quot;</span>, <span class="self">self</span>.completed_items * <span class="number">100 </span>/ total);
+                output += <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;, {}%&quot;</span>, <span class="self">self</span>.completed_items * <span class="number">100 </span>/ total);
             }
             output
         } <span class="kw">else </span>{
             String::new()
         };
 
-        <span class="kw">let </span>diff = <span class="self">self</span>.completed_items - <span class="self">self</span>.last_logged_items;
+        <span class="kw">let </span>diff = (<span class="self">self</span>.completed_items - <span class="self">self</span>.last_logged_items) <span class="kw">as </span>f64 / seconds_since_last_msg;
         <span class="kw">let </span>speed = <span class="kw">match </span><span class="self">self</span>.item_type {
-            ItemType::Bytes =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}/s&quot;</span>, human_bytes(diff <span class="kw">as </span>f64)),
-            ItemType::Items =&gt; <span class="macro">format!</span>(<span class="string">&quot;{diff} items/s&quot;</span>),
+            ItemType::Bytes =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}/s&quot;</span>, human_bytes(diff)),
+            ItemType::Items =&gt; <span class="macro">format!</span>(<span class="string">&quot;{diff:.0} items/s&quot;</span>),
         };
 
         <span class="macro">format!</span>(<span class="string">&quot;{message} {at}{total}, {speed}, elapsed time: {elapsed_duration}&quot;</span>)
@@ -498,23 +505,26 @@
         progress.total_items = <span class="prelude-val">Some</span>(<span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024</span>);
         progress.set(<span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024</span>);
         progress.last_logged_items = <span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024 </span>/ <span class="number">2</span>;
-        <span class="macro">assert_eq!</span>(
-            progress.msg(now),
-            <span class="string">&quot;test 1 GiB / 1 GiB, 100%, 512 MiB/s, elapsed time: 0s&quot;
+        <span class="comment">// Going from 0MiB to 512MiB in 1s should show 512MiB/S
+        </span><span class="macro">assert_eq!</span>(
+            progress.msg(now + Duration::from_secs(<span class="number">1</span>)),
+            <span class="string">&quot;test 1 GiB / 1 GiB, 100%, 512 MiB/s, elapsed time: 1s&quot;
         </span>);
 
         progress.set(<span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024 </span>/ <span class="number">2</span>);
-        progress.last_logged_items = <span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024 </span>/ <span class="number">3</span>;
-        <span class="macro">assert_eq!</span>(
+        progress.last_logged_items = <span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">128</span>;
+        <span class="comment">// Going from 128MiB to 512MiB in 125s should show (512MiB-128MiB)/125s = ~3.1 MiB/s
+        </span><span class="macro">assert_eq!</span>(
             progress.msg(now + Duration::from_secs(<span class="number">125</span>)),
-            <span class="string">&quot;test 512 MiB / 1 GiB, 50%, 170.7 MiB/s, elapsed time: 2m 5s&quot;
+            <span class="string">&quot;test 512 MiB / 1 GiB, 50%, 3.1 MiB/s, elapsed time: 2m 5s&quot;
         </span>);
 
         progress.set(<span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024 </span>/ <span class="number">10</span>);
-        progress.last_logged_items = <span class="number">1024 </span>* <span class="number">1024 </span>* <span class="number">1024 </span>/ <span class="number">11</span>;
-        <span class="macro">assert_eq!</span>(
+        progress.last_logged_items = <span class="number">1024 </span>* <span class="number">1024</span>;
+        <span class="comment">// Going from 1MiB to 102.4MiB in 10s should show (102.4MiB-1MiB)/10s = ~10.1 MiB/s
+        </span><span class="macro">assert_eq!</span>(
             progress.msg(now + Duration::from_secs(<span class="number">10</span>)),
-            <span class="string">&quot;test 102.4 MiB / 1 GiB, 9%, 9.3 MiB/s, elapsed time: 10s&quot;
+            <span class="string">&quot;test 102.4 MiB / 1 GiB, 9%, 10.1 MiB/s, elapsed time: 10s&quot;
         </span>);
     }
 
@@ -527,22 +537,22 @@
         progress.set(<span class="number">1024</span>);
         progress.last_logged_items = <span class="number">1024 </span>/ <span class="number">2</span>;
         <span class="macro">assert_eq!</span>(
-            progress.msg(now),
-            <span class="string">&quot;test 1024 / 1024, 100%, 512 items/s, elapsed time: 0s&quot;
+            progress.msg(now + Duration::from_secs(<span class="number">1</span>)),
+            <span class="string">&quot;test 1024 / 1024, 100%, 512 items/s, elapsed time: 1s&quot;
         </span>);
 
         progress.set(<span class="number">1024 </span>/ <span class="number">2</span>);
         progress.last_logged_items = <span class="number">1024 </span>/ <span class="number">3</span>;
         <span class="macro">assert_eq!</span>(
             progress.msg(now + Duration::from_secs(<span class="number">125</span>)),
-            <span class="string">&quot;test 512 / 1024, 50%, 171 items/s, elapsed time: 2m 5s&quot;
+            <span class="string">&quot;test 512 / 1024, 50%, 1 items/s, elapsed time: 2m 5s&quot;
         </span>);
 
         progress.set(<span class="number">1024 </span>/ <span class="number">10</span>);
-        progress.last_logged_items = <span class="number">1024 </span>/ <span class="number">11</span>;
+        progress.last_logged_items = <span class="number">0</span>;
         <span class="macro">assert_eq!</span>(
             progress.msg(now + Duration::from_secs(<span class="number">10</span>)),
-            <span class="string">&quot;test 102 / 1024, 9%, 9 items/s, elapsed time: 10s&quot;
+            <span class="string">&quot;test 102 / 1024, 9%, 10 items/s, elapsed time: 10s&quot;
         </span>);
     }
 }
