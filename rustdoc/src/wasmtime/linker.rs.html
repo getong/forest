@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/linker.rs`."><title>linker.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/linker.rs`."><title>linker.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1487,10 +1488,10 @@
 <span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>log::warn;
 <span class="kw">use </span>std::collections::hash_map::{Entry, HashMap};
-<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker;
-<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -1505,7 +1506,7 @@
 /// An important method is [`Linker::instantiate`] which takes a module to
 /// instantiate into the provided store. This method will automatically select
 /// all the right imports for the [`Module`] to be instantiated, and will
-/// otherwise return an error if an import isn&#39;t satisfied.
+/// otherwise return an error if an import isn't satisfied.
 ///
 /// ## Name Resolution
 ///
@@ -1529,7 +1530,7 @@
 ///
 /// ## Type parameter `T`
 ///
-/// It&#39;s worth pointing out that the type parameter `T` on [`Linker&lt;T&gt;`] does
+/// It's worth pointing out that the type parameter `T` on [`Linker&lt;T&gt;`] does
 /// not represent that `T` is stored within a [`Linker`]. Rather the `T` is used
 /// to ensure that linker-defined functions and stores instantiated into all use
 /// the same matching `T` as host state.
@@ -1596,7 +1597,7 @@
     HostFunc(Arc&lt;HostFunc&gt;),
 }
 
-<span class="doccomment">/// This is a sort of slimmed down `ExternType` which notably doesn&#39;t have a
+<span class="doccomment">/// This is a sort of slimmed down `ExternType` which notably doesn't have a
 /// `FuncType`, which is an allocation, and additionally retains the current
 /// size of the table/memory.
 </span><span class="attr">#[derive(Clone)]
@@ -1618,13 +1619,13 @@
         /// For more information also see
         /// [`Func::wrapN_async`](crate::Func::wrap1_async).
         </span><span class="attr">#[allow(non_snake_case)]
-        #[cfg(feature = <span class="string">&quot;async&quot;</span>)]
-        #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+        #[cfg(feature = <span class="string">"async"</span>)]
+        #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
         </span><span class="kw">pub fn </span>[&lt;func_wrap <span class="macro-nonterminal">$num </span>_async&gt;]&lt;$(<span class="macro-nonterminal">$args</span>,)* R&gt;(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
             module: <span class="kw-2">&amp;</span>str,
             name: <span class="kw-2">&amp;</span>str,
-            func: <span class="kw">impl for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Fn(Caller&lt;<span class="lifetime">&#39;a</span>, T&gt;, $(<span class="macro-nonterminal">$args</span>),<span class="kw-2">*</span>) -&gt; Box&lt;<span class="kw">dyn </span>Future&lt;Output = R&gt; + Send + <span class="lifetime">&#39;a</span>&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+            func: <span class="kw">impl for</span>&lt;<span class="lifetime">'a</span>&gt; Fn(Caller&lt;<span class="lifetime">'a</span>, T&gt;, $(<span class="macro-nonterminal">$args</span>),<span class="kw-2">*</span>) -&gt; Box&lt;<span class="kw">dyn </span>Future&lt;Output = R&gt; + Send + <span class="lifetime">'a</span>&gt; + Send + Sync + <span class="lifetime">'static</span>,
         ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;
         <span class="kw">where
             </span>$(<span class="macro-nonterminal">$args</span>: <span class="kw">crate</span>::WasmTy,)*
@@ -1633,13 +1634,13 @@
             <span class="macro">assert!</span>(
                 <span class="self">self</span>.engine.config().async_support,
                 <span class="macro">concat!</span>(
-                    <span class="string">&quot;cannot use `func_wrap&quot;</span>,
+                    <span class="string">"cannot use `func_wrap"</span>,
                     <span class="macro-nonterminal">$num</span>,
-                    <span class="string">&quot;_async` without enabling async support on the config&quot;</span>,
+                    <span class="string">"_async` without enabling async support on the config"</span>,
                 ),
             );
-            <span class="self">self</span>.func_wrap(module, name, <span class="kw">move </span>|<span class="kw-2">mut </span>caller: Caller&lt;<span class="lifetime">&#39;_</span>, T&gt;, $(<span class="macro-nonterminal">$args</span>: <span class="macro-nonterminal">$args</span>),<span class="kw-2">*</span>| {
-                <span class="kw">let </span>async_cx = caller.store.as_context_mut().<span class="number">0</span>.async_cx().expect(<span class="string">&quot;Attempt to start async function on dying fiber&quot;</span>);
+            <span class="self">self</span>.func_wrap(module, name, <span class="kw">move </span>|<span class="kw-2">mut </span>caller: Caller&lt;<span class="lifetime">'_</span>, T&gt;, $(<span class="macro-nonterminal">$args</span>: <span class="macro-nonterminal">$args</span>),<span class="kw-2">*</span>| {
+                <span class="kw">let </span>async_cx = caller.store.as_context_mut().<span class="number">0</span>.async_cx().expect(<span class="string">"Attempt to start async function on dying fiber"</span>);
                 <span class="kw">let </span><span class="kw-2">mut </span>future = Pin::from(func(caller, $(<span class="macro-nonterminal">$args</span>),<span class="kw-2">*</span>));
                 <span class="kw">match unsafe </span>{ async_cx.block_on(future.as_mut()) } {
                     <span class="prelude-val">Ok</span>(ret) =&gt; ret.into_fallible(),
@@ -1688,14 +1689,14 @@
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// # let engine = Engine::default();
     /// let mut linker = Linker::&lt;()&gt;::new(&amp;engine);
-    /// linker.func_wrap(&quot;&quot;, &quot;&quot;, || {})?;
+    /// linker.func_wrap("", "", || {})?;
     ///
     /// // by default, duplicates are disallowed
-    /// assert!(linker.func_wrap(&quot;&quot;, &quot;&quot;, || {}).is_err());
+    /// assert!(linker.func_wrap("", "", || {}).is_err());
     ///
     /// // but shadowing can be configured to be allowed as well
     /// linker.allow_shadowing(true);
-    /// linker.func_wrap(&quot;&quot;, &quot;&quot;, || {})?;
+    /// linker.func_wrap("", "", || {})?;
     /// # Ok(())
     /// # }
     /// ```
@@ -1718,11 +1719,11 @@
     /// # use wasmtime::*;
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// # let engine = Engine::default();
-    /// # let module = Module::new(&amp;engine, &quot;(module)&quot;)?;
+    /// # let module = Module::new(&amp;engine, "(module)")?;
     /// # let mut store = Store::new(&amp;engine, ());
     /// let mut linker = Linker::new(&amp;engine);
     /// linker.allow_unknown_exports(true);
-    /// linker.module(&amp;mut store, &quot;mod&quot;, &amp;module)?;
+    /// linker.module(&amp;mut store, "mod", &amp;module)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -1745,7 +1746,7 @@
     /// # use wasmtime::*;
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// # let engine = Engine::default();
-    /// # let module = Module::new(&amp;engine, &quot;(module (import \&quot;unknown\&quot; \&quot;import\&quot; (func)))&quot;)?;
+    /// # let module = Module::new(&amp;engine, "(module (import \"unknown\" \"import\" (func)))")?;
     /// # let mut store = Store::new(&amp;engine, ());
     /// let mut linker = Linker::new(&amp;engine);
     /// linker.define_unknown_imports_as_traps(&amp;module)?;
@@ -1753,8 +1754,8 @@
     /// # Ok(())
     /// # }
     /// ```
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
     </span><span class="kw">pub fn </span>define_unknown_imports_as_traps(<span class="kw-2">&amp;mut </span><span class="self">self</span>, module: <span class="kw-2">&amp;</span>Module) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">for </span>import <span class="kw">in </span>module.imports() {
             <span class="kw">if let </span><span class="prelude-val">Err</span>(import_err) = <span class="self">self</span>._get_by_import(<span class="kw-2">&amp;</span>import) {
@@ -1781,7 +1782,7 @@
     /// # use wasmtime::*;
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// # let engine = Engine::default();
-    /// # let module = Module::new(&amp;engine, &quot;(module (import \&quot;unknown\&quot; \&quot;import\&quot; (func)))&quot;)?;
+    /// # let module = Module::new(&amp;engine, "(module (import \"unknown\" \"import\" (func)))")?;
     /// # let mut store = Store::new(&amp;engine, ());
     /// let mut linker = Linker::new(&amp;engine);
     /// linker.define_unknown_imports_as_default_values(&amp;module)?;
@@ -1789,8 +1790,8 @@
     /// # Ok(())
     /// # }
     /// ```
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
     </span><span class="kw">pub fn </span>define_unknown_imports_as_default_values(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         module: <span class="kw-2">&amp;</span>Module,
@@ -1846,15 +1847,15 @@
     /// let mut linker = Linker::new(&amp;engine);
     /// let ty = GlobalType::new(ValType::I32, Mutability::Const);
     /// let global = Global::new(&amp;mut store, ty, Val::I32(0x1234))?;
-    /// linker.define(&amp;store, &quot;host&quot;, &quot;offset&quot;, global)?;
+    /// linker.define(&amp;store, "host", "offset", global)?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;host&quot; &quot;offset&quot; (global i32))
+    ///         (import "host" "offset" (global i32))
     ///         (memory 1)
-    ///         (data (global.get 0) &quot;foo&quot;)
+    ///         (data (global.get 0) "foo")
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
     /// linker.instantiate(&amp;mut store, &amp;module)?;
     /// # Ok(())
@@ -1894,14 +1895,14 @@
     <span class="doccomment">/// Creates a [`Func::new`]-style function named in this linker.
     ///
     /// For more information see [`Linker::func_wrap`].
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
     </span><span class="kw">pub fn </span>func_new(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         module: <span class="kw-2">&amp;</span>str,
         name: <span class="kw-2">&amp;</span>str,
         ty: FuncType,
-        func: <span class="kw">impl </span>Fn(Caller&lt;<span class="lifetime">&#39;_</span>, T&gt;, <span class="kw-2">&amp;</span>[Val], <span class="kw-2">&amp;mut </span>[Val]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+        func: <span class="kw">impl </span>Fn(Caller&lt;<span class="lifetime">'_</span>, T&gt;, <span class="kw-2">&amp;</span>[Val], <span class="kw-2">&amp;mut </span>[Val]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync + <span class="lifetime">'static</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt; {
         <span class="kw">let </span>func = HostFunc::new(<span class="kw-2">&amp;</span><span class="self">self</span>.engine, ty, func);
         <span class="kw">let </span>key = <span class="self">self</span>.import_key(module, <span class="prelude-val">Some</span>(name));
@@ -1912,14 +1913,14 @@
     <span class="doccomment">/// Creates a [`Func::new_unchecked`]-style function named in this linker.
     ///
     /// For more information see [`Linker::func_wrap`].
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
     </span><span class="kw">pub unsafe fn </span>func_new_unchecked(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         module: <span class="kw-2">&amp;</span>str,
         name: <span class="kw-2">&amp;</span>str,
         ty: FuncType,
-        func: <span class="kw">impl </span>Fn(Caller&lt;<span class="lifetime">&#39;_</span>, T&gt;, <span class="kw-2">&amp;mut </span>[ValRaw]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+        func: <span class="kw">impl </span>Fn(Caller&lt;<span class="lifetime">'_</span>, T&gt;, <span class="kw-2">&amp;mut </span>[ValRaw]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync + <span class="lifetime">'static</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt; {
         <span class="kw">let </span>func = HostFunc::new_unchecked(<span class="kw-2">&amp;</span><span class="self">self</span>.engine, ty, func);
         <span class="kw">let </span>key = <span class="self">self</span>.import_key(module, <span class="prelude-val">Some</span>(name));
@@ -1930,8 +1931,8 @@
     <span class="doccomment">/// Creates a [`Func::new_async`]-style function named in this linker.
     ///
     /// For more information see [`Linker::func_wrap`].
-    </span><span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, feature = <span class="string">&quot;cranelift&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(all(feature = <span class="string">&quot;async&quot;</span>, feature = <span class="string">&quot;cranelift&quot;</span>))))]
+    </span><span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, feature = <span class="string">"cranelift"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(all(feature = <span class="string">"async"</span>, feature = <span class="string">"cranelift"</span>))))]
     </span><span class="kw">pub fn </span>func_new_async&lt;F&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         module: <span class="kw-2">&amp;</span>str,
@@ -1940,18 +1941,18 @@
         func: F,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;
     <span class="kw">where
-        </span>F: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Fn(
-                Caller&lt;<span class="lifetime">&#39;a</span>, T&gt;,
-                <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Val],
-                <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[Val],
-            ) -&gt; Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">&#39;a</span>&gt;
+        </span>F: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Fn(
+                Caller&lt;<span class="lifetime">'a</span>, T&gt;,
+                <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[Val],
+                <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[Val],
+            ) -&gt; Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">'a</span>&gt;
             + Send
             + Sync
-            + <span class="lifetime">&#39;static</span>,
+            + <span class="lifetime">'static</span>,
     {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.engine.config().async_support,
-            <span class="string">&quot;cannot use `func_new_async` without enabling async support in the config&quot;
+            <span class="string">"cannot use `func_new_async` without enabling async support in the config"
         </span>);
         <span class="self">self</span>.func_new(module, name, ty, <span class="kw">move </span>|<span class="kw-2">mut </span>caller, params, results| {
             <span class="kw">let </span>async_cx = caller
@@ -1959,7 +1960,7 @@
                 .as_context_mut()
                 .<span class="number">0
                 </span>.async_cx()
-                .expect(<span class="string">&quot;Attempt to spawn new function on dying fiber&quot;</span>);
+                .expect(<span class="string">"Attempt to spawn new function on dying fiber"</span>);
             <span class="kw">let </span><span class="kw-2">mut </span>future = Pin::from(func(caller, params, results));
             <span class="kw">match unsafe </span>{ async_cx.block_on(future.as_mut()) } {
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(())) =&gt; <span class="prelude-val">Ok</span>(()),
@@ -2001,19 +2002,19 @@
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// # let engine = Engine::default();
     /// let mut linker = Linker::new(&amp;engine);
-    /// linker.func_wrap(&quot;host&quot;, &quot;double&quot;, |x: i32| x * 2)?;
-    /// linker.func_wrap(&quot;host&quot;, &quot;log_i32&quot;, |x: i32| println!(&quot;{}&quot;, x))?;
-    /// linker.func_wrap(&quot;host&quot;, &quot;log_str&quot;, |caller: Caller&lt;&#39;_, ()&gt;, ptr: i32, len: i32| {
+    /// linker.func_wrap("host", "double", |x: i32| x * 2)?;
+    /// linker.func_wrap("host", "log_i32", |x: i32| println!("{}", x))?;
+    /// linker.func_wrap("host", "log_str", |caller: Caller&lt;'_, ()&gt;, ptr: i32, len: i32| {
     ///     // ...
     /// })?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;host&quot; &quot;double&quot; (func (param i32) (result i32)))
-    ///         (import &quot;host&quot; &quot;log_i32&quot; (func (param i32)))
-    ///         (import &quot;host&quot; &quot;log_str&quot; (func (param i32 i32)))
+    ///         (import "host" "double" (func (param i32) (result i32)))
+    ///         (import "host" "log_i32" (func (param i32)))
+    ///         (import "host" "log_str" (func (param i32 i32)))
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
     ///
     /// // instantiate in multiple different stores
@@ -2072,23 +2073,23 @@
     /// let mut linker = Linker::new(&amp;engine);
     ///
     /// // Instantiate a small instance...
-    /// let wat = r#&quot;(module (func (export &quot;run&quot;) ))&quot;#;
+    /// let wat = r#"(module (func (export "run") ))"#;
     /// let module = Module::new(&amp;engine, wat)?;
     /// let instance = linker.instantiate(&amp;mut store, &amp;module)?;
     ///
     /// // ... and inform the linker that the name of this instance is
     /// // `instance1`. This defines the `instance1::run` name for our next
     /// // module to use.
-    /// linker.instance(&amp;mut store, &quot;instance1&quot;, instance)?;
+    /// linker.instance(&amp;mut store, "instance1", instance)?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;instance1&quot; &quot;run&quot; (func $instance1_run))
-    ///         (func (export &quot;run&quot;)
+    ///         (import "instance1" "run" (func $instance1_run))
+    ///         (func (export "run")
     ///             call $instance1_run
     ///         )
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
     /// let instance = linker.instantiate(&amp;mut store, &amp;module)?;
     /// # Ok(())
@@ -2131,7 +2132,7 @@
     /// For Reactors, a single instance is created, and an initialization
     /// function is called, and then its exports may be called.
     ///
-    /// Ordinary modules which don&#39;t declare themselves to be either Commands
+    /// Ordinary modules which don't declare themselves to be either Commands
     /// or Reactors are treated as Reactors without any initialization calls.
     ///
     /// [Commands and Reactors]: https://github.com/WebAssembly/WASI/blob/main/legacy/application-abi.md#current-unstable-abi
@@ -2162,18 +2163,18 @@
     /// // Instantiate a small instance and inform the linker that the name of
     /// // this instance is `instance1`. This defines the `instance1::run` name
     /// // for our next module to use.
-    /// let wat = r#&quot;(module (func (export &quot;run&quot;) ))&quot;#;
+    /// let wat = r#"(module (func (export "run") ))"#;
     /// let module = Module::new(&amp;engine, wat)?;
-    /// linker.module(&amp;mut store, &quot;instance1&quot;, &amp;module)?;
+    /// linker.module(&amp;mut store, "instance1", &amp;module)?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;instance1&quot; &quot;run&quot; (func $instance1_run))
-    ///         (func (export &quot;run&quot;)
+    ///         (import "instance1" "run" (func $instance1_run))
+    ///         (func (export "run")
     ///             call $instance1_run
     ///         )
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
     /// let instance = linker.instantiate(&amp;mut store, &amp;module)?;
     /// # Ok(())
@@ -2191,49 +2192,49 @@
     ///
     /// // Create a Command that attempts to count the number of times it is run, but is
     /// // foiled by each call getting a new instance.
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
     ///         (global $counter (mut i32) (i32.const 0))
-    ///         (func (export &quot;_start&quot;)
+    ///         (func (export "_start")
     ///             (global.set $counter (i32.add (global.get $counter) (i32.const 1)))
     ///         )
-    ///         (func (export &quot;read_counter&quot;) (result i32)
+    ///         (func (export "read_counter") (result i32)
     ///             (global.get $counter)
     ///         )
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
-    /// linker.module(&amp;mut store, &quot;commander&quot;, &amp;module)?;
-    /// let run = linker.get_default(&amp;mut store, &quot;&quot;)?
+    /// linker.module(&amp;mut store, "commander", &amp;module)?;
+    /// let run = linker.get_default(&amp;mut store, "")?
     ///     .typed::&lt;(), ()&gt;(&amp;store)?
     ///     .clone();
     /// run.call(&amp;mut store, ())?;
     /// run.call(&amp;mut store, ())?;
     /// run.call(&amp;mut store, ())?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;commander&quot; &quot;_start&quot; (func $commander_start))
-    ///         (import &quot;commander&quot; &quot;read_counter&quot; (func $commander_read_counter (result i32)))
-    ///         (func (export &quot;run&quot;) (result i32)
+    ///         (import "commander" "_start" (func $commander_start))
+    ///         (import "commander" "read_counter" (func $commander_read_counter (result i32)))
+    ///         (func (export "run") (result i32)
     ///             call $commander_start
     ///             call $commander_start
     ///             call $commander_start
     ///             call $commander_read_counter
     ///         )
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
-    /// linker.module(&amp;mut store, &quot;&quot;, &amp;module)?;
-    /// let run = linker.get(&amp;mut store, &quot;&quot;, &quot;run&quot;).unwrap().into_func().unwrap();
+    /// linker.module(&amp;mut store, "", &amp;module)?;
+    /// let run = linker.get(&amp;mut store, "", "run").unwrap().into_func().unwrap();
     /// let count = run.typed::&lt;(), i32&gt;(&amp;store)?.call(&amp;mut store, ())?;
-    /// assert_eq!(count, 0, &quot;a Command should get a fresh instance on each invocation&quot;);
+    /// assert_eq!(count, 0, "a Command should get a fresh instance on each invocation");
     ///
     /// # Ok(())
     /// # }
     /// ```
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
     </span><span class="kw">pub fn </span>module(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
@@ -2241,18 +2242,18 @@
         module: <span class="kw-2">&amp;</span>Module,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;
     <span class="kw">where
-        </span>T: <span class="lifetime">&#39;static</span>,
+        </span>T: <span class="lifetime">'static</span>,
     {
         <span class="comment">// NB: this is intended to function the same as `Linker::module_async`,
         // they should be kept in sync.
 
-        // This assert isn&#39;t strictly necessary since it&#39;ll bottom out in the
+        // This assert isn't strictly necessary since it'll bottom out in the
         // `HostFunc::to_func` method anyway. This is placed earlier for this
         // function though to prevent the functions created here from delaying
-        // the panic until they&#39;re called.
+        // the panic until they're called.
         </span><span class="macro">assert!</span>(
             Engine::same(<span class="kw-2">&amp;</span><span class="self">self</span>.engine, store.as_context().engine()),
-            <span class="string">&quot;different engines for this linker and the store provided&quot;
+            <span class="string">"different engines for this linker and the store provided"
         </span>);
         <span class="kw">match </span>ModuleKind::categorize(module)<span class="question-mark">? </span>{
             ModuleKind::Command =&gt; {
@@ -2269,7 +2270,7 @@
                                 </span><span class="kw">let </span>instance = instance_pre.instantiate(<span class="kw-2">&amp;mut </span>caller)<span class="question-mark">?</span>;
 
                                 <span class="comment">// `unwrap()` everything here because we know the instance contains a
-                                // function export with the given name and signature because we&#39;re
+                                // function export with the given name and signature because we're
                                 // iterating over the module it was instantiated from.
                                 </span>instance
                                     .get_export(<span class="kw-2">&amp;mut </span>caller, <span class="kw-2">&amp;</span>export_name)
@@ -2287,11 +2288,11 @@
             ModuleKind::Reactor =&gt; {
                 <span class="kw">let </span>instance = <span class="self">self</span>.instantiate(<span class="kw-2">&amp;mut </span>store, <span class="kw-2">&amp;</span>module)<span class="question-mark">?</span>;
 
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(export) = instance.get_export(<span class="kw-2">&amp;mut </span>store, <span class="string">&quot;_initialize&quot;</span>) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(export) = instance.get_export(<span class="kw-2">&amp;mut </span>store, <span class="string">"_initialize"</span>) {
                     <span class="kw">if let </span>Extern::Func(func) = export {
                         func.typed::&lt;(), ()&gt;(<span class="kw-2">&amp;</span>store)
                             .and_then(|f| f.call(<span class="kw-2">&amp;mut </span>store, ()).map_err(Into::into))
-                            .context(<span class="string">&quot;calling the Reactor initialization function&quot;</span>)<span class="question-mark">?</span>;
+                            .context(<span class="string">"calling the Reactor initialization function"</span>)<span class="question-mark">?</span>;
                     }
                 }
 
@@ -2303,8 +2304,8 @@
     <span class="doccomment">/// Define automatic instantiations of a [`Module`] in this linker.
     ///
     /// This is the same as [`Linker::module`], except for async `Store`s.
-    </span><span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, feature = <span class="string">&quot;cranelift&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(all(feature = <span class="string">&quot;async&quot;</span>, feature = <span class="string">&quot;cranelift&quot;</span>))))]
+    </span><span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, feature = <span class="string">"cranelift"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(all(feature = <span class="string">"async"</span>, feature = <span class="string">"cranelift"</span>))))]
     </span><span class="kw">pub async fn </span>module_async(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
@@ -2312,13 +2313,13 @@
         module: <span class="kw-2">&amp;</span>Module,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;
     <span class="kw">where
-        </span>T: Send + <span class="lifetime">&#39;static</span>,
+        </span>T: Send + <span class="lifetime">'static</span>,
     {
         <span class="comment">// NB: this is intended to function the same as `Linker::module`, they
         // should be kept in sync.
         </span><span class="macro">assert!</span>(
             Engine::same(<span class="kw-2">&amp;</span><span class="self">self</span>.engine, store.as_context().engine()),
-            <span class="string">&quot;different engines for this linker and the store provided&quot;
+            <span class="string">"different engines for this linker and the store provided"
         </span>);
         <span class="kw">match </span>ModuleKind::categorize(module)<span class="question-mark">? </span>{
             ModuleKind::Command =&gt; <span class="self">self</span>.command(
@@ -2352,14 +2353,14 @@
             ModuleKind::Reactor =&gt; {
                 <span class="kw">let </span>instance = <span class="self">self</span>.instantiate_async(<span class="kw-2">&amp;mut </span>store, <span class="kw-2">&amp;</span>module).<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(export) = instance.get_export(<span class="kw-2">&amp;mut </span>store, <span class="string">&quot;_initialize&quot;</span>) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(export) = instance.get_export(<span class="kw-2">&amp;mut </span>store, <span class="string">"_initialize"</span>) {
                     <span class="kw">if let </span>Extern::Func(func) = export {
                         <span class="kw">let </span>func = func
                             .typed::&lt;(), ()&gt;(<span class="kw-2">&amp;</span>store)
-                            .context(<span class="string">&quot;loading the Reactor initialization function&quot;</span>)<span class="question-mark">?</span>;
+                            .context(<span class="string">"loading the Reactor initialization function"</span>)<span class="question-mark">?</span>;
                         func.call_async(<span class="kw-2">&amp;mut </span>store, ())
                             .<span class="kw">await
-                            </span>.context(<span class="string">&quot;calling the Reactor initialization function&quot;</span>)<span class="question-mark">?</span>;
+                            </span>.context(<span class="string">"calling the Reactor initialization function"</span>)<span class="question-mark">?</span>;
                     }
                 }
 
@@ -2376,7 +2377,7 @@
         mk_func: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>StoreContextMut&lt;T&gt;, <span class="kw-2">&amp;</span>FuncType, String, InstancePre&lt;T&gt;) -&gt; Func,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;
     <span class="kw">where
-        </span>T: <span class="lifetime">&#39;static</span>,
+        </span>T: <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span><span class="kw-2">mut </span>store = store.as_context_mut();
         <span class="kw">for </span>export <span class="kw">in </span>module.exports() {
@@ -2386,41 +2387,41 @@
                 <span class="kw">let </span>func = mk_func(<span class="kw-2">&amp;mut </span>store, func_ty, export_name, instance_pre);
                 <span class="kw">let </span>key = <span class="self">self</span>.import_key(module_name, <span class="prelude-val">Some</span>(export.name()));
                 <span class="self">self</span>.insert(key, Definition::new(store.<span class="number">0</span>, func.into()))<span class="question-mark">?</span>;
-            } <span class="kw">else if </span>export.name() == <span class="string">&quot;memory&quot; </span>&amp;&amp; export.ty().memory().is_some() {
-                <span class="comment">// Allow an exported &quot;memory&quot; memory for now.
-            </span>} <span class="kw">else if </span>export.name() == <span class="string">&quot;__indirect_function_table&quot; </span>&amp;&amp; export.ty().table().is_some()
+            } <span class="kw">else if </span>export.name() == <span class="string">"memory" </span>&amp;&amp; export.ty().memory().is_some() {
+                <span class="comment">// Allow an exported "memory" memory for now.
+            </span>} <span class="kw">else if </span>export.name() == <span class="string">"__indirect_function_table" </span>&amp;&amp; export.ty().table().is_some()
             {
-                <span class="comment">// Allow an exported &quot;__indirect_function_table&quot; table for now.
-            </span>} <span class="kw">else if </span>export.name() == <span class="string">&quot;table&quot; </span>&amp;&amp; export.ty().table().is_some() {
-                <span class="comment">// Allow an exported &quot;table&quot; table for now.
-            </span>} <span class="kw">else if </span>export.name() == <span class="string">&quot;__data_end&quot; </span>&amp;&amp; export.ty().global().is_some() {
-                <span class="comment">// Allow an exported &quot;__data_end&quot; memory for compatibility with toolchains
-                // which use --export-dynamic, which unfortunately doesn&#39;t work the way
+                <span class="comment">// Allow an exported "__indirect_function_table" table for now.
+            </span>} <span class="kw">else if </span>export.name() == <span class="string">"table" </span>&amp;&amp; export.ty().table().is_some() {
+                <span class="comment">// Allow an exported "table" table for now.
+            </span>} <span class="kw">else if </span>export.name() == <span class="string">"__data_end" </span>&amp;&amp; export.ty().global().is_some() {
+                <span class="comment">// Allow an exported "__data_end" memory for compatibility with toolchains
+                // which use --export-dynamic, which unfortunately doesn't work the way
                 // we want it to.
-                </span><span class="macro">warn!</span>(<span class="string">&quot;command module exporting &#39;__data_end&#39; is deprecated&quot;</span>);
-            } <span class="kw">else if </span>export.name() == <span class="string">&quot;__heap_base&quot; </span>&amp;&amp; export.ty().global().is_some() {
-                <span class="comment">// Allow an exported &quot;__data_end&quot; memory for compatibility with toolchains
-                // which use --export-dynamic, which unfortunately doesn&#39;t work the way
+                </span><span class="macro">warn!</span>(<span class="string">"command module exporting '__data_end' is deprecated"</span>);
+            } <span class="kw">else if </span>export.name() == <span class="string">"__heap_base" </span>&amp;&amp; export.ty().global().is_some() {
+                <span class="comment">// Allow an exported "__data_end" memory for compatibility with toolchains
+                // which use --export-dynamic, which unfortunately doesn't work the way
                 // we want it to.
-                </span><span class="macro">warn!</span>(<span class="string">&quot;command module exporting &#39;__heap_base&#39; is deprecated&quot;</span>);
-            } <span class="kw">else if </span>export.name() == <span class="string">&quot;__dso_handle&quot; </span>&amp;&amp; export.ty().global().is_some() {
-                <span class="comment">// Allow an exported &quot;__dso_handle&quot; memory for compatibility with toolchains
-                // which use --export-dynamic, which unfortunately doesn&#39;t work the way
+                </span><span class="macro">warn!</span>(<span class="string">"command module exporting '__heap_base' is deprecated"</span>);
+            } <span class="kw">else if </span>export.name() == <span class="string">"__dso_handle" </span>&amp;&amp; export.ty().global().is_some() {
+                <span class="comment">// Allow an exported "__dso_handle" memory for compatibility with toolchains
+                // which use --export-dynamic, which unfortunately doesn't work the way
                 // we want it to.
-                </span><span class="macro">warn!</span>(<span class="string">&quot;command module exporting &#39;__dso_handle&#39; is deprecated&quot;</span>)
-            } <span class="kw">else if </span>export.name() == <span class="string">&quot;__rtti_base&quot; </span>&amp;&amp; export.ty().global().is_some() {
-                <span class="comment">// Allow an exported &quot;__rtti_base&quot; memory for compatibility with
+                </span><span class="macro">warn!</span>(<span class="string">"command module exporting '__dso_handle' is deprecated"</span>)
+            } <span class="kw">else if </span>export.name() == <span class="string">"__rtti_base" </span>&amp;&amp; export.ty().global().is_some() {
+                <span class="comment">// Allow an exported "__rtti_base" memory for compatibility with
                 // AssemblyScript.
-                </span><span class="macro">warn!</span>(<span class="string">&quot;command module exporting &#39;__rtti_base&#39; is deprecated; pass `--runtime half` to the AssemblyScript compiler&quot;</span>);
+                </span><span class="macro">warn!</span>(<span class="string">"command module exporting '__rtti_base' is deprecated; pass `--runtime half` to the AssemblyScript compiler"</span>);
             } <span class="kw">else if </span>!<span class="self">self</span>.allow_unknown_exports {
-                <span class="macro">bail!</span>(<span class="string">&quot;command export &#39;{}&#39; is not a function&quot;</span>, export.name());
+                <span class="macro">bail!</span>(<span class="string">"command export '{}' is not a function"</span>, export.name());
             }
         }
 
         <span class="prelude-val">Ok</span>(<span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Aliases one item&#39;s name as another.
+    <span class="doccomment">/// Aliases one item's name as another.
     ///
     /// This method will alias an item with the specified `module` and `name`
     /// under a new name of `as_module` and `as_name`.
@@ -2428,7 +2429,7 @@
     /// # Errors
     ///
     /// Returns an error if any shadowing violations happen while defining new
-    /// items, or if the original item wasn&#39;t defined.
+    /// items, or if the original item wasn't defined.
     </span><span class="kw">pub fn </span>alias(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         module: <span class="kw-2">&amp;</span>str,
@@ -2440,12 +2441,12 @@
         <span class="kw">let </span>dst = <span class="self">self</span>.import_key(as_module, <span class="prelude-val">Some</span>(as_name));
         <span class="kw">match </span><span class="self">self</span>.map.get(<span class="kw-2">&amp;</span>src).cloned() {
             <span class="prelude-val">Some</span>(item) =&gt; <span class="self">self</span>.insert(dst, item)<span class="question-mark">?</span>,
-            <span class="prelude-val">None </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;no item named `{}::{}` defined&quot;</span>, module, name),
+            <span class="prelude-val">None </span>=&gt; <span class="macro">bail!</span>(<span class="string">"no item named `{}::{}` defined"</span>, module, name),
         }
         <span class="prelude-val">Ok</span>(<span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Aliases one module&#39;s name as another.
+    <span class="doccomment">/// Aliases one module's name as another.
     ///
     /// This method will alias all currently defined under `module` to also be
     /// defined under the name `as_module` too.
@@ -2480,10 +2481,10 @@
             Entry::Occupied(<span class="kw">_</span>) <span class="kw">if </span>!<span class="self">self</span>.allow_shadowing =&gt; {
                 <span class="kw">let </span>module = <span class="kw-2">&amp;</span><span class="self">self</span>.strings[key.module];
                 <span class="kw">let </span>desc = <span class="kw">match </span><span class="self">self</span>.strings.get(key.name) {
-                    <span class="prelude-val">Some</span>(name) =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}::{}&quot;</span>, module, name),
+                    <span class="prelude-val">Some</span>(name) =&gt; <span class="macro">format!</span>(<span class="string">"{}::{}"</span>, module, name),
                     <span class="prelude-val">None </span>=&gt; module.to_string(),
                 };
-                <span class="macro">bail!</span>(<span class="string">&quot;import of `{}` defined twice&quot;</span>, desc)
+                <span class="macro">bail!</span>(<span class="string">"import of `{}` defined twice"</span>, desc)
             }
             Entry::Occupied(<span class="kw-2">mut </span>o) =&gt; {
                 o.insert(item);
@@ -2527,7 +2528,7 @@
     /// incorrect signature or if it was not previously defined then an error
     /// will be returned because the import can not be satisfied.
     ///
-    /// Per the WebAssembly spec, instantiation includes running the module&#39;s
+    /// Per the WebAssembly spec, instantiation includes running the module's
     /// start function, if it has one (not to be confused with the `_start`
     /// function, which is not run).
     ///
@@ -2553,13 +2554,13 @@
     /// # let engine = Engine::default();
     /// # let mut store = Store::new(&amp;engine, ());
     /// let mut linker = Linker::new(&amp;engine);
-    /// linker.func_wrap(&quot;host&quot;, &quot;double&quot;, |x: i32| x * 2)?;
+    /// linker.func_wrap("host", "double", |x: i32| x * 2)?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;host&quot; &quot;double&quot; (func (param i32) (result i32)))
+    ///         (import "host" "double" (func (param i32) (result i32)))
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
     /// linker.instantiate(&amp;mut store, &amp;module)?;
     /// # Ok(())
@@ -2576,8 +2577,8 @@
 
     <span class="doccomment">/// Attempts to instantiate the `module` provided. This is the same as
     /// [`Linker::instantiate`], except for async `Store`s.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
-    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="kw">pub async fn </span>instantiate_async(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
@@ -2592,7 +2593,7 @@
     </span>}
 
     <span class="doccomment">/// Performs all checks necessary for instantiating `module` with this
-    /// linker, except that instantiation doesn&#39;t actually finish.
+    /// linker, except that instantiation doesn't actually finish.
     ///
     /// This method is used for front-loading type-checking information as well
     /// as collecting the imports to use to instantiate a module with. The
@@ -2612,13 +2613,13 @@
     /// # let engine = Engine::default();
     /// # let mut store = Store::new(&amp;engine, ());
     /// let mut linker = Linker::new(&amp;engine);
-    /// linker.func_wrap(&quot;host&quot;, &quot;double&quot;, |x: i32| x * 2)?;
+    /// linker.func_wrap("host", "double", |x: i32| x * 2)?;
     ///
-    /// let wat = r#&quot;
+    /// let wat = r#"
     ///     (module
-    ///         (import &quot;host&quot; &quot;double&quot; (func (param i32) (result i32)))
+    ///         (import "host" "double" (func (param i32) (result i32)))
     ///     )
-    /// &quot;#;
+    /// "#;
     /// let module = Module::new(&amp;engine, wat)?;
     /// let instance_pre = linker.instantiate_pre(&amp;module)?;
     ///
@@ -2650,9 +2651,9 @@
     /// per-se. If one is not provided, such as the with the `instantiate_pre`
     /// API, then the type information used for memories and tables will reflect
     /// their size when inserted into the linker rather than their current size.
-    /// This isn&#39;t expected to be much of a problem though since
+    /// This isn't expected to be much of a problem though since
     /// per-store-`Linker` types are likely using `.instantiate(..)` and
-    /// per-`Engine` linkers don&#39;t have memories/tables in them.
+    /// per-`Engine` linkers don't have memories/tables in them.
     </span><span class="kw">fn </span>_instantiate_pre(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         module: <span class="kw-2">&amp;</span>Module,
@@ -2684,10 +2685,10 @@
     ///
     /// This function will panic if the `store` provided does not come from the
     /// same [`Engine`] that this linker was created with.
-    </span><span class="kw">pub fn </span>iter&lt;<span class="lifetime">&#39;a</span>: <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;p</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt; + <span class="lifetime">&#39;p</span>,
-    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str, Extern)&gt; + <span class="lifetime">&#39;p </span>{
+    </span><span class="kw">pub fn </span>iter&lt;<span class="lifetime">'a</span>: <span class="lifetime">'p</span>, <span class="lifetime">'p</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
+        <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt; + <span class="lifetime">'p</span>,
+    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str, Extern)&gt; + <span class="lifetime">'p </span>{
         <span class="self">self</span>.map.iter().map(<span class="kw">move </span>|(key, item)| {
             <span class="kw">let </span>store = store.as_context_mut();
             (
@@ -2754,10 +2755,10 @@
         }
     }
 
-    <span class="doccomment">/// Returns the &quot;default export&quot; of a module.
+    <span class="doccomment">/// Returns the "default export" of a module.
     ///
-    /// An export with an empty string is considered to be a &quot;default export&quot;.
-    /// &quot;_start&quot; is also recognized for compatibility.
+    /// An export with an empty string is considered to be a "default export".
+    /// "_start" is also recognized for compatibility.
     ///
     /// # Panics
     ///
@@ -2769,19 +2770,19 @@
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
         module: <span class="kw-2">&amp;</span>str,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Func&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(external) = <span class="self">self</span>.get(<span class="kw-2">&amp;mut </span>store, module, <span class="string">&quot;&quot;</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(external) = <span class="self">self</span>.get(<span class="kw-2">&amp;mut </span>store, module, <span class="string">""</span>) {
             <span class="kw">if let </span>Extern::Func(func) = external {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(func.clone());
             }
-            <span class="macro">bail!</span>(<span class="string">&quot;default export in &#39;{}&#39; is not a function&quot;</span>, module);
+            <span class="macro">bail!</span>(<span class="string">"default export in '{}' is not a function"</span>, module);
         }
 
-        <span class="comment">// For compatibility, also recognize &quot;_start&quot;.
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(external) = <span class="self">self</span>.get(<span class="kw-2">&amp;mut </span>store, module, <span class="string">&quot;_start&quot;</span>) {
+        <span class="comment">// For compatibility, also recognize "_start".
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(external) = <span class="self">self</span>.get(<span class="kw-2">&amp;mut </span>store, module, <span class="string">"_start"</span>) {
             <span class="kw">if let </span>Extern::Func(func) = external {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(func.clone());
             }
-            <span class="macro">bail!</span>(<span class="string">&quot;`_start` in &#39;{}&#39; is not a function&quot;</span>, module);
+            <span class="macro">bail!</span>(<span class="string">"`_start` in '{}' is not a function"</span>, module);
         }
 
         <span class="comment">// Otherwise return a no-op function.
@@ -2855,12 +2856,12 @@
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>desc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>desc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
         <span class="kw">match </span><span class="self">self </span>{
-            DefinitionType::Func(<span class="kw">_</span>) =&gt; <span class="string">&quot;function&quot;</span>,
-            DefinitionType::Table(..) =&gt; <span class="string">&quot;table&quot;</span>,
-            DefinitionType::Memory(..) =&gt; <span class="string">&quot;memory&quot;</span>,
-            DefinitionType::Global(<span class="kw">_</span>) =&gt; <span class="string">&quot;global&quot;</span>,
+            DefinitionType::Func(<span class="kw">_</span>) =&gt; <span class="string">"function"</span>,
+            DefinitionType::Table(..) =&gt; <span class="string">"table"</span>,
+            DefinitionType::Memory(..) =&gt; <span class="string">"memory"</span>,
+            DefinitionType::Global(<span class="kw">_</span>) =&gt; <span class="string">"global"</span>,
         }
     }
 }
@@ -2879,21 +2880,21 @@
 <span class="kw">impl </span>ModuleKind {
     <span class="doccomment">/// Determine whether the given module is a Command or a Reactor.
     </span><span class="kw">fn </span>categorize(module: <span class="kw-2">&amp;</span>Module) -&gt; <span class="prelude-ty">Result</span>&lt;ModuleKind&gt; {
-        <span class="kw">let </span>command_start = module.get_export(<span class="string">&quot;_start&quot;</span>);
-        <span class="kw">let </span>reactor_start = module.get_export(<span class="string">&quot;_initialize&quot;</span>);
+        <span class="kw">let </span>command_start = module.get_export(<span class="string">"_start"</span>);
+        <span class="kw">let </span>reactor_start = module.get_export(<span class="string">"_initialize"</span>);
         <span class="kw">match </span>(command_start, reactor_start) {
             (<span class="prelude-val">Some</span>(command_start), <span class="prelude-val">None</span>) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw">_</span>) = command_start.func() {
                     <span class="prelude-val">Ok</span>(ModuleKind::Command)
                 } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(<span class="string">&quot;`_start` must be a function&quot;</span>)
+                    <span class="macro">bail!</span>(<span class="string">"`_start` must be a function"</span>)
                 }
             }
             (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(reactor_start)) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw">_</span>) = reactor_start.func() {
                     <span class="prelude-val">Ok</span>(ModuleKind::Reactor)
                 } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(<span class="string">&quot;`_initialize` must be a function&quot;</span>)
+                    <span class="macro">bail!</span>(<span class="string">"`_initialize` must be a function"</span>)
                 }
             }
             (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {
@@ -2903,7 +2904,7 @@
             }
             (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {
                 <span class="comment">// Module declares itself to be both a Command and a Reactor.
-                </span><span class="macro">bail!</span>(<span class="string">&quot;Program cannot be both a Command and a Reactor&quot;</span>)
+                </span><span class="macro">bail!</span>(<span class="string">"Program cannot be both a Command and a Reactor"</span>)
             }
         }
     }
@@ -2946,10 +2947,10 @@
 }
 
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>UnknownImportError {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;unknown import: `{}::{}` has not been defined&quot;</span>,
+            <span class="string">"unknown import: `{}::{}` has not been defined"</span>,
             <span class="self">self</span>.module, <span class="self">self</span>.name,
         )
     }

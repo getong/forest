@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/validator.rs`."><title>validator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/validator.rs`."><title>validator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1606,14 +1607,14 @@
 <a href="#1606" id="1606">1606</a>
 </pre></div><pre class="rust"><code><span class="comment">/* Copyright 2018 Mozilla Foundation
  *
- * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -1634,7 +1635,7 @@
 /// Additionally this validates the given bytes with the default set of WebAssembly
 /// features implemented by `wasmparser`.
 ///
-/// For more fine-tuned control over validation it&#39;s recommended to review the
+/// For more fine-tuned control over validation it's recommended to review the
 /// documentation of [`Validator`].
 ///
 /// Upon success, the type information for the top-level module or component will
@@ -1672,10 +1673,10 @@
         .is_none()
     {
         <span class="kw">if </span>max == <span class="number">1 </span>{
-            <span class="macro">bail!</span>(offset, <span class="string">&quot;multiple {desc}&quot;</span>);
+            <span class="macro">bail!</span>(offset, <span class="string">"multiple {desc}"</span>);
         }
 
-        <span class="macro">bail!</span>(offset, <span class="string">&quot;{desc} count exceeds limit of {max}&quot;</span>);
+        <span class="macro">bail!</span>(offset, <span class="string">"{desc} count exceeds limit of {max}"</span>);
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -1686,7 +1687,7 @@
         <span class="prelude-val">Some</span>(sum) <span class="kw">if </span>sum &lt; MAX_WASM_TYPE_SIZE =&gt; <span class="prelude-val">Ok</span>(sum),
         <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="macro">format_err!</span>(
             offset,
-            <span class="string">&quot;effective type size exceeds the limit of {MAX_WASM_TYPE_SIZE}&quot;</span>,
+            <span class="string">"effective type size exceeds the limit of {MAX_WASM_TYPE_SIZE}"</span>,
         )),
     }
 }
@@ -1700,18 +1701,18 @@
 /// Additionally a `Validator` is also designed for parallel validation of
 /// functions as they are received.
 ///
-/// It&#39;s expected that you&#39;ll be using a [`Parser`] in tandem with a
+/// It's expected that you'll be using a [`Parser`] in tandem with a
 /// `Validator`. As each [`Payload`](crate::Payload) is received from a
-/// [`Parser`] you&#39;ll pass it into a `Validator` to test the validity of the
+/// [`Parser`] you'll pass it into a `Validator` to test the validity of the
 /// payload. Note that all payloads received from a [`Parser`] are expected to
 /// be passed to a [`Validator`]. For example if you receive
-/// [`Payload::TypeSection`](crate::Payload) you&#39;ll call
+/// [`Payload::TypeSection`](crate::Payload) you'll call
 /// [`Validator::type_section`] to validate this.
 ///
-/// The design of [`Validator`] is intended that you&#39;ll interleave, in your own
-/// application&#39;s processing, calls to validation. Each variant, after it&#39;s
+/// The design of [`Validator`] is intended that you'll interleave, in your own
+/// application's processing, calls to validation. Each variant, after it's
 /// received, will be validated and then your application would proceed as
-/// usual. At all times, however, you&#39;ll have access to the [`Validator`] and
+/// usual. At all times, however, you'll have access to the [`Validator`] and
 /// the validation context up to that point. This enables applications to check
 /// the types of functions and learn how many globals there are, for example.
 ///
@@ -1731,8 +1732,8 @@
     /// The top of the stack is the current component state.
     </span>components: Vec&lt;ComponentState&gt;,
 
-    <span class="doccomment">/// Enabled WebAssembly feature flags, dictating what&#39;s valid and what
-    /// isn&#39;t.
+    <span class="doccomment">/// Enabled WebAssembly feature flags, dictating what's valid and what
+    /// isn't.
     </span>features: WasmFeatures,
 }
 
@@ -1749,7 +1750,7 @@
     <span class="doccomment">/// A component header has been parsed.
     ///
     /// The associated component state exists at the top of the
-    /// validator&#39;s [`Validator::components`] stack.
+    /// validator's [`Validator::components`] stack.
     </span>Component,
     <span class="doccomment">/// The parse has completed and no more data is expected.
     </span>End,
@@ -1760,11 +1761,11 @@
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Module | <span class="self">Self</span>::Component =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="self">Self</span>::Unparsed(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;unexpected section before header was parsed&quot;</span>,
+                <span class="string">"unexpected section before header was parsed"</span>,
                 offset,
             )),
             <span class="self">Self</span>::End =&gt; <span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;unexpected section after parsing has completed&quot;</span>,
+                <span class="string">"unexpected section after parsing has completed"</span>,
                 offset,
             )),
         }
@@ -1777,7 +1778,7 @@
             <span class="self">Self</span>::Module =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="self">Self</span>::Component =&gt; <span class="prelude-val">Err</span>(<span class="macro">format_err!</span>(
                 offset,
-                <span class="string">&quot;unexpected module {section} section while parsing a component&quot;</span>,
+                <span class="string">"unexpected module {section} section while parsing a component"</span>,
             )),
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         }
@@ -1790,7 +1791,7 @@
             <span class="self">Self</span>::Component =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="self">Self</span>::Module =&gt; <span class="prelude-val">Err</span>(<span class="macro">format_err!</span>(
                 offset,
-                <span class="string">&quot;unexpected component {section} section while parsing a module&quot;</span>,
+                <span class="string">"unexpected component {section} section while parsing a module"</span>,
             )),
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         }
@@ -1888,14 +1889,14 @@
     ///
     /// To check that reference types are valid, we need access to the module
     /// types. Use module.check_value_type.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>check_value_type(<span class="kw-2">&amp;</span><span class="self">self</span>, ty: ValType) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>check_value_type(<span class="kw-2">&amp;</span><span class="self">self</span>, ty: ValType) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
         <span class="kw">match </span>ty {
             ValType::I32 | ValType::I64 =&gt; <span class="prelude-val">Ok</span>(()),
             ValType::F32 | ValType::F64 =&gt; {
                 <span class="kw">if </span><span class="self">self</span>.floats {
                     <span class="prelude-val">Ok</span>(())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(<span class="string">&quot;floating-point support is disabled&quot;</span>)
+                    <span class="prelude-val">Err</span>(<span class="string">"floating-point support is disabled"</span>)
                 }
             }
             ValType::Ref(r) =&gt; <span class="self">self</span>.check_ref_type(r),
@@ -1903,15 +1904,15 @@
                 <span class="kw">if </span><span class="self">self</span>.simd {
                     <span class="prelude-val">Ok</span>(())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(<span class="string">&quot;SIMD support is not enabled&quot;</span>)
+                    <span class="prelude-val">Err</span>(<span class="string">"SIMD support is not enabled"</span>)
                 }
             }
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>check_ref_type(<span class="kw-2">&amp;</span><span class="self">self</span>, r: RefType) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>check_ref_type(<span class="kw-2">&amp;</span><span class="self">self</span>, r: RefType) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.reference_types {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">&quot;reference types support is not enabled&quot;</span>);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"reference types support is not enabled"</span>);
         }
         <span class="kw">match </span>(r.heap_type(), r.is_nullable()) {
             <span class="comment">// funcref/externref only require `reference-types`.
@@ -1923,7 +1924,7 @@
                 <span class="kw">if </span><span class="self">self</span>.function_references {
                     <span class="prelude-val">Ok</span>(())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(<span class="string">&quot;function references required for non-nullable types&quot;</span>)
+                    <span class="prelude-val">Err</span>(<span class="string">"function references required for non-nullable types"</span>)
                 }
             }
 
@@ -1933,7 +1934,7 @@
                 <span class="kw">if </span><span class="self">self</span>.function_references || <span class="self">self</span>.gc {
                     <span class="prelude-val">Ok</span>(())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(<span class="string">&quot;function references required for index reference types&quot;</span>)
+                    <span class="prelude-val">Err</span>(<span class="string">"function references required for index reference types"</span>)
                 }
             }
 
@@ -1952,7 +1953,7 @@
                 <span class="kw">if </span><span class="self">self</span>.gc {
                     <span class="prelude-val">Ok</span>(())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(<span class="string">&quot;heap types not supported without the gc feature&quot;</span>)
+                    <span class="prelude-val">Err</span>(<span class="string">"heap types not supported without the gc feature"</span>)
                 }
             }
         }
@@ -1991,7 +1992,7 @@
 
 <span class="doccomment">/// Possible return values from [`Validator::payload`].
 </span><span class="attr">#[allow(clippy::large_enum_variant)]
-</span><span class="kw">pub enum </span>ValidPayload&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub enum </span>ValidPayload&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// The payload validated, no further action need be taken.
     </span><span class="prelude-val">Ok</span>,
     <span class="doccomment">/// The payload validated, but it started a nested module or component.
@@ -2000,7 +2001,7 @@
     /// of the currently-used parser until this returned one ends.
     </span>Parser(Parser),
     <span class="doccomment">/// A function was found to be validate.
-    </span>Func(FuncToValidate&lt;ValidatorResources&gt;, FunctionBody&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>Func(FuncToValidate&lt;ValidatorResources&gt;, FunctionBody&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// The end payload was validated and the types known to the validator
     /// are provided.
     </span>End(Types),
@@ -2097,16 +2098,16 @@
     ///
     /// This function is intended to be used as a convenience. It will
     /// internally perform any validation necessary to validate the [`Payload`]
-    /// provided. The convenience part is that you&#39;re likely already going to
-    /// be matching on [`Payload`] in your application, at which point it&#39;s more
+    /// provided. The convenience part is that you're likely already going to
+    /// be matching on [`Payload`] in your application, at which point it's more
     /// appropriate to call the individual methods on [`Validator`] per-variant
     /// in [`Payload`], such as [`Validator::type_section`].
     ///
     /// This function returns a [`ValidPayload`] variant on success, indicating
     /// one of a few possible actions that need to be taken after a payload is
-    /// validated. For example function contents are not validated here, they&#39;re
+    /// validated. For example function contents are not validated here, they're
     /// returned through [`ValidPayload`] for validation by the caller.
-    </span><span class="kw">pub fn </span>payload&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, payload: <span class="kw-2">&amp;</span>Payload&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ValidPayload&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    </span><span class="kw">pub fn </span>payload&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, payload: <span class="kw-2">&amp;</span>Payload&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;ValidPayload&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">use </span><span class="kw">crate</span>::Payload::<span class="kw-2">*</span>;
         <span class="kw">match </span>payload {
             Version {
@@ -2173,10 +2174,10 @@
                     <span class="kw">if </span><span class="kw-2">*</span>expected != encoding {
                         <span class="macro">bail!</span>(
                             range.start,
-                            <span class="string">&quot;expected a version header for a {}&quot;</span>,
+                            <span class="string">"expected a version header for a {}"</span>,
                             <span class="kw">match </span>expected {
-                                Encoding::Module =&gt; <span class="string">&quot;module&quot;</span>,
-                                Encoding::Component =&gt; <span class="string">&quot;component&quot;</span>,
+                                Encoding::Module =&gt; <span class="string">"module"</span>,
+                                Encoding::Component =&gt; <span class="string">"component"</span>,
                             }
                         );
                     }
@@ -2184,7 +2185,7 @@
             }
             <span class="kw">_ </span>=&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                    <span class="string">&quot;wasm version header out of order&quot;</span>,
+                    <span class="string">"wasm version header out of order"</span>,
                     range.start,
                 ))
             }
@@ -2197,16 +2198,16 @@
                     <span class="self">self</span>.module = <span class="prelude-val">Some</span>(ModuleState::default());
                     State::Module
                 } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(range.start, <span class="string">&quot;unknown binary version: {num:#x}&quot;</span>);
+                    <span class="macro">bail!</span>(range.start, <span class="string">"unknown binary version: {num:#x}"</span>);
                 }
             }
             Encoding::Component =&gt; {
                 <span class="kw">if </span>!<span class="self">self</span>.features.component_model {
                     <span class="macro">bail!</span>(
                         range.start,
-                        <span class="string">&quot;unknown binary version and encoding combination: {num:#x} and 0x1, \
+                        <span class="string">"unknown binary version and encoding combination: {num:#x} and 0x1, \
                         note: encoded as a component but the WebAssembly component model feature \
-                        is not enabled - enable the feature to allow component validation&quot;</span>,
+                        is not enabled - enable the feature to allow component validation"</span>,
                     );
                 }
                 <span class="kw">if </span>num == WASM_COMPONENT_VERSION {
@@ -2214,9 +2215,9 @@
                         .push(ComponentState::new(ComponentKind::Component));
                     State::Component
                 } <span class="kw">else if </span>num &lt; WASM_COMPONENT_VERSION {
-                    <span class="macro">bail!</span>(range.start, <span class="string">&quot;unsupported component version: {num:#x}&quot;</span>);
+                    <span class="macro">bail!</span>(range.start, <span class="string">"unsupported component version: {num:#x}"</span>);
                 } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(range.start, <span class="string">&quot;unknown component version: {num:#x}&quot;</span>);
+                    <span class="macro">bail!</span>(range.start, <span class="string">"unknown component version: {num:#x}"</span>);
                 }
             }
         };
@@ -2225,17 +2226,17 @@
     }
 
     <span class="doccomment">/// Validates [`Payload::TypeSection`](crate::Payload).
-    </span><span class="kw">pub fn </span>type_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::TypeSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>type_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::TypeSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Type,
             section,
-            <span class="string">&quot;type&quot;</span>,
+            <span class="string">"type"</span>,
             |state, <span class="kw">_</span>, _types, count, offset| {
                 check_max(
                     state.module.types.len(),
                     count,
                     MAX_WASM_TYPES,
-                    <span class="string">&quot;types&quot;</span>,
+                    <span class="string">"types"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().types.reserve(count <span class="kw">as </span>usize);
@@ -2254,11 +2255,11 @@
     <span class="doccomment">/// Validates [`Payload::ImportSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>import_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ImportSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>import_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ImportSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Import,
             section,
-            <span class="string">&quot;import&quot;</span>,
+            <span class="string">"import"</span>,
             |<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>| <span class="prelude-val">Ok</span>(()), <span class="comment">// add_import will check limits
             </span>|state, features, types, import, offset| {
                 state
@@ -2272,17 +2273,17 @@
     <span class="doccomment">/// Validates [`Payload::FunctionSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>function_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::FunctionSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>function_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::FunctionSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Function,
             section,
-            <span class="string">&quot;function&quot;</span>,
+            <span class="string">"function"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.functions.len(),
                     count,
                     MAX_WASM_FUNCTIONS,
-                    <span class="string">&quot;functions&quot;</span>,
+                    <span class="string">"functions"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().functions.reserve(count <span class="kw">as </span>usize);
@@ -2297,18 +2298,18 @@
     <span class="doccomment">/// Validates [`Payload::TableSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>table_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::TableSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>table_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::TableSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>features = <span class="self">self</span>.features;
         <span class="self">self</span>.process_module_section(
             Order::Table,
             section,
-            <span class="string">&quot;table&quot;</span>,
+            <span class="string">"table"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.tables.len(),
                     count,
                     state.module.max_tables(<span class="kw-2">&amp;</span>features),
-                    <span class="string">&quot;tables&quot;</span>,
+                    <span class="string">"tables"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().tables.reserve(count <span class="kw">as </span>usize);
@@ -2321,17 +2322,17 @@
     <span class="doccomment">/// Validates [`Payload::MemorySection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>memory_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::MemorySectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>memory_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::MemorySectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Memory,
             section,
-            <span class="string">&quot;memory&quot;</span>,
+            <span class="string">"memory"</span>,
             |state, features, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.memories.len(),
                     count,
                     state.module.max_memories(features),
-                    <span class="string">&quot;memories&quot;</span>,
+                    <span class="string">"memories"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().memories.reserve(count <span class="kw">as </span>usize);
@@ -2346,10 +2347,10 @@
     <span class="doccomment">/// Validates [`Payload::TagSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>tag_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::TagSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>tag_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::TagSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.features.exceptions {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;exceptions proposal not enabled&quot;</span>,
+                <span class="string">"exceptions proposal not enabled"</span>,
                 section.range().start,
             ));
         }
@@ -2357,13 +2358,13 @@
         <span class="self">self</span>.process_module_section(
             Order::Tag,
             section,
-            <span class="string">&quot;tag&quot;</span>,
+            <span class="string">"tag"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.tags.len(),
                     count,
                     MAX_WASM_TAGS,
-                    <span class="string">&quot;tags&quot;</span>,
+                    <span class="string">"tags"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().tags.reserve(count <span class="kw">as </span>usize);
@@ -2381,17 +2382,17 @@
     <span class="doccomment">/// Validates [`Payload::GlobalSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>global_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::GlobalSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>global_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::GlobalSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Global,
             section,
-            <span class="string">&quot;global&quot;</span>,
+            <span class="string">"global"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.globals.len(),
                     count,
                     MAX_WASM_GLOBALS,
-                    <span class="string">&quot;globals&quot;</span>,
+                    <span class="string">"globals"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().globals.reserve(count <span class="kw">as </span>usize);
@@ -2406,17 +2407,17 @@
     <span class="doccomment">/// Validates [`Payload::ExportSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>export_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ExportSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>export_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ExportSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Export,
             section,
-            <span class="string">&quot;export&quot;</span>,
+            <span class="string">"export"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.exports.len(),
                     count,
                     MAX_WASM_EXPORTS,
-                    <span class="string">&quot;exports&quot;</span>,
+                    <span class="string">"exports"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state.module.assert_mut().exports.reserve(count <span class="kw">as </span>usize);
@@ -2438,14 +2439,14 @@
     /// This method should only be called when parsing a module.
     </span><span class="kw">pub fn </span>start_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, func: u32, range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>offset = range.start;
-        <span class="self">self</span>.state.ensure_module(<span class="string">&quot;start&quot;</span>, offset)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_module(<span class="string">"start"</span>, offset)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = <span class="self">self</span>.module.as_mut().unwrap();
         state.update_order(Order::Start, offset)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>ty = state.module.get_func_type(func, <span class="kw-2">&amp;</span><span class="self">self</span>.types, offset)<span class="question-mark">?</span>;
         <span class="kw">if </span>!ty.params().is_empty() || !ty.results().is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;invalid start function type&quot;</span>,
+                <span class="string">"invalid start function type"</span>,
                 offset,
             ));
         }
@@ -2456,17 +2457,17 @@
     <span class="doccomment">/// Validates [`Payload::ElementSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>element_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ElementSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>element_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ElementSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Element,
             section,
-            <span class="string">&quot;element&quot;</span>,
+            <span class="string">"element"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 check_max(
                     state.module.element_types.len(),
                     count,
                     MAX_WASM_ELEMENT_SEGMENTS,
-                    <span class="string">&quot;element segments&quot;</span>,
+                    <span class="string">"element segments"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 state
@@ -2487,14 +2488,14 @@
     /// This method should only be called when parsing a module.
     </span><span class="kw">pub fn </span>data_count_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, count: u32, range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>offset = range.start;
-        <span class="self">self</span>.state.ensure_module(<span class="string">&quot;data count&quot;</span>, offset)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_module(<span class="string">"data count"</span>, offset)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>state = <span class="self">self</span>.module.as_mut().unwrap();
         state.update_order(Order::DataCount, offset)<span class="question-mark">?</span>;
 
         <span class="kw">if </span>count &gt; MAX_WASM_DATA_SEGMENTS <span class="kw">as </span>u32 {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;data count section specifies too many data segments&quot;</span>,
+                <span class="string">"data count section specifies too many data segments"</span>,
                 offset,
             ));
         }
@@ -2508,7 +2509,7 @@
     /// This method should only be called when parsing a module.
     </span><span class="kw">pub fn </span>code_section_start(<span class="kw-2">&amp;mut </span><span class="self">self</span>, count: u32, range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>offset = range.start;
-        <span class="self">self</span>.state.ensure_module(<span class="string">&quot;code&quot;</span>, offset)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_module(<span class="string">"code"</span>, offset)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>state = <span class="self">self</span>.module.as_mut().unwrap();
         state.update_order(Order::Code, offset)<span class="question-mark">?</span>;
@@ -2517,7 +2518,7 @@
             <span class="prelude-val">Some</span>(n) <span class="kw">if </span>n == count =&gt; {}
             <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                    <span class="string">&quot;function and code section have inconsistent lengths&quot;</span>,
+                    <span class="string">"function and code section have inconsistent lengths"</span>,
                     offset,
                 ));
             }
@@ -2526,7 +2527,7 @@
             </span><span class="prelude-val">None </span><span class="kw">if </span>count == <span class="number">0 </span>=&gt; {}
             <span class="prelude-val">None </span>=&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                    <span class="string">&quot;code section without function section&quot;</span>,
+                    <span class="string">"code section without function section"</span>,
                     offset,
                 ))
             }
@@ -2544,7 +2545,7 @@
     /// create a [`FuncValidator`] to validate the function. The function body
     /// provided will not be parsed or validated by this function.
     ///
-    /// Note that the returned [`FuncToValidate`] is &quot;connected&quot; to this
+    /// Note that the returned [`FuncToValidate`] is "connected" to this
     /// [`Validator`] in that it uses the internal context of this validator for
     /// validating the function. The [`FuncToValidate`] can be sent to another
     /// thread, for example, to offload actual processing of functions
@@ -2556,7 +2557,7 @@
         body: <span class="kw-2">&amp;</span><span class="kw">crate</span>::FunctionBody,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;FuncToValidate&lt;ValidatorResources&gt;&gt; {
         <span class="kw">let </span>offset = body.range().start;
-        <span class="self">self</span>.state.ensure_module(<span class="string">&quot;code&quot;</span>, offset)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_module(<span class="string">"code"</span>, offset)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>state = <span class="self">self</span>.module.as_mut().unwrap();
 
@@ -2572,14 +2573,14 @@
     <span class="doccomment">/// Validates [`Payload::DataSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a module.
-    </span><span class="kw">pub fn </span>data_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::DataSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>data_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::DataSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_module_section(
             Order::Data,
             section,
-            <span class="string">&quot;data&quot;</span>,
+            <span class="string">"data"</span>,
             |state, <span class="kw">_</span>, <span class="kw">_</span>, count, offset| {
                 state.data_segment_count = count;
-                check_max(<span class="number">0</span>, count, MAX_WASM_DATA_SEGMENTS, <span class="string">&quot;data segments&quot;</span>, offset)
+                check_max(<span class="number">0</span>, count, MAX_WASM_DATA_SEGMENTS, <span class="string">"data segments"</span>, offset)
             },
             |state, features, types, d, offset| state.add_data_segment(d, features, types, offset),
         )
@@ -2589,14 +2590,14 @@
     ///
     /// This method should only be called when parsing a component.
     </span><span class="kw">pub fn </span>module_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.state.ensure_component(<span class="string">&quot;module&quot;</span>, range.start)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_component(<span class="string">"module"</span>, range.start)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>current = <span class="self">self</span>.components.last_mut().unwrap();
         check_max(
             current.core_modules.len(),
             <span class="number">1</span>,
             MAX_WASM_MODULES,
-            <span class="string">&quot;modules&quot;</span>,
+            <span class="string">"modules"</span>,
             range.start,
         )<span class="question-mark">?</span>;
 
@@ -2614,14 +2615,14 @@
     </span><span class="kw">pub fn </span>instance_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::InstanceSectionReader) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;core instance&quot;</span>,
+            <span class="string">"core instance"</span>,
             |components, <span class="kw">_</span>, count, offset| {
                 <span class="kw">let </span>current = components.last_mut().unwrap();
                 check_max(
                     current.instance_count(),
                     count,
                     MAX_WASM_INSTANCES,
-                    <span class="string">&quot;instances&quot;</span>,
+                    <span class="string">"instances"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 current.core_instances.reserve(count <span class="kw">as </span>usize);
@@ -2639,13 +2640,13 @@
     <span class="doccomment">/// Validates [`Payload::CoreTypeSection`](crate::Payload).
     ///
     /// This method should only be called when parsing a component.
-    </span><span class="kw">pub fn </span>core_type_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::CoreTypeSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>core_type_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::CoreTypeSectionReader&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;core type&quot;</span>,
+            <span class="string">"core type"</span>,
             |components, _types, count, offset| {
                 <span class="kw">let </span>current = components.last_mut().unwrap();
-                check_max(current.type_count(), count, MAX_WASM_TYPES, <span class="string">&quot;types&quot;</span>, offset)<span class="question-mark">?</span>;
+                check_max(current.type_count(), count, MAX_WASM_TYPES, <span class="string">"types"</span>, offset)<span class="question-mark">?</span>;
                 current.core_types.reserve(count <span class="kw">as </span>usize);
                 <span class="prelude-val">Ok</span>(())
             },
@@ -2661,14 +2662,14 @@
     ///
     /// This method should only be called when parsing a component.
     </span><span class="kw">pub fn </span>component_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.state.ensure_component(<span class="string">&quot;component&quot;</span>, range.start)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_component(<span class="string">"component"</span>, range.start)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>current = <span class="self">self</span>.components.last_mut().unwrap();
         check_max(
             current.components.len(),
             <span class="number">1</span>,
             MAX_WASM_COMPONENTS,
-            <span class="string">&quot;components&quot;</span>,
+            <span class="string">"components"</span>,
             range.start,
         )<span class="question-mark">?</span>;
 
@@ -2689,14 +2690,14 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;instance&quot;</span>,
+            <span class="string">"instance"</span>,
             |components, <span class="kw">_</span>, count, offset| {
                 <span class="kw">let </span>current = components.last_mut().unwrap();
                 check_max(
                     current.instance_count(),
                     count,
                     MAX_WASM_INSTANCES,
-                    <span class="string">&quot;instances&quot;</span>,
+                    <span class="string">"instances"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 current.instances.reserve(count <span class="kw">as </span>usize);
@@ -2716,11 +2717,11 @@
     /// This method should only be called when parsing a component.
     </span><span class="kw">pub fn </span>component_alias_section(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ComponentAliasSectionReader&lt;<span class="lifetime">&#39;_</span>&gt;,
+        section: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ComponentAliasSectionReader&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;alias&quot;</span>,
+            <span class="string">"alias"</span>,
             |<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>| <span class="prelude-val">Ok</span>(()), <span class="comment">// maximums checked via `add_alias`
             </span>|components, types, features, alias, offset| -&gt; <span class="prelude-ty">Result</span>&lt;(), BinaryReaderError&gt; {
                 ComponentState::add_alias(components, alias, features, types, offset)
@@ -2737,10 +2738,10 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;type&quot;</span>,
+            <span class="string">"type"</span>,
             |components, _types, count, offset| {
                 <span class="kw">let </span>current = components.last_mut().unwrap();
-                check_max(current.type_count(), count, MAX_WASM_TYPES, <span class="string">&quot;types&quot;</span>, offset)<span class="question-mark">?</span>;
+                check_max(current.type_count(), count, MAX_WASM_TYPES, <span class="string">"types"</span>, offset)<span class="question-mark">?</span>;
                 current.types.reserve(count <span class="kw">as </span>usize);
                 <span class="prelude-val">Ok</span>(())
             },
@@ -2761,14 +2762,14 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;function&quot;</span>,
+            <span class="string">"function"</span>,
             |components, <span class="kw">_</span>, count, offset| {
                 <span class="kw">let </span>current = components.last_mut().unwrap();
                 check_max(
                     current.function_count(),
                     count,
                     MAX_WASM_FUNCTIONS,
-                    <span class="string">&quot;functions&quot;</span>,
+                    <span class="string">"functions"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 current.funcs.reserve(count <span class="kw">as </span>usize);
@@ -2814,7 +2815,7 @@
         f: <span class="kw-2">&amp;</span><span class="kw">crate</span>::ComponentStartFunction,
         range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.state.ensure_component(<span class="string">&quot;start&quot;</span>, range.start)<span class="question-mark">?</span>;
+        <span class="self">self</span>.state.ensure_component(<span class="string">"start"</span>, range.start)<span class="question-mark">?</span>;
 
         <span class="self">self</span>.components.last_mut().unwrap().add_start(
             f.func_index,
@@ -2835,7 +2836,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;import&quot;</span>,
+            <span class="string">"import"</span>,
             |<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>| <span class="prelude-val">Ok</span>(()), <span class="comment">// add_import will check limits
             </span>|components, types, features, import, offset| {
                 components
@@ -2855,14 +2856,14 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.process_component_section(
             section,
-            <span class="string">&quot;export&quot;</span>,
+            <span class="string">"export"</span>,
             |components, <span class="kw">_</span>, count, offset| {
                 <span class="kw">let </span>current = components.last_mut().unwrap();
                 check_max(
                     current.exports.len(),
                     count,
                     MAX_WASM_EXPORTS,
-                    <span class="string">&quot;exports&quot;</span>,
+                    <span class="string">"exports"</span>,
                     offset,
                 )<span class="question-mark">?</span>;
                 current.exports.reserve(count <span class="kw">as </span>usize);
@@ -2887,7 +2888,7 @@
     ///
     /// Currently always returns an error.
     </span><span class="kw">pub fn </span>unknown_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u8, range: <span class="kw-2">&amp;</span>Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="prelude-val">Err</span>(<span class="macro">format_err!</span>(range.start, <span class="string">&quot;malformed section id: {id}&quot;</span>))
+        <span class="prelude-val">Err</span>(<span class="macro">format_err!</span>(range.start, <span class="string">"malformed section id: {id}"</span>))
     }
 
     <span class="doccomment">/// Validates [`Payload::End`](crate::Payload).
@@ -2896,18 +2897,18 @@
     </span><span class="kw">pub fn </span>end(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Types&gt; {
         <span class="kw">match </span>std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.state, State::End) {
             State::Unparsed(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;cannot call `end` before a header has been parsed&quot;</span>,
+                <span class="string">"cannot call `end` before a header has been parsed"</span>,
                 offset,
             )),
             State::End =&gt; <span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;cannot call `end` after parsing has completed&quot;</span>,
+                <span class="string">"cannot call `end` after parsing has completed"</span>,
                 offset,
             )),
             State::Module =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.module.take().unwrap();
                 state.validate_end(offset)<span class="question-mark">?</span>;
 
-                <span class="comment">// If there&#39;s a parent component, we&#39;ll add a module to the parent state
+                <span class="comment">// If there's a parent component, we'll add a module to the parent state
                 // and continue to validate the component
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(parent) = <span class="self">self</span>.components.last_mut() {
                     parent.add_core_module(<span class="kw-2">&amp;</span>state.module, <span class="kw-2">&amp;mut </span><span class="self">self</span>.types, offset)<span class="question-mark">?</span>;
@@ -2926,12 +2927,12 @@
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(index) = component.values.iter().position(|(<span class="kw">_</span>, used)| !<span class="kw-2">*</span>used) {
                     <span class="macro">bail!</span>(
                         offset,
-                        <span class="string">&quot;value index {index} was not used as part of an \
-                         instantiation, start function, or export&quot;
+                        <span class="string">"value index {index} was not used as part of an \
+                         instantiation, start function, or export"
                     </span>);
                 }
 
-                <span class="comment">// If there&#39;s a parent component, pop the stack, add it to the parent,
+                <span class="comment">// If there's a parent component, pop the stack, add it to the parent,
                 // and continue to validate the component
                 </span><span class="kw">let </span>ty = component.finish(<span class="kw-2">&amp;mut </span><span class="self">self</span>.types, offset)<span class="question-mark">?</span>;
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(parent) = <span class="self">self</span>.components.last_mut() {
@@ -2944,10 +2945,10 @@
         }
     }
 
-    <span class="kw">fn </span>process_module_section&lt;<span class="lifetime">&#39;a</span>, T&gt;(
+    <span class="kw">fn </span>process_module_section&lt;<span class="lifetime">'a</span>, T&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         order: Order,
-        section: <span class="kw-2">&amp;</span>SectionLimited&lt;<span class="lifetime">&#39;a</span>, T&gt;,
+        section: <span class="kw-2">&amp;</span>SectionLimited&lt;<span class="lifetime">'a</span>, T&gt;,
         name: <span class="kw-2">&amp;</span>str,
         validate_section: <span class="kw">impl </span>FnOnce(
             <span class="kw-2">&amp;mut </span>ModuleState,
@@ -2965,7 +2966,7 @@
         ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
     <span class="kw">where
-        </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>offset = section.range().start;
         <span class="self">self</span>.state.ensure_module(name, offset)<span class="question-mark">?</span>;
@@ -2989,9 +2990,9 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>process_component_section&lt;<span class="lifetime">&#39;a</span>, T&gt;(
+    <span class="kw">fn </span>process_component_section&lt;<span class="lifetime">'a</span>, T&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        section: <span class="kw-2">&amp;</span>SectionLimited&lt;<span class="lifetime">&#39;a</span>, T&gt;,
+        section: <span class="kw-2">&amp;</span>SectionLimited&lt;<span class="lifetime">'a</span>, T&gt;,
         name: <span class="kw-2">&amp;</span>str,
         validate_section: <span class="kw">impl </span>FnOnce(
             <span class="kw-2">&amp;mut </span>Vec&lt;ComponentState&gt;,
@@ -3008,13 +3009,13 @@
         ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
     <span class="kw">where
-        </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>offset = section.range().start;
 
         <span class="kw">if </span>!<span class="self">self</span>.features.component_model {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;component model feature is not enabled&quot;</span>,
+                <span class="string">"component model feature is not enabled"</span>,
                 offset,
             ));
         }
@@ -3050,7 +3051,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_module_type_information() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>bytes = wat::parse_str(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             (module
                 (type (func (param i32 i64) (result i32)))
                 (memory 1 5)
@@ -3060,7 +3061,7 @@
                 (tag (param i64 i32))
                 (elem funcref (ref.func 0))
             )
-        &quot;#</span>,
+        "#</span>,
         )<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>validator = Validator::new_with_features(WasmFeatures {
@@ -3143,13 +3144,13 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_type_id_aliasing() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>bytes = wat::parse_str(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             (component
               (type $T (list string))
               (alias outer 0 $T (type $A1))
               (alias outer 0 $T (type $A2))
             )
-        &quot;#</span>,
+        "#</span>,
         )<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>validator = Validator::new_with_features(WasmFeatures {
@@ -3178,13 +3179,13 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_type_id_exports() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>bytes = wat::parse_str(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             (component
               (type $T (list string))
-              (export $A1 &quot;A1&quot; (type $T))
-              (export $A2 &quot;A2&quot; (type $T))
+              (export $A1 "A1" (type $T))
+              (export $A2 "A2" (type $T))
             )
-        &quot;#</span>,
+        "#</span>,
         )<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>validator = Validator::new_with_features(WasmFeatures {

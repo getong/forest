@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/chain/store/chain_store.rs`."><title>chain_store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/chain/store/chain_store.rs`."><title>chain_store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -714,7 +715,7 @@
     </span><span class="kw">pub fn </span>set_heaviest_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, ts: Arc&lt;Tipset&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="self">self</span>.settings.write_obj(HEAD_KEY, ts.key())<span class="question-mark">?</span>;
         <span class="kw">if </span><span class="self">self</span>.publisher.send(HeadChange::Apply(ts)).is_err() {
-            <span class="macro">debug!</span>(<span class="string">&quot;did not publish head change, no active receivers&quot;</span>);
+            <span class="macro">debug!</span>(<span class="string">"did not publish head change, no active receivers"</span>);
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -751,9 +752,9 @@
             <span class="kw-2">&amp;</span><span class="self">self
                 </span>.settings
                 .require_obj::&lt;TipsetKey&gt;(HEAD_KEY)
-                .expect(<span class="string">&quot;failed to load heaviest tipset&quot;</span>),
+                .expect(<span class="string">"failed to load heaviest tipset"</span>),
         )
-        .expect(<span class="string">&quot;failed to load heaviest tipset&quot;</span>)
+        .expect(<span class="string">"failed to load heaviest tipset"</span>)
     }
 
     <span class="doccomment">/// Returns a reference to the publisher of head changes.
@@ -795,7 +796,7 @@
         <span class="kw">let </span>curr_weight = heaviest_weight;
 
         <span class="kw">if </span>new_weight &gt; curr_weight {
-            <span class="macro">info!</span>(<span class="string">&quot;New heaviest tipset! {} (EPOCH = {})&quot;</span>, ts.key(), ts.epoch());
+            <span class="macro">info!</span>(<span class="string">"New heaviest tipset! {} (EPOCH = {})"</span>, ts.key(), ts.epoch());
             <span class="self">self</span>.set_heaviest_tipset(ts)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
@@ -805,7 +806,7 @@
     </span><span class="kw">pub fn </span>is_block_validated(<span class="kw-2">&amp;</span><span class="self">self</span>, cid: <span class="kw-2">&amp;</span>Cid) -&gt; bool {
         <span class="kw">let </span>validated = <span class="self">self</span>.validated_blocks.lock().contains(cid);
         <span class="kw">if </span>validated {
-            <span class="macro">debug!</span>(<span class="string">&quot;Block {cid} was previously validated&quot;</span>);
+            <span class="macro">debug!</span>(<span class="string">"Block {cid} was previously validated"</span>);
         }
         validated
     }
@@ -843,7 +844,7 @@
         round: ChainEpoch,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(Arc&lt;Tipset&gt;, Cid), Error&gt;
     <span class="kw">where
-        </span>DB: Send + Sync + <span class="lifetime">&#39;static</span>,
+        </span>DB: Send + Sync + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>version = chain_config.network_version(round);
         <span class="kw">let </span>lb = <span class="kw">if </span>version &lt;= NetworkVersion::V3 {
@@ -855,7 +856,7 @@
 
         <span class="comment">// More null blocks than lookback
         </span><span class="kw">if </span>lbr &gt;= heaviest_tipset.epoch() {
-            <span class="comment">// This situation is extremely rare so it&#39;s fine to compute the
+            <span class="comment">// This situation is extremely rare so it's fine to compute the
             // state-root without caching.
             </span><span class="kw">let </span>genesis_timestamp = heaviest_tipset.genesis(<span class="kw-2">&amp;</span>chain_index.db)<span class="question-mark">?</span>.timestamp;
             <span class="kw">let </span>beacon = Arc::new(chain_config.get_beacon_schedule(genesis_timestamp));
@@ -865,8 +866,8 @@
                 Arc::clone(<span class="kw-2">&amp;</span>chain_config),
                 beacon,
                 <span class="comment">// Creating new WASM engines is expensive (takes seconds to
-                // minutes). It&#39;s only acceptable here because this situation is
-                // so rare (may happen in dev-networks, doesn&#39;t happen in
+                // minutes). It's only acceptable here because this situation is
+                // so rare (may happen in dev-networks, doesn't happen in
                 // calibnet or mainnet.)
                 </span><span class="kw-2">&amp;</span><span class="kw">crate</span>::shim::machine::MultiEngine::default(),
                 Arc::clone(<span class="kw-2">&amp;</span>heaviest_tipset),
@@ -883,10 +884,10 @@
                 heaviest_tipset.clone(),
                 ResolveNullTipset::TakeNewer,
             )
-            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not get tipset by height {e:?}&quot;</span>)))<span class="question-mark">?</span>;
+            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">"Could not get tipset by height {e:?}"</span>)))<span class="question-mark">?</span>;
         <span class="kw">if </span>lbr &gt; next_ts.epoch() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Other(<span class="macro">format!</span>(
-                <span class="string">&quot;failed to find non-null tipset {:?} {} which is known to exist, found {:?} {}&quot;</span>,
+                <span class="string">"failed to find non-null tipset {:?} {} which is known to exist, found {:?} {}"</span>,
                 heaviest_tipset.key(),
                 heaviest_tipset.epoch(),
                 next_ts.key(),
@@ -895,7 +896,7 @@
         }
         <span class="kw">let </span>lbts = chain_index
             .load_required_tipset(next_ts.parents())
-            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">&quot;Could not get tipset from keys {e:?}&quot;</span>)))<span class="question-mark">?</span>;
+            .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">"Could not get tipset from keys {e:?}"</span>)))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>((lbts, <span class="kw-2">*</span>next_ts.parent_state()))
     }
 }
@@ -943,19 +944,19 @@
         <span class="prelude-val">Ok</span>((bls_cids, secpk_cids))
     } <span class="kw">else </span>{
         <span class="prelude-val">Err</span>(Error::UndefinedKey(<span class="macro">format!</span>(
-            <span class="string">&quot;no msg root with cid {msg_cid}&quot;
+            <span class="string">"no msg root with cid {msg_cid}"
         </span>)))
     }
 }
 
 <span class="doccomment">/// Persists slice of `serializable` objects to `blockstore`.
-</span><span class="kw">pub fn </span>persist_objects&lt;<span class="lifetime">&#39;a</span>, DB, C&gt;(
+</span><span class="kw">pub fn </span>persist_objects&lt;<span class="lifetime">'a</span>, DB, C&gt;(
     db: <span class="kw-2">&amp;</span>DB,
-    headers: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>C&gt;,
+    headers: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>C&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt;
 <span class="kw">where
     </span>DB: Blockstore,
-    C: <span class="lifetime">&#39;a </span>+ Serialize,
+    C: <span class="lifetime">'a </span>+ Serialize,
 {
     <span class="kw">for </span>chunk <span class="kw">in </span><span class="kw-2">&amp;</span>headers.chunks(<span class="number">256</span>) {
         db.bulk_put(chunk, DB::default_code())<span class="question-mark">?</span>;
@@ -1012,7 +1013,7 @@
                 <span class="kw">if </span>applied.contains_key(from_address) {
                     <span class="kw">let </span>actor_state = state
                         .get_actor(from_address)<span class="question-mark">?
-                        </span>.ok_or_else(|| Error::Other(<span class="string">&quot;Actor state not found&quot;</span>.to_string()))<span class="question-mark">?</span>;
+                        </span>.ok_or_else(|| Error::Other(<span class="string">"Actor state not found"</span>.to_string()))<span class="question-mark">?</span>;
                     applied.insert(<span class="kw-2">*</span>from_address, actor_state.sequence);
                     balances.insert(<span class="kw-2">*</span>from_address, actor_state.balance.clone().into());
                 }
@@ -1082,8 +1083,8 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="attr">#[derive(Deserialize, Serialize)]
-    #[serde(rename_all = <span class="string">&quot;lowercase&quot;</span>)]
-    #[serde(tag = <span class="string">&quot;type&quot;</span>, content = <span class="string">&quot;val&quot;</span>)]
+    #[serde(rename_all = <span class="string">"lowercase"</span>)]
+    #[serde(tag = <span class="string">"type"</span>, content = <span class="string">"val"</span>)]
     </span><span class="kw">pub enum </span>HeadChangeJson {
         Apply(LotusJson&lt;Tipset&gt;),
     }

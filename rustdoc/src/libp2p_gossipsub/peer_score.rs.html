@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-gossipsub-0.46.1/src/peer_score.rs`."><title>peer_score.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_gossipsub" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-gossipsub-0.46.1/src/peer_score.rs`."><title>peer_score.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_gossipsub" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -913,7 +914,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2020 Sigma Prime Pty Ltd.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the &quot;Software&quot;),
+// copy of this software and associated documentation files (the "Software"),
 // to deal in the Software without restriction, including without limitation
 // the rights to use, copy, modify, merge, publish, distribute, sublicense,
 // and/or sell copies of the Software, and to permit persons to whom the
@@ -922,7 +923,7 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -1041,7 +1042,7 @@
     }
 }
 
-<span class="doccomment">/// Status defining a peer&#39;s inclusion in the mesh and associated parameters.
+<span class="doccomment">/// Status defining a peer's inclusion in the mesh and associated parameters.
 </span><span class="kw">enum </span>MeshStatus {
     Active {
         <span class="doccomment">/// The time the peer was last GRAFTed;
@@ -1084,7 +1085,7 @@
 
 <span class="attr">#[derive(PartialEq, Debug)]
 </span><span class="kw">enum </span>DeliveryStatus {
-    <span class="doccomment">/// Don&#39;t know (yet) if the message is valid.
+    <span class="doccomment">/// Don't know (yet) if the message is valid.
     </span>Unknown,
     <span class="doccomment">/// The message is valid together with the validated time.
     </span>Valid(Instant),
@@ -1188,7 +1189,7 @@
                         %topic,
                         %deficit,
                         penalty=%topic_score,
-                        <span class="string">&quot;[Penalty] The peer has a mesh deliveries deficit and will be penalized&quot;
+                        <span class="string">"[Penalty] The peer has a mesh deliveries deficit and will be penalized"
                     </span>);
                 }
 
@@ -1223,7 +1224,7 @@
                 <span class="kw">continue</span>;
             }
 
-            <span class="comment">// P6 has a cliff (ip_colocation_factor_threshold); it&#39;s only applied iff
+            <span class="comment">// P6 has a cliff (ip_colocation_factor_threshold); it's only applied iff
             // at least that many peers are connected to us from that source IP
             // addr. It is quadratic, and the weight is negative (validated by
             // peer_score_params.validate()).
@@ -1238,7 +1239,7 @@
                         peer=%peer_id,
                         surplus_ip=%ip,
                         surplus=%surplus,
-                        <span class="string">&quot;[Penalty] The peer gets penalized because of too many peers with the same ip&quot;
+                        <span class="string">"[Penalty] The peer gets penalized because of too many peers with the same ip"
                     </span>);
                     score += p6 * <span class="self">self</span>.params.ip_colocation_factor_weight;
                 }
@@ -1259,7 +1260,7 @@
             <span class="macro">tracing::debug!</span>(
                 peer=%peer_id,
                 %count,
-                <span class="string">&quot;[Penalty] Behavioral penalty for peer&quot;
+                <span class="string">"[Penalty] Behavioral penalty for peer"
             </span>);
             peer_stats.behaviour_penalty += count <span class="kw">as </span>f64;
         }
@@ -1291,7 +1292,7 @@
                     </span><span class="kw">return </span><span class="bool-val">false</span>;
                 }
 
-                <span class="comment">// we don&#39;t decay retained scores, as the peer is not active.
+                <span class="comment">// we don't decay retained scores, as the peer is not active.
                 // this way the peer cannot reset a negative score by simply disconnecting and reconnecting,
                 // unless the retention period has elapsed.
                 // similarly, a well behaved peer does not lose its score by getting disconnected.
@@ -1355,10 +1356,10 @@
 
     <span class="doccomment">/// Adds a new ip to a peer, if the peer is not yet known creates a new peer_stats entry for it
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>add_ip(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId, ip: IpAddr) {
-        <span class="macro">tracing::trace!</span>(peer=%peer_id, %ip, <span class="string">&quot;Add ip for peer&quot;</span>);
+        <span class="macro">tracing::trace!</span>(peer=%peer_id, %ip, <span class="string">"Add ip for peer"</span>);
         <span class="kw">let </span>peer_stats = <span class="self">self</span>.peer_stats.entry(<span class="kw-2">*</span>peer_id).or_default();
 
-        <span class="comment">// Mark the peer as connected (currently the default is connected, but we don&#39;t want to
+        <span class="comment">// Mark the peer as connected (currently the default is connected, but we don't want to
         // rely on the default).
         </span>peer_stats.status = ConnectionStatus::Connected;
 
@@ -1372,20 +1373,20 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(peer_stats) = <span class="self">self</span>.peer_stats.get_mut(peer_id) {
             peer_stats.known_ips.remove(ip);
             <span class="kw">if let </span><span class="prelude-val">Some</span>(peer_ids) = <span class="self">self</span>.peer_ips.get_mut(ip) {
-                <span class="macro">tracing::trace!</span>(peer=%peer_id, %ip, <span class="string">&quot;Remove ip for peer&quot;</span>);
+                <span class="macro">tracing::trace!</span>(peer=%peer_id, %ip, <span class="string">"Remove ip for peer"</span>);
                 peer_ids.remove(peer_id);
             } <span class="kw">else </span>{
                 <span class="macro">tracing::trace!</span>(
                     peer=%peer_id,
                     %ip,
-                    <span class="string">&quot;No entry in peer_ips for ip which should get removed for peer&quot;
+                    <span class="string">"No entry in peer_ips for ip which should get removed for peer"
                 </span>);
             }
         } <span class="kw">else </span>{
             <span class="macro">tracing::trace!</span>(
                 peer=%peer_id,
                 %ip,
-                <span class="string">&quot;No peer_stats for peer which should remove the ip&quot;
+                <span class="string">"No peer_stats for peer which should remove the ip"
             </span>);
         }
     }
@@ -1402,7 +1403,7 @@
             <span class="kw">return</span>;
         }
 
-        <span class="comment">// if the peer is retained (including it&#39;s score) the `first_message_delivery` counters
+        <span class="comment">// if the peer is retained (including it's score) the `first_message_delivery` counters
         // are reset to 0 and mesh delivery penalties applied.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(peer_stats) = <span class="self">self</span>.peer_stats.get_mut(peer_id) {
             <span class="kw">for </span>(topic, topic_stats) <span class="kw">in </span>peer_stats.topics.iter_mut() {
@@ -1456,7 +1457,7 @@
                     </span>.params
                     .topics
                     .get(<span class="kw-2">&amp;</span>topic)
-                    .expect(<span class="string">&quot;Topic must exist in order for there to be topic stats&quot;</span>)
+                    .expect(<span class="string">"Topic must exist in order for there to be topic stats"</span>)
                     .mesh_message_deliveries_threshold;
                 <span class="kw">if </span>topic_stats.mesh_message_deliveries_active
                     &amp;&amp; topic_stats.mesh_message_deliveries &lt; threshold
@@ -1508,7 +1509,7 @@
                 peer=%from,
                 status=<span class="question-mark">?</span>record.status,
                 first_seen=<span class="question-mark">?</span>record.first_seen.elapsed().as_secs(),
-                <span class="string">&quot;Unexpected delivery trace&quot;
+                <span class="string">"Unexpected delivery trace"
             </span>);
             <span class="kw">return</span>;
         }
@@ -1516,7 +1517,7 @@
         <span class="comment">// mark the message as valid and reward mesh peers that have already forwarded it to us
         </span>record.status = DeliveryStatus::Valid(Instant::now());
         <span class="kw">for </span>peer <span class="kw">in </span>record.peers.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() {
-            <span class="comment">// this check is to make sure a peer can&#39;t send us a message twice and get a double
+            <span class="comment">// this check is to make sure a peer can't send us a message twice and get a double
             // count if it is a first delivery
             </span><span class="kw">if </span><span class="kw-2">&amp;</span>peer != from {
                 <span class="self">self</span>.mark_duplicate_message_delivery(<span class="kw-2">&amp;</span>peer, topic_hash, <span class="prelude-val">None</span>);
@@ -1528,7 +1529,7 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>reject_invalid_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: <span class="kw-2">&amp;</span>PeerId, topic_hash: <span class="kw-2">&amp;</span>TopicHash) {
         <span class="macro">tracing::debug!</span>(
             peer=%from,
-            <span class="string">&quot;[Penalty] Message from peer rejected because of ValidationError or SelfOrigin&quot;
+            <span class="string">"[Penalty] Message from peer rejected because of ValidationError or SelfOrigin"
         </span>);
 
         <span class="self">self</span>.mark_invalid_message_delivery(from, topic_hash);
@@ -1630,7 +1631,7 @@
                 </span><span class="self">self</span>.mark_invalid_message_delivery(from, topic_hash);
             }
             DeliveryStatus::Ignored =&gt; {
-                <span class="comment">// the message was ignored; do nothing (we don&#39;t know if it was valid)
+                <span class="comment">// the message was ignored; do nothing (we don't know if it was valid)
             </span>}
         }
     }
@@ -1686,7 +1687,7 @@
         <span class="self">self</span>.params.topics.get(topic_hash)
     }
 
-    <span class="doccomment">/// Increments the &quot;invalid message deliveries&quot; counter for all scored topics the message
+    <span class="doccomment">/// Increments the "invalid message deliveries" counter for all scored topics the message
     /// is published in.
     </span><span class="kw">fn </span>mark_invalid_message_delivery(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId, topic_hash: <span class="kw-2">&amp;</span>TopicHash) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(peer_stats) = <span class="self">self</span>.peer_stats.get_mut(peer_id) {
@@ -1696,16 +1697,16 @@
                 <span class="macro">tracing::debug!</span>(
                     peer=%peer_id,
                     topic=%topic_hash,
-                    <span class="string">&quot;[Penalty] Peer delivered an invalid message in topic and gets penalized \
-                    for it&quot;</span>,
+                    <span class="string">"[Penalty] Peer delivered an invalid message in topic and gets penalized \
+                    for it"</span>,
                 );
                 topic_stats.invalid_message_deliveries += <span class="number">1f64</span>;
             }
         }
     }
 
-    <span class="doccomment">/// Increments the &quot;first message deliveries&quot; counter for all scored topics the message is
-    /// published in, as well as the &quot;mesh message deliveries&quot; counter, if the peer is in the
+    <span class="doccomment">/// Increments the "first message deliveries" counter for all scored topics the message is
+    /// published in, as well as the "mesh message deliveries" counter, if the peer is in the
     /// mesh for the topic.
     </span><span class="kw">fn </span>mark_first_message_delivery(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId, topic_hash: <span class="kw-2">&amp;</span>TopicHash) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(peer_stats) = <span class="self">self</span>.peer_stats.get_mut(peer_id) {
@@ -1716,7 +1717,7 @@
                     </span>.params
                     .topics
                     .get(topic_hash)
-                    .expect(<span class="string">&quot;Topic must exist if there are known topic_stats&quot;</span>)
+                    .expect(<span class="string">"Topic must exist if there are known topic_stats"</span>)
                     .first_message_deliveries_cap;
                 topic_stats.first_message_deliveries =
                     <span class="kw">if </span>topic_stats.first_message_deliveries + <span class="number">1f64 </span>&gt; cap {
@@ -1730,7 +1731,7 @@
                         </span>.params
                         .topics
                         .get(topic_hash)
-                        .expect(<span class="string">&quot;Topic must exist if there are known topic_stats&quot;</span>)
+                        .expect(<span class="string">"Topic must exist if there are known topic_stats"</span>)
                         .mesh_message_deliveries_cap;
 
                     topic_stats.mesh_message_deliveries =
@@ -1744,7 +1745,7 @@
         }
     }
 
-    <span class="doccomment">/// Increments the &quot;mesh message deliveries&quot; counter for messages we&#39;ve seen before, as long the
+    <span class="doccomment">/// Increments the "mesh message deliveries" counter for messages we've seen before, as long the
     /// message was received within the P3 window.
     </span><span class="kw">fn </span>mark_duplicate_message_delivery(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -1766,7 +1767,7 @@
                         </span>.params
                         .topics
                         .get(topic_hash)
-                        .expect(<span class="string">&quot;Topic must exist if there are known topic_stats&quot;</span>);
+                        .expect(<span class="string">"Topic must exist if there are known topic_stats"</span>);
 
                     <span class="comment">// check against the mesh delivery window -- if the validated time is passed as 0, then
                     // the message was received before we finished validation and thus falls within the mesh

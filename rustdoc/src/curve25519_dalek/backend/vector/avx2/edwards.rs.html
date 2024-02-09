@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/curve25519-dalek-4.1.1/src/backend/vector/avx2/edwards.rs`."><title>edwards.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="curve25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../../curve25519_dalek/index.html"><img src="https://cdn.jsdelivr.net/gh/dalek-cryptography/curve25519-dalek/docs/assets/dalek-logo-clear.png" alt="curve25519_dalek"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/curve25519-dalek-4.1.1/src/backend/vector/avx2/edwards.rs`."><title>edwards.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="curve25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><a class="sub-logo-container" href="../../../../../curve25519_dalek/index.html"><img src="https://cdn.jsdelivr.net/gh/dalek-cryptography/curve25519-dalek/docs/assets/dalek-logo-clear.png" alt="curve25519_dalek"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -617,7 +618,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::edwards;
 <span class="kw">use </span><span class="kw">crate</span>::window::{LookupTable, NafLookupTable5};
 
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;precomputed-tables&quot;</span>, feature = <span class="string">&quot;alloc&quot;</span>))]
+<span class="attr">#[cfg(any(feature = <span class="string">"precomputed-tables"</span>, feature = <span class="string">"alloc"</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::window::NafLookupTable8;
 
 <span class="kw">use </span><span class="kw">crate</span>::traits::Identity;
@@ -635,14 +636,14 @@
 </span><span class="attr">#[derive(Copy, Clone, Debug)]
 </span><span class="kw">pub struct </span>ExtendedPoint(<span class="kw">pub</span>(<span class="kw">super</span>) FieldElement2625x4);
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>From&lt;edwards::EdwardsPoint&gt; <span class="kw">for </span>ExtendedPoint {
     <span class="kw">fn </span>from(P: edwards::EdwardsPoint) -&gt; ExtendedPoint {
         ExtendedPoint(FieldElement2625x4::new(<span class="kw-2">&amp;</span>P.X, <span class="kw-2">&amp;</span>P.Y, <span class="kw-2">&amp;</span>P.Z, <span class="kw-2">&amp;</span>P.T))
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>From&lt;ExtendedPoint&gt; <span class="kw">for </span>edwards::EdwardsPoint {
     <span class="kw">fn </span>from(P: ExtendedPoint) -&gt; edwards::EdwardsPoint {
         <span class="kw">let </span>tmp = P.<span class="number">0</span>.split();
@@ -655,7 +656,7 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>ConditionallySelectable <span class="kw">for </span>ExtendedPoint {
     <span class="kw">fn </span>conditional_select(a: <span class="kw-2">&amp;</span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="self">Self</span>, choice: Choice) -&gt; <span class="self">Self </span>{
         ExtendedPoint(FieldElement2625x4::conditional_select(<span class="kw-2">&amp;</span>a.<span class="number">0</span>, <span class="kw-2">&amp;</span>b.<span class="number">0</span>, choice))
@@ -666,21 +667,21 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Default <span class="kw">for </span>ExtendedPoint {
     <span class="kw">fn </span>default() -&gt; ExtendedPoint {
         ExtendedPoint::identity()
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Identity <span class="kw">for </span>ExtendedPoint {
     <span class="kw">fn </span>identity() -&gt; ExtendedPoint {
         constants::EXTENDEDPOINT_IDENTITY
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>ExtendedPoint {
     <span class="doccomment">/// Compute the double of this point.
     </span><span class="kw">pub fn </span>double(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ExtendedPoint {
@@ -766,7 +767,7 @@
 </span><span class="attr">#[derive(Copy, Clone, Debug)]
 </span><span class="kw">pub struct </span>CachedPoint(<span class="kw">pub</span>(<span class="kw">super</span>) FieldElement2625x4);
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>From&lt;ExtendedPoint&gt; <span class="kw">for </span>CachedPoint {
     <span class="kw">fn </span>from(P: ExtendedPoint) -&gt; CachedPoint {
         <span class="kw">let </span><span class="kw-2">mut </span>x = P.<span class="number">0</span>;
@@ -785,21 +786,21 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Default <span class="kw">for </span>CachedPoint {
     <span class="kw">fn </span>default() -&gt; CachedPoint {
         CachedPoint::identity()
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Identity <span class="kw">for </span>CachedPoint {
     <span class="kw">fn </span>identity() -&gt; CachedPoint {
         constants::CACHEDPOINT_IDENTITY
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>ConditionallySelectable <span class="kw">for </span>CachedPoint {
     <span class="kw">fn </span>conditional_select(a: <span class="kw-2">&amp;</span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="self">Self</span>, choice: Choice) -&gt; <span class="self">Self </span>{
         CachedPoint(FieldElement2625x4::conditional_select(<span class="kw-2">&amp;</span>a.<span class="number">0</span>, <span class="kw-2">&amp;</span>b.<span class="number">0</span>, choice))
@@ -810,7 +811,7 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Neg <span class="kw">for </span><span class="kw-2">&amp;</span>CachedPoint {
     <span class="kw">type </span>Output = CachedPoint;
     <span class="doccomment">/// Lazily negate the point.
@@ -825,7 +826,7 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Add&lt;<span class="kw-2">&amp;</span>CachedPoint&gt; <span class="kw">for </span><span class="kw-2">&amp;</span>ExtendedPoint {
     <span class="kw">type </span>Output = ExtendedPoint;
 
@@ -844,7 +845,7 @@
 
         // (tmp, other) bounded with b &lt; (1.6, 1.0) &lt; (2.5, 1.75).
         </span>tmp = <span class="kw-2">&amp;</span>tmp * <span class="kw-2">&amp;</span>other.<span class="number">0</span>;
-        <span class="comment">// tmp = (S0*S2&#39; S1*S3&#39; Z1*Z2&#39; T1*T2&#39;) = (S8 S9 S10 S11)
+        <span class="comment">// tmp = (S0*S2' S1*S3' Z1*Z2' T1*T2') = (S8 S9 S10 S11)
 
         </span>tmp = tmp.shuffle(Shuffle::ABDC);
         <span class="comment">// tmp = (S8 S9 S11 S10)
@@ -863,7 +864,7 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>Sub&lt;<span class="kw-2">&amp;</span>CachedPoint&gt; <span class="kw">for </span><span class="kw-2">&amp;</span>ExtendedPoint {
     <span class="kw">type </span>Output = ExtendedPoint;
 
@@ -877,7 +878,7 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>edwards::EdwardsPoint&gt; <span class="kw">for </span>LookupTable&lt;CachedPoint&gt; {
     <span class="kw">fn </span>from(point: <span class="kw-2">&amp;</span>edwards::EdwardsPoint) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>P = ExtendedPoint::from(<span class="kw-2">*</span>point);
@@ -889,7 +890,7 @@
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>edwards::EdwardsPoint&gt; <span class="kw">for </span>NafLookupTable5&lt;CachedPoint&gt; {
     <span class="kw">fn </span>from(point: <span class="kw-2">&amp;</span>edwards::EdwardsPoint) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>A = ExtendedPoint::from(<span class="kw-2">*</span>point);
@@ -903,8 +904,8 @@
     }
 }
 
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;precomputed-tables&quot;</span>, feature = <span class="string">&quot;alloc&quot;</span>))]
-#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[cfg(any(feature = <span class="string">"precomputed-tables"</span>, feature = <span class="string">"alloc"</span>))]
+#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>edwards::EdwardsPoint&gt; <span class="kw">for </span>NafLookupTable8&lt;CachedPoint&gt; {
     <span class="kw">fn </span>from(point: <span class="kw-2">&amp;</span>edwards::EdwardsPoint) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>A = ExtendedPoint::from(<span class="kw-2">*</span>point);
@@ -918,7 +919,7 @@
     }
 }
 
-<span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[cfg(target_feature = <span class="string">"avx2"</span>)]
 #[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -932,7 +933,7 @@
 
         <span class="macro">macro_rules! </span>print_var {
             (<span class="macro-nonterminal">$x</span>:ident) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;{} = {:?}&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$x</span>), <span class="macro-nonterminal">$x</span>.as_bytes());
+                <span class="macro">println!</span>(<span class="string">"{} = {:?}"</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$x</span>), <span class="macro-nonterminal">$x</span>.as_bytes());
             };
         }
 
@@ -944,7 +945,7 @@
         <span class="macro">print_var!</span>(S1);
         <span class="macro">print_var!</span>(S2);
         <span class="macro">print_var!</span>(S3);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>S4 = <span class="kw-2">&amp;</span>S0 * <span class="kw-2">&amp;</span>S2; <span class="comment">// R5 = R1 * R2
         </span><span class="kw">let </span>S5 = <span class="kw-2">&amp;</span>S1 * <span class="kw-2">&amp;</span>S3; <span class="comment">// R6 = R3 * R4
@@ -954,7 +955,7 @@
         <span class="macro">print_var!</span>(S5);
         <span class="macro">print_var!</span>(S6);
         <span class="macro">print_var!</span>(S7);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>S8  =  <span class="kw-2">&amp;</span>S4 *    <span class="kw-2">&amp;</span>FieldElement51([  <span class="number">121666</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>]);  <span class="comment">// R5
         </span><span class="kw">let </span>S9  =  <span class="kw-2">&amp;</span>S5 *    <span class="kw-2">&amp;</span>FieldElement51([  <span class="number">121666</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>]);  <span class="comment">// R6
@@ -964,7 +965,7 @@
         <span class="macro">print_var!</span>(S9);
         <span class="macro">print_var!</span>(S10);
         <span class="macro">print_var!</span>(S11);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>S12 =  <span class="kw-2">&amp;</span>S9 - <span class="kw-2">&amp;</span>S8;  <span class="comment">// R1
         </span><span class="kw">let </span>S13 =  <span class="kw-2">&amp;</span>S9 + <span class="kw-2">&amp;</span>S8;  <span class="comment">// R4
@@ -974,7 +975,7 @@
         <span class="macro">print_var!</span>(S13);
         <span class="macro">print_var!</span>(S14);
         <span class="macro">print_var!</span>(S15);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>X3 = <span class="kw-2">&amp;</span>S12 * <span class="kw-2">&amp;</span>S14; <span class="comment">// R1 * R2
         </span><span class="kw">let </span>Y3 = <span class="kw-2">&amp;</span>S15 * <span class="kw-2">&amp;</span>S13; <span class="comment">// R3 * R4
@@ -998,19 +999,19 @@
         <span class="kw">let </span>R_vector: edwards::EdwardsPoint = (<span class="kw-2">&amp;</span>ExtendedPoint::from(P) + <span class="kw-2">&amp;</span>cached_Q).into();
         <span class="kw">let </span>S_vector: edwards::EdwardsPoint = (<span class="kw-2">&amp;</span>ExtendedPoint::from(P) - <span class="kw-2">&amp;</span>cached_Q).into();
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing point addition:&quot;</span>);
-        <span class="macro">println!</span>(<span class="string">&quot;P = {:?}&quot;</span>, P);
-        <span class="macro">println!</span>(<span class="string">&quot;Q = {:?}&quot;</span>, Q);
-        <span class="macro">println!</span>(<span class="string">&quot;cached Q = {:?}&quot;</span>, cached_Q);
-        <span class="macro">println!</span>(<span class="string">&quot;R = P + Q = {:?}&quot;</span>, <span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>Q);
-        <span class="macro">println!</span>(<span class="string">&quot;R_serial = {:?}&quot;</span>, R_serial);
-        <span class="macro">println!</span>(<span class="string">&quot;R_vector = {:?}&quot;</span>, R_vector);
-        <span class="macro">println!</span>(<span class="string">&quot;S = P - Q = {:?}&quot;</span>, <span class="kw-2">&amp;</span>P - <span class="kw-2">&amp;</span>Q);
-        <span class="macro">println!</span>(<span class="string">&quot;S_vector = {:?}&quot;</span>, S_vector);
+        <span class="macro">println!</span>(<span class="string">"Testing point addition:"</span>);
+        <span class="macro">println!</span>(<span class="string">"P = {:?}"</span>, P);
+        <span class="macro">println!</span>(<span class="string">"Q = {:?}"</span>, Q);
+        <span class="macro">println!</span>(<span class="string">"cached Q = {:?}"</span>, cached_Q);
+        <span class="macro">println!</span>(<span class="string">"R = P + Q = {:?}"</span>, <span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>Q);
+        <span class="macro">println!</span>(<span class="string">"R_serial = {:?}"</span>, R_serial);
+        <span class="macro">println!</span>(<span class="string">"R_vector = {:?}"</span>, R_vector);
+        <span class="macro">println!</span>(<span class="string">"S = P - Q = {:?}"</span>, <span class="kw-2">&amp;</span>P - <span class="kw-2">&amp;</span>Q);
+        <span class="macro">println!</span>(<span class="string">"S_vector = {:?}"</span>, S_vector);
         <span class="macro">assert_eq!</span>(R_serial.compress(), (<span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>Q).compress());
         <span class="macro">assert_eq!</span>(R_vector.compress(), (<span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>Q).compress());
         <span class="macro">assert_eq!</span>(S_vector.compress(), (<span class="kw-2">&amp;</span>P - <span class="kw-2">&amp;</span>Q).compress());
-        <span class="macro">println!</span>(<span class="string">&quot;OK!\n&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"OK!\n"</span>);
     }
 
     <span class="attr">#[test]
@@ -1018,22 +1019,22 @@
         <span class="kw">use </span><span class="kw">crate</span>::constants;
         <span class="kw">use </span><span class="kw">crate</span>::scalar::Scalar;
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing id +- id&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing id +- id"</span>);
         <span class="kw">let </span>P = edwards::EdwardsPoint::identity();
         <span class="kw">let </span>Q = edwards::EdwardsPoint::identity();
         addition_test_helper(P, Q);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing id +- B&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing id +- B"</span>);
         <span class="kw">let </span>P = edwards::EdwardsPoint::identity();
         <span class="kw">let </span>Q = constants::ED25519_BASEPOINT_POINT;
         addition_test_helper(P, Q);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing B +- B&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing B +- B"</span>);
         <span class="kw">let </span>P = constants::ED25519_BASEPOINT_POINT;
         <span class="kw">let </span>Q = constants::ED25519_BASEPOINT_POINT;
         addition_test_helper(P, Q);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing B +- kB&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing B +- kB"</span>);
         <span class="kw">let </span>P = constants::ED25519_BASEPOINT_POINT;
         <span class="kw">let </span>Q = constants::ED25519_BASEPOINT_TABLE * <span class="kw-2">&amp;</span>Scalar::from(<span class="number">8475983829u64</span>);
         addition_test_helper(P, Q);
@@ -1044,13 +1045,13 @@
 
         <span class="macro">macro_rules! </span>print_var {
             (<span class="macro-nonterminal">$x</span>:ident) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;{} = {:?}&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$x</span>), <span class="macro-nonterminal">$x</span>.as_bytes());
+                <span class="macro">println!</span>(<span class="string">"{} = {:?}"</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$x</span>), <span class="macro-nonterminal">$x</span>.as_bytes());
             };
         }
 
         <span class="kw">let </span>S0 = <span class="kw-2">&amp;</span>X1 + <span class="kw-2">&amp;</span>Y1; <span class="comment">// R1
         </span><span class="macro">print_var!</span>(S0);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>S1 = X1.square();
         <span class="kw">let </span>S2 = Y1.square();
@@ -1060,7 +1061,7 @@
         <span class="macro">print_var!</span>(S2);
         <span class="macro">print_var!</span>(S3);
         <span class="macro">print_var!</span>(S4);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>S5 = <span class="kw-2">&amp;</span>S1 + <span class="kw-2">&amp;</span>S2;
         <span class="kw">let </span>S6 = <span class="kw-2">&amp;</span>S1 - <span class="kw-2">&amp;</span>S2;
@@ -1072,7 +1073,7 @@
         <span class="macro">print_var!</span>(S7);
         <span class="macro">print_var!</span>(S8);
         <span class="macro">print_var!</span>(S9);
-        <span class="macro">println!</span>(<span class="string">&quot;&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">""</span>);
 
         <span class="kw">let </span>X3 = <span class="kw-2">&amp;</span>S8 * <span class="kw-2">&amp;</span>S9;
         <span class="kw">let </span>Y3 = <span class="kw-2">&amp;</span>S5 * <span class="kw-2">&amp;</span>S6;
@@ -1090,14 +1091,14 @@
     <span class="kw">fn </span>doubling_test_helper(P: edwards::EdwardsPoint) {
         <span class="kw">let </span>R1: edwards::EdwardsPoint = serial_double(P.into()).into();
         <span class="kw">let </span>R2: edwards::EdwardsPoint = ExtendedPoint::from(P).double().into();
-        <span class="macro">println!</span>(<span class="string">&quot;Testing point doubling:&quot;</span>);
-        <span class="macro">println!</span>(<span class="string">&quot;P = {:?}&quot;</span>, P);
-        <span class="macro">println!</span>(<span class="string">&quot;(serial) R1 = {:?}&quot;</span>, R1);
-        <span class="macro">println!</span>(<span class="string">&quot;(vector) R2 = {:?}&quot;</span>, R2);
-        <span class="macro">println!</span>(<span class="string">&quot;P + P = {:?}&quot;</span>, <span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>P);
+        <span class="macro">println!</span>(<span class="string">"Testing point doubling:"</span>);
+        <span class="macro">println!</span>(<span class="string">"P = {:?}"</span>, P);
+        <span class="macro">println!</span>(<span class="string">"(serial) R1 = {:?}"</span>, R1);
+        <span class="macro">println!</span>(<span class="string">"(vector) R2 = {:?}"</span>, R2);
+        <span class="macro">println!</span>(<span class="string">"P + P = {:?}"</span>, <span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>P);
         <span class="macro">assert_eq!</span>(R1.compress(), (<span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>P).compress());
         <span class="macro">assert_eq!</span>(R2.compress(), (<span class="kw-2">&amp;</span>P + <span class="kw-2">&amp;</span>P).compress());
-        <span class="macro">println!</span>(<span class="string">&quot;OK!\n&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"OK!\n"</span>);
     }
 
     <span class="attr">#[test]
@@ -1105,20 +1106,20 @@
         <span class="kw">use </span><span class="kw">crate</span>::constants;
         <span class="kw">use </span><span class="kw">crate</span>::scalar::Scalar;
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing [2]id&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing [2]id"</span>);
         <span class="kw">let </span>P = edwards::EdwardsPoint::identity();
         doubling_test_helper(P);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing [2]B&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing [2]B"</span>);
         <span class="kw">let </span>P = constants::ED25519_BASEPOINT_POINT;
         doubling_test_helper(P);
 
-        <span class="macro">println!</span>(<span class="string">&quot;Testing [2]([k]B)&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Testing [2]([k]B)"</span>);
         <span class="kw">let </span>P = constants::ED25519_BASEPOINT_TABLE * <span class="kw-2">&amp;</span>Scalar::from(<span class="number">8475983829u64</span>);
         doubling_test_helper(P);
     }
 
-    <span class="attr">#[cfg(any(feature = <span class="string">&quot;precomputed-tables&quot;</span>, feature = <span class="string">&quot;alloc&quot;</span>))]
+    <span class="attr">#[cfg(any(feature = <span class="string">"precomputed-tables"</span>, feature = <span class="string">"alloc"</span>))]
     #[test]
     </span><span class="kw">fn </span>basepoint_odd_lookup_table_verify() {
         <span class="kw">use </span><span class="kw">crate</span>::backend::vector::avx2::constants::BASEPOINT_ODD_LOOKUP_TABLE;
@@ -1126,7 +1127,7 @@
 
         <span class="kw">let </span>basepoint_odd_table =
             NafLookupTable8::&lt;CachedPoint&gt;::from(<span class="kw-2">&amp;</span>constants::ED25519_BASEPOINT_POINT);
-        <span class="macro">println!</span>(<span class="string">&quot;basepoint_odd_lookup_table = {:?}&quot;</span>, basepoint_odd_table);
+        <span class="macro">println!</span>(<span class="string">"basepoint_odd_lookup_table = {:?}"</span>, basepoint_odd_table);
 
         <span class="kw">let </span>table_B = <span class="kw-2">&amp;</span>BASEPOINT_ODD_LOOKUP_TABLE;
         <span class="kw">for </span>(b_vec, base_vec) <span class="kw">in </span>table_B.<span class="number">0</span>.iter().zip(basepoint_odd_table.<span class="number">0</span>.iter()) {

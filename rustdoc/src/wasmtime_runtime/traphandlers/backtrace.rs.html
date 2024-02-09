@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/traphandlers/backtrace.rs`."><title>backtrace.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/traphandlers/backtrace.rs`."><title>backtrace.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -306,7 +307,7 @@
 //! lets us identify ranges of contiguous Wasm frames on the stack.
 //!
 //! To solve (2) and walk the Wasm frames within a region of contiguous Wasm
-//! frames on the stack, we configure Cranelift&#39;s `preserve_frame_pointers =
+//! frames on the stack, we configure Cranelift's `preserve_frame_pointers =
 //! true` setting. Then we can do simple frame pointer traversal starting at the
 //! exit FP and stopping once we reach the entry SP (meaning that the next older
 //! frame is a host frame).
@@ -327,20 +328,20 @@
 // * `fn assert_entry_sp_is_aligned(sp: usize)`
 // * `fn assert_fp_is_aligned(fp: usize)`
 </span><span class="macro">cfg_if! </span>{
-    <span class="kw">if </span><span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)] </span>{
+    <span class="kw">if </span><span class="attr">#[cfg(target_arch = <span class="string">"x86_64"</span>)] </span>{
         <span class="kw">mod </span>x86_64;
         <span class="kw">use </span>x86_64 <span class="kw">as </span>arch;
-    } <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">&quot;aarch64&quot;</span>)] </span>{
+    } <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">"aarch64"</span>)] </span>{
         <span class="kw">mod </span>aarch64;
         <span class="kw">use </span>aarch64 <span class="kw">as </span>arch;
-    } <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">&quot;s390x&quot;</span>)] </span>{
+    } <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">"s390x"</span>)] </span>{
         <span class="kw">mod </span>s390x;
         <span class="kw">use </span>s390x <span class="kw">as </span>arch;
-    } <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">&quot;riscv64&quot;</span>)] </span>{
+    } <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">"riscv64"</span>)] </span>{
         <span class="kw">mod </span>riscv64;
         <span class="kw">use </span>riscv64 <span class="kw">as </span>arch;
     } <span class="kw">else </span>{
-        <span class="macro">compile_error!</span>(<span class="string">&quot;unsupported architecture&quot;</span>);
+        <span class="macro">compile_error!</span>(<span class="string">"unsupported architecture"</span>);
     }
 }
 
@@ -356,12 +357,12 @@
 }
 
 <span class="kw">impl </span>Frame {
-    <span class="doccomment">/// Get this frame&#39;s program counter.
+    <span class="doccomment">/// Get this frame's program counter.
     </span><span class="kw">pub fn </span>pc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.pc
     }
 
-    <span class="doccomment">/// Get this frame&#39;s frame pointer.
+    <span class="doccomment">/// Get this frame's frame pointer.
     </span><span class="kw">pub fn </span>fp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.fp
     }
@@ -384,7 +385,7 @@
     <span class="doccomment">/// Capture the current Wasm stack trace.
     ///
     /// If Wasm hit a trap, and we calling this from the trap handler, then the
-    /// Wasm exit trampoline didn&#39;t run, and we use the provided PC and FP
+    /// Wasm exit trampoline didn't run, and we use the provided PC and FP
     /// instead of looking them up in `VMRuntimeLimits`.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>new_with_trap_state(
         limits: <span class="kw-2">*const </span>VMRuntimeLimits,
@@ -410,7 +411,7 @@
     <span class="doccomment">/// Walk the current Wasm stack, calling `f` for each frame we walk.
     ///
     /// If Wasm hit a trap, and we calling this from the trap handler, then the
-    /// Wasm exit trampoline didn&#39;t run, and we use the provided PC and FP
+    /// Wasm exit trampoline didn't run, and we use the provided PC and FP
     /// instead of looking them up in `VMRuntimeLimits`.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>trace_with_trap_state(
         limits: <span class="kw-2">*const </span>VMRuntimeLimits,
@@ -418,7 +419,7 @@
         trap_pc_and_fp: <span class="prelude-ty">Option</span>&lt;(usize, usize)&gt;,
         <span class="kw-2">mut </span>f: <span class="kw">impl </span>FnMut(Frame) -&gt; ControlFlow&lt;()&gt;,
     ) {
-        <span class="macro">log::trace!</span>(<span class="string">&quot;====== Capturing Backtrace ======&quot;</span>);
+        <span class="macro">log::trace!</span>(<span class="string">"====== Capturing Backtrace ======"</span>);
 
         <span class="kw">let </span>(last_wasm_exit_pc, last_wasm_exit_fp) = <span class="kw">match </span>trap_pc_and_fp {
             <span class="comment">// If we exited Wasm by catching a trap, then the Wasm-to-host
@@ -464,12 +465,12 @@
 
         <span class="kw">for </span>(pc, fp, sp) <span class="kw">in </span>activations {
             <span class="kw">if let </span>ControlFlow::Break(()) = <span class="self">Self</span>::trace_through_wasm(pc, fp, sp, <span class="kw-2">&amp;mut </span>f) {
-                <span class="macro">log::trace!</span>(<span class="string">&quot;====== Done Capturing Backtrace (closure break) ======&quot;</span>);
+                <span class="macro">log::trace!</span>(<span class="string">"====== Done Capturing Backtrace (closure break) ======"</span>);
                 <span class="kw">return</span>;
             }
         }
 
-        <span class="macro">log::trace!</span>(<span class="string">&quot;====== Done Capturing Backtrace (reached end of activations) ======&quot;</span>);
+        <span class="macro">log::trace!</span>(<span class="string">"====== Done Capturing Backtrace (reached end of activations) ======"</span>);
     }
 
     <span class="doccomment">/// Walk through a contiguous sequence of Wasm frames starting with the
@@ -480,10 +481,10 @@
         trampoline_sp: usize,
         <span class="kw-2">mut </span>f: <span class="kw">impl </span>FnMut(Frame) -&gt; ControlFlow&lt;()&gt;,
     ) -&gt; ControlFlow&lt;()&gt; {
-        <span class="macro">log::trace!</span>(<span class="string">&quot;=== Tracing through contiguous sequence of Wasm frames ===&quot;</span>);
-        <span class="macro">log::trace!</span>(<span class="string">&quot;trampoline_sp = 0x{:016x}&quot;</span>, trampoline_sp);
-        <span class="macro">log::trace!</span>(<span class="string">&quot;   initial pc = 0x{:016x}&quot;</span>, pc);
-        <span class="macro">log::trace!</span>(<span class="string">&quot;   initial fp = 0x{:016x}&quot;</span>, fp);
+        <span class="macro">log::trace!</span>(<span class="string">"=== Tracing through contiguous sequence of Wasm frames ==="</span>);
+        <span class="macro">log::trace!</span>(<span class="string">"trampoline_sp = 0x{:016x}"</span>, trampoline_sp);
+        <span class="macro">log::trace!</span>(<span class="string">"   initial pc = 0x{:016x}"</span>, pc);
+        <span class="macro">log::trace!</span>(<span class="string">"   initial fp = 0x{:016x}"</span>, fp);
 
         <span class="comment">// We already checked for this case in the `trace_with_trap_state`
         // caller.
@@ -502,13 +503,13 @@
             // The stack grows down, and therefore any frame pointer we are
             // dealing with should be less than the stack pointer on entry
             // to Wasm.
-            </span><span class="macro">assert!</span>(trampoline_sp &gt;= fp, <span class="string">&quot;{trampoline_sp:#x} &gt;= {fp:#x}&quot;</span>);
+            </span><span class="macro">assert!</span>(trampoline_sp &gt;= fp, <span class="string">"{trampoline_sp:#x} &gt;= {fp:#x}"</span>);
 
             arch::assert_fp_is_aligned(fp);
 
-            <span class="macro">log::trace!</span>(<span class="string">&quot;--- Tracing through one Wasm frame ---&quot;</span>);
-            <span class="macro">log::trace!</span>(<span class="string">&quot;pc = {:p}&quot;</span>, pc <span class="kw">as </span><span class="kw-2">*const </span>());
-            <span class="macro">log::trace!</span>(<span class="string">&quot;fp = {:p}&quot;</span>, fp <span class="kw">as </span><span class="kw-2">*const </span>());
+            <span class="macro">log::trace!</span>(<span class="string">"--- Tracing through one Wasm frame ---"</span>);
+            <span class="macro">log::trace!</span>(<span class="string">"pc = {:p}"</span>, pc <span class="kw">as </span><span class="kw-2">*const </span>());
+            <span class="macro">log::trace!</span>(<span class="string">"fp = {:p}"</span>, fp <span class="kw">as </span><span class="kw-2">*const </span>());
 
             f(Frame { pc, fp })<span class="question-mark">?</span>;
 
@@ -523,14 +524,14 @@
             <span class="comment">// Get the next older frame pointer from the current Wasm frame
             // pointer.
             //
-            // The next older frame pointer may or may not be a Wasm frame&#39;s
+            // The next older frame pointer may or may not be a Wasm frame's
             // frame pointer, but it is trusted either way (i.e. is actually a
             // frame pointer and not being used as a general-purpose register)
             // because we always enter Wasm from the host via a trampoline, and
             // this trampoline maintains a proper frame pointer.
             //
-            // We want to detect when we&#39;ve reached the trampoline, and break
-            // out of this stack-walking loop. All of our architectures&#39; stacks
+            // We want to detect when we've reached the trampoline, and break
+            // out of this stack-walking loop. All of our architectures' stacks
             // grow down and look something vaguely like this:
             //
             //     | ...               |
@@ -553,30 +554,30 @@
             // Wasm frame pointer (at least on x86-64, exact details vary across
             // architectures) but not always: if the first Wasm function called
             // by the host has many arguments, some of them could be passed on
-            // the stack in between the return address and the trampoline&#39;s
+            // the stack in between the return address and the trampoline's
             // frame.
             //
-            // To check when we&#39;ve reached the trampoline frame, it is therefore
+            // To check when we've reached the trampoline frame, it is therefore
             // sufficient to check when the next frame pointer is greater than
             // or equal to `trampoline_sp` (except s390x, where it needs to be
             // strictly greater than).
             </span><span class="kw">let </span>next_older_fp = <span class="kw-2">*</span>(fp <span class="kw">as </span><span class="kw-2">*mut </span>usize).add(arch::NEXT_OLDER_FP_FROM_FP_OFFSET);
             <span class="kw">if </span>arch::reached_entry_sp(next_older_fp, trampoline_sp) {
-                <span class="macro">log::trace!</span>(<span class="string">&quot;=== Done tracing contiguous sequence of Wasm frames ===&quot;</span>);
+                <span class="macro">log::trace!</span>(<span class="string">"=== Done tracing contiguous sequence of Wasm frames ==="</span>);
                 <span class="kw">return </span>ControlFlow::Continue(());
             }
 
             <span class="comment">// Because the stack always grows down, the older FP must be greater
             // than the current FP.
-            </span><span class="macro">assert!</span>(next_older_fp &gt; fp, <span class="string">&quot;{next_older_fp:#x} &gt; {fp:#x}&quot;</span>);
+            </span><span class="macro">assert!</span>(next_older_fp &gt; fp, <span class="string">"{next_older_fp:#x} &gt; {fp:#x}"</span>);
             fp = next_older_fp;
         }
     }
 
     <span class="doccomment">/// Iterate over the frames inside this backtrace.
-    </span><span class="kw">pub fn </span>frames&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
-    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Frame&gt; + DoubleEndedIterator + <span class="lifetime">&#39;a </span>{
+    </span><span class="kw">pub fn </span>frames&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Frame&gt; + DoubleEndedIterator + <span class="lifetime">'a </span>{
         <span class="self">self</span>.<span class="number">0</span>.iter()
     }
 }

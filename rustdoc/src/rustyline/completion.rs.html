@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rustyline-13.0.0/src/completion.rs`."><title>completion.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rustyline" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rustyline-13.0.0/src/completion.rs`."><title>completion.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rustyline" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -678,7 +679,7 @@
     }
 }
 
-<span class="doccomment">/// #[deprecated = &quot;Unusable&quot;]
+<span class="doccomment">/// #[deprecated = "Unusable"]
 </span><span class="kw">impl </span>Candidate <span class="kw">for </span>str {
     <span class="kw">fn </span>display(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="self">self
@@ -689,7 +690,7 @@
     </span>}
 }
 
-<span class="kw">impl </span>Candidate <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;_ </span>str {
+<span class="kw">impl </span>Candidate <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'_ </span>str {
     <span class="kw">fn </span>display(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="self">self
     </span>}
@@ -742,12 +743,12 @@
     /// returns the start position and the completion candidates for the
     /// partial word to be completed.
     ///
-    /// (&quot;ls /usr/loc&quot;, 11) =&gt; Ok((3, vec![&quot;/usr/local/&quot;]))
+    /// ("ls /usr/loc", 11) =&gt; Ok((3, vec!["/usr/local/"]))
     </span><span class="kw">fn </span>complete(
         <span class="kw-2">&amp;</span><span class="self">self</span>, <span class="comment">// FIXME should be `&amp;mut self`
         </span>line: <span class="kw-2">&amp;</span>str,
         pos: usize,
-        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, Vec&lt;<span class="self">Self</span>::Candidate&gt;)&gt; {
         <span class="kw">let _ </span>= (line, pos, ctx);
         <span class="prelude-val">Ok</span>((<span class="number">0</span>, Vec::with_capacity(<span class="number">0</span>)))
@@ -767,14 +768,14 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;c</span>, C: <span class="question-mark">?</span>Sized + Completer&gt; Completer <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;c </span>C {
+<span class="kw">impl</span>&lt;<span class="lifetime">'c</span>, C: <span class="question-mark">?</span>Sized + Completer&gt; Completer <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'c </span>C {
     <span class="kw">type </span>Candidate = C::Candidate;
 
     <span class="kw">fn </span>complete(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         line: <span class="kw-2">&amp;</span>str,
         pos: usize,
-        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, Vec&lt;<span class="self">Self</span>::Candidate&gt;)&gt; {
         (<span class="kw-2">**</span><span class="self">self</span>).complete(line, pos, ctx)
     }
@@ -789,7 +790,7 @@
             <span class="kw">impl</span>&lt;C: <span class="question-mark">?</span>Sized + Completer&gt; Completer <span class="kw">for </span><span class="macro-nonterminal">$id</span>&lt;C&gt; {
                 <span class="kw">type </span>Candidate = C::Candidate;
 
-                <span class="kw">fn </span>complete(<span class="kw-2">&amp;</span><span class="self">self</span>, line: <span class="kw-2">&amp;</span>str, pos: usize, ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, Vec&lt;<span class="self">Self</span>::Candidate&gt;)&gt; {
+                <span class="kw">fn </span>complete(<span class="kw-2">&amp;</span><span class="self">self</span>, line: <span class="kw-2">&amp;</span>str, pos: usize, ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, Vec&lt;<span class="self">Self</span>::Candidate&gt;)&gt; {
                     (<span class="kw-2">**</span><span class="self">self</span>).complete(line, pos, ctx)
                 }
                 <span class="kw">fn </span>update(<span class="kw-2">&amp;</span><span class="self">self</span>, line: <span class="kw-2">&amp;mut </span>LineBuffer, start: usize, elected: <span class="kw-2">&amp;</span>str, cl: <span class="kw-2">&amp;mut </span>Changeset) {
@@ -811,28 +812,28 @@
     double_quotes_special_chars: <span class="kw">fn</span>(char) -&gt; bool,
 }
 
-<span class="kw">const </span>DOUBLE_QUOTES_ESCAPE_CHAR: <span class="prelude-ty">Option</span>&lt;char&gt; = <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>);
+<span class="kw">const </span>DOUBLE_QUOTES_ESCAPE_CHAR: <span class="prelude-ty">Option</span>&lt;char&gt; = <span class="prelude-val">Some</span>(<span class="string">'\\'</span>);
 
 <span class="macro">cfg_if::cfg_if! </span>{
     <span class="kw">if </span><span class="attr">#[cfg(unix)] </span>{
         <span class="comment">// rl_basic_word_break_characters, rl_completer_word_break_characters
         </span><span class="kw">const fn </span>default_break_chars(c : char) -&gt; bool {
-            <span class="macro">matches!</span>(c, <span class="string">&#39; &#39; </span>| <span class="string">&#39;\t&#39; </span>| <span class="string">&#39;\n&#39; </span>| <span class="string">&#39;&quot;&#39; </span>| <span class="string">&#39;\\&#39; </span>| <span class="string">&#39;\&#39;&#39; </span>| <span class="string">&#39;`&#39; </span>| <span class="string">&#39;@&#39; </span>| <span class="string">&#39;$&#39; </span>| <span class="string">&#39;&gt;&#39; </span>| <span class="string">&#39;&lt;&#39; </span>| <span class="string">&#39;=&#39; </span>| <span class="string">&#39;;&#39; </span>| <span class="string">&#39;|&#39; </span>| <span class="string">&#39;&amp;&#39; </span>|
-            <span class="string">&#39;{&#39; </span>| <span class="string">&#39;(&#39; </span>| <span class="string">&#39;\0&#39;</span>)
+            <span class="macro">matches!</span>(c, <span class="string">' ' </span>| <span class="string">'\t' </span>| <span class="string">'\n' </span>| <span class="string">'"' </span>| <span class="string">'\\' </span>| <span class="string">'\'' </span>| <span class="string">'`' </span>| <span class="string">'@' </span>| <span class="string">'$' </span>| <span class="string">'&gt;' </span>| <span class="string">'&lt;' </span>| <span class="string">'=' </span>| <span class="string">';' </span>| <span class="string">'|' </span>| <span class="string">'&amp;' </span>|
+            <span class="string">'{' </span>| <span class="string">'(' </span>| <span class="string">'\0'</span>)
         }
-        <span class="kw">const </span>ESCAPE_CHAR: <span class="prelude-ty">Option</span>&lt;char&gt; = <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>);
+        <span class="kw">const </span>ESCAPE_CHAR: <span class="prelude-ty">Option</span>&lt;char&gt; = <span class="prelude-val">Some</span>(<span class="string">'\\'</span>);
         <span class="comment">// In double quotes, not all break_chars need to be escaped
         // https://www.gnu.org/software/bash/manual/html_node/Double-Quotes.html
-        </span><span class="kw">const fn </span>double_quotes_special_chars(c: char) -&gt; bool { <span class="macro">matches!</span>(c, <span class="string">&#39;&quot;&#39; </span>| <span class="string">&#39;$&#39; </span>| <span class="string">&#39;\\&#39; </span>| <span class="string">&#39;`&#39;</span>) }
+        </span><span class="kw">const fn </span>double_quotes_special_chars(c: char) -&gt; bool { <span class="macro">matches!</span>(c, <span class="string">'"' </span>| <span class="string">'$' </span>| <span class="string">'\\' </span>| <span class="string">'`'</span>) }
     } <span class="kw">else if </span><span class="attr">#[cfg(windows)] </span>{
         <span class="comment">// Remove \ to make file completion works on windows
         </span><span class="kw">const fn </span>default_break_chars(c: char) -&gt; bool {
-            <span class="macro">matches!</span>(c, <span class="string">&#39; &#39; </span>| <span class="string">&#39;\t&#39; </span>| <span class="string">&#39;\n&#39; </span>| <span class="string">&#39;&quot;&#39; </span>| <span class="string">&#39;\&#39;&#39; </span>| <span class="string">&#39;`&#39; </span>| <span class="string">&#39;@&#39; </span>| <span class="string">&#39;$&#39; </span>| <span class="string">&#39;&gt;&#39; </span>| <span class="string">&#39;&lt;&#39; </span>| <span class="string">&#39;=&#39; </span>| <span class="string">&#39;;&#39; </span>| <span class="string">&#39;|&#39; </span>| <span class="string">&#39;&amp;&#39; </span>| <span class="string">&#39;{&#39; </span>|
-            <span class="string">&#39;(&#39; </span>| <span class="string">&#39;\0&#39;</span>)
+            <span class="macro">matches!</span>(c, <span class="string">' ' </span>| <span class="string">'\t' </span>| <span class="string">'\n' </span>| <span class="string">'"' </span>| <span class="string">'\'' </span>| <span class="string">'`' </span>| <span class="string">'@' </span>| <span class="string">'$' </span>| <span class="string">'&gt;' </span>| <span class="string">'&lt;' </span>| <span class="string">'=' </span>| <span class="string">';' </span>| <span class="string">'|' </span>| <span class="string">'&amp;' </span>| <span class="string">'{' </span>|
+            <span class="string">'(' </span>| <span class="string">'\0'</span>)
         }
         <span class="kw">const </span>ESCAPE_CHAR: <span class="prelude-ty">Option</span>&lt;char&gt; = <span class="prelude-val">None</span>;
-        <span class="kw">const fn </span>double_quotes_special_chars(c: char) -&gt; bool { c == <span class="string">&#39;&quot;&#39; </span>} <span class="comment">// TODO Validate: only &#39;&quot;&#39; ?
-    </span>} <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">&quot;wasm32&quot;</span>)] </span>{
+        <span class="kw">const fn </span>double_quotes_special_chars(c: char) -&gt; bool { c == <span class="string">'"' </span>} <span class="comment">// TODO Validate: only '"' ?
+    </span>} <span class="kw">else if </span><span class="attr">#[cfg(target_arch = <span class="string">"wasm32"</span>)] </span>{
         <span class="kw">const fn </span>default_break_chars(c: char) -&gt; bool { <span class="bool-val">false </span>}
         <span class="kw">const </span>ESCAPE_CHAR: <span class="prelude-ty">Option</span>&lt;char&gt; = <span class="prelude-val">None</span>;
         <span class="kw">const fn </span>double_quotes_special_chars(c: char) -&gt; bool { <span class="bool-val">false </span>}
@@ -842,9 +843,9 @@
 <span class="doccomment">/// Kind of quote.
 </span><span class="attr">#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 </span><span class="kw">pub enum </span>Quote {
-    <span class="doccomment">/// Double quote: `&quot;`
+    <span class="doccomment">/// Double quote: `"`
     </span>Double,
-    <span class="doccomment">/// Single quote: `&#39;`
+    <span class="doccomment">/// Single quote: `'`
     </span>Single,
     <span class="doccomment">/// No quote
     </span><span class="prelude-val">None</span>,
@@ -911,14 +912,14 @@
 <span class="kw">impl </span>Completer <span class="kw">for </span>FilenameCompleter {
     <span class="kw">type </span>Candidate = Pair;
 
-    <span class="kw">fn </span>complete(<span class="kw-2">&amp;</span><span class="self">self</span>, line: <span class="kw-2">&amp;</span>str, pos: usize, _ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, Vec&lt;Pair&gt;)&gt; {
+    <span class="kw">fn </span>complete(<span class="kw-2">&amp;</span><span class="self">self</span>, line: <span class="kw-2">&amp;</span>str, pos: usize, _ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, Vec&lt;Pair&gt;)&gt; {
         <span class="self">self</span>.complete_path(line, pos)
     }
 }
 
 <span class="doccomment">/// Remove escape char
 </span><span class="attr">#[must_use]
-</span><span class="kw">pub fn </span>unescape(input: <span class="kw-2">&amp;</span>str, esc_char: <span class="prelude-ty">Option</span>&lt;char&gt;) -&gt; Cow&lt;<span class="lifetime">&#39;_</span>, str&gt; {
+</span><span class="kw">pub fn </span>unescape(input: <span class="kw-2">&amp;</span>str, esc_char: <span class="prelude-ty">Option</span>&lt;char&gt;) -&gt; Cow&lt;<span class="lifetime">'_</span>, str&gt; {
     <span class="kw">let </span>esc_char = <span class="kw">if let </span><span class="prelude-val">Some</span>(c) = esc_char {
         c
     } <span class="kw">else </span>{
@@ -932,8 +933,8 @@
     <span class="kw">while let </span><span class="prelude-val">Some</span>(ch) = chars.next() {
         <span class="kw">if </span>ch == esc_char {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(ch) = chars.next() {
-                <span class="kw">if </span><span class="macro">cfg!</span>(windows) &amp;&amp; ch != <span class="string">&#39;&quot;&#39; </span>{
-                    <span class="comment">// TODO Validate: only &#39;&quot;&#39; ?
+                <span class="kw">if </span><span class="macro">cfg!</span>(windows) &amp;&amp; ch != <span class="string">'"' </span>{
+                    <span class="comment">// TODO Validate: only '"' ?
                     </span>result.push(esc_char);
                 }
                 result.push(ch);
@@ -948,8 +949,8 @@
 }
 
 <span class="doccomment">/// Escape any `break_chars` in `input` string with `esc_char`.
-/// For example, &#39;/User Information&#39; becomes &#39;/User\ Information&#39;
-/// when space is a breaking char and &#39;\\&#39; the escape char.
+/// For example, '/User Information' becomes '/User\ Information'
+/// when space is a breaking char and '\\' the escape char.
 </span><span class="attr">#[must_use]
 </span><span class="kw">pub fn </span>escape(
     <span class="kw-2">mut </span>input: String,
@@ -968,7 +969,7 @@
         c
     } <span class="kw">else </span>{
         <span class="kw">if </span><span class="macro">cfg!</span>(windows) &amp;&amp; quote == Quote::None {
-            input.insert(<span class="number">0</span>, <span class="string">&#39;&quot;&#39;</span>); <span class="comment">// force double quote
+            input.insert(<span class="number">0</span>, <span class="string">'"'</span>); <span class="comment">// force double quote
             </span><span class="kw">return </span>input;
         }
         <span class="kw">return </span>input;
@@ -990,23 +991,23 @@
     is_break_char: <span class="kw">fn</span>(char) -&gt; bool,
     quote: Quote,
 ) -&gt; Vec&lt;Pair&gt; {
-    <span class="attr">#[cfg(feature = <span class="string">&quot;with-dirs&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"with-dirs"</span>)]
     </span><span class="kw">use </span>home::home_dir;
     <span class="kw">use </span>std::env::current_dir;
 
     <span class="kw">let </span>sep = path::MAIN_SEPARATOR;
     <span class="kw">let </span>(dir_name, file_name) = <span class="kw">match </span>path.rfind(sep) {
         <span class="prelude-val">Some</span>(idx) =&gt; path.split_at(idx + sep.len_utf8()),
-        <span class="prelude-val">None </span>=&gt; (<span class="string">&quot;&quot;</span>, path),
+        <span class="prelude-val">None </span>=&gt; (<span class="string">""</span>, path),
     };
 
     <span class="kw">let </span>dir_path = Path::new(dir_name);
-    <span class="kw">let </span>dir = <span class="kw">if </span>dir_path.starts_with(<span class="string">&quot;~&quot;</span>) {
+    <span class="kw">let </span>dir = <span class="kw">if </span>dir_path.starts_with(<span class="string">"~"</span>) {
         <span class="comment">// ~[/...]
-        </span><span class="attr">#[cfg(feature = <span class="string">&quot;with-dirs&quot;</span>)]
+        </span><span class="attr">#[cfg(feature = <span class="string">"with-dirs"</span>)]
         </span>{
             <span class="kw">if let </span><span class="prelude-val">Some</span>(home) = home_dir() {
-                <span class="kw">match </span>dir_path.strip_prefix(<span class="string">&quot;~&quot;</span>) {
+                <span class="kw">match </span>dir_path.strip_prefix(<span class="string">"~"</span>) {
                     <span class="prelude-val">Ok</span>(rel_path) =&gt; home.join(rel_path),
                     <span class="kw">_ </span>=&gt; home,
                 }
@@ -1014,7 +1015,7 @@
                 dir_path.to_path_buf()
             }
         }
-        <span class="attr">#[cfg(not(feature = <span class="string">&quot;with-dirs&quot;</span>))]
+        <span class="attr">#[cfg(not(feature = <span class="string">"with-dirs"</span>))]
         </span>{
             dir_path.to_path_buf()
         }
@@ -1031,7 +1032,7 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>entries: Vec&lt;Pair&gt; = Vec::new();
 
-    <span class="comment">// if dir doesn&#39;t exist, then don&#39;t offer any completions
+    <span class="comment">// if dir doesn't exist, then don't offer any completions
     </span><span class="kw">if </span>!dir.exists() {
         <span class="kw">return </span>entries;
     }
@@ -1060,13 +1061,13 @@
     entries
 }
 
-<span class="attr">#[cfg(any(windows, target_os = <span class="string">&quot;macos&quot;</span>))]
+<span class="attr">#[cfg(any(windows, target_os = <span class="string">"macos"</span>))]
 </span><span class="kw">fn </span>normalize(s: <span class="kw-2">&amp;</span>str) -&gt; Cow&lt;str&gt; {
     <span class="comment">// case insensitive
     </span>Owned(s.to_lowercase())
 }
 
-<span class="attr">#[cfg(not(any(windows, target_os = <span class="string">&quot;macos&quot;</span>)))]
+<span class="attr">#[cfg(not(any(windows, target_os = <span class="string">"macos"</span>)))]
 </span><span class="kw">fn </span>normalize(s: <span class="kw-2">&amp;</span>str) -&gt; Cow&lt;str&gt; {
     Cow::Borrowed(s)
 }
@@ -1118,7 +1119,7 @@
         <span class="kw">return </span><span class="prelude-val">Some</span>(candidates[<span class="number">0</span>].replacement());
     }
     <span class="kw">let </span><span class="kw-2">mut </span>longest_common_prefix = <span class="number">0</span>;
-    <span class="lifetime">&#39;o</span>: <span class="kw">loop </span>{
+    <span class="lifetime">'o</span>: <span class="kw">loop </span>{
         <span class="kw">for </span>(i, c1) <span class="kw">in </span>candidates.iter().enumerate().take(candidates.len() - <span class="number">1</span>) {
             <span class="kw">let </span>b1 = c1.replacement().as_bytes();
             <span class="kw">let </span>b2 = candidates[i + <span class="number">1</span>].replacement().as_bytes();
@@ -1126,7 +1127,7 @@
                 || b2.len() &lt;= longest_common_prefix
                 || b1[longest_common_prefix] != b2[longest_common_prefix]
             {
-                <span class="kw">break </span><span class="lifetime">&#39;o</span>;
+                <span class="kw">break </span><span class="lifetime">'o</span>;
             }
         }
         longest_common_prefix += <span class="number">1</span>;
@@ -1160,9 +1161,9 @@
     <span class="kw">for </span>(index, char) <span class="kw">in </span>char_indices {
         <span class="kw">match </span>mode {
             ScanMode::DoubleQuote =&gt; {
-                <span class="kw">if </span>char == <span class="string">&#39;&quot;&#39; </span>{
+                <span class="kw">if </span>char == <span class="string">'"' </span>{
                     mode = ScanMode::Normal;
-                } <span class="kw">else if </span>char == <span class="string">&#39;\\&#39; </span>{
+                } <span class="kw">else if </span>char == <span class="string">'\\' </span>{
                     <span class="comment">// both windows and unix support escape in double quote
                     </span>mode = ScanMode::EscapeInDoubleQuote;
                 }
@@ -1174,18 +1175,18 @@
                 mode = ScanMode::DoubleQuote;
             }
             ScanMode::Normal =&gt; {
-                <span class="kw">if </span>char == <span class="string">&#39;&quot;&#39; </span>{
+                <span class="kw">if </span>char == <span class="string">'"' </span>{
                     mode = ScanMode::DoubleQuote;
                     quote_index = index;
-                } <span class="kw">else if </span>char == <span class="string">&#39;\\&#39; </span>&amp;&amp; <span class="macro">cfg!</span>(not(windows)) {
+                } <span class="kw">else if </span>char == <span class="string">'\\' </span>&amp;&amp; <span class="macro">cfg!</span>(not(windows)) {
                     mode = ScanMode::Escape;
-                } <span class="kw">else if </span>char == <span class="string">&#39;\&#39;&#39; </span>&amp;&amp; <span class="macro">cfg!</span>(not(windows)) {
+                } <span class="kw">else if </span>char == <span class="string">'\'' </span>&amp;&amp; <span class="macro">cfg!</span>(not(windows)) {
                     mode = ScanMode::SingleQuote;
                     quote_index = index;
                 }
             }
             ScanMode::SingleQuote =&gt; {
-                <span class="kw">if </span>char == <span class="string">&#39;\&#39;&#39; </span>{
+                <span class="kw">if </span>char == <span class="string">'\'' </span>{
                     mode = ScanMode::Normal;
                 } <span class="comment">// no escape in single quotes
             </span>}
@@ -1204,47 +1205,47 @@
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>extract_word() {
         <span class="kw">let </span>break_chars = <span class="kw">super</span>::default_break_chars;
-        <span class="kw">let </span>line = <span class="string">&quot;ls &#39;/usr/local/b&quot;</span>;
+        <span class="kw">let </span>line = <span class="string">"ls '/usr/local/b"</span>;
         <span class="macro">assert_eq!</span>(
-            (<span class="number">4</span>, <span class="string">&quot;/usr/local/b&quot;</span>),
-            <span class="kw">super</span>::extract_word(line, line.len(), <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>), break_chars)
+            (<span class="number">4</span>, <span class="string">"/usr/local/b"</span>),
+            <span class="kw">super</span>::extract_word(line, line.len(), <span class="prelude-val">Some</span>(<span class="string">'\\'</span>), break_chars)
         );
-        <span class="kw">let </span>line = <span class="string">&quot;ls /User\\ Information&quot;</span>;
+        <span class="kw">let </span>line = <span class="string">"ls /User\\ Information"</span>;
         <span class="macro">assert_eq!</span>(
-            (<span class="number">3</span>, <span class="string">&quot;/User\\ Information&quot;</span>),
-            <span class="kw">super</span>::extract_word(line, line.len(), <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>), break_chars)
+            (<span class="number">3</span>, <span class="string">"/User\\ Information"</span>),
+            <span class="kw">super</span>::extract_word(line, line.len(), <span class="prelude-val">Some</span>(<span class="string">'\\'</span>), break_chars)
         );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>unescape() {
         <span class="kw">use </span>std::borrow::Cow::{<span class="self">self</span>, Borrowed, Owned};
-        <span class="kw">let </span>input = <span class="string">&quot;/usr/local/b&quot;</span>;
-        <span class="macro">assert_eq!</span>(Borrowed(input), <span class="kw">super</span>::unescape(input, <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>)));
+        <span class="kw">let </span>input = <span class="string">"/usr/local/b"</span>;
+        <span class="macro">assert_eq!</span>(Borrowed(input), <span class="kw">super</span>::unescape(input, <span class="prelude-val">Some</span>(<span class="string">'\\'</span>)));
         <span class="kw">if </span><span class="macro">cfg!</span>(windows) {
-            <span class="kw">let </span>input = <span class="string">&quot;c:\\users\\All Users\\&quot;</span>;
-            <span class="kw">let </span>result: Cow&lt;<span class="lifetime">&#39;_</span>, str&gt; = Borrowed(input);
-            <span class="macro">assert_eq!</span>(result, <span class="kw">super</span>::unescape(input, <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>)));
+            <span class="kw">let </span>input = <span class="string">"c:\\users\\All Users\\"</span>;
+            <span class="kw">let </span>result: Cow&lt;<span class="lifetime">'_</span>, str&gt; = Borrowed(input);
+            <span class="macro">assert_eq!</span>(result, <span class="kw">super</span>::unescape(input, <span class="prelude-val">Some</span>(<span class="string">'\\'</span>)));
         } <span class="kw">else </span>{
-            <span class="kw">let </span>input = <span class="string">&quot;/User\\ Information&quot;</span>;
-            <span class="kw">let </span>result: Cow&lt;<span class="lifetime">&#39;_</span>, str&gt; = Owned(String::from(<span class="string">&quot;/User Information&quot;</span>));
-            <span class="macro">assert_eq!</span>(result, <span class="kw">super</span>::unescape(input, <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>)));
+            <span class="kw">let </span>input = <span class="string">"/User\\ Information"</span>;
+            <span class="kw">let </span>result: Cow&lt;<span class="lifetime">'_</span>, str&gt; = Owned(String::from(<span class="string">"/User Information"</span>));
+            <span class="macro">assert_eq!</span>(result, <span class="kw">super</span>::unescape(input, <span class="prelude-val">Some</span>(<span class="string">'\\'</span>)));
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>escape() {
         <span class="kw">let </span>break_chars = <span class="kw">super</span>::default_break_chars;
-        <span class="kw">let </span>input = String::from(<span class="string">&quot;/usr/local/b&quot;</span>);
+        <span class="kw">let </span>input = String::from(<span class="string">"/usr/local/b"</span>);
         <span class="macro">assert_eq!</span>(
             input.clone(),
-            <span class="kw">super</span>::escape(input, <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>), break_chars, <span class="kw">super</span>::Quote::None)
+            <span class="kw">super</span>::escape(input, <span class="prelude-val">Some</span>(<span class="string">'\\'</span>), break_chars, <span class="kw">super</span>::Quote::None)
         );
-        <span class="kw">let </span>input = String::from(<span class="string">&quot;/User Information&quot;</span>);
-        <span class="kw">let </span>result = String::from(<span class="string">&quot;/User\\ Information&quot;</span>);
+        <span class="kw">let </span>input = String::from(<span class="string">"/User Information"</span>);
+        <span class="kw">let </span>result = String::from(<span class="string">"/User\\ Information"</span>);
         <span class="macro">assert_eq!</span>(
             result,
-            <span class="kw">super</span>::escape(input, <span class="prelude-val">Some</span>(<span class="string">&#39;\\&#39;</span>), break_chars, <span class="kw">super</span>::Quote::None)
+            <span class="kw">super</span>::escape(input, <span class="prelude-val">Some</span>(<span class="string">'\\'</span>), break_chars, <span class="kw">super</span>::Quote::None)
         );
     }
 
@@ -1256,7 +1257,7 @@
             <span class="macro">assert!</span>(lcp.is_none());
         }
 
-        <span class="kw">let </span>s = <span class="string">&quot;User&quot;</span>;
+        <span class="kw">let </span>s = <span class="string">"User"</span>;
         <span class="kw">let </span>c1 = String::from(s);
         candidates.push(c1);
         {
@@ -1264,46 +1265,46 @@
             <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(s), lcp);
         }
 
-        <span class="kw">let </span>c2 = String::from(<span class="string">&quot;Users&quot;</span>);
+        <span class="kw">let </span>c2 = String::from(<span class="string">"Users"</span>);
         candidates.push(c2);
         {
             <span class="kw">let </span>lcp = <span class="kw">super</span>::longest_common_prefix(<span class="kw-2">&amp;</span>candidates);
             <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(s), lcp);
         }
 
-        <span class="kw">let </span>c3 = String::from(<span class="string">&quot;&quot;</span>);
+        <span class="kw">let </span>c3 = String::from(<span class="string">""</span>);
         candidates.push(c3);
         {
             <span class="kw">let </span>lcp = <span class="kw">super</span>::longest_common_prefix(<span class="kw-2">&amp;</span>candidates);
             <span class="macro">assert!</span>(lcp.is_none());
         }
 
-        <span class="kw">let </span>candidates = <span class="macro">vec!</span>[String::from(<span class="string">&quot;fée&quot;</span>), String::from(<span class="string">&quot;fête&quot;</span>)];
+        <span class="kw">let </span>candidates = <span class="macro">vec!</span>[String::from(<span class="string">"fée"</span>), String::from(<span class="string">"fête"</span>)];
         <span class="kw">let </span>lcp = <span class="kw">super</span>::longest_common_prefix(<span class="kw-2">&amp;</span>candidates);
-        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="string">&quot;f&quot;</span>), lcp);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="string">"f"</span>), lcp);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">pub fn </span>find_unclosed_quote() {
-        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="kw">super</span>::find_unclosed_quote(<span class="string">&quot;ls /etc&quot;</span>));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="kw">super</span>::find_unclosed_quote(<span class="string">"ls /etc"</span>));
         <span class="macro">assert_eq!</span>(
             <span class="prelude-val">Some</span>((<span class="number">3</span>, <span class="kw">super</span>::Quote::Double)),
-            <span class="kw">super</span>::find_unclosed_quote(<span class="string">&quot;ls \&quot;User Information&quot;</span>)
+            <span class="kw">super</span>::find_unclosed_quote(<span class="string">"ls \"User Information"</span>)
         );
         <span class="macro">assert_eq!</span>(
             <span class="prelude-val">None</span>,
-            <span class="kw">super</span>::find_unclosed_quote(<span class="string">&quot;ls \&quot;/User Information\&quot; /etc&quot;</span>)
+            <span class="kw">super</span>::find_unclosed_quote(<span class="string">"ls \"/User Information\" /etc"</span>)
         );
         <span class="macro">assert_eq!</span>(
             <span class="prelude-val">Some</span>((<span class="number">0</span>, <span class="kw">super</span>::Quote::Double)),
-            <span class="kw">super</span>::find_unclosed_quote(<span class="string">&quot;\&quot;c:\\users\\All Users\\&quot;</span>)
+            <span class="kw">super</span>::find_unclosed_quote(<span class="string">"\"c:\\users\\All Users\\"</span>)
         )
     }
 
     <span class="attr">#[cfg(windows)]
     #[test]
     </span><span class="kw">pub fn </span>normalize() {
-        <span class="macro">assert_eq!</span>(<span class="kw">super</span>::normalize(<span class="string">&quot;Windows&quot;</span>), <span class="string">&quot;windows&quot;</span>)
+        <span class="macro">assert_eq!</span>(<span class="kw">super</span>::normalize(<span class="string">"Windows"</span>), <span class="string">"windows"</span>)
     }
 }
 </code></pre></div></section></main></body></html>

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/key_management/wallet.rs`."><title>wallet.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/key_management/wallet.rs`."><title>wallet.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -547,13 +548,13 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(k) = <span class="self">self</span>.keys.get(addr) {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(k.clone());
         }
-        <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{addr}&quot;</span>);
+        <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">"wallet-{addr}"</span>);
         <span class="kw">let </span>key_info = <span class="kw">match </span><span class="self">self</span>.keystore.get(<span class="kw-2">&amp;</span>key_string) {
             <span class="prelude-val">Ok</span>(k) =&gt; k,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                 <span class="comment">// replace with testnet prefix
                 </span><span class="self">self</span>.keystore
-                    .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;wallet-t{}&quot;</span>, <span class="kw-2">&amp;</span>addr.to_string()[<span class="number">1</span>..]))<span class="question-mark">?
+                    .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"wallet-t{}"</span>, <span class="kw-2">&amp;</span>addr.to_string()[<span class="number">1</span>..]))<span class="question-mark">?
             </span>}
         };
         <span class="kw">let </span>new_key = Key::try_from(key_info)<span class="question-mark">?</span>;
@@ -579,12 +580,12 @@
     /// newly added `KeyInfo`
     </span><span class="kw">pub fn </span>import(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_info: KeyInfo) -&gt; <span class="prelude-ty">Result</span>&lt;Address, Error&gt; {
         <span class="kw">let </span>k = Key::try_from(key_info)<span class="question-mark">?</span>;
-        <span class="kw">let </span>addr = <span class="macro">format!</span>(<span class="string">&quot;wallet-{}&quot;</span>, k.address);
+        <span class="kw">let </span>addr = <span class="macro">format!</span>(<span class="string">"wallet-{}"</span>, k.address);
         <span class="self">self</span>.keystore.put(<span class="kw-2">&amp;</span>addr, k.key_info)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(k.address)
     }
 
-    <span class="doccomment">/// Return a vector that contains all of the addresses in the wallet&#39;s
+    <span class="doccomment">/// Return a vector that contains all of the addresses in the wallet's
     /// `KeyStore`
     </span><span class="kw">pub fn </span>list_addrs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Address&gt;, Error&gt; {
         list_addrs(<span class="kw-2">&amp;</span><span class="self">self</span>.keystore)
@@ -592,22 +593,22 @@
 
     <span class="doccomment">/// Return the address of the default `KeyInfo` in the wallet
     </span><span class="kw">pub fn </span>get_default(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Address, Error&gt; {
-        <span class="kw">let </span>key_info = <span class="self">self</span>.keystore.get(<span class="string">&quot;default&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>key_info = <span class="self">self</span>.keystore.get(<span class="string">"default"</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>k = Key::try_from(key_info)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(k.address)
     }
 
     <span class="doccomment">/// Set a default `KeyInfo` to the wallet
     </span><span class="kw">pub fn </span>set_default(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: Address) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span>addr_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{addr}&quot;</span>);
+        <span class="kw">let </span>addr_string = <span class="macro">format!</span>(<span class="string">"wallet-{addr}"</span>);
         <span class="kw">let </span>key_info = <span class="self">self</span>.keystore.get(<span class="kw-2">&amp;</span>addr_string)<span class="question-mark">?</span>;
-        <span class="kw">if </span><span class="self">self</span>.keystore.get(<span class="string">&quot;default&quot;</span>).is_ok() {
-            <span class="self">self</span>.keystore.remove(<span class="string">&quot;default&quot;</span>)<span class="question-mark">?</span>; <span class="comment">// This line should
+        <span class="kw">if </span><span class="self">self</span>.keystore.get(<span class="string">"default"</span>).is_ok() {
+            <span class="self">self</span>.keystore.remove(<span class="string">"default"</span>)<span class="question-mark">?</span>; <span class="comment">// This line should
                                               // unregister current
                                               // default key then
                                               // continue
         </span>}
-        <span class="self">self</span>.keystore.put(<span class="string">&quot;default&quot;</span>, key_info)<span class="question-mark">?</span>;
+        <span class="self">self</span>.keystore.put(<span class="string">"default"</span>, key_info)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -615,13 +616,13 @@
     /// `SignatureType`
     </span><span class="kw">pub fn </span>generate_addr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, typ: SignatureType) -&gt; anyhow::Result&lt;Address&gt; {
         <span class="kw">let </span>key = generate_key(typ)<span class="question-mark">?</span>;
-        <span class="kw">let </span>addr = <span class="macro">format!</span>(<span class="string">&quot;wallet-{}&quot;</span>, key.address);
+        <span class="kw">let </span>addr = <span class="macro">format!</span>(<span class="string">"wallet-{}"</span>, key.address);
         <span class="self">self</span>.keystore.put(<span class="kw-2">&amp;</span>addr, key.key_info.clone())<span class="question-mark">?</span>;
         <span class="self">self</span>.keys.insert(key.address, key.clone());
-        <span class="kw">let </span>value = <span class="self">self</span>.keystore.get(<span class="string">&quot;default&quot;</span>);
+        <span class="kw">let </span>value = <span class="self">self</span>.keystore.get(<span class="string">"default"</span>);
         <span class="kw">if </span>value.is_err() {
             <span class="self">self</span>.keystore
-                .put(<span class="string">&quot;default&quot;</span>, key.key_info.clone())
+                .put(<span class="string">"default"</span>, key.key_info.clone())
                 .map_err(|err| Error::Other(err.to_string()))<span class="question-mark">?</span>;
         }
 
@@ -637,7 +638,7 @@
 
 <span class="doccomment">/// Return the default address for `KeyStore`
 </span><span class="kw">pub fn </span>get_default(keystore: <span class="kw-2">&amp;</span>KeyStore) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Address&gt;, Error&gt; {
-    <span class="kw">if let </span><span class="prelude-val">Ok</span>(key_info) = keystore.get(<span class="string">&quot;default&quot;</span>) {
+    <span class="kw">if let </span><span class="prelude-val">Ok</span>(key_info) = keystore.get(<span class="string">"default"</span>) {
         <span class="kw">let </span>k = Key::try_from(key_info)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(k.address))
     } <span class="kw">else </span>{
@@ -652,7 +653,7 @@
     all.sort();
     <span class="kw">let </span><span class="kw-2">mut </span>out = Vec::new();
     <span class="kw">for </span>i <span class="kw">in </span>all {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(addr_str) = i.strip_prefix(<span class="string">&quot;wallet-&quot;</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(addr_str) = i.strip_prefix(<span class="string">"wallet-"</span>) {
             <span class="kw">if let </span><span class="prelude-val">Ok</span>(addr) = Address::from_str(addr_str) {
                 out.push(addr);
             }
@@ -663,7 +664,7 @@
 
 <span class="doccomment">/// Returns a key corresponding to given address
 </span><span class="kw">pub fn </span>find_key(addr: <span class="kw-2">&amp;</span>Address, keystore: <span class="kw-2">&amp;</span>KeyStore) -&gt; <span class="prelude-ty">Result</span>&lt;Key, Error&gt; {
-    <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{addr}&quot;</span>);
+    <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">"wallet-{addr}"</span>);
     <span class="kw">let </span>key_info = keystore.get(<span class="kw-2">&amp;</span>key_string)<span class="question-mark">?</span>;
     <span class="kw">let </span>new_key = Key::try_from(key_info)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(new_key)
@@ -671,23 +672,23 @@
 
 <span class="doccomment">/// Removes a key corresponding to given address
 </span><span class="kw">pub fn </span>remove_key(addr: <span class="kw-2">&amp;</span>Address, keystore: <span class="kw-2">&amp;mut </span>KeyStore) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{addr}&quot;</span>);
+    <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">"wallet-{addr}"</span>);
     <span class="kw">let </span>deleted_keyinfo = keystore
         .remove(<span class="kw-2">&amp;</span>key_string)
         .map_err(|<span class="kw">_</span>| Error::KeyNotExists)<span class="question-mark">?</span>;
-    <span class="kw">if let </span><span class="prelude-val">Ok</span>(default_keyinfo) = keystore.get(<span class="string">&quot;default&quot;</span>) {
+    <span class="kw">if let </span><span class="prelude-val">Ok</span>(default_keyinfo) = keystore.get(<span class="string">"default"</span>) {
         <span class="kw">if </span>default_keyinfo == deleted_keyinfo {
             keystore
-                .remove(<span class="string">&quot;default&quot;</span>)
+                .remove(<span class="string">"default"</span>)
                 .map_err(|<span class="kw">_</span>| Error::KeyNotExists)<span class="question-mark">?</span>;
         }
     }
-    <span class="macro">println!</span>(<span class="string">&quot;wallet {} deleted&quot;</span>, addr);
+    <span class="macro">println!</span>(<span class="string">"wallet {} deleted"</span>, addr);
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">pub fn </span>try_find(addr: <span class="kw-2">&amp;</span>Address, keystore: <span class="kw-2">&amp;mut </span>KeyStore) -&gt; <span class="prelude-ty">Result</span>&lt;KeyInfo, Error&gt; {
-    <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{addr}&quot;</span>);
+    <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">"wallet-{addr}"</span>);
     <span class="kw">match </span>keystore.get(<span class="kw-2">&amp;</span>key_string) {
         <span class="prelude-val">Ok</span>(k) =&gt; <span class="prelude-val">Ok</span>(k),
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
@@ -695,11 +696,11 @@
 
             <span class="comment">// Try to replace prefix with testnet, for backwards compatibility
             // * We might be able to remove this, look into variants
-            </span>new_addr.replace_range(<span class="number">0</span>..<span class="number">1</span>, <span class="string">&quot;t&quot;</span>);
-            <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{new_addr}&quot;</span>);
+            </span>new_addr.replace_range(<span class="number">0</span>..<span class="number">1</span>, <span class="string">"t"</span>);
+            <span class="kw">let </span>key_string = <span class="macro">format!</span>(<span class="string">"wallet-{new_addr}"</span>);
             <span class="kw">let </span>key_info = <span class="kw">match </span>keystore.get(<span class="kw-2">&amp;</span>key_string) {
                 <span class="prelude-val">Ok</span>(k) =&gt; k,
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; keystore.get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;wallet-f{}&quot;</span>, <span class="kw-2">&amp;</span>new_addr[<span class="number">1</span>..]))<span class="question-mark">?</span>,
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; keystore.get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"wallet-f{}"</span>, <span class="kw-2">&amp;</span>new_addr[<span class="number">1</span>..]))<span class="question-mark">?</span>,
             };
             <span class="prelude-val">Ok</span>(key_info)
         }
@@ -844,7 +845,7 @@
         <span class="kw">for </span>i <span class="kw">in </span><span class="kw-2">&amp;</span>key_vec {
             addr_string_vec.push(i.address.to_string());
 
-            <span class="kw">let </span>addr_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{}&quot;</span>, i.address);
+            <span class="kw">let </span>addr_string = <span class="macro">format!</span>(<span class="string">"wallet-{}"</span>, i.address);
             key_store.put(<span class="kw-2">&amp;</span>addr_string, i.key_info.clone()).unwrap();
         }
 
@@ -869,12 +870,12 @@
     </span><span class="kw">fn </span>generate_new_key() {
         <span class="kw">let </span><span class="kw-2">mut </span>wallet = generate_wallet();
         <span class="kw">let </span>addr = wallet.generate_addr(SignatureType::Bls).unwrap();
-        <span class="kw">let </span>key = wallet.keystore.get(<span class="string">&quot;default&quot;</span>).unwrap();
+        <span class="kw">let </span>key = wallet.keystore.get(<span class="string">"default"</span>).unwrap();
         <span class="comment">// make sure that the newly generated key is the default key - checking by key
         // type
         </span><span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>SignatureType::Bls, key.key_type());
 
-        <span class="kw">let </span>address = <span class="macro">format!</span>(<span class="string">&quot;wallet-{addr}&quot;</span>);
+        <span class="kw">let </span>address = <span class="macro">format!</span>(<span class="string">"wallet-{addr}"</span>);
 
         <span class="kw">let </span>key_info = wallet.keystore.get(<span class="kw-2">&amp;</span>address).unwrap();
         <span class="kw">let </span>key = wallet.keys.get(<span class="kw-2">&amp;</span>addr).unwrap();
@@ -898,7 +899,7 @@
         <span class="kw">let </span>test_addr = Address::new_secp256k1(pub_key.as_slice()).unwrap();
 
         <span class="kw">let </span>key_info = KeyInfo::new(SignatureType::Secp256k1, new_priv_key);
-        <span class="kw">let </span>test_addr_string = <span class="macro">format!</span>(<span class="string">&quot;wallet-{test_addr}&quot;</span>);
+        <span class="kw">let </span>test_addr_string = <span class="macro">format!</span>(<span class="string">"wallet-{test_addr}"</span>);
 
         wallet.keystore.put(<span class="kw-2">&amp;</span>test_addr_string, key_info).unwrap();
 

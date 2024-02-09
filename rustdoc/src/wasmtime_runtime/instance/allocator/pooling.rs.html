@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance/allocator/pooling.rs`."><title>pooling.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance/allocator/pooling.rs`."><title>pooling.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1403,7 +1404,7 @@
 
 <span class="kw">use </span>imp::{commit_table_pages, decommit_table_pages};
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, unix, not(miri)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, unix, not(miri)))]
 </span><span class="kw">use </span>imp::{commit_stack_pages, reset_stack_pages_to_zero};
 
 <span class="kw">fn </span>round_up_to_pow2(n: usize, to: usize) -&gt; usize {
@@ -1456,9 +1457,9 @@
 /// A linear memory is divided into accessible pages and guard pages.
 ///
 /// Each instance index into the pool returns an iterator over the base
-/// addresses of the instance&#39;s linear memories.
+/// addresses of the instance's linear memories.
 ///
-/// A diagram for this struct&#39;s fields is:
+/// A diagram for this struct's fields is:
 ///
 /// ```ignore
 ///                       memory_size
@@ -1484,10 +1485,10 @@
     // dynamically transfer ownership of a slot to a Memory when in
     // use.
     </span>image_slots: Vec&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;MemoryImageSlot&gt;&gt;&gt;,
-    <span class="comment">// The size, in bytes, of each linear memory&#39;s reservation, not including
+    <span class="comment">// The size, in bytes, of each linear memory's reservation, not including
     // any guard region.
     </span>memory_size: usize,
-    <span class="comment">// The size, in bytes, of each linear memory&#39;s reservation plus the trailing
+    <span class="comment">// The size, in bytes, of each linear memory's reservation plus the trailing
     // guard region allocated for it.
     </span>memory_and_guard_size: usize,
     <span class="comment">// The maximum size that can become accessible, in bytes, of each linear
@@ -1506,7 +1507,7 @@
         <span class="comment">// The maximum module memory page count cannot exceed 65536 pages
         </span><span class="kw">if </span>instance_limits.memory_pages &gt; <span class="number">0x10000 </span>{
             <span class="macro">bail!</span>(
-                <span class="string">&quot;module memory page limit of {} exceeds the maximum of 65536&quot;</span>,
+                <span class="string">"module memory page limit of {} exceeds the maximum of 65536"</span>,
                 instance_limits.memory_pages
             );
         }
@@ -1524,11 +1525,11 @@
 
         <span class="kw">let </span>memory_and_guard_size =
             usize::try_from(memory_size + tunables.static_memory_offset_guard_size)
-                .map_err(|<span class="kw">_</span>| <span class="macro">anyhow!</span>(<span class="string">&quot;memory reservation size exceeds addressable memory&quot;</span>))<span class="question-mark">?</span>;
+                .map_err(|<span class="kw">_</span>| <span class="macro">anyhow!</span>(<span class="string">"memory reservation size exceeds addressable memory"</span>))<span class="question-mark">?</span>;
 
         <span class="macro">assert!</span>(
             memory_and_guard_size % <span class="kw">crate</span>::page_size() == <span class="number">0</span>,
-            <span class="string">&quot;memory size {} is not a multiple of system page size&quot;</span>,
+            <span class="string">"memory size {} is not a multiple of system page size"</span>,
             memory_and_guard_size
         );
 
@@ -1550,20 +1551,20 @@
         // after one memory are also guard pages preceding the next linear
         // memory. This means that we only need to handle pre-guard-page sizes
         // specially for the first linear memory, hence the
-        // `initial_memory_offset` variable here. If guards aren&#39;t specified
-        // before linear memories this is set to `0`, otherwise it&#39;s set to
+        // `initial_memory_offset` variable here. If guards aren't specified
+        // before linear memories this is set to `0`, otherwise it's set to
         // the same size as guard regions for other memories.
         </span><span class="kw">let </span>allocation_size = memory_and_guard_size
             .checked_mul(max_memories)
             .and_then(|c| c.checked_mul(max_instances))
             .and_then(|c| c.checked_add(initial_memory_offset))
             .ok_or_else(|| {
-                <span class="macro">anyhow!</span>(<span class="string">&quot;total size of memory reservation exceeds addressable memory&quot;</span>)
+                <span class="macro">anyhow!</span>(<span class="string">"total size of memory reservation exceeds addressable memory"</span>)
             })<span class="question-mark">?</span>;
 
         <span class="comment">// Create a completely inaccessible region to start
         </span><span class="kw">let </span>mapping = Mmap::accessible_reserved(<span class="number">0</span>, allocation_size)
-            .context(<span class="string">&quot;failed to create memory pool mapping&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"failed to create memory pool mapping"</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>num_image_slots = max_instances * max_memories;
         <span class="kw">let </span>image_slots: Vec&lt;<span class="kw">_</span>&gt; = std::iter::repeat_with(|| Mutex::new(<span class="prelude-val">None</span>))
@@ -1594,7 +1595,7 @@
     }
 
     <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>get&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, instance_index: usize) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">*mut </span>u8&gt; + <span class="lifetime">&#39;a </span>{
+    </span><span class="kw">fn </span>get&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, instance_index: usize) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">*mut </span>u8&gt; + <span class="lifetime">'a </span>{
         (<span class="number">0</span>..<span class="self">self</span>.max_memories)
             .map(<span class="kw">move </span>|i| <span class="self">self</span>.get_base(instance_index, DefinedMemoryIndex::from_u32(i <span class="kw">as </span>u32)))
     }
@@ -1668,7 +1669,7 @@
 <span class="doccomment">/// Represents a pool of WebAssembly tables.
 ///
 /// Each instance index into the pool returns an iterator over the base addresses
-/// of the instance&#39;s tables.
+/// of the instance's tables.
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">struct </span>TablePool {
     mapping: Mmap,
@@ -1686,7 +1687,7 @@
         <span class="kw">let </span>table_size = round_up_to_pow2(
             mem::size_of::&lt;<span class="kw-2">*mut </span>u8&gt;()
                 .checked_mul(instance_limits.table_elements <span class="kw">as </span>usize)
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;table size exceeds addressable memory&quot;</span>))<span class="question-mark">?</span>,
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"table size exceeds addressable memory"</span>))<span class="question-mark">?</span>,
             page_size,
         );
 
@@ -1696,10 +1697,10 @@
         <span class="kw">let </span>allocation_size = table_size
             .checked_mul(max_tables)
             .and_then(|c| c.checked_mul(max_instances))
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;total size of instance tables exceeds addressable memory&quot;</span>))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"total size of instance tables exceeds addressable memory"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>mapping = Mmap::accessible_reserved(allocation_size, allocation_size)
-            .context(<span class="string">&quot;failed to create table pool mapping&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"failed to create table pool mapping"</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             mapping,
@@ -1736,7 +1737,7 @@
 ///
 /// The top of the stack (starting stack pointer) is returned when a stack is allocated
 /// from the pool.
-</span><span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, unix, not(miri)))]
+</span><span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, unix, not(miri)))]
 #[derive(Debug)]
 </span><span class="kw">struct </span>StackPool {
     mapping: Mmap,
@@ -1748,7 +1749,7 @@
     async_stack_keep_resident: usize,
 }
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, unix, not(miri)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, unix, not(miri)))]
 </span><span class="kw">impl </span>StackPool {
     <span class="kw">fn </span>new(config: <span class="kw-2">&amp;</span>PoolingInstanceAllocatorConfig) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">use </span>rustix::mm::{mprotect, MprotectFlags};
@@ -1761,17 +1762,17 @@
         </span>} <span class="kw">else </span>{
             round_up_to_pow2(config.stack_size, page_size)
                 .checked_add(page_size)
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;stack size exceeds addressable memory&quot;</span>))<span class="question-mark">?
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"stack size exceeds addressable memory"</span>))<span class="question-mark">?
         </span>};
 
         <span class="kw">let </span>max_instances = config.limits.count <span class="kw">as </span>usize;
 
         <span class="kw">let </span>allocation_size = stack_size
             .checked_mul(max_instances)
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;total size of execution stacks exceeds addressable memory&quot;</span>))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"total size of execution stacks exceeds addressable memory"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>mapping = Mmap::accessible_reserved(allocation_size, allocation_size)
-            .context(<span class="string">&quot;failed to create stack pool mapping&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"failed to create stack pool mapping"</span>)<span class="question-mark">?</span>;
 
         <span class="comment">// Set up the stack guard pages
         </span><span class="kw">if </span>allocation_size &gt; <span class="number">0 </span>{
@@ -1780,7 +1781,7 @@
                     <span class="comment">// Make the stack guard page inaccessible
                     </span><span class="kw">let </span>bottom_of_stack = mapping.as_ptr().add(i * stack_size).cast_mut();
                     mprotect(bottom_of_stack.cast(), page_size, MprotectFlags::empty())
-                        .context(<span class="string">&quot;failed to protect stack guard page&quot;</span>)<span class="question-mark">?</span>;
+                        .context(<span class="string">"failed to protect stack guard page"</span>)<span class="question-mark">?</span>;
                 }
             }
         }
@@ -1793,7 +1794,7 @@
             async_stack_zeroing: config.async_stack_zeroing,
             async_stack_keep_resident: config.async_stack_keep_resident,
             <span class="comment">// Note that `max_unused_warm_slots` is set to zero since stacks
-            // have no affinity so there&#39;s no need to keep intentionally unused
+            // have no affinity so there's no need to keep intentionally unused
             // warm slots around.
             </span>index_allocator: IndexAllocator::new(config.limits.count, <span class="number">0</span>),
         })
@@ -1801,7 +1802,7 @@
 
     <span class="kw">fn </span>allocate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;wasmtime_fiber::FiberStack&gt; {
         <span class="kw">if </span><span class="self">self</span>.stack_size == <span class="number">0 </span>{
-            <span class="macro">bail!</span>(<span class="string">&quot;pooling allocator not configured to enable fiber stack allocation&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"pooling allocator not configured to enable fiber stack allocation"</span>);
         }
 
         <span class="kw">let </span>index = <span class="self">self
@@ -1809,7 +1810,7 @@
             .alloc(<span class="prelude-val">None</span>)
             .ok_or_else(|| {
                 <span class="macro">anyhow!</span>(
-                    <span class="string">&quot;maximum concurrent fiber limit of {} reached&quot;</span>,
+                    <span class="string">"maximum concurrent fiber limit of {} reached"</span>,
                     <span class="self">self</span>.max_instances
                 )
             })<span class="question-mark">?
@@ -1838,13 +1839,13 @@
     <span class="kw">fn </span>deallocate(<span class="kw-2">&amp;</span><span class="self">self</span>, stack: <span class="kw-2">&amp;</span>wasmtime_fiber::FiberStack) {
         <span class="kw">let </span>top = stack
             .top()
-            .expect(<span class="string">&quot;fiber stack not allocated from the pool&quot;</span>) <span class="kw">as </span>usize;
+            .expect(<span class="string">"fiber stack not allocated from the pool"</span>) <span class="kw">as </span>usize;
 
         <span class="kw">let </span>base = <span class="self">self</span>.mapping.as_ptr() <span class="kw">as </span>usize;
         <span class="kw">let </span>len = <span class="self">self</span>.mapping.len();
         <span class="macro">assert!</span>(
             top &gt; base &amp;&amp; top &lt;= (base + len),
-            <span class="string">&quot;fiber stack top pointer not in range&quot;
+            <span class="string">"fiber stack top pointer not in range"
         </span>);
 
         <span class="comment">// Remove the guard page from the size
@@ -1871,7 +1872,7 @@
         //
         // * memset for the whole range is probably expensive
         // * madvise for the whole range incurs expensive future page faults
-        // * most threads probably don&#39;t use most of the stack anyway
+        // * most threads probably don't use most of the stack anyway
         </span><span class="kw">let </span>size_to_memset = size.min(<span class="self">self</span>.async_stack_keep_resident);
         <span class="kw">unsafe </span>{
             std::ptr::write_bytes(
@@ -1946,9 +1947,9 @@
     linear_memory_keep_resident: usize,
     table_keep_resident: usize,
 
-    <span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, unix, not(miri)))]
+    <span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, unix, not(miri)))]
     </span>stacks: StackPool,
-    <span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, windows))]
+    <span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, windows))]
     </span>stack_size: usize,
 }
 
@@ -1956,7 +1957,7 @@
     <span class="doccomment">/// Creates a new pooling instance allocator with the given strategy and limits.
     </span><span class="kw">pub fn </span>new(config: <span class="kw-2">&amp;</span>PoolingInstanceAllocatorConfig, tunables: <span class="kw-2">&amp;</span>Tunables) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">if </span>config.limits.count == <span class="number">0 </span>{
-            <span class="macro">bail!</span>(<span class="string">&quot;the instance count limit cannot be zero&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"the instance count limit cannot be zero"</span>);
         }
 
         <span class="kw">let </span>max_instances = config.limits.count <span class="kw">as </span>usize;
@@ -1969,9 +1970,9 @@
             tables: TablePool::new(<span class="kw-2">&amp;</span>config.limits)<span class="question-mark">?</span>,
             linear_memory_keep_resident: config.linear_memory_keep_resident,
             table_keep_resident: config.table_keep_resident,
-            <span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, unix, not(miri)))]
+            <span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, unix, not(miri)))]
             </span>stacks: StackPool::new(config)<span class="question-mark">?</span>,
-            <span class="attr">#[cfg(all(feature = <span class="string">&quot;async&quot;</span>, windows))]
+            <span class="attr">#[cfg(all(feature = <span class="string">"async"</span>, windows))]
             </span>stack_size: config.stack_size,
         })
     }
@@ -1981,7 +1982,7 @@
         <span class="kw">unsafe </span>{
             std::ptr::write_bytes(base, <span class="number">0</span>, size_to_memset);
             decommit_table_pages(base.add(size_to_memset), size - size_to_memset)
-                .context(<span class="string">&quot;failed to decommit table page&quot;</span>)<span class="question-mark">?</span>;
+                .context(<span class="string">"failed to decommit table page"</span>)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -1990,7 +1991,7 @@
         <span class="kw">let </span>tables = module.table_plans.len() - module.num_imported_tables;
         <span class="kw">if </span>tables &gt; <span class="self">self</span>.tables.max_tables {
             <span class="macro">bail!</span>(
-                <span class="string">&quot;defined tables count of {} exceeds the limit of {}&quot;</span>,
+                <span class="string">"defined tables count of {} exceeds the limit of {}"</span>,
                 tables,
                 <span class="self">self</span>.tables.max_tables,
             );
@@ -1999,7 +2000,7 @@
         <span class="kw">for </span>(i, plan) <span class="kw">in </span>module.table_plans.iter().skip(module.num_imported_tables) {
             <span class="kw">if </span>plan.table.minimum &gt; <span class="self">self</span>.tables.max_elements {
                 <span class="macro">bail!</span>(
-                    <span class="string">&quot;table index {} has a minimum element size of {} which exceeds the limit of {}&quot;</span>,
+                    <span class="string">"table index {} has a minimum element size of {} which exceeds the limit of {}"</span>,
                     i.as_u32(),
                     plan.table.minimum,
                     <span class="self">self</span>.tables.max_elements,
@@ -2013,7 +2014,7 @@
         <span class="kw">let </span>memories = module.memory_plans.len() - module.num_imported_memories;
         <span class="kw">if </span>memories &gt; <span class="self">self</span>.memories.max_memories {
             <span class="macro">bail!</span>(
-                <span class="string">&quot;defined memories count of {} exceeds the limit of {}&quot;</span>,
+                <span class="string">"defined memories count of {} exceeds the limit of {}"</span>,
                 memories,
                 <span class="self">self</span>.memories.max_memories,
             );
@@ -2028,8 +2029,8 @@
                 MemoryStyle::Static { bound } =&gt; {
                     <span class="kw">if </span>(<span class="self">self</span>.memories.memory_size <span class="kw">as </span>u64) &lt; bound {
                         <span class="macro">bail!</span>(
-                            <span class="string">&quot;memory size allocated per-memory is too small to \
-                             satisfy static bound of {bound:#x} pages&quot;
+                            <span class="string">"memory size allocated per-memory is too small to \
+                             satisfy static bound of {bound:#x} pages"
                         </span>);
                     }
                 }
@@ -2038,7 +2039,7 @@
             <span class="kw">let </span>max = <span class="self">self</span>.memories.max_accessible / (WASM_PAGE_SIZE <span class="kw">as </span>usize);
             <span class="kw">if </span>plan.memory.minimum &gt; (max <span class="kw">as </span>u64) {
                 <span class="macro">bail!</span>(
-                    <span class="string">&quot;memory index {} has a minimum page size of {} which exceeds the limit of {}&quot;</span>,
+                    <span class="string">"memory index {} has a minimum page size of {} which exceeds the limit of {}"</span>,
                     i.as_u32(),
                     plan.memory.minimum,
                     max,
@@ -2055,16 +2056,16 @@
         }
 
         <span class="comment">// If this `module` exceeds the allocation size allotted to it then an
-        // error will be reported here. The error of &quot;required N bytes but
-        // cannot allocate that&quot; is pretty opaque, however, because it&#39;s not
+        // error will be reported here. The error of "required N bytes but
+        // cannot allocate that" is pretty opaque, however, because it's not
         // clear what the breakdown of the N bytes are and what to optimize
         // next. To help provide a better error message here some fancy-ish
         // logic is done here to report the breakdown of the byte request into
-        // the largest portions and where it&#39;s coming from.
+        // the largest portions and where it's coming from.
         </span><span class="kw">let </span><span class="kw-2">mut </span>message = <span class="macro">format!</span>(
-            <span class="string">&quot;instance allocation for this module \
+            <span class="string">"instance allocation for this module \
              requires {} bytes which exceeds the configured maximum \
-             of {} bytes; breakdown of allocation requirement:\n\n&quot;</span>,
+             of {} bytes; breakdown of allocation requirement:\n\n"</span>,
             layout.size(),
             <span class="self">self</span>.instance_size,
         );
@@ -2076,13 +2077,13 @@
 
             <span class="comment">// If the `name` region is more than 5% of the allocation request
             // then report it here, otherwise ignore it. We have less than 20
-            // fields so we&#39;re guaranteed that something should be reported, and
-            // otherwise it&#39;s not particularly interesting to learn about 5
+            // fields so we're guaranteed that something should be reported, and
+            // otherwise it's not particularly interesting to learn about 5
             // different fields that are all 8 or 0 bytes. Only try to report
-            // the &quot;major&quot; sources of bytes here.
+            // the "major" sources of bytes here.
             </span><span class="kw">if </span>bytes &gt; layout.size() / <span class="number">20 </span>{
                 message.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot; * {:.02}% - {} bytes - {}\n&quot;</span>,
+                    <span class="string">" * {:.02}% - {} bytes - {}\n"</span>,
                     ((bytes <span class="kw">as </span>f32) / (layout.size() <span class="kw">as </span>f32)) * <span class="number">100.0</span>,
                     bytes,
                     name,
@@ -2091,10 +2092,10 @@
         };
 
         <span class="comment">// The `Instance` itself requires some size allocated to it.
-        </span>push(<span class="string">&quot;instance state management&quot;</span>, mem::size_of::&lt;Instance&gt;());
+        </span>push(<span class="string">"instance state management"</span>, mem::size_of::&lt;Instance&gt;());
 
-        <span class="comment">// Afterwards the `VMContext`&#39;s regions are why we&#39;re requesting bytes,
-        // so ask it for descriptions on each region&#39;s byte size.
+        <span class="comment">// Afterwards the `VMContext`'s regions are why we're requesting bytes,
+        // so ask it for descriptions on each region's byte size.
         </span><span class="kw">for </span>(desc, size) <span class="kw">in </span>offsets.region_sizes() {
             push(desc, size <span class="kw">as </span>usize);
         }
@@ -2102,7 +2103,7 @@
         <span class="comment">// double-check we accounted for all the bytes
         </span><span class="macro">assert_eq!</span>(remaining, <span class="number">0</span>);
 
-        <span class="macro">bail!</span>(<span class="string">&quot;{}&quot;</span>, message)
+        <span class="macro">bail!</span>(<span class="string">"{}"</span>, message)
     }
 }
 
@@ -2121,7 +2122,7 @@
             .map(|id| id.index())
             .ok_or_else(|| {
                 <span class="macro">anyhow!</span>(
-                    <span class="string">&quot;maximum concurrent instance limit of {} reached&quot;</span>,
+                    <span class="string">"maximum concurrent instance limit of {} reached"</span>,
                     <span class="self">self</span>.max_instances
                 )
             })
@@ -2148,7 +2149,7 @@
         {
             <span class="kw">let </span>defined_index = module
                 .defined_memory_index(memory_index)
-                .expect(<span class="string">&quot;should be a defined memory since we skipped imported ones&quot;</span>);
+                .expect(<span class="string">"should be a defined memory since we skipped imported ones"</span>);
 
             <span class="comment">// Double-check that the runtime requirements of the memory are
             // satisfied by the configuration of this pooling allocator. This
@@ -2257,11 +2258,11 @@
 
             drop(table);
             <span class="self">self</span>.reset_table_pages_to_zero(base, size)
-                .expect(<span class="string">&quot;failed to decommit table pages&quot;</span>);
+                .expect(<span class="string">"failed to decommit table pages"</span>);
         }
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">fn </span>allocate_fiber_stack(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;wasmtime_fiber::FiberStack&gt; {
         <span class="macro">cfg_if::cfg_if! </span>{
             <span class="kw">if </span><span class="attr">#[cfg(miri)] </span>{
@@ -2270,20 +2271,20 @@
                 <span class="self">self</span>.stacks.allocate()
             } <span class="kw">else if </span><span class="attr">#[cfg(windows)] </span>{
                 <span class="kw">if </span><span class="self">self</span>.stack_size == <span class="number">0 </span>{
-                    <span class="macro">bail!</span>(<span class="string">&quot;fiber stack allocation not supported&quot;</span>)
+                    <span class="macro">bail!</span>(<span class="string">"fiber stack allocation not supported"</span>)
                 }
 
-                <span class="comment">// On windows, we don&#39;t use a stack pool as we use the native
+                <span class="comment">// On windows, we don't use a stack pool as we use the native
                 // fiber implementation
                 </span><span class="kw">let </span>stack = wasmtime_fiber::FiberStack::new(<span class="self">self</span>.stack_size)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(stack)
             } <span class="kw">else </span>{
-                <span class="macro">compile_error!</span>(<span class="string">&quot;not implemented&quot;</span>);
+                <span class="macro">compile_error!</span>(<span class="string">"not implemented"</span>);
             }
         }
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">unsafe fn </span>deallocate_fiber_stack(<span class="kw-2">&amp;</span><span class="self">self</span>, stack: <span class="kw-2">&amp;</span>wasmtime_fiber::FiberStack) {
         <span class="macro">cfg_if::cfg_if! </span>{
             <span class="kw">if </span><span class="attr">#[cfg(miri)] </span>{
@@ -2292,10 +2293,10 @@
             } <span class="kw">else if </span><span class="attr">#[cfg(unix)] </span>{
                 <span class="self">self</span>.stacks.deallocate(stack);
             } <span class="kw">else if </span><span class="attr">#[cfg(windows)] </span>{
-                <span class="comment">// A no-op as we don&#39;t own the fiber stack on Windows
+                <span class="comment">// A no-op as we don't own the fiber stack on Windows
                 </span><span class="kw">let _ </span>= stack;
             } <span class="kw">else </span>{
-                <span class="macro">compile_error!</span>(<span class="string">&quot;not implemented&quot;</span>);
+                <span class="macro">compile_error!</span>(<span class="string">"not implemented"</span>);
             }
         }
     }
@@ -2304,10 +2305,10 @@
         <span class="comment">// Purging everything related to `module` primarily means clearing out
         // all of its memory images present in the virtual address space. Go
         // through the index allocator for slots affine to `module` and reset
-        // them, freeing up the index when we&#39;re done.
+        // them, freeing up the index when we're done.
         //
-        // Note that this is only called when the specified `module` won&#39;t be
-        // allocated further (the module is being dropped) so this shouldn&#39;t hit
+        // Note that this is only called when the specified `module` won't be
+        // allocated further (the module is being dropped) so this shouldn't hit
         // any sort of infinite loop since this should be the final operation
         // working with `module`.
         </span><span class="kw">while let </span><span class="prelude-val">Some</span>(index) = <span class="self">self</span>.index_allocator.alloc_affine_and_clear_affinity(module) {
@@ -2381,7 +2382,7 @@
         Arc::new(RuntimeInfo(module, offsets))
     }
 
-    <span class="attr">#[cfg(target_pointer_width = <span class="string">&quot;64&quot;</span>)]
+    <span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
     #[test]
     </span><span class="kw">fn </span>test_instance_pool() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>config = PoolingInstanceAllocatorConfig::default();
@@ -2426,7 +2427,7 @@
                         host_state: Box::new(()),
                         store: StorePtr::empty(),
                     })
-                    .expect(<span class="string">&quot;allocation should succeed&quot;</span>),
+                    .expect(<span class="string">"allocation should succeed"</span>),
             );
         }
 
@@ -2444,7 +2445,7 @@
             store: StorePtr::empty(),
         }) {
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected error&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected error"</span>),
         };
 
         <span class="kw">for </span><span class="kw-2">mut </span>handle <span class="kw">in </span>handles.drain(..) {
@@ -2459,7 +2460,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attr">#[cfg(target_pointer_width = <span class="string">&quot;64&quot;</span>)]
+    <span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
     #[test]
     </span><span class="kw">fn </span>test_memory_pool() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>pool = MemoryPool::new(
@@ -2501,7 +2502,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attr">#[cfg(target_pointer_width = <span class="string">&quot;64&quot;</span>)]
+    <span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
     #[test]
     </span><span class="kw">fn </span>test_table_pool() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>pool = TablePool::new(<span class="kw-2">&amp;</span>InstanceLimits {
@@ -2539,7 +2540,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attr">#[cfg(all(unix, target_pointer_width = <span class="string">&quot;64&quot;</span>, feature = <span class="string">&quot;async&quot;</span>, not(miri)))]
+    <span class="attr">#[cfg(all(unix, target_pointer_width = <span class="string">"64"</span>, feature = <span class="string">"async"</span>, not(miri)))]
     #[test]
     </span><span class="kw">fn </span>test_stack_pool() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>config = PoolingInstanceAllocatorConfig {
@@ -2564,7 +2565,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>stacks = Vec::new();
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
-            <span class="kw">let </span>stack = pool.allocate().expect(<span class="string">&quot;allocation should succeed&quot;</span>);
+            <span class="kw">let </span>stack = pool.allocate().expect(<span class="string">"allocation should succeed"</span>);
             <span class="macro">assert_eq!</span>(
                 ((stack.top().unwrap() <span class="kw">as </span>usize - base) / pool.stack_size) - <span class="number">1</span>,
                 i
@@ -2611,8 +2612,8 @@
         <span class="macro">assert_eq!</span>(
             PoolingInstanceAllocator::new(<span class="kw-2">&amp;</span>config, <span class="kw-2">&amp;</span>Tunables::default(),)
                 .map_err(|e| e.to_string())
-                .expect_err(<span class="string">&quot;expected a failure constructing instance allocator&quot;</span>),
-            <span class="string">&quot;the instance count limit cannot be zero&quot;
+                .expect_err(<span class="string">"expected a failure constructing instance allocator"</span>),
+            <span class="string">"the instance count limit cannot be zero"
         </span>);
     }
 
@@ -2635,8 +2636,8 @@
                 },
             )
             .map_err(|e| e.to_string())
-            .expect_err(<span class="string">&quot;expected a failure constructing instance allocator&quot;</span>),
-            <span class="string">&quot;module memory page limit of 65537 exceeds the maximum of 65536&quot;
+            .expect_err(<span class="string">"expected a failure constructing instance allocator"</span>),
+            <span class="string">"module memory page limit of 65537 exceeds the maximum of 65536"
         </span>);
     }
 
@@ -2662,7 +2663,7 @@
         <span class="macro">assert_eq!</span>(pool.memories.memory_size, <span class="number">2 </span>* <span class="number">65536</span>);
     }
 
-    <span class="attr">#[cfg(all(unix, target_pointer_width = <span class="string">&quot;64&quot;</span>, feature = <span class="string">&quot;async&quot;</span>, not(miri)))]
+    <span class="attr">#[cfg(all(unix, target_pointer_width = <span class="string">"64"</span>, feature = <span class="string">"async"</span>, not(miri)))]
     #[test]
     </span><span class="kw">fn </span>test_stack_zeroed() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>config = PoolingInstanceAllocatorConfig {
@@ -2698,7 +2699,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attr">#[cfg(all(unix, target_pointer_width = <span class="string">&quot;64&quot;</span>, feature = <span class="string">&quot;async&quot;</span>, not(miri)))]
+    <span class="attr">#[cfg(all(unix, target_pointer_width = <span class="string">"64"</span>, feature = <span class="string">"async"</span>, not(miri)))]
     #[test]
     </span><span class="kw">fn </span>test_stack_unzeroed() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>config = PoolingInstanceAllocatorConfig {

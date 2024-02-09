@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/buffer.rs`."><title>buffer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/buffer.rs`."><title>buffer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -2385,36 +2386,36 @@
 //!   avoided because one of the targets is the fallthrough. There are several
 //!   cases here where we can simplify to use fewer branches.
 //!
-//! This &quot;buffer&quot; implements a single-pass code emission strategy (with a later
-//! &quot;fixup&quot; pass, but only through recorded fixups, not all instructions). The
+//! This "buffer" implements a single-pass code emission strategy (with a later
+//! "fixup" pass, but only through recorded fixups, not all instructions). The
 //! basic idea is:
 //!
 //! - Emit branches as they are, including two-target (cond/uncond) compound
 //!   forms, but with zero offsets and optimistically assuming the target will be
-//!   in range. Record the &quot;fixup&quot; for later. Targets are denoted instead by
-//!   symbolic &quot;labels&quot; that are then bound to certain offsets in the buffer as
+//!   in range. Record the "fixup" for later. Targets are denoted instead by
+//!   symbolic "labels" that are then bound to certain offsets in the buffer as
 //!   we emit code. (Nominally, there is a label at the start of every basic
 //!   block.)
 //!
 //! - As we do this, track the offset in the buffer at which the first label
-//!   reference &quot;goes out of range&quot;. We call this the &quot;deadline&quot;. If we reach the
+//!   reference "goes out of range". We call this the "deadline". If we reach the
 //!   deadline and we still have not bound the label to which an unresolved branch
 //!   refers, we have a problem!
 //!
-//! - To solve this problem, we emit &quot;islands&quot; full of &quot;veneers&quot;. An island is
+//! - To solve this problem, we emit "islands" full of "veneers". An island is
 //!   simply a chunk of code inserted in the middle of the code actually produced
 //!   by the emitter (e.g., vcode iterating over instruction structs). The emitter
 //!   has some awareness of this: it either asks for an island between blocks, so
 //!   it is not accidentally executed, or else it emits a branch around the island
 //!   when all other options fail (see `Inst::EmitIsland` meta-instruction).
 //!
-//! - A &quot;veneer&quot; is an instruction (or sequence of instructions) in an &quot;island&quot;
+//! - A "veneer" is an instruction (or sequence of instructions) in an "island"
 //!   that implements a longer-range reference to a label. The idea is that, for
-//!   example, a branch with a limited range can branch to a &quot;veneer&quot; instead,
+//!   example, a branch with a limited range can branch to a "veneer" instead,
 //!   which is simply a branch in a form that can use a longer-range reference. On
 //!   AArch64, for example, conditionals have a +/- 1 MB range, but a conditional
 //!   can branch to an unconditional branch which has a +/- 128 MB range. Hence, a
-//!   conditional branch&#39;s label reference can be fixed up with a &quot;veneer&quot; to
+//!   conditional branch's label reference can be fixed up with a "veneer" to
 //!   achieve a longer range.
 //!
 //! - To implement all of this, we require the backend to provide a `LabelUse`
@@ -2426,41 +2427,41 @@
 //!   range.
 //!
 //! That satisfies label references, but we still may have suboptimal branch
-//! patterns. To clean up the branches, we do a simple &quot;peephole&quot;-style
+//! patterns. To clean up the branches, we do a simple "peephole"-style
 //! optimization on the fly. To do so, the emitter (e.g., `Inst::emit()`)
 //! informs the buffer of branches in the code and, in the case of conditionals,
-//! the code that would have been emitted to invert this branch&#39;s condition. We
-//! track the &quot;latest branches&quot;: these are branches that are contiguous up to
+//! the code that would have been emitted to invert this branch's condition. We
+//! track the "latest branches": these are branches that are contiguous up to
 //! the current offset. (If any code is emitted after a branch, that branch or
-//! run of contiguous branches is no longer &quot;latest&quot;.) The latest branches are
+//! run of contiguous branches is no longer "latest".) The latest branches are
 //! those that we can edit by simply truncating the buffer and doing something
 //! else instead.
 //!
 //! To optimize branches, we implement several simple rules, and try to apply
-//! them to the &quot;latest branches&quot; when possible:
+//! them to the "latest branches" when possible:
 //!
 //! - A branch with a label target, when that label is bound to the ending
 //!   offset of the branch (the fallthrough location), can be removed altogether,
 //!   because the branch would have no effect).
 //!
 //! - An unconditional branch that starts at a label location, and branches to
-//!   another label, results in a &quot;label alias&quot;: all references to the label bound
+//!   another label, results in a "label alias": all references to the label bound
 //!   *to* this branch instruction are instead resolved to the *target* of the
 //!   branch instruction. This effectively removes empty blocks that just
-//!   unconditionally branch to the next block. We call this &quot;branch threading&quot;.
+//!   unconditionally branch to the next block. We call this "branch threading".
 //!
 //! - A conditional followed by an unconditional, when the conditional branches
-//!   to the unconditional&#39;s fallthrough, results in (i) the truncation of the
-//!   unconditional, (ii) the inversion of the condition&#39;s condition, and (iii)
-//!   replacement of the conditional&#39;s target (using the original target of the
-//!   unconditional). This is a fancy way of saying &quot;we can flip a two-target
-//!   conditional branch&#39;s taken/not-taken targets if it works better with our
-//!   fallthrough&quot;. To make this work, the emitter actually gives the buffer
+//!   to the unconditional's fallthrough, results in (i) the truncation of the
+//!   unconditional, (ii) the inversion of the condition's condition, and (iii)
+//!   replacement of the conditional's target (using the original target of the
+//!   unconditional). This is a fancy way of saying "we can flip a two-target
+//!   conditional branch's taken/not-taken targets if it works better with our
+//!   fallthrough". To make this work, the emitter actually gives the buffer
 //!   *both* forms of every conditional branch: the true form is emitted into the
-//!   buffer, and the &quot;inverted&quot; machine-code bytes are provided as part of the
+//!   buffer, and the "inverted" machine-code bytes are provided as part of the
 //!   branch-fixup metadata.
 //!
-//! - An unconditional B preceded by another unconditional P, when B&#39;s label(s) have
+//! - An unconditional B preceded by another unconditional P, when B's label(s) have
 //!   been redirected to target(B), can be removed entirely. This is an extension
 //!   of the branch-threading optimization, and is valid because if we know there
 //!   will be no fallthrough into this branch instruction (the prior instruction
@@ -2496,55 +2497,55 @@
 //!   buffer tail.
 //!
 //! - The label_aliases array, containing another label to which a label is
-//!   bound or UNKNOWN. A label&#39;s resolved offset is the resolved offset
+//!   bound or UNKNOWN. A label's resolved offset is the resolved offset
 //!   of the label it is aliased to, if this is set.
 //!
 //! We argue below, at each method, how the invariants in these data structures
-//! are maintained (grep for &quot;Post-invariant&quot;).
+//! are maintained (grep for "Post-invariant").
 //!
 //! Given these invariants, we argue why each optimization preserves execution
-//! semantics below (grep for &quot;Preserves execution semantics&quot;).
+//! semantics below (grep for "Preserves execution semantics").
 //!
 //! # Avoiding Quadratic Behavior
 //!
-//! There are two cases where we&#39;ve had to take some care to avoid
+//! There are two cases where we've had to take some care to avoid
 //! quadratic worst-case behavior:
 //!
-//! - The &quot;labels at this branch&quot; list can grow unboundedly if the
+//! - The "labels at this branch" list can grow unboundedly if the
 //!   code generator binds many labels at one location. If the count
 //!   gets too high (defined by the `LABEL_LIST_THRESHOLD` constant), we
 //!   simply abort an optimization early in a way that is always correct
 //!   but is conservative.
 //!
 //! - The fixup list can interact with island emission to create
-//!   &quot;quadratic island behvior&quot;. In a little more detail, one can hit
+//!   "quadratic island behvior". In a little more detail, one can hit
 //!   this behavior by having some pending fixups (forward label
 //!   references) with long-range label-use kinds, and some others
 //!   with shorter-range references that nonetheless still are pending
 //!   long enough to trigger island generation. In such a case, we
 //!   process the fixup list, generate veneers to extend some forward
-//!   references&#39; ranges, but leave the other (longer-range) ones
+//!   references' ranges, but leave the other (longer-range) ones
 //!   alone. The way this was implemented put them back on a list and
 //!   resulted in quadratic behavior.
 //!
 //!   To avoid this, we could use a better data structure that allows
-//!   us to query for fixups with deadlines &quot;coming soon&quot; and generate
+//!   us to query for fixups with deadlines "coming soon" and generate
 //!   veneers for only those fixups. However, there is some
 //!   interaction with the branch peephole optimizations: the
-//!   invariant there is that branches in the &quot;most recent branches
-//!   contiguous with end of buffer&quot; list have corresponding fixups in
+//!   invariant there is that branches in the "most recent branches
+//!   contiguous with end of buffer" list have corresponding fixups in
 //!   order (so that when we chomp the branch, we can chomp its fixup
 //!   too).
 //!
 //!   So instead, when we generate an island, for now we create
 //!   veneers for *all* pending fixups, then if upgraded to a kind
-//!   that no longer supports veneers (is at &quot;max range&quot;), kick the
+//!   that no longer supports veneers (is at "max range"), kick the
 //!   fixups off to a list that is *not* processed at islands except
 //!   for one last pass after emission. This allows us to skip the
 //!   work and avoids the quadratic behvior. We expect that this is
 //!   fine-ish for now: islands are relatively rare, and if they do
 //!   happen and generate unnecessary veneers (as will now happen for
-//!   the case above) we&#39;ll only get one unnecessary veneer per
+//!   the case above) we'll only get one unnecessary veneer per
 //!   branch (then they are at max range already).
 //!
 //!   Longer-term, we could use a data structure that allows querying
@@ -2567,16 +2568,16 @@
 <span class="kw">use </span>std::string::String;
 <span class="kw">use </span>std::vec::Vec;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;enable-serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
 </span><span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;enable-serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
 </span><span class="kw">pub trait </span>CompilePhase {
-    <span class="kw">type </span>MachSrcLocType: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Serialize + core::fmt::Debug + PartialEq + Clone;
-    <span class="kw">type </span>SourceLocType: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Serialize + core::fmt::Debug + PartialEq + Clone;
+    <span class="kw">type </span>MachSrcLocType: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Deserialize&lt;<span class="lifetime">'a</span>&gt; + Serialize + core::fmt::Debug + PartialEq + Clone;
+    <span class="kw">type </span>SourceLocType: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Deserialize&lt;<span class="lifetime">'a</span>&gt; + Serialize + core::fmt::Debug + PartialEq + Clone;
 }
 
-<span class="attr">#[cfg(not(feature = <span class="string">&quot;enable-serde&quot;</span>))]
+<span class="attr">#[cfg(not(feature = <span class="string">"enable-serde"</span>))]
 </span><span class="kw">pub trait </span>CompilePhase {
     <span class="kw">type </span>MachSrcLocType: core::fmt::Debug + PartialEq + Clone;
     <span class="kw">type </span>SourceLocType: core::fmt::Debug + PartialEq + Clone;
@@ -2584,7 +2585,7 @@
 
 <span class="doccomment">/// Status of a compiled artifact that needs patching before being used.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>Stencil;
 
 <span class="doccomment">/// Status of a compiled artifact ready to use.
@@ -2646,8 +2647,8 @@
     /// jump points to another label, we can redirect references to the first
     /// label immediately to the second.
     ///
-    /// Invariant: we don&#39;t have label-alias cycles. We ensure this by,
-    /// before setting label A to alias label B, resolving B&#39;s alias
+    /// Invariant: we don't have label-alias cycles. We ensure this by,
+    /// before setting label A to alias label B, resolving B's alias
     /// target (iteratively until a non-aliased label); if B is already
     /// aliased to A, then we cannot alias A back to B.
     </span>label_aliases: SmallVec&lt;[MachLabel; <span class="number">16</span>]&gt;,
@@ -2658,15 +2659,15 @@
     <span class="doccomment">/// Fixups that must be performed after all code is emitted.
     </span>fixup_records: SmallVec&lt;[MachLabelFixup&lt;I&gt;; <span class="number">16</span>]&gt;,
     <span class="doccomment">/// Fixups whose labels are at maximum range already: these need
-    /// not be considered in island emission until we&#39;re done
+    /// not be considered in island emission until we're done
     /// emitting.
     </span>fixup_records_max_range: SmallVec&lt;[MachLabelFixup&lt;I&gt;; <span class="number">16</span>]&gt;,
     <span class="doccomment">/// Current deadline at which all constants are flushed and all code labels
     /// are extended by emitting long-range jumps in an island. This flush
     /// should be rare (e.g., on AArch64, the shortest-range PC-rel references
     /// are +/- 1MB for conditional jumps and load-literal instructions), so
-    /// it&#39;s acceptable to track a minimum and flush-all rather than doing more
-    /// detailed &quot;current minimum&quot; / sort-by-deadline trickery.
+    /// it's acceptable to track a minimum and flush-all rather than doing more
+    /// detailed "current minimum" / sort-by-deadline trickery.
     </span>island_deadline: CodeOffset,
     <span class="doccomment">/// How many bytes are needed in the worst case for an island, given all
     /// pending constants and fixups.
@@ -2704,7 +2705,7 @@
 }
 
 <span class="kw">impl </span>MachBufferFinalized&lt;Stencil&gt; {
-    <span class="doccomment">/// Get a finalized machine buffer by applying the function&#39;s base source location.
+    <span class="doccomment">/// Get a finalized machine buffer by applying the function's base source location.
     </span><span class="kw">pub fn </span>apply_base_srcloc(<span class="self">self</span>, base_srcloc: SourceLoc) -&gt; MachBufferFinalized&lt;Final&gt; {
         MachBufferFinalized {
             data: <span class="self">self</span>.data,
@@ -2726,7 +2727,7 @@
 <span class="doccomment">/// A `MachBuffer` once emission is completed: holds generated code and records,
 /// without fixups. This allows the type to be independent of the backend.
 </span><span class="attr">#[derive(PartialEq, Debug, Clone)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MachBufferFinalized&lt;T: CompilePhase&gt; {
     <span class="doccomment">/// The buffer contents, as raw bytes.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) data: SmallVec&lt;[u8; <span class="number">1024</span>]&gt;,
@@ -2756,9 +2757,9 @@
 </span><span class="kw">const </span>LABEL_LIST_THRESHOLD: usize = <span class="number">100</span>;
 
 <span class="doccomment">/// A label refers to some offset in a `MachBuffer`. It may not be resolved at
-/// the point at which it is used by emitted code; the buffer records &quot;fixups&quot;
+/// the point at which it is used by emitted code; the buffer records "fixups"
 /// for references to the label, and will come back and patch the code
-/// appropriately when the label&#39;s location is eventually known.
+/// appropriately when the label's location is eventually known.
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 </span><span class="kw">pub struct </span>MachLabel(u32);
 <span class="macro">entity_impl!</span>(MachLabel);
@@ -2777,7 +2778,7 @@
 
     <span class="doccomment">/// Creates a string representing this label, for convenience.
     </span><span class="kw">pub fn </span>to_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="macro">format!</span>(<span class="string">&quot;label{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+        <span class="macro">format!</span>(<span class="string">"label{}"</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
@@ -2889,10 +2890,10 @@
 
     <span class="doccomment">/// Align up to the given alignment.
     </span><span class="kw">pub fn </span>align_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, align_to: CodeOffset) {
-        <span class="macro">trace!</span>(<span class="string">&quot;MachBuffer: align to {}&quot;</span>, align_to);
+        <span class="macro">trace!</span>(<span class="string">"MachBuffer: align to {}"</span>, align_to);
         <span class="macro">assert!</span>(
             align_to.is_power_of_two(),
-            <span class="string">&quot;{} is not a power of two&quot;</span>,
+            <span class="string">"{} is not a power of two"</span>,
             align_to
         );
         <span class="kw">while </span><span class="self">self</span>.cur_offset() &amp; (align_to - <span class="number">1</span>) != <span class="number">0 </span>{
@@ -2908,7 +2909,7 @@
         <span class="kw">let </span>l = <span class="self">self</span>.label_offsets.len() <span class="kw">as </span>u32;
         <span class="self">self</span>.label_offsets.push(UNKNOWN_LABEL_OFFSET);
         <span class="self">self</span>.label_aliases.push(UNKNOWN_LABEL);
-        <span class="macro">trace!</span>(<span class="string">&quot;MachBuffer: new label -&gt; {:?}&quot;</span>, MachLabel(l));
+        <span class="macro">trace!</span>(<span class="string">"MachBuffer: new label -&gt; {:?}"</span>, MachLabel(l));
         MachLabel(l)
 
         <span class="comment">// Post-invariant: the only mutation is to add a new label; it has no
@@ -2917,7 +2918,7 @@
 
     <span class="doccomment">/// Reserve the first N MachLabels for blocks.
     </span><span class="kw">pub fn </span>reserve_labels_for_blocks(<span class="kw-2">&amp;mut </span><span class="self">self</span>, blocks: usize) {
-        <span class="macro">trace!</span>(<span class="string">&quot;MachBuffer: first {} labels are for blocks&quot;</span>, blocks);
+        <span class="macro">trace!</span>(<span class="string">"MachBuffer: first {} labels are for blocks"</span>, blocks);
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.label_offsets.is_empty());
         <span class="self">self</span>.label_offsets.resize(blocks, UNKNOWN_LABEL_OFFSET);
         <span class="self">self</span>.label_aliases.resize(blocks, UNKNOWN_LABEL);
@@ -2941,10 +2942,10 @@
     }
 
     <span class="doccomment">/// Completes constant emission by iterating over `self.used_constants` and
-    /// filling in the &quot;holes&quot; with the constant values provided by `constants`.
+    /// filling in the "holes" with the constant values provided by `constants`.
     ///
     /// Returns the alignment required for this entire buffer. Alignment starts
-    /// at the ISA&#39;s minimum function alignment and can be increased due to
+    /// at the ISA's minimum function alignment and can be increased due to
     /// constant requirements.
     </span><span class="kw">fn </span>finish_constants(<span class="kw-2">&amp;mut </span><span class="self">self</span>, constants: <span class="kw-2">&amp;</span>VCodeConstants) -&gt; u32 {
         <span class="kw">let </span><span class="kw-2">mut </span>alignment = I::function_alignment().minimum;
@@ -2977,8 +2978,8 @@
 
         <span class="kw">let </span>label = <span class="self">self</span>.get_label();
         <span class="macro">trace!</span>(
-            <span class="string">&quot;defer constant: eventually emit {size} bytes aligned \
-             to {align} at label {label:?}&quot;</span>,
+            <span class="string">"defer constant: eventually emit {size} bytes aligned \
+             to {align} at label {label:?}"</span>,
         );
         <span class="self">self</span>.update_deadline(size, u32::MAX);
         <span class="self">self</span>.pending_constants.push(constant);
@@ -2989,7 +2990,7 @@
     <span class="doccomment">/// Bind a label to the current offset. A label can only be bound once.
     </span><span class="kw">pub fn </span>bind_label(<span class="kw-2">&amp;mut </span><span class="self">self</span>, label: MachLabel, ctrl_plane: <span class="kw-2">&amp;mut </span>ControlPlane) {
         <span class="macro">trace!</span>(
-            <span class="string">&quot;MachBuffer: bind label {:?} at offset {}&quot;</span>,
+            <span class="string">"MachBuffer: bind label {:?} at offset {}"</span>,
             label,
             <span class="self">self</span>.cur_offset()
         );
@@ -3037,7 +3038,7 @@
             // in most contexts anyway so this should be impossible to hit with
             // a legitimate input.
             </span>iters += <span class="number">1</span>;
-            <span class="macro">assert!</span>(iters &lt; <span class="number">1_000_000</span>, <span class="string">&quot;Unexpected cycle in label aliases&quot;</span>);
+            <span class="macro">assert!</span>(iters &lt; <span class="number">1_000_000</span>, <span class="string">"Unexpected cycle in label aliases"</span>);
         }
         <span class="self">self</span>.label_offsets[label.<span class="number">0 </span><span class="kw">as </span>usize]
 
@@ -3052,7 +3053,7 @@
     /// not happen until an island is emitted or the buffer is finished.
     </span><span class="kw">pub fn </span>use_label_at_offset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: CodeOffset, label: MachLabel, kind: I::LabelUse) {
         <span class="macro">trace!</span>(
-            <span class="string">&quot;MachBuffer: use_label_at_offset: offset {} label {:?} kind {:?}&quot;</span>,
+            <span class="string">"MachBuffer: use_label_at_offset: offset {} label {:?} kind {:?}"</span>,
             offset,
             label,
             kind
@@ -3087,7 +3088,7 @@
     ///
     /// - Call `use_label_at_offset()` to emit the fixup record.
     /// - Call `add_uncond_branch()` to make note of the branch.
-    /// - Emit the bytes for the branch&#39;s machine code.
+    /// - Emit the bytes for the branch's machine code.
     ///
     /// Additional requirement: no labels may be bound between `start` and `end`
     /// (exclusive on both ends).
@@ -3186,7 +3187,7 @@
         //    (past end of buffer)
 
         </span><span class="macro">trace!</span>(
-            <span class="string">&quot;truncate_last_branch: truncated {:?}; off now {}&quot;</span>,
+            <span class="string">"truncate_last_branch: truncated {:?}; off now {}"</span>,
             b,
             cur_off
         );
@@ -3217,7 +3218,7 @@
         //   above).
         // - all labels that refer to the new tail, which is the start-offset of
         //   the truncated branch, must be present. The `labels_at_this_branch`
-        //   list in the truncated branch&#39;s record is a complete and precise list
+        //   list in the truncated branch's record is a complete and precise list
         //   of exactly these labels; we append these to labels_at_tail.
         // - labels_at_tail_off is at cur_off after truncation occurs, so the
         //   list is valid (not to be lazily cleared).
@@ -3246,7 +3247,7 @@
         <span class="comment">// Invariants valid at this point.
 
         </span><span class="macro">trace!</span>(
-            <span class="string">&quot;enter optimize_branches:\n b = {:?}\n l = {:?}\n f = {:?}&quot;</span>,
+            <span class="string">"enter optimize_branches:\n b = {:?}\n l = {:?}\n f = {:?}"</span>,
             <span class="self">self</span>.latest_branches,
             <span class="self">self</span>.labels_at_tail,
             <span class="self">self</span>.fixup_records
@@ -3258,27 +3259,27 @@
         // so this always makes progress.
         </span><span class="kw">while let </span><span class="prelude-val">Some</span>(b) = <span class="self">self</span>.latest_branches.last() {
             <span class="kw">let </span>cur_off = <span class="self">self</span>.cur_offset();
-            <span class="macro">trace!</span>(<span class="string">&quot;optimize_branches: last branch {:?} at off {}&quot;</span>, b, cur_off);
+            <span class="macro">trace!</span>(<span class="string">"optimize_branches: last branch {:?} at off {}"</span>, b, cur_off);
             <span class="comment">// If there has been any code emission since the end of the last branch or
-            // label definition, then there&#39;s nothing we can edit (because we
-            // don&#39;t move code once placed, only back up and overwrite), so
+            // label definition, then there's nothing we can edit (because we
+            // don't move code once placed, only back up and overwrite), so
             // clear the records and finish.
             </span><span class="kw">if </span>b.end &lt; cur_off {
                 <span class="kw">break</span>;
             }
 
-            <span class="comment">// If the &quot;labels at this branch&quot; list on this branch is
-            // longer than a threshold, don&#39;t do any simplification,
+            <span class="comment">// If the "labels at this branch" list on this branch is
+            // longer than a threshold, don't do any simplification,
             // and let the branch remain to separate those labels from
             // the current tail. This avoids quadratic behavior (see
-            // #3468): otherwise, if a long string of &quot;goto next;
-            // next:&quot; patterns are emitted, all of the labels will
+            // #3468): otherwise, if a long string of "goto next;
+            // next:" patterns are emitted, all of the labels will
             // coalesce into a long list of aliases for the current
             // buffer tail. We must track all aliases of the current
             // tail for correctness, but we are also allowed to skip
             // optimization (removal) of any branch, so we take the
             // escape hatch here and let it stand. In effect this
-            // &quot;spreads&quot; the many thousands of labels in the
+            // "spreads" the many thousands of labels in the
             // pathological case among an actual (harmless but
             // suboptimal) instruction once per N labels.
             </span><span class="kw">if </span>b.labels_at_this_branch.len() &gt; LABEL_LIST_THRESHOLD {
@@ -3298,26 +3299,26 @@
             // address is equivalent to a no-op; in both cases, nextPC is the
             // fallthrough.
             </span><span class="kw">if </span><span class="self">self</span>.resolve_label_offset(b.target) == cur_off {
-                <span class="macro">trace!</span>(<span class="string">&quot;branch with target == cur off; truncating&quot;</span>);
+                <span class="macro">trace!</span>(<span class="string">"branch with target == cur off; truncating"</span>);
                 <span class="self">self</span>.truncate_last_branch();
                 <span class="kw">continue</span>;
             }
 
             <span class="comment">// If latest is an unconditional branch:
             //
-            // - If the branch&#39;s target is not its own start address, then for
+            // - If the branch's target is not its own start address, then for
             //   each label at the start of branch, make the label an alias of the
-            //   branch target, and remove the label from the &quot;labels at this
-            //   branch&quot; list.
+            //   branch target, and remove the label from the "labels at this
+            //   branch" list.
             //
-            //   - Preserves execution semantics: an unconditional branch&#39;s
+            //   - Preserves execution semantics: an unconditional branch's
             //     only effect is to set PC to a new PC; this change simply
             //     collapses one step in the step-semantics.
             //
             //   - Post-invariant: the labels that were bound to the start of
             //     this branch become aliases, so they must not be present in any
             //     labels-at-this-branch list or the labels-at-tail list. The
-            //     labels are removed form the latest-branch record&#39;s
+            //     labels are removed form the latest-branch record's
             //     labels-at-this-branch list, and are never placed in the
             //     labels-at-tail list. Furthermore, it is correct that they are
             //     not in either list, because they are now aliases, and labels
@@ -3331,8 +3332,8 @@
             //
             //   - Preserves execution semantics: the branch is unreachable,
             //     because execution can only flow into an instruction from the
-            //     prior instruction&#39;s fallthrough or from a branch bound to that
-            //     instruction&#39;s start offset. Unconditional branches have no
+            //     prior instruction's fallthrough or from a branch bound to that
+            //     instruction's start offset. Unconditional branches have no
             //     fallthrough, so if the prior instruction is an unconditional
             //     branch, no fallthrough entry can happen. The
             //     labels-at-this-branch list is complete (by invariant), so if it
@@ -3370,7 +3371,7 @@
             //         L2:
             //
             //     In the original code, control flow reaches L2 when the
-            //     conditional branch&#39;s predicate is true, and L3 otherwise. In
+            //     conditional branch's predicate is true, and L3 otherwise. In
             //     the optimized code, the same is true.
             //
             //   - Post-invariant: all edits to latest_branches and
@@ -3378,8 +3379,8 @@
             //     which maintains the invariants at each step.
 
             </span><span class="kw">if </span>b.is_uncond() {
-                <span class="comment">// Set any label equal to current branch&#39;s start as an alias of
-                // the branch&#39;s target, if the target is not the branch itself
+                <span class="comment">// Set any label equal to current branch's start as an alias of
+                // the branch's target, if the target is not the branch itself
                 // (i.e., an infinite loop).
                 //
                 // We cannot perform this aliasing if the target of this branch
@@ -3414,7 +3415,7 @@
                     <span class="kw">let </span>redirected = b.labels_at_this_branch.len();
                     <span class="kw">for </span><span class="kw-2">&amp;</span>l <span class="kw">in </span><span class="kw-2">&amp;</span>b.labels_at_this_branch {
                         <span class="macro">trace!</span>(
-                            <span class="string">&quot; -&gt; label at start of branch {:?} redirected to target {:?}&quot;</span>,
+                            <span class="string">" -&gt; label at start of branch {:?} redirected to target {:?}"</span>,
                             l,
                             b.target
                         );
@@ -3432,7 +3433,7 @@
                     mut_b.labels_at_this_branch.clear();
 
                     <span class="kw">if </span>redirected &gt; <span class="number">0 </span>{
-                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; after label redirects, restarting loop&quot;</span>);
+                        <span class="macro">trace!</span>(<span class="string">" -&gt; after label redirects, restarting loop"</span>);
                         <span class="kw">continue</span>;
                     }
                 } <span class="kw">else </span>{
@@ -3444,7 +3445,7 @@
                 <span class="comment">// Examine any immediately preceding branch.
                 </span><span class="kw">if </span><span class="self">self</span>.latest_branches.len() &gt; <span class="number">1 </span>{
                     <span class="kw">let </span>prev_b = <span class="kw-2">&amp;</span><span class="self">self</span>.latest_branches[<span class="self">self</span>.latest_branches.len() - <span class="number">2</span>];
-                    <span class="macro">trace!</span>(<span class="string">&quot; -&gt; more than one branch; prev_b = {:?}&quot;</span>, prev_b);
+                    <span class="macro">trace!</span>(<span class="string">" -&gt; more than one branch; prev_b = {:?}"</span>, prev_b);
                     <span class="comment">// This uncond is immediately after another uncond; we
                     // should have already redirected labels to this uncond away
                     // (but check to be sure); so we can truncate this uncond.
@@ -3452,22 +3453,22 @@
                         &amp;&amp; prev_b.end == b.start
                         &amp;&amp; b.labels_at_this_branch.is_empty()
                     {
-                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; uncond follows another uncond; truncating&quot;</span>);
+                        <span class="macro">trace!</span>(<span class="string">" -&gt; uncond follows another uncond; truncating"</span>);
                         <span class="self">self</span>.truncate_last_branch();
                         <span class="kw">continue</span>;
                     }
 
                     <span class="comment">// This uncond is immediately after a conditional, and the
-                    // conditional&#39;s target is the end of this uncond, and we&#39;ve
+                    // conditional's target is the end of this uncond, and we've
                     // already redirected labels to this uncond away; so we can
                     // truncate this uncond, flip the sense of the conditional, and
-                    // set the conditional&#39;s target (in `latest_branches` and in
-                    // `fixup_records`) to the uncond&#39;s target.
+                    // set the conditional's target (in `latest_branches` and in
+                    // `fixup_records`) to the uncond's target.
                     </span><span class="kw">if </span>prev_b.is_cond()
                         &amp;&amp; prev_b.end == b.start
                         &amp;&amp; <span class="self">self</span>.resolve_label_offset(prev_b.target) == cur_off
                     {
-                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; uncond follows a conditional, and conditional&#39;s target resolves to current offset&quot;</span>);
+                        <span class="macro">trace!</span>(<span class="string">" -&gt; uncond follows a conditional, and conditional's target resolves to current offset"</span>);
                         <span class="comment">// Save the target of the uncond (this becomes the
                         // target of the cond), and truncate the uncond.
                         </span><span class="kw">let </span>target = b.target;
@@ -3492,7 +3493,7 @@
                         // again.
                         </span>prev_b.inverted = <span class="prelude-val">Some</span>(not_inverted);
                         <span class="self">self</span>.fixup_records[prev_b.fixup].label = target;
-                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; reassigning target of condbr to {:?}&quot;</span>, target);
+                        <span class="macro">trace!</span>(<span class="string">" -&gt; reassigning target of condbr to {:?}"</span>, target);
                         prev_b.target = target;
                         <span class="macro">debug_assert_eq!</span>(off_before_edit, <span class="self">self</span>.cur_offset());
                         <span class="kw">continue</span>;
@@ -3500,14 +3501,14 @@
                 }
             }
 
-            <span class="comment">// If we couldn&#39;t do anything with the last branch, then break.
+            <span class="comment">// If we couldn't do anything with the last branch, then break.
             </span><span class="kw">break</span>;
         }
 
         <span class="self">self</span>.purge_latest_branches();
 
         <span class="macro">trace!</span>(
-            <span class="string">&quot;leave optimize_branches:\n b = {:?}\n l = {:?}\n f = {:?}&quot;</span>,
+            <span class="string">"leave optimize_branches:\n b = {:?}\n l = {:?}\n f = {:?}"</span>,
             <span class="self">self</span>.latest_branches,
             <span class="self">self</span>.labels_at_tail,
             <span class="self">self</span>.fixup_records
@@ -3522,7 +3523,7 @@
         </span><span class="kw">let </span>cur_off = <span class="self">self</span>.cur_offset();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(l) = <span class="self">self</span>.latest_branches.last() {
             <span class="kw">if </span>l.end &lt; cur_off {
-                <span class="macro">trace!</span>(<span class="string">&quot;purge_latest_branches: removing branch {:?}&quot;</span>, l);
+                <span class="macro">trace!</span>(<span class="string">"purge_latest_branches: removing branch {:?}"</span>, l);
                 <span class="self">self</span>.latest_branches.clear();
             }
         }
@@ -3554,7 +3555,7 @@
     }
 
     <span class="kw">fn </span>update_deadline(<span class="kw-2">&amp;mut </span><span class="self">self</span>, len: usize, max_distance: CodeOffset) {
-        <span class="macro">trace!</span>(<span class="string">&quot;defer: eventually emit {} bytes&quot;</span>, len);
+        <span class="macro">trace!</span>(<span class="string">"defer: eventually emit {} bytes"</span>, len);
         <span class="kw">let </span>deadline = <span class="self">self</span>.cur_offset().saturating_add(max_distance);
         <span class="self">self</span>.island_worst_case_size += len <span class="kw">as </span>CodeOffset;
         <span class="self">self</span>.island_worst_case_size =
@@ -3573,7 +3574,7 @@
     /// bytes are appended.
     ///
     /// This is used to determine if veneers need insertions since jumps that
-    /// can&#39;t reach past this point must get a veneer of some form.
+    /// can't reach past this point must get a veneer of some form.
     </span><span class="kw">fn </span>worst_case_end_of_island(<span class="kw-2">&amp;</span><span class="self">self</span>, distance: CodeOffset) -&gt; CodeOffset {
         <span class="self">self</span>.cur_offset()
             .saturating_add(distance)
@@ -3583,7 +3584,7 @@
     <span class="doccomment">/// Emit all pending constants and required pending veneers.
     ///
     /// Should only be called if `island_needed()` returns true, i.e., if we
-    /// actually reach a deadline. It&#39;s not necessarily a problem to do so
+    /// actually reach a deadline. It's not necessarily a problem to do so
     /// otherwise but it may result in unnecessary work during emission.
     </span><span class="kw">pub fn </span>emit_island(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctrl_plane: <span class="kw-2">&amp;mut </span>ControlPlane) {
         <span class="self">self</span>.emit_island_maybe_forced(ForceVeneers::No, IsLastIsland::No, ctrl_plane);
@@ -3597,20 +3598,20 @@
         last_island: IsLastIsland,
         ctrl_plane: <span class="kw-2">&amp;mut </span>ControlPlane,
     ) {
-        <span class="comment">// We&#39;re going to purge fixups, so no latest-branch editing can happen
+        <span class="comment">// We're going to purge fixups, so no latest-branch editing can happen
         // anymore.
         </span><span class="self">self</span>.latest_branches.clear();
 
-        <span class="comment">// Reset internal calculations about islands since we&#39;re going to
+        <span class="comment">// Reset internal calculations about islands since we're going to
         // change the calculus as we apply fixups.
         </span><span class="self">self</span>.island_deadline = UNKNOWN_LABEL_OFFSET;
         <span class="self">self</span>.island_worst_case_size = <span class="number">0</span>;
 
         <span class="comment">// End the current location tracking since anything emitted during this
-        // function shouldn&#39;t be attributed to whatever the current source
+        // function shouldn't be attributed to whatever the current source
         // location is.
         //
-        // Note that the current source location, if it&#39;s set right now, will be
+        // Note that the current source location, if it's set right now, will be
         // restored at the end of this island emission.
         </span><span class="kw">let </span>cur_loc = <span class="self">self</span>.cur_srcloc.map(|(<span class="kw">_</span>, loc)| loc);
         <span class="kw">if </span>cur_loc.is_some() {
@@ -3665,7 +3666,7 @@
             .into_iter()
             .chain(last_island_fixups.into_iter())
         {
-            <span class="macro">trace!</span>(<span class="string">&quot;emit_island: fixup {:?}&quot;</span>, fixup);
+            <span class="macro">trace!</span>(<span class="string">"emit_island: fixup {:?}"</span>, fixup);
             <span class="kw">let </span>MachLabelFixup {
                 label,
                 offset,
@@ -3677,21 +3678,21 @@
 
             <span class="kw">if </span>label_offset != UNKNOWN_LABEL_OFFSET {
                 <span class="comment">// If the offset of the label for this fixup is known then
-                // we&#39;re going to do something here-and-now. We&#39;re either going
-                // to patch the original offset because it&#39;s an in-bounds jump,
-                // or we&#39;re going to generate a veneer, patch the fixup to jump
+                // we're going to do something here-and-now. We're either going
+                // to patch the original offset because it's an in-bounds jump,
+                // or we're going to generate a veneer, patch the fixup to jump
                 // to the veneer, and then keep going.
                 //
                 // If the label comes after the original fixup, then we should
-                // be guaranteed that the jump is in-bounds. Otherwise there&#39;s
-                // a bug somewhere because this method wasn&#39;t called soon
+                // be guaranteed that the jump is in-bounds. Otherwise there's
+                // a bug somewhere because this method wasn't called soon
                 // enough. All forward-jumps are tracked and should get veneers
-                // before their deadline comes and they&#39;re unable to jump
+                // before their deadline comes and they're unable to jump
                 // further.
                 //
-                // Otherwise if the label is before the fixup, then that&#39;s a
-                // backwards jump. If it&#39;s past the maximum negative range
-                // then we&#39;ll emit a veneer that to jump forward to which can
+                // Otherwise if the label is before the fixup, then that's a
+                // backwards jump. If it's past the maximum negative range
+                // then we'll emit a veneer that to jump forward to which can
                 // then jump backwards.
                 </span><span class="kw">let </span>veneer_required = <span class="kw">if </span>label_offset &gt;= offset {
                     <span class="macro">assert!</span>((label_offset - offset) &lt;= kind.max_pos_range());
@@ -3700,7 +3701,7 @@
                     (offset - label_offset) &gt; kind.max_neg_range()
                 };
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot; -&gt; label_offset = {}, known, required = {} (pos {} neg {})&quot;</span>,
+                    <span class="string">" -&gt; label_offset = {}, known, required = {} (pos {} neg {})"</span>,
                     label_offset,
                     veneer_required,
                     kind.max_pos_range(),
@@ -3712,38 +3713,38 @@
                     <span class="self">self</span>.emit_veneer(label, offset, kind);
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>slice = <span class="kw-2">&amp;mut </span><span class="self">self</span>.data[start..end];
-                    <span class="macro">trace!</span>(<span class="string">&quot;patching in-range!&quot;</span>);
+                    <span class="macro">trace!</span>(<span class="string">"patching in-range!"</span>);
                     kind.patch(slice, offset, label_offset);
                 }
             } <span class="kw">else </span>{
                 <span class="comment">// If the offset of this label is not known at this time then
                 // there are three possibilities:
                 //
-                // 1. It&#39;s possible that the label is already a &quot;max
-                //    range&quot; label: a veneer would not help us any,
+                // 1. It's possible that the label is already a "max
+                //    range" label: a veneer would not help us any,
                 //    and so we need not consider the label during
                 //    island emission any more until the very end (the
-                //    last &quot;island&quot; pass). In this case we kick the
+                //    last "island" pass). In this case we kick the
                 //    label into a separate list to process once at
                 //    the end, to avoid quadratic behavior (see
-                //    &quot;quadratic island behavior&quot; above, and issue
+                //    "quadratic island behavior" above, and issue
                 //    #6798).
                 //
                 // 2. Or, we may be about to exceed the maximum jump range of
                 //    this fixup. In that case a veneer is inserted to buy some
-                //    more budget for the forward-jump. It&#39;s guaranteed that the
-                //    label will eventually come after where we&#39;re at, so we know
+                //    more budget for the forward-jump. It's guaranteed that the
+                //    label will eventually come after where we're at, so we know
                 //    that the forward jump is necessary.
                 //
-                // 3. Otherwise, we&#39;re still within range of the
-                //    forward jump but the precise target isn&#39;t known
+                // 3. Otherwise, we're still within range of the
+                //    forward jump but the precise target isn't known
                 //    yet. In that case, to avoid quadratic behavior
                 //    (again, see above), we emit a veneer and if the
                 //    resulting label-use fixup is then max-range, we
                 //    put it in the max-range list. We could enqueue
                 //    the fixup for processing later, and this would
                 //    enable slightly fewer veneers, but islands are
-                //    relatively rare and the cost of &quot;upgrading&quot; all
+                //    relatively rare and the cost of "upgrading" all
                 //    forward label refs that cross an island should
                 //    be relatively low.
                 </span><span class="kw">if </span>!kind.supports_veneer() {
@@ -3763,31 +3764,31 @@
         }
     }
 
-    <span class="doccomment">/// Emits a &quot;veneer&quot; the `kind` code at `offset` to jump to `label`.
+    <span class="doccomment">/// Emits a "veneer" the `kind` code at `offset` to jump to `label`.
     ///
     /// This will generate extra machine code, using `kind`, to get a
     /// larger-jump-kind than `kind` allows. The code at `offset` is then
     /// patched to jump to our new code, and then the new code is enqueued for
     /// a fixup to get processed at some later time.
     </span><span class="kw">fn </span>emit_veneer(<span class="kw-2">&amp;mut </span><span class="self">self</span>, label: MachLabel, offset: CodeOffset, kind: I::LabelUse) {
-        <span class="comment">// If this `kind` doesn&#39;t support a veneer then that&#39;s a bug in the
+        <span class="comment">// If this `kind` doesn't support a veneer then that's a bug in the
         // backend because we need to implement support for such a veneer.
         </span><span class="macro">assert!</span>(
             kind.supports_veneer(),
-            <span class="string">&quot;jump beyond the range of {:?} but a veneer isn&#39;t supported&quot;</span>,
+            <span class="string">"jump beyond the range of {:?} but a veneer isn't supported"</span>,
             kind,
         );
 
         <span class="comment">// Allocate space for a veneer in the island.
         </span><span class="self">self</span>.align_to(I::LabelUse::ALIGN);
         <span class="kw">let </span>veneer_offset = <span class="self">self</span>.cur_offset();
-        <span class="macro">trace!</span>(<span class="string">&quot;making a veneer at {}&quot;</span>, veneer_offset);
+        <span class="macro">trace!</span>(<span class="string">"making a veneer at {}"</span>, veneer_offset);
         <span class="kw">let </span>start = offset <span class="kw">as </span>usize;
         <span class="kw">let </span>end = (offset + kind.patch_size()) <span class="kw">as </span>usize;
         <span class="kw">let </span>slice = <span class="kw-2">&amp;mut </span><span class="self">self</span>.data[start..end];
         <span class="comment">// Patch the original label use to refer to the veneer.
         </span><span class="macro">trace!</span>(
-            <span class="string">&quot;patching original at offset {} to veneer offset {}&quot;</span>,
+            <span class="string">"patching original at offset {} to veneer offset {}"</span>,
             offset,
             veneer_offset
         );
@@ -3797,12 +3798,12 @@
         <span class="kw">let </span>(veneer_fixup_off, veneer_label_use) =
             kind.generate_veneer(veneer_slice, veneer_offset);
         <span class="macro">trace!</span>(
-            <span class="string">&quot;generated veneer; fixup offset {}, label_use {:?}&quot;</span>,
+            <span class="string">"generated veneer; fixup offset {}, label_use {:?}"</span>,
             veneer_fixup_off,
             veneer_label_use
         );
         <span class="comment">// Register a new use of `label` with our new veneer fixup and
-        // offset. This&#39;ll recalculate deadlines accordingly and
+        // offset. This'll recalculate deadlines accordingly and
         // enqueue this fixup to get processed at some later
         // time. Note that if we now have a max-range, we instead skip
         // the usual fixup list to avoid quadratic behavior.
@@ -3878,13 +3879,13 @@
         // needed to escape this function to actually get to the external name.
         // This is most likely to come up on AArch64 where calls between
         // functions use a 26-bit signed offset which gives +/- 64MB. This means
-        // that if a function is 128MB in size and there&#39;s a call in the middle
-        // it&#39;s impossible to reach the actual target. Also, while it&#39;s
+        // that if a function is 128MB in size and there's a call in the middle
+        // it's impossible to reach the actual target. Also, while it's
         // technically possible to jump to the start of a function and then jump
         // further, island insertion below always inserts islands after
-        // previously appended code so for Cranelift&#39;s own implementation this
+        // previously appended code so for Cranelift's own implementation this
         // is also a problem for 64MB functions on AArch64 which start with a
-        // call instruction, those won&#39;t be able to escape.
+        // call instruction, those won't be able to escape.
         //
         // Ideally what needs to happen here is that a `LabelUse` is
         // transparently generated (or call-sites of this function are audited
@@ -3896,15 +3897,15 @@
         // generating a final relocation pointing either to this particular
         // relocation or to the veneer inserted. Additionally
         // `MachBuffer` needs the concept of a label which will never be
-        // resolved, so `emit_island` doesn&#39;t trip over not actually ever
+        // resolved, so `emit_island` doesn't trip over not actually ever
         // knowning what some labels are. Currently the loop in
         // `finish_emission_maybe_forcing_veneers` would otherwise infinitely
         // loop.
         //
-        // For now this means that because relocs aren&#39;t tracked at all that
-        // AArch64 functions have a rough size limits of 64MB. For now that&#39;s
+        // For now this means that because relocs aren't tracked at all that
+        // AArch64 functions have a rough size limits of 64MB. For now that's
         // somewhat reasonable and the failure mode is a panic in `MachBuffer`
-        // when a relocation can&#39;t otherwise be resolved later, so it shouldn&#39;t
+        // when a relocation can't otherwise be resolved later, so it shouldn't
         // actually result in any memory unsafety or anything like that.
         </span><span class="self">self</span>.relocs.push(MachReloc {
             offset: <span class="self">self</span>.data.len() <span class="kw">as </span>CodeOffset,
@@ -3926,7 +3927,7 @@
     </span><span class="kw">pub fn </span>add_call_site(<span class="kw-2">&amp;mut </span><span class="self">self</span>, opcode: Opcode) {
         <span class="macro">debug_assert!</span>(
             opcode.is_call(),
-            <span class="string">&quot;adding call site info for a non-call instruction.&quot;
+            <span class="string">"adding call site info for a non-call instruction."
         </span>);
         <span class="self">self</span>.call_sites.push(MachCallSite {
             ret_addr: <span class="self">self</span>.data.len() <span class="kw">as </span>CodeOffset,
@@ -3951,7 +3952,7 @@
         <span class="kw">let </span>(start, loc) = <span class="self">self
             </span>.cur_srcloc
             .take()
-            .expect(<span class="string">&quot;end_srcloc() called without start_srcloc()&quot;</span>);
+            .expect(<span class="string">"end_srcloc() called without start_srcloc()"</span>);
         <span class="kw">let </span>end = <span class="self">self</span>.cur_offset();
         <span class="comment">// Skip zero-length extends.
         </span><span class="macro">debug_assert!</span>(end &gt;= start);
@@ -3978,7 +3979,7 @@
                 (start_offset, end_offset)
             }
         };
-        <span class="macro">trace!</span>(<span class="string">&quot;Adding stack map for offsets {start:#x}..{end:#x}&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">"Adding stack map for offsets {start:#x}..{end:#x}"</span>);
         <span class="self">self</span>.stack_maps.push(MachStackMap {
             offset: start,
             offset_end: end,
@@ -4004,7 +4005,7 @@
         </span><span class="kw">use </span>std::fmt::Write;
         <span class="kw">let </span><span class="kw-2">mut </span>s = String::with_capacity(<span class="self">self</span>.data.len() * <span class="number">2</span>);
         <span class="kw">for </span>b <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.data {
-            <span class="macro">write!</span>(<span class="kw-2">&amp;mut </span>s, <span class="string">&quot;{:02X}&quot;</span>, b).unwrap();
+            <span class="macro">write!</span>(<span class="kw-2">&amp;mut </span>s, <span class="string">"{:02X}"</span>, b).unwrap();
         }
         s
     }
@@ -4063,7 +4064,7 @@
 <span class="doccomment">/// A trap that is deferred to the next time an island is emitted for either
 /// traps, constants, or fixups.
 </span><span class="kw">struct </span>MachLabelTrap {
-    <span class="doccomment">/// This label will refer to the trap&#39;s offset.
+    <span class="doccomment">/// This label will refer to the trap's offset.
     </span>label: MachLabel,
     <span class="doccomment">/// The code associated with this trap.
     </span>code: TrapCode,
@@ -4091,7 +4092,7 @@
 
 <span class="doccomment">/// A relocation resulting from a compilation.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MachReloc {
     <span class="doccomment">/// The offset at which the relocation applies, *relative to the
     /// containing section*.
@@ -4106,7 +4107,7 @@
 
 <span class="doccomment">/// A trap record resulting from a compilation.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MachTrap {
     <span class="doccomment">/// The offset at which the trap instruction occurs, *relative to the
     /// containing section*.
@@ -4117,17 +4118,17 @@
 
 <span class="doccomment">/// A call site record resulting from a compilation.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MachCallSite {
-    <span class="doccomment">/// The offset of the call&#39;s return address, *relative to the containing section*.
+    <span class="doccomment">/// The offset of the call's return address, *relative to the containing section*.
     </span><span class="kw">pub </span>ret_addr: CodeOffset,
-    <span class="doccomment">/// The call&#39;s opcode.
+    <span class="doccomment">/// The call's opcode.
     </span><span class="kw">pub </span>opcode: Opcode,
 }
 
 <span class="doccomment">/// A source-location mapping resulting from a compilation.
 </span><span class="attr">#[derive(PartialEq, Debug, Clone)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MachSrcLoc&lt;T: CompilePhase&gt; {
     <span class="doccomment">/// The start of the region of code corresponding to a source location.
     /// This is relative to the start of the function, not to the start of the
@@ -4153,11 +4154,11 @@
 
 <span class="doccomment">/// Record of stack map metadata: stack offsets containing references.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MachStackMap {
     <span class="doccomment">/// The code offset at which this stack map applies.
     </span><span class="kw">pub </span>offset: CodeOffset,
-    <span class="doccomment">/// The code offset just past the &quot;end&quot; of the instruction: that is, the
+    <span class="doccomment">/// The code offset just past the "end" of the instruction: that is, the
     /// offset of the first byte of the following instruction, or equivalently,
     /// the start offset plus the instruction length.
     </span><span class="kw">pub </span>offset_end: CodeOffset,
@@ -4193,9 +4194,9 @@
 <span class="doccomment">/// Implementation of the `TextSectionBuilder` trait backed by `MachBuffer`.
 ///
 /// Note that `MachBuffer` was primarily written for intra-function references
-/// of jumps between basic blocks, but it&#39;s also quite usable for entire text
+/// of jumps between basic blocks, but it's also quite usable for entire text
 /// sections and resolving references between functions themselves. This
-/// builder interprets &quot;blocks&quot; as labeled functions for the purposes of
+/// builder interprets "blocks" as labeled functions for the purposes of
 /// resolving labels internally in the buffer.
 </span><span class="kw">pub struct </span>MachTextSectionBuilder&lt;I: VCodeInst&gt; {
     buf: MachBuffer&lt;I&gt;,
@@ -4225,7 +4226,7 @@
         align: u32,
         ctrl_plane: <span class="kw-2">&amp;mut </span>ControlPlane,
     ) -&gt; u64 {
-        <span class="comment">// Conditionally emit an island if it&#39;s necessary to resolve jumps
+        <span class="comment">// Conditionally emit an island if it's necessary to resolve jumps
         // between functions which are too far away.
         </span><span class="kw">let </span>size = func.len() <span class="kw">as </span>u32;
         <span class="kw">if </span><span class="self">self</span>.force_veneers == ForceVeneers::Yes || <span class="self">self</span>.buf.island_needed(size) {
@@ -4248,7 +4249,7 @@
 
     <span class="kw">fn </span>resolve_reloc(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: u64, reloc: Reloc, addend: Addend, target: usize) -&gt; bool {
         <span class="macro">crate::trace!</span>(
-            <span class="string">&quot;Resolving relocation @ {offset:#x} + {addend:#x} to target {target} of kind {reloc:?}&quot;
+            <span class="string">"Resolving relocation @ {offset:#x} + {addend:#x} to target {target} of kind {reloc:?}"
         </span>);
         <span class="kw">let </span>label = MachLabel::from_block(BlockIndex::new(target));
         <span class="kw">let </span>offset = u32::try_from(offset).unwrap();
@@ -4273,13 +4274,13 @@
         </span><span class="self">self</span>.buf
             .finish_emission_maybe_forcing_veneers(<span class="self">self</span>.force_veneers, ctrl_plane);
 
-        <span class="comment">// We don&#39;t need the data any more, so return it to the caller.
+        <span class="comment">// We don't need the data any more, so return it to the caller.
         </span>mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.buf.data).into_vec()
     }
 }
 
 <span class="comment">// We use an actual instruction definition to do tests, so we depend on the `arm64` feature here.
-</span><span class="attr">#[cfg(all(test, feature = <span class="string">&quot;arm64&quot;</span>))]
+</span><span class="attr">#[cfg(all(test, feature = <span class="string">"arm64"</span>))]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>cranelift_entity::EntityRef <span class="kw">as _</span>;
 
@@ -4444,7 +4445,7 @@
             // one for this 19-bit jump and one for the unconditional 26-bit
             // jump below. A 19-bit veneer is 4 bytes large and the 26-bit
             // veneer is 20 bytes large, which means that pessimistically
-            // assuming we&#39;ll need two veneers we need 24 bytes of extra
+            // assuming we'll need two veneers we need 24 bytes of extra
             // space, meaning that the actual island should come 24-bytes
             // before the deadline.
             </span>taken: BranchTarget::ResolvedOffset((<span class="number">1 </span>&lt;&lt; <span class="number">20</span>) - <span class="number">4 </span>- <span class="number">20</span>),

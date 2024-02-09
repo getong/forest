@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/merkletree-0.23.0/src/store/level_cache.rs`."><title>level_cache.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="merkletree" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/merkletree-0.23.0/src/store/level_cache.rs`."><title>level_cache.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="merkletree" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -896,7 +897,7 @@
 /// further to the minimum at the cost of build time performance.
 /// Each LevelCacheStore is created with a StoreConfig object which
 /// contains the number of binary tree levels above the base that are
-/// &#39;cached&#39;.  This implementation has hard requirements about the on
+/// 'cached'.  This implementation has hard requirements about the on
 /// disk file size based on that number of levels, so on-disk files
 /// are tied, structurally to the configuration they were built with
 /// and can only be accessed with the same number of levels.
@@ -928,14 +929,14 @@
 }
 
 <span class="kw">impl</span>&lt;E: Element, R: Read + Send + Sync&gt; fmt::Debug <span class="kw">for </span>LevelCacheStore&lt;E, R&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;LevelCacheStore&quot;</span>)
-            .field(<span class="string">&quot;len&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.len)
-            .field(<span class="string">&quot;elem_len&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.len)
-            .field(<span class="string">&quot;data_width&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.data_width)
-            .field(<span class="string">&quot;loaded_from_disk&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.loaded_from_disk)
-            .field(<span class="string">&quot;cache_index_start&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.cache_index_start)
-            .field(<span class="string">&quot;store_size&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.store_size)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"LevelCacheStore"</span>)
+            .field(<span class="string">"len"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.len)
+            .field(<span class="string">"elem_len"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.len)
+            .field(<span class="string">"data_width"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.data_width)
+            .field(<span class="string">"loaded_from_disk"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.loaded_from_disk)
+            .field(<span class="string">"cache_index_start"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.cache_index_start)
+            .field(<span class="string">"store_size"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.store_size)
             .finish()
     }
 }
@@ -950,13 +951,13 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>data_path = StoreConfig::data_path(<span class="kw-2">&amp;</span>config.path, <span class="kw-2">&amp;</span>config.id);
 
-        <span class="macro">ensure!</span>(Path::new(<span class="kw-2">&amp;</span>data_path).exists(), <span class="string">&quot;[LevelCacheStore - new_from_disk_with_reader] new_from_disk_with_reader constructor can be used only for instantiating already existing storages&quot;</span>);
+        <span class="macro">ensure!</span>(Path::new(<span class="kw-2">&amp;</span>data_path).exists(), <span class="string">"[LevelCacheStore - new_from_disk_with_reader] new_from_disk_with_reader constructor can be used only for instantiating already existing storages"</span>);
 
         <span class="kw">let </span>file = <span class="kw">match </span>OpenOptions::new().write(<span class="bool-val">true</span>).read(<span class="bool-val">true</span>).open(<span class="kw-2">&amp;</span>data_path) {
             <span class="prelude-val">Ok</span>(file) =&gt; file,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="kw">if </span>e.kind() == std::io::ErrorKind::PermissionDenied {
-                    <span class="macro">warn!</span>(<span class="string">&quot;[LevelCacheStore - new_from_disk_with_reader] Permission denied occurred. Try to open storage as read-only&quot;</span>);
+                    <span class="macro">warn!</span>(<span class="string">"[LevelCacheStore - new_from_disk_with_reader] Permission denied occurred. Try to open storage as read-only"</span>);
                 }
                 OpenOptions::new()
                     .write(<span class="bool-val">false</span>)
@@ -975,7 +976,7 @@
         </span><span class="kw">let </span>size = get_merkle_tree_leafs(store_range, branches)<span class="question-mark">?</span>;
         <span class="macro">ensure!</span>(
             size == next_pow2(size),
-            <span class="string">&quot;Inconsistent merkle tree row_count detected&quot;
+            <span class="string">"Inconsistent merkle tree row_count detected"
         </span>);
 
         <span class="comment">// Values below in bytes.
@@ -995,7 +996,7 @@
         // the cached element data.
         </span><span class="macro">ensure!</span>(
             store_size == cache_size,
-            <span class="string">&quot;Inconsistent store size detected with external reader ({} != {})&quot;</span>,
+            <span class="string">"Inconsistent store size detected with external reader ({} != {})"</span>,
             store_size,
             cache_size,
         );
@@ -1043,7 +1044,7 @@
 
         <span class="macro">ensure!</span>(
             leafs == next_pow2(leafs),
-            <span class="string">&quot;Inconsistent merkle tree row_count detected&quot;
+            <span class="string">"Inconsistent merkle tree row_count detected"
         </span>);
 
         <span class="comment">// Calculate cache start and the updated size with repect to
@@ -1093,7 +1094,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             data.len() % E::byte_len() == <span class="number">0</span>,
-            <span class="string">&quot;data size must be a multiple of {}&quot;</span>,
+            <span class="string">"data size must be a multiple of {}"</span>,
             E::byte_len()
         );
 
@@ -1114,7 +1115,7 @@
     <span class="kw">fn </span>new_from_slice(size: usize, data: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             data.len() % E::byte_len() == <span class="number">0</span>,
-            <span class="string">&quot;data size must be a multiple of {}&quot;</span>,
+            <span class="string">"data size must be a multiple of {}"</span>,
             E::byte_len()
         );
 
@@ -1129,13 +1130,13 @@
     </span><span class="kw">fn </span>new_from_disk(store_range: usize, branches: usize, config: <span class="kw-2">&amp;</span>StoreConfig) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>data_path = StoreConfig::data_path(<span class="kw-2">&amp;</span>config.path, <span class="kw-2">&amp;</span>config.id);
 
-        <span class="macro">ensure!</span>(Path::new(<span class="kw-2">&amp;</span>data_path).exists(), <span class="string">&quot;[LevelCacheStore] new_from_disk constructor can be used only for instantiating already existing storages&quot;</span>);
+        <span class="macro">ensure!</span>(Path::new(<span class="kw-2">&amp;</span>data_path).exists(), <span class="string">"[LevelCacheStore] new_from_disk constructor can be used only for instantiating already existing storages"</span>);
 
         <span class="kw">let </span>file = <span class="kw">match </span>OpenOptions::new().write(<span class="bool-val">true</span>).read(<span class="bool-val">true</span>).open(<span class="kw-2">&amp;</span>data_path) {
             <span class="prelude-val">Ok</span>(file) =&gt; file,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="kw">if </span>e.kind() == std::io::ErrorKind::PermissionDenied {
-                    <span class="macro">warn!</span>(<span class="string">&quot;[LevelCacheStore - new_from_disk] Permission denied occurred. Try to open storage as read-only&quot;</span>);
+                    <span class="macro">warn!</span>(<span class="string">"[LevelCacheStore - new_from_disk] Permission denied occurred. Try to open storage as read-only"</span>);
                 }
                 OpenOptions::new()
                     .write(<span class="bool-val">false</span>)
@@ -1154,7 +1155,7 @@
         </span><span class="kw">let </span>size = get_merkle_tree_leafs(store_range, branches)<span class="question-mark">?</span>;
         <span class="macro">ensure!</span>(
             size == next_pow2(size),
-            <span class="string">&quot;Inconsistent merkle tree row_count detected&quot;
+            <span class="string">"Inconsistent merkle tree row_count detected"
         </span>);
 
         <span class="comment">// Values below in bytes.
@@ -1177,7 +1178,7 @@
         /*
         ensure!(
             store_size == size * E::byte_len() + cache_size,
-            &quot;Inconsistent store size detected&quot;
+            "Inconsistent store size detected"
         );
          */
 
@@ -1204,7 +1205,7 @@
     <span class="kw">fn </span>copy_from_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8], start: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">ensure!</span>(
             buf.len() % <span class="self">self</span>.elem_len == <span class="number">0</span>,
-            <span class="string">&quot;buf size must be a multiple of {}&quot;</span>,
+            <span class="string">"buf size must be a multiple of {}"</span>,
             <span class="self">self</span>.elem_len
         );
         <span class="self">self</span>.store_copy_from_slice(start * <span class="self">self</span>.elem_len, buf)<span class="question-mark">?</span>;
@@ -1218,11 +1219,11 @@
         <span class="kw">let </span>end = start + <span class="self">self</span>.elem_len;
 
         <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.elem_len;
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="prelude-val">Ok</span>(E::from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.store_read_range(start, end)<span class="question-mark">?</span>))
@@ -1233,11 +1234,11 @@
         <span class="kw">let </span>end = start + <span class="self">self</span>.elem_len;
 
         <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.elem_len;
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="self">self</span>.store_read_into(start, end, buf)
@@ -1248,11 +1249,11 @@
         <span class="kw">let </span>end = end * <span class="self">self</span>.elem_len;
 
         <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.elem_len;
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="self">self</span>.store_read_into(start, end, buf)
@@ -1263,11 +1264,11 @@
         <span class="kw">let </span>end = r.end * <span class="self">self</span>.elem_len;
 
         <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.elem_len;
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="prelude-val">Ok</span>(<span class="self">self
@@ -1291,12 +1292,12 @@
         _config: StoreConfig,
         _store_version: u32,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-        <span class="macro">bail!</span>(<span class="string">&quot;Cannot compact this type of Store&quot;</span>);
+        <span class="macro">bail!</span>(<span class="string">"Cannot compact this type of Store"</span>);
     }
 
     <span class="kw">fn </span>delete(config: StoreConfig) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>path = StoreConfig::data_path(<span class="kw-2">&amp;</span>config.path, <span class="kw-2">&amp;</span>config.id);
-        remove_file(<span class="kw-2">&amp;</span>path).with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to delete {:?}&quot;</span>, <span class="kw-2">&amp;</span>path))
+        remove_file(<span class="kw-2">&amp;</span>path).with_context(|| <span class="macro">format!</span>(<span class="string">"Failed to delete {:?}"</span>, <span class="kw-2">&amp;</span>path))
     }
 
     <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
@@ -1307,7 +1308,7 @@
         <span class="kw">let </span>len = <span class="self">self</span>.len;
         <span class="macro">ensure!</span>(
             (len + <span class="number">1</span>) * <span class="self">self</span>.elem_len &lt;= <span class="self">self</span>.store_size(),
-            <span class="string">&quot;not enough space, len: {}, E size {}, store len {}&quot;</span>,
+            <span class="string">"not enough space, len: {}, E size {}, store len {}"</span>,
             len,
             <span class="self">self</span>.elem_len,
             <span class="self">self</span>.store_size()
@@ -1317,7 +1318,7 @@
     }
 
     <span class="kw">fn </span>sync(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.file.sync_all().context(<span class="string">&quot;failed to sync file&quot;</span>)
+        <span class="self">self</span>.file.sync_all().context(<span class="string">"failed to sync file"</span>)
     }
 
     <span class="attr">#[allow(unsafe_code)]
@@ -1328,7 +1329,7 @@
         read_start: usize,
         write_start: usize,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="comment">// Safety: this operation is safe becase it&#39;s a limited
+        <span class="comment">// Safety: this operation is safe becase it's a limited
         // writable region on the backing store managed by this type.
         </span><span class="kw">let </span><span class="kw-2">mut </span>mmap = <span class="kw">unsafe </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>mmap_options = MmapOptions::new();
@@ -1343,7 +1344,7 @@
         <span class="kw">let </span>shift = log2_pow2(branches);
         <span class="kw">let </span>write_chunk_width = (BUILD_CHUNK_NODES &gt;&gt; shift) * E::byte_len();
 
-        <span class="macro">ensure!</span>(BUILD_CHUNK_NODES % branches == <span class="number">0</span>, <span class="string">&quot;Invalid chunk size&quot;</span>);
+        <span class="macro">ensure!</span>(BUILD_CHUNK_NODES % branches == <span class="number">0</span>, <span class="string">"Invalid chunk size"</span>);
         Vec::from_iter((read_start..read_start + width).step_by(BUILD_CHUNK_NODES))
             .into_par_iter()
             .zip(mmap.par_chunks_mut(write_chunk_width))
@@ -1354,7 +1355,7 @@
                     <span class="comment">// Read everything taking the lock once.
                     </span>data_lock
                         .read()
-                        .expect(<span class="string">&quot;[process_layer] couldn&#39;t block current thread&quot;</span>)
+                        .expect(<span class="string">"[process_layer] couldn't block current thread"</span>)
                         .read_range_internal(chunk_index..chunk_index + chunk_size)<span class="question-mark">?
                 </span>};
 
@@ -1372,7 +1373,7 @@
                 </span><span class="kw">let </span>hashed_nodes_as_bytes_len = hashed_nodes_as_bytes.len();
                 <span class="macro">ensure!</span>(
                     hashed_nodes_as_bytes.len() == chunk_size / branches * E::byte_len(),
-                    <span class="string">&quot;Invalid hashed node length&quot;
+                    <span class="string">"Invalid hashed node length"
                 </span>);
 
                 write_mmap[<span class="number">0</span>..hashed_nodes_as_bytes_len].copy_from_slice(<span class="kw-2">&amp;</span>hashed_nodes_as_bytes);
@@ -1391,10 +1392,10 @@
         <span class="kw">let </span>branches = U::to_usize();
         <span class="macro">ensure!</span>(
             next_pow2(branches) == branches,
-            <span class="string">&quot;branches MUST be a power of 2&quot;
+            <span class="string">"branches MUST be a power of 2"
         </span>);
-        <span class="macro">ensure!</span>(Store::len(<span class="self">self</span>) == leafs, <span class="string">&quot;Inconsistent data&quot;</span>);
-        <span class="macro">ensure!</span>(leafs % <span class="number">2 </span>== <span class="number">0</span>, <span class="string">&quot;Leafs must be a power of two&quot;</span>);
+        <span class="macro">ensure!</span>(Store::len(<span class="self">self</span>) == leafs, <span class="string">"Inconsistent data"</span>);
+        <span class="macro">ensure!</span>(leafs % <span class="number">2 </span>== <span class="number">0</span>, <span class="string">"Leafs must be a power of two"</span>);
 
         <span class="comment">// Process one `level` at a time of `width` nodes. Each level has half the nodes
         // as the previous one; the first level, completely stored in `data`, has `leafs`
@@ -1404,7 +1405,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>width = leafs;
         <span class="kw">let </span><span class="kw-2">mut </span>level_node_index = <span class="number">0</span>;
 
-        <span class="kw">let </span>config = config.context(<span class="string">&quot;LevelCacheStore build requires a valid config&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>config = config.context(<span class="string">"LevelCacheStore build requires a valid config"</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>shift = log2_pow2(branches);
 
         <span class="comment">// Both in terms of elements, not bytes.
@@ -1449,15 +1450,15 @@
         <span class="comment">// Ensure every element is accounted for.
         </span><span class="macro">ensure!</span>(
             Store::len(<span class="self">self</span>) == get_merkle_tree_len(leafs, branches)<span class="question-mark">?</span>,
-            <span class="string">&quot;Invalid merkle tree length&quot;
+            <span class="string">"Invalid merkle tree length"
         </span>);
 
-        <span class="macro">ensure!</span>(row_count == level + <span class="number">1</span>, <span class="string">&quot;Invalid tree row_count&quot;</span>);
-        <span class="comment">// The root isn&#39;t part of the previous loop so `row_count` is
+        <span class="macro">ensure!</span>(row_count == level + <span class="number">1</span>, <span class="string">"Invalid tree row_count"</span>);
+        <span class="comment">// The root isn't part of the previous loop so `row_count` is
         // missing one level.
 
         // Return the root.  Note that the offset is adjusted because
-        // we&#39;ve just built a store that says that it has the full
+        // we've just built a store that says that it has the full
         // length of elements, when in fact only the cached portion is
         // on disk.
         </span><span class="self">self</span>.read_at_internal(<span class="self">self</span>.len() - cache_index_start - <span class="number">1</span>)
@@ -1469,13 +1470,13 @@
         <span class="self">self</span>.len = len;
     }
 
-    <span class="comment">// Remove &#39;len&#39; elements from the front of the file.
+    <span class="comment">// Remove 'len' elements from the front of the file.
     </span><span class="kw">pub fn </span>front_truncate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: <span class="kw-2">&amp;</span>StoreConfig, len: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.file.metadata()<span class="question-mark">?</span>;
         <span class="kw">let </span>store_size = metadata.len();
         <span class="kw">let </span>len = (len * E::byte_len()) <span class="kw">as </span>u64;
 
-        <span class="macro">ensure!</span>(store_size &gt;= len, <span class="string">&quot;Invalid truncation length&quot;</span>);
+        <span class="macro">ensure!</span>(store_size &gt;= len, <span class="string">"Invalid truncation length"</span>);
 
         <span class="comment">// Seek the reader past the length we want removed.
         </span><span class="kw">let </span><span class="kw-2">mut </span>reader = OpenOptions::new()
@@ -1493,7 +1494,7 @@
         </span><span class="self">self</span>.file.seek(SeekFrom::Start(<span class="number">0</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>written = copy(<span class="kw-2">&amp;mut </span>reader, <span class="kw-2">&amp;mut </span><span class="self">self</span>.file)<span class="question-mark">?</span>;
-        <span class="macro">ensure!</span>(written == store_size - len, <span class="string">&quot;Failed to copy all data&quot;</span>);
+        <span class="macro">ensure!</span>(written == store_size - len, <span class="string">"Failed to copy all data"</span>);
 
         <span class="self">self</span>.file.set_len(written)<span class="question-mark">?</span>;
 
@@ -1504,7 +1505,7 @@
         <span class="self">self</span>.store_size
     }
 
-    <span class="comment">// &#39;store_range&#39; must be the total number of elements in the store (e.g. tree.len()).
+    <span class="comment">// 'store_range' must be the total number of elements in the store (e.g. tree.len()).
     </span><span class="kw">pub fn </span>is_consistent_v1(
         store_range: usize,
         branches: usize,
@@ -1523,7 +1524,7 @@
         </span><span class="kw">let </span>size = get_merkle_tree_leafs(store_range, branches)<span class="question-mark">?</span>;
         <span class="macro">ensure!</span>(
             size == next_pow2(size),
-            <span class="string">&quot;Inconsistent merkle tree row_count detected&quot;
+            <span class="string">"Inconsistent merkle tree row_count detected"
         </span>);
 
         <span class="comment">// Calculate cache start and the updated size with repect to
@@ -1536,8 +1537,8 @@
         </span><span class="prelude-val">Ok</span>(store_size == size * E::byte_len() + cache_size)
     }
 
-    <span class="comment">// Note that v2 is now the default compaction mode, so this isn&#39;t a versioned call.
-    // &#39;store_range&#39; must be the total number of elements in the store (e.g. tree.len()).
+    <span class="comment">// Note that v2 is now the default compaction mode, so this isn't a versioned call.
+    // 'store_range' must be the total number of elements in the store (e.g. tree.len()).
     </span><span class="kw">pub fn </span>is_consistent(
         store_range: usize,
         branches: usize,
@@ -1556,7 +1557,7 @@
         </span><span class="kw">let </span>size = get_merkle_tree_leafs(store_range, branches)<span class="question-mark">?</span>;
         <span class="macro">ensure!</span>(
             size == next_pow2(size),
-            <span class="string">&quot;Inconsistent merkle tree row_count detected&quot;
+            <span class="string">"Inconsistent merkle tree row_count detected"
         </span>);
 
         <span class="comment">// LevelCacheStore on disk file is only the cached data, so
@@ -1579,7 +1580,7 @@
 
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="comment">// If an external reader was specified for the base layer, use it.
@@ -1590,7 +1591,7 @@
                 </span>.read(start, end, <span class="kw-2">&amp;mut </span>read_data)
                 .with_context(|| {
                     <span class="macro">format!</span>(
-                        <span class="string">&quot;failed to read {} bytes from file at offset {}&quot;</span>,
+                        <span class="string">"failed to read {} bytes from file at offset {}"</span>,
                         end - start,
                         start
                     )
@@ -1614,7 +1615,7 @@
             .read_exact_at(adjusted_start <span class="kw">as </span>u64, <span class="kw-2">&amp;mut </span>read_data)
             .with_context(|| {
                 <span class="macro">format!</span>(
-                    <span class="string">&quot;failed to read {} bytes from file at offset {}&quot;</span>,
+                    <span class="string">"failed to read {} bytes from file at offset {}"</span>,
                     read_len, start
                 )
             })<span class="question-mark">?</span>;
@@ -1622,21 +1623,21 @@
         <span class="prelude-val">Ok</span>(read_data)
     }
 
-    <span class="comment">// This read is for internal use only during the &#39;build&#39; process.
+    <span class="comment">// This read is for internal use only during the 'build' process.
     </span><span class="kw">fn </span>store_read_range_internal(<span class="kw-2">&amp;</span><span class="self">self</span>, start: usize, end: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>read_len = end - start;
         <span class="kw">let </span><span class="kw-2">mut </span>read_data = <span class="macro">vec!</span>[<span class="number">0</span>; read_len];
 
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="self">self</span>.file
             .read_exact_at(start <span class="kw">as </span>u64, <span class="kw-2">&amp;mut </span>read_data)
             .with_context(|| {
                 <span class="macro">format!</span>(
-                    <span class="string">&quot;failed to read {} bytes from file at offset {}&quot;</span>,
+                    <span class="string">"failed to read {} bytes from file at offset {}"</span>,
                     read_len, start
                 )
             })<span class="question-mark">?</span>;
@@ -1649,11 +1650,11 @@
         <span class="kw">let </span>end = r.end * <span class="self">self</span>.elem_len;
 
         <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.elem_len;
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="prelude-val">Ok</span>(<span class="self">self
@@ -1668,11 +1669,11 @@
         <span class="kw">let </span>end = start + <span class="self">self</span>.elem_len;
 
         <span class="kw">let </span>len = <span class="self">self</span>.len * <span class="self">self</span>.elem_len;
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;out of bounds&quot;
+            <span class="string">"out of bounds"
         </span>);
 
         <span class="prelude-val">Ok</span>(E::from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.store_read_range_internal(start, end)<span class="question-mark">?</span>))
@@ -1681,7 +1682,7 @@
     <span class="kw">pub fn </span>store_read_into(<span class="kw-2">&amp;</span><span class="self">self</span>, start: usize, end: usize, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">ensure!</span>(
             start &lt;= <span class="self">self</span>.data_width * <span class="self">self</span>.elem_len || start &gt;= <span class="self">self</span>.cache_index_start,
-            <span class="string">&quot;Invalid read start&quot;
+            <span class="string">"Invalid read start"
         </span>);
 
         <span class="comment">// If an external reader was specified for the base layer, use it.
@@ -1692,7 +1693,7 @@
                 </span>.read(start, end, buf)
                 .with_context(|| {
                     <span class="macro">format!</span>(
-                        <span class="string">&quot;failed to read {} bytes from file at offset {}&quot;</span>,
+                        <span class="string">"failed to read {} bytes from file at offset {}"</span>,
                         end - start,
                         start
                     )
@@ -1715,7 +1716,7 @@
                 .read_exact_at(adjusted_start <span class="kw">as </span>u64, buf)
                 .with_context(|| {
                     <span class="macro">format!</span>(
-                        <span class="string">&quot;failed to read {} bytes from file at offset {}&quot;</span>,
+                        <span class="string">"failed to read {} bytes from file at offset {}"</span>,
                         end - start,
                         start
                     )
@@ -1728,7 +1729,7 @@
     <span class="kw">pub fn </span>store_copy_from_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, start: usize, slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">ensure!</span>(
             start + slice.len() &lt;= <span class="self">self</span>.store_size,
-            <span class="string">&quot;Requested slice too large (max: {})&quot;</span>,
+            <span class="string">"Requested slice too large (max: {})"</span>,
             <span class="self">self</span>.store_size
         );
         <span class="self">self</span>.file.write_all_at(start <span class="kw">as </span>u64, slice)<span class="question-mark">?</span>;

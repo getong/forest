@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-cranelift-12.0.2/src/compiler.rs`."><title>compiler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_cranelift" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-cranelift-12.0.2/src/compiler.rs`."><title>compiler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_cranelift" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1331,11 +1332,11 @@
     VMOffsets, WasmFunctionInfo,
 };
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
 </span><span class="kw">mod </span>component;
 
 <span class="kw">struct </span>IncrementalCacheContext {
-    <span class="attr">#[cfg(feature = <span class="string">&quot;incremental-cache&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"incremental-cache"</span>)]
     </span>cache_store: Arc&lt;<span class="kw">dyn </span>CacheStore&gt;,
     num_hits: usize,
     num_cached: usize,
@@ -1388,7 +1389,7 @@
         <span class="kw">let </span>total = num_hits + num_cached;
         <span class="kw">if </span>num_hits + num_cached &gt; <span class="number">0 </span>{
             <span class="macro">log::trace!</span>(
-                <span class="string">&quot;Incremental compilation cache stats: {}/{} = {}% (hits/lookup)\ncached: {}&quot;</span>,
+                <span class="string">"Incremental compilation cache stats: {}/{} = {}% (hits/lookup)\ncached: {}"</span>,
                 num_hits,
                 total,
                 (num_hits <span class="kw">as </span>f32) / (total <span class="kw">as </span>f32) * <span class="number">100.0</span>,
@@ -1420,9 +1421,9 @@
 <span class="kw">impl </span>wasmtime_environ::Compiler <span class="kw">for </span>Compiler {
     <span class="kw">fn </span>compile_function(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">&#39;_</span>&gt;,
+        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
         func_index: DefinedFuncIndex,
-        input: FunctionBodyData&lt;<span class="lifetime">&#39;_</span>&gt;,
+        input: FunctionBodyData&lt;<span class="lifetime">'_</span>&gt;,
         types: <span class="kw-2">&amp;</span>ModuleTypes,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(WasmFunctionInfo, Box&lt;<span class="kw">dyn </span>Any + Send&gt;), CompileError&gt; {
         <span class="kw">let </span>isa = <span class="kw-2">&amp;*</span><span class="self">self</span>.isa;
@@ -1450,7 +1451,7 @@
         // overflow checks in Wasmtime.
         //
         // The Wasm spec defines that stack overflows will raise a trap, and
-        // there&#39;s also an added constraint where as an embedder you frequently
+        // there's also an added constraint where as an embedder you frequently
         // are running host-provided code called from wasm. WebAssembly and
         // native code currently share the same call stack, so Wasmtime needs to
         // make sure that host-provided code will have enough call-stack
@@ -1461,8 +1462,8 @@
         // `VMContext` pointer is the first argument to all functions, and the
         // first field of this structure is `*const VMRuntimeLimits` and the
         // first field of that is the stack limit. Note that the stack limit in
-        // this case means &quot;if the stack pointer goes below this, trap&quot;. Each
-        // function which consumes stack space or isn&#39;t a leaf function starts
+        // this case means "if the stack pointer goes below this, trap". Each
+        // function which consumes stack space or isn't a leaf function starts
         // off by loading the stack limit, checking it against the stack
         // pointer, and optionally traps.
         //
@@ -1473,8 +1474,8 @@
         // native stack space to run, and the numbers of stack spaces here
         // should all be configurable for various embeddings.
         //
-        // Note that this check is independent of each thread&#39;s stack guard page
-        // here. If the stack guard page is reached that&#39;s still considered an
+        // Note that this check is independent of each thread's stack guard page
+        // here. If the stack guard page is reached that's still considered an
         // abort for the whole program since the runtime limits configured by
         // the embedder should cause wasm to trap before it reaches that
         // (ensuring the host has enough space as well for its functionality).
@@ -1512,25 +1513,25 @@
             <span class="kw">use </span>std::io::Write;
 
             <span class="kw">let </span><span class="kw-2">mut </span>path = path.to_path_buf();
-            path.push(<span class="macro">format!</span>(<span class="string">&quot;wasm_func_{}&quot;</span>, func_index.as_u32()));
-            path.set_extension(<span class="string">&quot;clif&quot;</span>);
+            path.push(<span class="macro">format!</span>(<span class="string">"wasm_func_{}"</span>, func_index.as_u32()));
+            path.set_extension(<span class="string">"clif"</span>);
 
             <span class="kw">let </span><span class="kw-2">mut </span>output = std::fs::File::create(path).unwrap();
-            <span class="macro">write!</span>(output, <span class="string">&quot;{}&quot;</span>, context.func.display()).unwrap();
+            <span class="macro">write!</span>(output, <span class="string">"{}"</span>, context.func.display()).unwrap();
         }
 
         <span class="kw">let </span>(info, func) = compiler.finish_with_info(<span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>body, <span class="kw-2">&amp;</span><span class="self">self</span>.tunables)))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>timing = cranelift_codegen::timing::take_current();
-        <span class="macro">log::debug!</span>(<span class="string">&quot;{:?} translated in {:?}&quot;</span>, func_index, timing.total());
-        <span class="macro">log::trace!</span>(<span class="string">&quot;{:?} timing info\n{}&quot;</span>, func_index, timing);
+        <span class="macro">log::debug!</span>(<span class="string">"{:?} translated in {:?}"</span>, func_index, timing.total());
+        <span class="macro">log::trace!</span>(<span class="string">"{:?} timing info\n{}"</span>, func_index, timing);
 
         <span class="prelude-val">Ok</span>((info, Box::new(func)))
     }
 
     <span class="kw">fn </span>compile_array_to_wasm_trampoline(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">&#39;_</span>&gt;,
+        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
         types: <span class="kw-2">&amp;</span>ModuleTypes,
         def_func_index: DefinedFuncIndex,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>Any + Send&gt;, CompileError&gt; {
@@ -1564,7 +1565,7 @@
 
         <span class="comment">// Just before we enter Wasm, save our stack pointer.
         //
-        // Assert that we were really given a core Wasm vmctx, since that&#39;s
+        // Assert that we were really given a core Wasm vmctx, since that's
         // what we are assuming with our offsets below.
         </span>debug_assert_vmctx_kind(isa, <span class="kw-2">&amp;mut </span>builder, vmctx, wasmtime_environ::VMCONTEXT_MAGIC);
         <span class="kw">let </span>offsets = VMOffsets::new(isa.pointer_bytes(), <span class="kw-2">&amp;</span>translation.module);
@@ -1598,7 +1599,7 @@
 
     <span class="kw">fn </span>compile_native_to_wasm_trampoline(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">&#39;_</span>&gt;,
+        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
         types: <span class="kw-2">&amp;</span>ModuleTypes,
         def_func_index: DefinedFuncIndex,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>Any + Send&gt;, CompileError&gt; {
@@ -1621,7 +1622,7 @@
 
         <span class="comment">// Since we are entering Wasm, save our SP.
         //
-        // Assert that we were really given a core Wasm vmctx, since that&#39;s
+        // Assert that we were really given a core Wasm vmctx, since that's
         // what we are assuming with our offsets below.
         </span>debug_assert_vmctx_kind(isa, <span class="kw-2">&amp;mut </span>builder, vmctx, wasmtime_environ::VMCONTEXT_MAGIC);
         <span class="kw">let </span>offsets = VMOffsets::new(isa.pointer_bytes(), <span class="kw-2">&amp;</span>translation.module);
@@ -1670,7 +1671,7 @@
         <span class="comment">// We are exiting Wasm, so save our PC and FP.
         //
         // Assert that the caller vmctx really is a core Wasm vmctx, since
-        // that&#39;s what we are assuming with our offsets below.
+        // that's what we are assuming with our offsets below.
         </span>debug_assert_vmctx_kind(
             isa,
             <span class="kw-2">&amp;mut </span>builder,
@@ -1738,7 +1739,7 @@
 
     <span class="kw">fn </span>append_code(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">&#39;static</span>&gt;,
+        obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">'static</span>&gt;,
         funcs: <span class="kw-2">&amp;</span>[(String, Box&lt;<span class="kw">dyn </span>Any + Send&gt;)],
         resolve_reloc: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(usize, FuncIndex) -&gt; usize,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;(SymbolId, FunctionLoc)&gt;&gt; {
@@ -1783,7 +1784,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ty: <span class="kw-2">&amp;</span>WasmFuncType,
         host_fn: usize,
-        obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">&#39;static</span>&gt;,
+        obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">'static</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(FunctionLoc, FunctionLoc)&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>wasm_to_array = <span class="self">self</span>.wasm_to_array_trampoline(ty, host_fn)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>native_to_array = <span class="self">self</span>.native_to_array_trampoline(ty, host_fn)<span class="question-mark">?</span>;
@@ -1791,9 +1792,9 @@
         <span class="kw">let </span><span class="kw-2">mut </span>builder = ModuleTextBuilder::new(obj, <span class="self">self</span>, <span class="self">self</span>.isa.text_section_builder(<span class="number">2</span>));
 
         <span class="kw">let </span>(<span class="kw">_</span>, wasm_to_array) =
-            builder.append_func(<span class="string">&quot;wasm_to_array&quot;</span>, <span class="kw-2">&amp;mut </span>wasm_to_array, |<span class="kw">_</span>| <span class="macro">unreachable!</span>());
+            builder.append_func(<span class="string">"wasm_to_array"</span>, <span class="kw-2">&amp;mut </span>wasm_to_array, |<span class="kw">_</span>| <span class="macro">unreachable!</span>());
         <span class="kw">let </span>(<span class="kw">_</span>, native_to_array) =
-            builder.append_func(<span class="string">&quot;native_to_array&quot;</span>, <span class="kw-2">&amp;mut </span>native_to_array, |<span class="kw">_</span>| <span class="macro">unreachable!</span>());
+            builder.append_func(<span class="string">"native_to_array"</span>, <span class="kw-2">&amp;mut </span>native_to_array, |<span class="kw">_</span>| <span class="macro">unreachable!</span>());
 
         <span class="kw">let </span>wasm_to_array = FunctionLoc {
             start: u32::try_from(wasm_to_array.start).unwrap(),
@@ -1824,15 +1825,15 @@
         <span class="self">self</span>.isa.is_branch_protection_enabled()
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">fn </span>component_compiler(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>wasmtime_environ::component::ComponentCompiler {
         <span class="self">self
     </span>}
 
     <span class="kw">fn </span>append_dwarf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">&#39;_</span>&gt;,
-        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">&#39;_</span>&gt;,
+        obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">'_</span>&gt;,
+        translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
         funcs: <span class="kw-2">&amp;</span>PrimaryMap&lt;DefinedFuncIndex, (SymbolId, <span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Any + Send))&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>ofs = VMOffsets::new(
@@ -1849,14 +1850,14 @@
             ModuleMemoryOffset::Imported(ofs.vmctx_vmmemory_import(MemoryIndex::new(<span class="number">0</span>)))
         } <span class="kw">else if </span>ofs.num_defined_memories &gt; <span class="number">0 </span>{
             <span class="comment">// The addition of shared memory makes the following assumption,
-            // &quot;owned memory index = 0&quot;, possibly false. If the first memory
+            // "owned memory index = 0", possibly false. If the first memory
             // is a shared memory, the base pointer will not be stored in
             // the `owned_memories` array. The following code should
             // eventually be fixed to not only handle shared memories but
             // also multiple memories.
             </span><span class="macro">assert_eq!</span>(
                 ofs.num_defined_memories, ofs.num_owned_memories,
-                <span class="string">&quot;the memory base pointer may be incorrect due to sharing memory&quot;
+                <span class="string">"the memory base pointer may be incorrect due to sharing memory"
             </span>);
             ModuleMemoryOffset::Defined(
                 ofs.vmctx_vmmemory_definition_base(OwnedMemoryIndex::new(<span class="number">0</span>)),
@@ -1877,7 +1878,7 @@
             <span class="kw-2">&amp;</span>functions_info,
             <span class="kw-2">&amp;</span>memory_offset,
         )
-        .with_context(|| <span class="string">&quot;failed to emit DWARF debug information&quot;</span>)<span class="question-mark">?</span>;
+        .with_context(|| <span class="string">"failed to emit DWARF debug information"</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(debug_bodies, debug_relocs): (Vec&lt;<span class="kw">_</span>&gt;, Vec&lt;<span class="kw">_</span>&gt;) = dwarf_sections
             .iter()
@@ -1923,7 +1924,7 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;incremental-cache&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"incremental-cache"</span>)]
 </span><span class="kw">mod </span>incremental_cache {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -1938,11 +1939,11 @@
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>compile_maybe_cached&lt;<span class="lifetime">&#39;a</span>&gt;(
-        context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Context,
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>compile_maybe_cached&lt;<span class="lifetime">'a</span>&gt;(
+        context: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Context,
         isa: <span class="kw-2">&amp;</span><span class="kw">dyn </span>TargetIsa,
         cache_ctx: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>IncrementalCacheContext&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>CompiledCode, Vec&lt;u8&gt;), CompileError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>CompiledCode, Vec&lt;u8&gt;), CompileError&gt; {
         <span class="kw">let </span>cache_ctx = <span class="kw">match </span>cache_ctx {
             <span class="prelude-val">Some</span>(ctx) =&gt; ctx,
             <span class="prelude-val">None </span>=&gt; <span class="kw">return </span>compile_uncached(context, isa),
@@ -1963,22 +1964,22 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;incremental-cache&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"incremental-cache"</span>)]
 </span><span class="kw">use </span>incremental_cache::<span class="kw-2">*</span>;
 
-<span class="attr">#[cfg(not(feature = <span class="string">&quot;incremental-cache&quot;</span>))]
-</span><span class="kw">fn </span>compile_maybe_cached&lt;<span class="lifetime">&#39;a</span>&gt;(
-    context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Context,
+<span class="attr">#[cfg(not(feature = <span class="string">"incremental-cache"</span>))]
+</span><span class="kw">fn </span>compile_maybe_cached&lt;<span class="lifetime">'a</span>&gt;(
+    context: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Context,
     isa: <span class="kw-2">&amp;</span><span class="kw">dyn </span>TargetIsa,
     _cache_ctx: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>IncrementalCacheContext&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>CompiledCode, Vec&lt;u8&gt;), CompileError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>CompiledCode, Vec&lt;u8&gt;), CompileError&gt; {
     compile_uncached(context, isa)
 }
 
-<span class="kw">fn </span>compile_uncached&lt;<span class="lifetime">&#39;a</span>&gt;(
-    context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Context,
+<span class="kw">fn </span>compile_uncached&lt;<span class="lifetime">'a</span>&gt;(
+    context: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Context,
     isa: <span class="kw-2">&amp;</span><span class="kw">dyn </span>TargetIsa,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>CompiledCode, Vec&lt;u8&gt;), CompileError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>CompiledCode, Vec&lt;u8&gt;), CompileError&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>code_buf = Vec::new();
     <span class="kw">let </span>compiled_code = context
         .compile_and_emit(isa, <span class="kw-2">&amp;mut </span>code_buf, <span class="kw-2">&amp;mut </span>Default::default())
@@ -1988,7 +1989,7 @@
 
 <span class="kw">impl </span>Compiler {
     <span class="doccomment">/// Creates a trampoline for calling a host function callee defined with the
-    /// &quot;array&quot; calling convention from a native calling convention caller.
+    /// "array" calling convention from a native calling convention caller.
     ///
     /// This style of trampoline is used with `Func::new`-style callees and
     /// `TypedFunc::call`-style callers.
@@ -2000,7 +2001,7 @@
     /// signature:
     ///
     /// ```ignore
-    /// unsafe extern &quot;C&quot; fn(*mut VMContext, *mut VMContext, *mut ValRaw, usize)
+    /// unsafe extern "C" fn(*mut VMContext, *mut VMContext, *mut ValRaw, usize)
     /// ```
     ///
     /// where the first two arguments are forwarded from the trampoline
@@ -2052,7 +2053,7 @@
     }
 
     <span class="doccomment">/// Creates a trampoline for WebAssembly to call a host function defined
-    /// with the &quot;array&quot; calling convention: where all the arguments are spilled
+    /// with the "array" calling convention: where all the arguments are spilled
     /// to an array on the stack and results are loaded from the stack array.
     ///
     /// This style of trampoline is currently only used with the
@@ -2062,7 +2063,7 @@
     /// type signature of:
     ///
     /// ```ignore
-    /// unsafe extern &quot;C&quot; fn(*mut VMContext, *mut VMContext, *mut ValRaw, usize)
+    /// unsafe extern "C" fn(*mut VMContext, *mut VMContext, *mut ValRaw, usize)
     /// ```
     ///
     /// where the first two arguments are forwarded from the trampoline
@@ -2090,7 +2091,7 @@
         <span class="kw">let </span>args = builder.func.dfg.block_params(block0).to_vec();
         <span class="kw">let </span>caller_vmctx = args[<span class="number">1</span>];
 
-        <span class="comment">// Assert that we were really given a core Wasm vmctx, since that&#39;s
+        <span class="comment">// Assert that we were really given a core Wasm vmctx, since that's
         // what we are assuming with our offsets below.
         </span>debug_assert_vmctx_kind(
             isa,
@@ -2192,7 +2193,7 @@
         debug_assert_enough_capacity_for_length(builder, types.len(), values_vec_capacity);
 
         <span class="comment">// Note that loads and stores are unconditionally done in the
-        // little-endian format rather than the host&#39;s native-endianness,
+        // little-endian format rather than the host's native-endianness,
         // despite this load/store being unrelated to execution in wasm itself.
         // For more details on this see the `ValRaw` type in the
         // `wasmtime-runtime` crate.
@@ -2207,7 +2208,7 @@
         }
     }
 
-    <span class="doccomment">/// Used for loading the values of an array-call host function&#39;s value
+    <span class="doccomment">/// Used for loading the values of an array-call host function's value
     /// array.
     ///
     /// This can be used to load arguments out of the array if the trampoline we
@@ -2244,7 +2245,7 @@
         results
     }
 
-    <span class="kw">fn </span>function_compiler(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; FunctionCompiler&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="kw">fn </span>function_compiler(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; FunctionCompiler&lt;<span class="lifetime">'_</span>&gt; {
         <span class="kw">let </span>saved_context = <span class="self">self</span>.contexts.lock().unwrap().pop();
         FunctionCompiler {
             compiler: <span class="self">self</span>,
@@ -2254,7 +2255,7 @@
                     ctx
                 })
                 .unwrap_or_else(|| CompilerContext {
-                    <span class="attr">#[cfg(feature = <span class="string">&quot;incremental-cache&quot;</span>)]
+                    <span class="attr">#[cfg(feature = <span class="string">"incremental-cache"</span>)]
                     </span>incremental_cache_ctx: <span class="self">self</span>.cache_store.as_ref().map(|cache_store| {
                         IncrementalCacheContext {
                             cache_store: cache_store.clone(),
@@ -2282,13 +2283,13 @@
     }
 }
 
-<span class="kw">struct </span>FunctionCompiler&lt;<span class="lifetime">&#39;a</span>&gt; {
-    compiler: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Compiler,
+<span class="kw">struct </span>FunctionCompiler&lt;<span class="lifetime">'a</span>&gt; {
+    compiler: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Compiler,
     cx: CompilerContext,
 }
 
-<span class="kw">impl </span>FunctionCompiler&lt;<span class="lifetime">&#39;_</span>&gt; {
-    <span class="kw">fn </span>builder(<span class="kw-2">&amp;mut </span><span class="self">self</span>, func: ir::Function) -&gt; (FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;, ir::Block) {
+<span class="kw">impl </span>FunctionCompiler&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">fn </span>builder(<span class="kw-2">&amp;mut </span><span class="self">self</span>, func: ir::Function) -&gt; (FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;, ir::Block) {
         <span class="self">self</span>.cx.codegen_context.func = func;
         <span class="kw">let </span><span class="kw-2">mut </span>builder = FunctionBuilder::new(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.cx.codegen_context.func,
@@ -2310,7 +2311,7 @@
 
     <span class="kw">fn </span>finish_with_info(
         <span class="kw-2">mut </span><span class="self">self</span>,
-        body_and_tunables: <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span>FunctionBody&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>Tunables)&gt;,
+        body_and_tunables: <span class="prelude-ty">Option</span>&lt;(<span class="kw-2">&amp;</span>FunctionBody&lt;<span class="lifetime">'_</span>&gt;, <span class="kw-2">&amp;</span>Tunables)&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(WasmFunctionInfo, CompiledFunction&lt;CompiledFuncEnv&gt;), CompileError&gt; {
         <span class="kw">let </span>context = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cx.codegen_context;
         <span class="kw">let </span>isa = <span class="kw-2">&amp;*</span><span class="self">self</span>.compiler.isa;
@@ -2318,7 +2319,7 @@
             compile_maybe_cached(context, isa, <span class="self">self</span>.cx.incremental_cache_ctx.as_mut())<span class="question-mark">?</span>;
         <span class="kw">let </span>compiled_code = context.compiled_code().unwrap();
 
-        <span class="comment">// Give wasm functions, user defined code, a &quot;preferred&quot; alignment
+        <span class="comment">// Give wasm functions, user defined code, a "preferred" alignment
         // instead of the minimum alignment as this can help perf in niche
         // situations.
         </span><span class="kw">let </span>preferred_alignment = <span class="kw">if </span>body_and_tunables.is_some() {
@@ -2378,8 +2379,8 @@
 }
 
 <span class="kw">fn </span>mach_stack_maps_to_stack_maps(mach_stack_maps: <span class="kw-2">&amp;</span>[MachStackMap]) -&gt; Vec&lt;StackMapInformation&gt; {
-    <span class="comment">// This is converting from Cranelift&#39;s representation of a stack map to
-    // Wasmtime&#39;s representation. They happen to align today but that may
+    <span class="comment">// This is converting from Cranelift's representation of a stack map to
+    // Wasmtime's representation. They happen to align today but that may
     // not always be true in the future.
     </span><span class="kw">let </span><span class="kw-2">mut </span>stack_maps = Vec::new();
     <span class="kw">for </span><span class="kw-2">&amp;</span>MachStackMap {
@@ -2496,8 +2497,8 @@
     limits: Value,
 ) {
     <span class="comment">// Save the exit Wasm FP to the limits. We dereference the current FP to get
-    // the previous FP because the current FP is the trampoline&#39;s FP, and we
-    // want the Wasm function&#39;s FP, which is the caller of this trampoline.
+    // the previous FP because the current FP is the trampoline's FP, and we
+    // want the Wasm function's FP, which is the caller of this trampoline.
     </span><span class="kw">let </span>trampoline_fp = builder.ins().get_frame_pointer(pointer_type);
     <span class="kw">let </span>wasm_fp = builder.ins().load(
         pointer_type,
@@ -2561,7 +2562,7 @@
         }
     }
 
-    <span class="kw">fn </span>native_args&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ir::Value]) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ir::Value] {
+    <span class="kw">fn </span>native_args&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[ir::Value]) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[ir::Value] {
         <span class="kw">match </span><span class="self">self </span>{
             NativeRet::Bare =&gt; args,
             NativeRet::Retptr { .. } =&gt; <span class="kw-2">&amp;</span>args[..args.len() - <span class="number">1</span>],
@@ -2570,7 +2571,7 @@
 
     <span class="kw">fn </span>native_return(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;,
+        builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;,
         block0: ir::Block,
         results: <span class="kw-2">&amp;</span>[ir::Value],
     ) {

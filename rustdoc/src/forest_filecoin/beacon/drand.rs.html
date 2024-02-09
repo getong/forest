@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/beacon/drand.rs`."><title>drand.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/beacon/drand.rs`."><title>drand.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -436,7 +437,7 @@
 
 <span class="doccomment">/// Environmental Variable to ignore `Drand`. Lotus parallel is
 /// `LOTUS_IGNORE_DRAND`
-</span><span class="kw">pub const </span>IGNORE_DRAND_VAR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;IGNORE_DRAND&quot;</span>;
+</span><span class="kw">pub const </span>IGNORE_DRAND_VAR: <span class="kw-2">&amp;</span>str = <span class="string">"IGNORE_DRAND"</span>;
 
 <span class="doccomment">/// Type of the `drand` network. `mainnet` is chained and `quicknet` is unchained.
 /// For the details, see &lt;https://github.com/filecoin-project/FIPs/blob/1bd887028ac1b50b6f2f94913e07ede73583da5b/FIPS/fip-0063.md#specification&gt;
@@ -459,12 +460,12 @@
 
 <span class="attr">#[derive(Clone)]
 </span><span class="doccomment">/// Configuration used when initializing a `Drand` beacon.
-</span><span class="kw">pub struct </span>DrandConfig&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>DrandConfig&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Public endpoints of the `Drand` service.
     /// See &lt;https://drand.love/developer/http-api/#public-endpoints&gt;
     </span><span class="kw">pub </span>servers: Vec&lt;Url&gt;,
     <span class="doccomment">/// Info about the beacon chain, used to verify correctness of endpoint.
-    </span><span class="kw">pub </span>chain_info: ChainInfo&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span><span class="kw">pub </span>chain_info: ChainInfo&lt;<span class="lifetime">'a</span>&gt;,
     <span class="doccomment">/// Network type
     </span><span class="kw">pub </span>network_type: DrandNetwork,
 }
@@ -490,7 +491,7 @@
         prev: <span class="kw-2">&amp;</span>BeaconEntry,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;BeaconEntry&gt;, anyhow::Error&gt; {
         <span class="kw">let </span>(cb_epoch, curr_beacon) = <span class="self">self</span>.beacon_for_epoch(epoch)<span class="question-mark">?</span>;
-        <span class="comment">// Before quicknet upgrade, we had &quot;chained&quot; beacons, and so required two entries at a fork
+        <span class="comment">// Before quicknet upgrade, we had "chained" beacons, and so required two entries at a fork
         </span><span class="kw">if </span>curr_beacon.network().is_chained() {
             <span class="kw">let </span>(pb_epoch, <span class="kw">_</span>) = <span class="self">self</span>.beacon_for_epoch(parent_epoch)<span class="question-mark">?</span>;
             <span class="kw">if </span>cb_epoch != pb_epoch {
@@ -504,9 +505,9 @@
         }
 
         <span class="kw">let </span>max_round = curr_beacon.max_beacon_round_for_epoch(network_version, epoch);
-        <span class="comment">// We don&#39;t expect this to ever be the case
+        <span class="comment">// We don't expect this to ever be the case
         </span><span class="kw">if </span>max_round == prev.round() {
-            <span class="macro">tracing::warn!</span>(<span class="string">&quot;Unexpected `max_round == prev.round()` condition, network_version: {network_version:?}, max_round: {max_round}, prev_round: {}&quot;</span>, prev.round());
+            <span class="macro">tracing::warn!</span>(<span class="string">"Unexpected `max_round == prev.round()` condition, network_version: {network_version:?}, max_round: {max_round}, prev_round: {}"</span>, prev.round());
             <span class="comment">// Our chain has encountered two epochs before beacon chain has elapsed one,
             // return no beacon entries for this epoch.
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
@@ -545,7 +546,7 @@
             .rev()
             .find(|upgrade| epoch &gt;= upgrade.height)
             .map(|upgrade| (upgrade.height, upgrade.beacon.as_ref()))
-            .context(<span class="string">&quot;Invalid beacon schedule, no valid beacon&quot;</span>)
+            .context(<span class="string">"Invalid beacon schedule, no valid beacon"</span>)
     }
 }
 
@@ -561,7 +562,7 @@
 /// beacon.
 </span><span class="kw">pub trait </span>Beacon
 <span class="kw">where
-    </span><span class="self">Self</span>: Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span><span class="self">Self</span>: Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Gets the `drand` network
     </span><span class="kw">fn </span>network(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DrandNetwork;
@@ -617,13 +618,13 @@
 </span><span class="doccomment">/// Contains all the info about a `Drand` beacon chain.
 /// API reference: &lt;https://drand.love/developer/http-api/#info&gt;
 /// note: `groupHash` does not exist in docs currently, but is returned.
-</span><span class="kw">pub struct </span>ChainInfo&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub </span>public_key: Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;,
+</span><span class="kw">pub struct </span>ChainInfo&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub </span>public_key: Cow&lt;<span class="lifetime">'a</span>, str&gt;,
     <span class="kw">pub </span>period: i32,
     <span class="kw">pub </span>genesis_time: i32,
-    <span class="kw">pub </span>hash: Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;,
-    <span class="attr">#[serde(rename = <span class="string">&quot;groupHash&quot;</span>)]
-    </span><span class="kw">pub </span>group_hash: Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;,
+    <span class="kw">pub </span>hash: Cow&lt;<span class="lifetime">'a</span>, str&gt;,
+    <span class="attr">#[serde(rename = <span class="string">"groupHash"</span>)]
+    </span><span class="kw">pub </span>group_hash: Cow&lt;<span class="lifetime">'a</span>, str&gt;,
 }
 
 <span class="attr">#[derive(SerdeDeserialize, SerdeSerialize, Debug, Clone)]
@@ -656,21 +657,21 @@
 
 <span class="kw">impl </span>DrandBeacon {
     <span class="doccomment">/// Construct a new `DrandBeacon`.
-    </span><span class="kw">pub fn </span>new(genesis_ts: u64, interval: u64, config: <span class="kw-2">&amp;</span>DrandConfig&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="self">Self </span>{
-        <span class="macro">assert_ne!</span>(genesis_ts, <span class="number">0</span>, <span class="string">&quot;Genesis timestamp cannot be 0&quot;</span>);
+    </span><span class="kw">pub fn </span>new(genesis_ts: u64, interval: u64, config: <span class="kw-2">&amp;</span>DrandConfig&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="self">Self </span>{
+        <span class="macro">assert_ne!</span>(genesis_ts, <span class="number">0</span>, <span class="string">"Genesis timestamp cannot be 0"</span>);
         <span class="kw">const </span>CACHE_SIZE: usize = <span class="number">1000</span>;
         <span class="self">Self </span>{
             servers: config.servers.clone(),
             hash: config.chain_info.hash.to_string(),
             network: config.network_type,
             public_key: hex::decode(config.chain_info.public_key.as_ref())
-                .expect(<span class="string">&quot;invalid static encoding of drand hex public key&quot;</span>),
+                .expect(<span class="string">"invalid static encoding of drand hex public key"</span>),
             interval: config.chain_info.period <span class="kw">as </span>u64,
             drand_gen_time: config.chain_info.genesis_time <span class="kw">as </span>u64,
             fil_round_time: interval,
             fil_gen_time: genesis_ts,
             verified_beacons: RwLock::new(LruCache::new(
-                NonZeroUsize::new(CACHE_SIZE).expect(<span class="string">&quot;Infallible&quot;</span>),
+                NonZeroUsize::new(CACHE_SIZE).expect(<span class="string">"Infallible"</span>),
             )),
         }
     }
@@ -682,10 +683,10 @@
         <span class="self">self</span>.network
     }
 
-    <span class="kw">fn </span>verify_entries&lt;<span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">fn </span>verify_entries&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        entries: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[BeaconEntry],
-        <span class="kw-2">mut </span>prev: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>BeaconEntry,
+        entries: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[BeaconEntry],
+        <span class="kw-2">mut </span>prev: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>BeaconEntry,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;bool, anyhow::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>validated = <span class="macro">vec!</span>[];
         <span class="kw">let </span>is_valid = <span class="kw">if </span><span class="self">self</span>.network.is_unchained() {
@@ -776,8 +777,8 @@
                         }
                     }
                     <span class="macro">anyhow::bail!</span>(
-                        <span class="string">&quot;Aggregated errors:\n{}&quot;</span>,
-                        errors.into_iter().map(|e| e.to_string()).join(<span class="string">&quot;\n\n&quot;</span>)
+                        <span class="string">"Aggregated errors:\n{}"</span>,
+                        errors.into_iter().map(|e| e.to_string()).join(<span class="string">"\n\n"</span>)
                     );
                 }
 
@@ -785,7 +786,7 @@
                     </span>.servers
                     .iter()
                     .map(|server| {
-                        anyhow::Ok(server.join(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}/public/{round}&quot;</span>, <span class="self">self</span>.hash))<span class="question-mark">?</span>)
+                        anyhow::Ok(server.join(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}/public/{round}"</span>, <span class="self">self</span>.hash))<span class="question-mark">?</span>)
                     })
                     .try_collect()<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(

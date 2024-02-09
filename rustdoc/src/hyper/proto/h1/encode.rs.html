@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.1.0/src/proto/h1/encode.rs`."><title>encode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.1.0/src/proto/h1/encode.rs`."><title>encode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -682,7 +683,7 @@
 <span class="kw">use </span><span class="kw">super</span>::io::WriteBuf;
 <span class="kw">use </span><span class="kw">super</span>::role::{write_headers, write_headers_title_case};
 
-<span class="kw">type </span>StaticBuf = <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[u8];
+<span class="kw">type </span>StaticBuf = <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8];
 
 <span class="doccomment">/// Encoders to handle different Transfer-Encodings.
 </span><span class="attr">#[derive(Debug, Clone, PartialEq)]
@@ -711,7 +712,7 @@
     ///
     /// This is mostly only used with HTTP/1.0 with a length. This kind requires
     /// the connection to be closed when the body is finished.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
     </span>CloseDelimited,
 }
 
@@ -739,7 +740,7 @@
         Encoder::new(Kind::Length(len))
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>close_delimited() -&gt; Encoder {
         Encoder::new(Kind::CloseDelimited)
     }
@@ -758,7 +759,7 @@
         <span class="macro">matches!</span>(<span class="self">self</span>.kind, Kind::Length(<span class="number">0</span>))
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_last(<span class="kw-2">mut </span><span class="self">self</span>, is_last: bool) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.is_last = is_last;
         <span class="self">self
@@ -770,7 +771,7 @@
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>is_close_delimited(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="kw">match </span><span class="self">self</span>.kind {
-            <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
             </span>Kind::CloseDelimited =&gt; <span class="bool-val">true</span>,
             <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
         }
@@ -787,9 +788,9 @@
         <span class="kw">match </span><span class="self">self</span>.kind {
             Kind::Length(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
             Kind::Chunked(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EncodedBuf {
-                kind: BufKind::ChunkedEnd(<span class="string">b&quot;0\r\n\r\n&quot;</span>),
+                kind: BufKind::ChunkedEnd(<span class="string">b"0\r\n\r\n"</span>),
             })),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
             </span>Kind::CloseDelimited =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
             Kind::Length(n) =&gt; <span class="prelude-val">Err</span>(NotEof(n)),
         }
@@ -800,18 +801,18 @@
         </span>B: Buf,
     {
         <span class="kw">let </span>len = msg.remaining();
-        <span class="macro">debug_assert!</span>(len &gt; <span class="number">0</span>, <span class="string">&quot;encode() called with empty buf&quot;</span>);
+        <span class="macro">debug_assert!</span>(len &gt; <span class="number">0</span>, <span class="string">"encode() called with empty buf"</span>);
 
         <span class="kw">let </span>kind = <span class="kw">match </span><span class="self">self</span>.kind {
             Kind::Chunked(<span class="kw">_</span>) =&gt; {
-                <span class="macro">trace!</span>(<span class="string">&quot;encoding chunked {}B&quot;</span>, len);
+                <span class="macro">trace!</span>(<span class="string">"encoding chunked {}B"</span>, len);
                 <span class="kw">let </span>buf = ChunkSize::new(len)
                     .chain(msg)
-                    .chain(<span class="string">b&quot;\r\n&quot; </span><span class="kw">as </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[u8]);
+                    .chain(<span class="string">b"\r\n" </span><span class="kw">as </span><span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8]);
                 BufKind::Chunked(buf)
             }
             Kind::Length(<span class="kw-2">ref mut </span>remaining) =&gt; {
-                <span class="macro">trace!</span>(<span class="string">&quot;sized write, len = {}&quot;</span>, len);
+                <span class="macro">trace!</span>(<span class="string">"sized write, len = {}"</span>, len);
                 <span class="kw">if </span>len <span class="kw">as </span>u64 &gt; <span class="kw-2">*</span>remaining {
                     <span class="kw">let </span>limit = <span class="kw-2">*</span>remaining <span class="kw">as </span>usize;
                     <span class="kw-2">*</span>remaining = <span class="number">0</span>;
@@ -821,9 +822,9 @@
                     BufKind::Exact(msg)
                 }
             }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
             </span>Kind::CloseDelimited =&gt; {
-                <span class="macro">trace!</span>(<span class="string">&quot;close delimited write {}B&quot;</span>, len);
+                <span class="macro">trace!</span>(<span class="string">"close delimited write {}B"</span>, len);
                 BufKind::Exact(msg)
             }
         };
@@ -846,7 +847,7 @@
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(n) = opt_name {
                         cur_name = <span class="prelude-val">Some</span>(n);
                     }
-                    <span class="kw">let </span>name = cur_name.as_ref().expect(<span class="string">&quot;current header name&quot;</span>);
+                    <span class="kw">let </span>name = cur_name.as_ref().expect(<span class="string">"current header name"</span>);
 
                     <span class="kw">if </span>allowed_trailer_field_map.contains_key(name.as_str())
                         &amp;&amp; valid_trailer_field(name)
@@ -867,11 +868,11 @@
                 }
 
                 <span class="prelude-val">Some</span>(EncodedBuf {
-                    kind: BufKind::Trailers(<span class="string">b&quot;0\r\n&quot;</span>.chain(Bytes::from(buf)).chain(<span class="string">b&quot;\r\n&quot;</span>)),
+                    kind: BufKind::Trailers(<span class="string">b"0\r\n"</span>.chain(Bytes::from(buf)).chain(<span class="string">b"\r\n"</span>)),
                 })
             }
             <span class="kw">_ </span>=&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;attempted to encode trailers for non-chunked response&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"attempted to encode trailers for non-chunked response"</span>);
                 <span class="prelude-val">None
             </span>}
         }
@@ -882,21 +883,21 @@
         </span>B: Buf,
     {
         <span class="kw">let </span>len = msg.remaining();
-        <span class="macro">debug_assert!</span>(len &gt; <span class="number">0</span>, <span class="string">&quot;encode() called with empty buf&quot;</span>);
+        <span class="macro">debug_assert!</span>(len &gt; <span class="number">0</span>, <span class="string">"encode() called with empty buf"</span>);
 
         <span class="kw">match </span><span class="self">self</span>.kind {
             Kind::Chunked(<span class="kw">_</span>) =&gt; {
-                <span class="macro">trace!</span>(<span class="string">&quot;encoding chunked {}B&quot;</span>, len);
+                <span class="macro">trace!</span>(<span class="string">"encoding chunked {}B"</span>, len);
                 <span class="kw">let </span>buf = ChunkSize::new(len)
                     .chain(msg)
-                    .chain(<span class="string">b&quot;\r\n0\r\n\r\n&quot; </span><span class="kw">as </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[u8]);
+                    .chain(<span class="string">b"\r\n0\r\n\r\n" </span><span class="kw">as </span><span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8]);
                 dst.buffer(buf);
                 !<span class="self">self</span>.is_last
             }
             Kind::Length(remaining) =&gt; {
                 <span class="kw">use </span>std::cmp::Ordering;
 
-                <span class="macro">trace!</span>(<span class="string">&quot;sized write, len = {}&quot;</span>, len);
+                <span class="macro">trace!</span>(<span class="string">"sized write, len = {}"</span>, len);
                 <span class="kw">match </span>(len <span class="kw">as </span>u64).cmp(<span class="kw-2">&amp;</span>remaining) {
                     Ordering::Equal =&gt; {
                         dst.buffer(msg);
@@ -912,9 +913,9 @@
                     </span>}
                 }
             }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;server&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"server"</span>)]
             </span>Kind::CloseDelimited =&gt; {
-                <span class="macro">trace!</span>(<span class="string">&quot;close delimited write {}B&quot;</span>, len);
+                <span class="macro">trace!</span>(<span class="string">"close delimited write {}B"</span>, len);
                 dst.buffer(msg);
                 <span class="bool-val">false
             </span>}
@@ -945,7 +946,7 @@
 
     <span class="kw">for </span>header_value <span class="kw">in </span>allowed_trailer_fields {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(header_str) = header_value.to_str() {
-            <span class="kw">let </span>items: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = header_str.split(<span class="string">&#39;,&#39;</span>).map(|item| item.trim()).collect();
+            <span class="kw">let </span>items: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = header_str.split(<span class="string">','</span>).map(|item| item.trim()).collect();
 
             <span class="kw">for </span>item <span class="kw">in </span>items {
                 trailer_map.entry(item.to_string()).or_insert(());
@@ -994,7 +995,7 @@
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>chunks_vectored&lt;<span class="lifetime">&#39;t</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;t </span><span class="self">self</span>, dst: <span class="kw-2">&amp;mut </span>[IoSlice&lt;<span class="lifetime">&#39;t</span>&gt;]) -&gt; usize {
+    </span><span class="kw">fn </span>chunks_vectored&lt;<span class="lifetime">'t</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'t </span><span class="self">self</span>, dst: <span class="kw-2">&amp;mut </span>[IoSlice&lt;<span class="lifetime">'t</span>&gt;]) -&gt; usize {
         <span class="kw">match </span><span class="self">self</span>.kind {
             BufKind::Exact(<span class="kw-2">ref </span>b) =&gt; b.chunks_vectored(dst),
             BufKind::Limited(<span class="kw-2">ref </span>b) =&gt; b.chunks_vectored(dst),
@@ -1005,10 +1006,10 @@
     }
 }
 
-<span class="attr">#[cfg(target_pointer_width = <span class="string">&quot;32&quot;</span>)]
+<span class="attr">#[cfg(target_pointer_width = <span class="string">"32"</span>)]
 </span><span class="kw">const </span>USIZE_BYTES: usize = <span class="number">4</span>;
 
-<span class="attr">#[cfg(target_pointer_width = <span class="string">&quot;64&quot;</span>)]
+<span class="attr">#[cfg(target_pointer_width = <span class="string">"64"</span>)]
 </span><span class="kw">const </span>USIZE_BYTES: usize = <span class="number">8</span>;
 
 <span class="comment">// each byte will become 2 hex
@@ -1029,7 +1030,7 @@
             pos: <span class="number">0</span>,
             len: <span class="number">0</span>,
         };
-        <span class="macro">write!</span>(<span class="kw-2">&amp;mut </span>size, <span class="string">&quot;{:X}\r\n&quot;</span>, len).expect(<span class="string">&quot;CHUNK_SIZE_MAX_BYTES should fit any usize&quot;</span>);
+        <span class="macro">write!</span>(<span class="kw-2">&amp;mut </span>size, <span class="string">"{:X}\r\n"</span>, len).expect(<span class="string">"CHUNK_SIZE_MAX_BYTES should fit any usize"</span>);
         size
     }
 }
@@ -1053,10 +1054,10 @@
 }
 
 <span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ChunkSize {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;ChunkSize&quot;</span>)
-            .field(<span class="string">&quot;bytes&quot;</span>, &amp;&amp;<span class="self">self</span>.bytes[..<span class="self">self</span>.len.into()])
-            .field(<span class="string">&quot;pos&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.pos)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"ChunkSize"</span>)
+            .field(<span class="string">"bytes"</span>, &amp;&amp;<span class="self">self</span>.bytes[..<span class="self">self</span>.len.into()])
+            .field(<span class="string">"pos"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.pos)
             .finish()
     }
 }
@@ -1066,7 +1067,7 @@
         <span class="kw">use </span>std::io::Write;
         (<span class="kw-2">&amp;mut </span><span class="self">self</span>.bytes[<span class="self">self</span>.len.into()..])
             .write_all(num.as_bytes())
-            .expect(<span class="string">&quot;&amp;mut [u8].write() cannot error&quot;</span>);
+            .expect(<span class="string">"&amp;mut [u8].write() cannot error"</span>);
         <span class="self">self</span>.len += num.len() <span class="kw">as </span>u8; <span class="comment">// safe because bytes is never bigger than 256
         </span><span class="prelude-val">Ok</span>(())
     }
@@ -1097,8 +1098,8 @@
 }
 
 <span class="kw">impl </span>fmt::Display <span class="kw">for </span>NotEof {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;early end, expected {} more bytes&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">"early end, expected {} more bytes"</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
@@ -1125,23 +1126,23 @@
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::chunked();
         <span class="kw">let </span><span class="kw-2">mut </span>dst = Vec::new();
 
-        <span class="kw">let </span>msg1 = <span class="string">b&quot;foo bar&quot;</span>.as_ref();
+        <span class="kw">let </span>msg1 = <span class="string">b"foo bar"</span>.as_ref();
         <span class="kw">let </span>buf1 = encoder.encode(msg1);
         dst.put(buf1);
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;7\r\nfoo bar\r\n&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"7\r\nfoo bar\r\n"</span>);
 
-        <span class="kw">let </span>msg2 = <span class="string">b&quot;baz quux herp&quot;</span>.as_ref();
+        <span class="kw">let </span>msg2 = <span class="string">b"baz quux herp"</span>.as_ref();
         <span class="kw">let </span>buf2 = encoder.encode(msg2);
         dst.put(buf2);
 
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;7\r\nfoo bar\r\nD\r\nbaz quux herp\r\n&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"7\r\nfoo bar\r\nD\r\nbaz quux herp\r\n"</span>);
 
         <span class="kw">let </span>end = encoder.end::&lt;Cursor&lt;Vec&lt;u8&gt;&gt;&gt;().unwrap().unwrap();
         dst.put(end);
 
         <span class="macro">assert_eq!</span>(
             dst,
-            <span class="string">b&quot;7\r\nfoo bar\r\nD\r\nbaz quux herp\r\n0\r\n\r\n&quot;</span>.as_ref()
+            <span class="string">b"7\r\nfoo bar\r\nD\r\nbaz quux herp\r\n0\r\n\r\n"</span>.as_ref()
         );
     }
 
@@ -1151,20 +1152,20 @@
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::length(max_len <span class="kw">as </span>u64);
         <span class="kw">let </span><span class="kw-2">mut </span>dst = Vec::new();
 
-        <span class="kw">let </span>msg1 = <span class="string">b&quot;foo bar&quot;</span>.as_ref();
+        <span class="kw">let </span>msg1 = <span class="string">b"foo bar"</span>.as_ref();
         <span class="kw">let </span>buf1 = encoder.encode(msg1);
         dst.put(buf1);
 
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;foo bar&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"foo bar"</span>);
         <span class="macro">assert!</span>(!encoder.is_eof());
         encoder.end::&lt;()&gt;().unwrap_err();
 
-        <span class="kw">let </span>msg2 = <span class="string">b&quot;baz&quot;</span>.as_ref();
+        <span class="kw">let </span>msg2 = <span class="string">b"baz"</span>.as_ref();
         <span class="kw">let </span>buf2 = encoder.encode(msg2);
         dst.put(buf2);
 
         <span class="macro">assert_eq!</span>(dst.len(), max_len);
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;foo barb&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"foo barb"</span>);
         <span class="macro">assert!</span>(encoder.is_eof());
         <span class="macro">assert!</span>(encoder.end::&lt;()&gt;().unwrap().is_none());
     }
@@ -1174,19 +1175,19 @@
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::close_delimited();
         <span class="kw">let </span><span class="kw-2">mut </span>dst = Vec::new();
 
-        <span class="kw">let </span>msg1 = <span class="string">b&quot;foo bar&quot;</span>.as_ref();
+        <span class="kw">let </span>msg1 = <span class="string">b"foo bar"</span>.as_ref();
         <span class="kw">let </span>buf1 = encoder.encode(msg1);
         dst.put(buf1);
 
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;foo bar&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"foo bar"</span>);
         <span class="macro">assert!</span>(!encoder.is_eof());
         encoder.end::&lt;()&gt;().unwrap();
 
-        <span class="kw">let </span>msg2 = <span class="string">b&quot;baz&quot;</span>.as_ref();
+        <span class="kw">let </span>msg2 = <span class="string">b"baz"</span>.as_ref();
         <span class="kw">let </span>buf2 = encoder.encode(msg2);
         dst.put(buf2);
 
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;foo barbaz&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"foo barbaz"</span>);
         <span class="macro">assert!</span>(!encoder.is_eof());
         encoder.end::&lt;()&gt;().unwrap();
     }
@@ -1194,18 +1195,18 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>chunked_with_valid_trailers() {
         <span class="kw">let </span>encoder = Encoder::chunked();
-        <span class="kw">let </span>trailers = <span class="macro">vec!</span>[HeaderValue::from_static(<span class="string">&quot;chunky-trailer&quot;</span>)];
+        <span class="kw">let </span>trailers = <span class="macro">vec!</span>[HeaderValue::from_static(<span class="string">"chunky-trailer"</span>)];
         <span class="kw">let </span>encoder = encoder.into_chunked_with_trailing_fields(trailers);
 
         <span class="kw">let </span>headers = HeaderMap::from_iter(
             <span class="macro">vec!</span>[
                 (
-                    HeaderName::from_static(<span class="string">&quot;chunky-trailer&quot;</span>),
-                    HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>),
+                    HeaderName::from_static(<span class="string">"chunky-trailer"</span>),
+                    HeaderValue::from_static(<span class="string">"header data"</span>),
                 ),
                 (
-                    HeaderName::from_static(<span class="string">&quot;should-not-be-included&quot;</span>),
-                    HeaderValue::from_static(<span class="string">&quot;oops&quot;</span>),
+                    HeaderName::from_static(<span class="string">"should-not-be-included"</span>),
+                    HeaderValue::from_static(<span class="string">"oops"</span>),
                 ),
             ]
             .into_iter(),
@@ -1215,27 +1216,27 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>dst = Vec::new();
         dst.put(buf1);
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;0\r\nchunky-trailer: header data\r\n\r\n&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"0\r\nchunky-trailer: header data\r\n\r\n"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>chunked_with_multiple_trailer_headers() {
         <span class="kw">let </span>encoder = Encoder::chunked();
         <span class="kw">let </span>trailers = <span class="macro">vec!</span>[
-            HeaderValue::from_static(<span class="string">&quot;chunky-trailer&quot;</span>),
-            HeaderValue::from_static(<span class="string">&quot;chunky-trailer-2&quot;</span>),
+            HeaderValue::from_static(<span class="string">"chunky-trailer"</span>),
+            HeaderValue::from_static(<span class="string">"chunky-trailer-2"</span>),
         ];
         <span class="kw">let </span>encoder = encoder.into_chunked_with_trailing_fields(trailers);
 
         <span class="kw">let </span>headers = HeaderMap::from_iter(
             <span class="macro">vec!</span>[
                 (
-                    HeaderName::from_static(<span class="string">&quot;chunky-trailer&quot;</span>),
-                    HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>),
+                    HeaderName::from_static(<span class="string">"chunky-trailer"</span>),
+                    HeaderValue::from_static(<span class="string">"header data"</span>),
                 ),
                 (
-                    HeaderName::from_static(<span class="string">&quot;chunky-trailer-2&quot;</span>),
-                    HeaderValue::from_static(<span class="string">&quot;more header data&quot;</span>),
+                    HeaderName::from_static(<span class="string">"chunky-trailer-2"</span>),
+                    HeaderValue::from_static(<span class="string">"more header data"</span>),
                 ),
             ]
             .into_iter(),
@@ -1247,7 +1248,7 @@
         dst.put(buf1);
         <span class="macro">assert_eq!</span>(
             dst,
-            <span class="string">b&quot;0\r\nchunky-trailer: header data\r\nchunky-trailer-2: more header data\r\n\r\n&quot;
+            <span class="string">b"0\r\nchunky-trailer: header data\r\nchunky-trailer-2: more header data\r\n\r\n"
         </span>);
     }
 
@@ -1257,8 +1258,8 @@
 
         <span class="kw">let </span>headers = HeaderMap::from_iter(
             <span class="macro">vec!</span>[(
-                HeaderName::from_static(<span class="string">&quot;chunky-trailer&quot;</span>),
-                HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>),
+                HeaderName::from_static(<span class="string">"chunky-trailer"</span>),
+                HeaderValue::from_static(<span class="string">"header data"</span>),
             )]
             .into_iter(),
         );
@@ -1278,7 +1279,7 @@
         <span class="kw">let </span>encoder = Encoder::chunked();
 
         <span class="kw">let </span>trailers = <span class="macro">format!</span>(
-            <span class="string">&quot;{},{},{},{},{},{},{},{},{},{},{},{}&quot;</span>,
+            <span class="string">"{},{},{},{},{},{},{},{},{},{},{},{}"</span>,
             AUTHORIZATION,
             CACHE_CONTROL,
             CONTENT_ENCODING,
@@ -1296,18 +1297,18 @@
         <span class="kw">let </span>encoder = encoder.into_chunked_with_trailing_fields(trailers);
 
         <span class="kw">let </span><span class="kw-2">mut </span>headers = HeaderMap::new();
-        headers.insert(AUTHORIZATION, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(CACHE_CONTROL, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(CONTENT_ENCODING, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(CONTENT_LENGTH, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(CONTENT_RANGE, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(HOST, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(MAX_FORWARDS, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(SET_COOKIE, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(TRAILER, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(TRANSFER_ENCODING, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
-        headers.insert(TE, HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>));
+        headers.insert(AUTHORIZATION, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(CACHE_CONTROL, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(CONTENT_ENCODING, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(CONTENT_LENGTH, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(CONTENT_RANGE, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(HOST, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(MAX_FORWARDS, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(SET_COOKIE, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(TRAILER, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(TRANSFER_ENCODING, HeaderValue::from_static(<span class="string">"header data"</span>));
+        headers.insert(TE, HeaderValue::from_static(<span class="string">"header data"</span>));
 
         <span class="macro">assert!</span>(encoder.encode_trailers::&lt;<span class="kw-2">&amp;</span>[u8]&gt;(headers, <span class="bool-val">true</span>).is_none());
     }
@@ -1315,13 +1316,13 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>chunked_with_title_case_headers() {
         <span class="kw">let </span>encoder = Encoder::chunked();
-        <span class="kw">let </span>trailers = <span class="macro">vec!</span>[HeaderValue::from_static(<span class="string">&quot;chunky-trailer&quot;</span>)];
+        <span class="kw">let </span>trailers = <span class="macro">vec!</span>[HeaderValue::from_static(<span class="string">"chunky-trailer"</span>)];
         <span class="kw">let </span>encoder = encoder.into_chunked_with_trailing_fields(trailers);
 
         <span class="kw">let </span>headers = HeaderMap::from_iter(
             <span class="macro">vec!</span>[(
-                HeaderName::from_static(<span class="string">&quot;chunky-trailer&quot;</span>),
-                HeaderValue::from_static(<span class="string">&quot;header data&quot;</span>),
+                HeaderName::from_static(<span class="string">"chunky-trailer"</span>),
+                HeaderValue::from_static(<span class="string">"header data"</span>),
             )]
             .into_iter(),
         );
@@ -1329,7 +1330,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>dst = Vec::new();
         dst.put(buf1);
-        <span class="macro">assert_eq!</span>(dst, <span class="string">b&quot;0\r\nChunky-Trailer: header data\r\n\r\n&quot;</span>);
+        <span class="macro">assert_eq!</span>(dst, <span class="string">b"0\r\nChunky-Trailer: header data\r\n\r\n"</span>);
     }
 }
 </code></pre></div></section></main></body></html>

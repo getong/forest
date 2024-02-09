@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/parser.rs`."><title>parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/parser.rs`."><title>parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1627,14 +1628,14 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>WASM_MODULE_VERSION: u16 = <span class="number">0x1</span>;
 
-<span class="comment">// Note that this started at `0xa` and we&#39;re incrementing up from there. When
+<span class="comment">// Note that this started at `0xa` and we're incrementing up from there. When
 // the component model is stabilized this will become 0x1. The changes here are:
 //
 // * [????-??-??] 0xa - original version
 // * [2023-01-05] 0xb - `export` introduces an alias
 // * [2023-02-06] 0xc - `export` has an optional type ascribed to it
 // * [2023-05-10] 0xd - imports/exports drop URLs, new discriminator byte which
-//                      allows for `(import (interface &quot;...&quot;) ...)` syntax.
+//                      allows for `(import (interface "...") ...)` syntax.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>WASM_COMPONENT_VERSION: u16 = <span class="number">0xd</span>;
 
 <span class="kw">const </span>KIND_MODULE: u16 = <span class="number">0x00</span>;
@@ -1679,7 +1680,7 @@
 /// is needed to continue parsing or a chunk of the input was parsed, indicating
 /// how much of it was parsed.
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub enum </span>Chunk&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub enum </span>Chunk&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// This can be returned at any time and indicates that more data is needed
     /// to proceed with parsing. Zero bytes were consumed from the input to
     /// [`Parser::parse`]. The `usize` value here is a hint as to how many more
@@ -1692,7 +1693,7 @@
         /// consumed to produce `payload`.
         </span>consumed: usize,
         <span class="doccomment">/// The value that we actually parsed.
-        </span>payload: Payload&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>payload: Payload&lt;<span class="lifetime">'a</span>&gt;,
     },
 }
 
@@ -1711,11 +1712,11 @@
 /// Note that payloads, when returned, do not indicate that the module or component
 /// is valid. For example when you receive a `Payload::TypeSection` the type
 /// section itself has not yet actually been parsed. The reader returned will be
-/// able to parse it, but you&#39;ll have to actually iterate the reader to do the
+/// able to parse it, but you'll have to actually iterate the reader to do the
 /// full parse. Each payload returned is intended to be a *window* into the
 /// original `data` passed to [`Parser::parse`] which can be further processed
 /// if necessary.
-</span><span class="kw">pub enum </span>Payload&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub enum </span>Payload&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Indicates the header of a WebAssembly module or component.
     </span>Version {
         <span class="doccomment">/// The version number found in the header.
@@ -1730,28 +1731,28 @@
 
     <span class="doccomment">/// A module type section was received and the provided reader can be
     /// used to parse the contents of the type section.
-    </span>TypeSection(TypeSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>TypeSection(TypeSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module import section was received and the provided reader can be
     /// used to parse the contents of the import section.
-    </span>ImportSection(ImportSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ImportSection(ImportSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module function section was received and the provided reader can be
     /// used to parse the contents of the function section.
-    </span>FunctionSection(FunctionSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>FunctionSection(FunctionSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module table section was received and the provided reader can be
     /// used to parse the contents of the table section.
-    </span>TableSection(TableSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>TableSection(TableSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module memory section was received and the provided reader can be
     /// used to parse the contents of the memory section.
-    </span>MemorySection(MemorySectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>MemorySection(MemorySectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module tag section was received, and the provided reader can be
     /// used to parse the contents of the tag section.
-    </span>TagSection(TagSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>TagSection(TagSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module global section was received and the provided reader can be
     /// used to parse the contents of the global section.
-    </span>GlobalSection(GlobalSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>GlobalSection(GlobalSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module export section was received, and the provided reader can be
     /// used to parse the contents of the export section.
-    </span>ExportSection(ExportSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ExportSection(ExportSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module start section was received.
     </span>StartSection {
         <span class="doccomment">/// The start function index
@@ -1762,7 +1763,7 @@
     },
     <span class="doccomment">/// A module element section was received and the provided reader can be
     /// used to parse the contents of the element section.
-    </span>ElementSection(ElementSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ElementSection(ElementSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A module data count section was received.
     </span>DataCountSection {
         <span class="doccomment">/// The number of data segments.
@@ -1773,12 +1774,12 @@
     },
     <span class="doccomment">/// A module data section was received and the provided reader can be
     /// used to parse the contents of the data section.
-    </span>DataSection(DataSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>DataSection(DataSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// Indicator of the start of the code section of a WebAssembly module.
     ///
     /// This entry is returned whenever the code section starts. The `count`
     /// field indicates how many entries are in this code section. After
-    /// receiving this start marker you&#39;re guaranteed that the next `count`
+    /// receiving this start marker you're guaranteed that the next `count`
     /// items will be either `CodeSectionEntry` or an error will be returned.
     ///
     /// This, unlike other sections, is intended to be used for streaming the
@@ -1804,9 +1805,9 @@
     /// This entry indicates that a function was successfully received from the
     /// code section, and the payload here is the window into the original input
     /// where the function resides. Note that the function itself has not been
-    /// parsed, it&#39;s only been outlined. You&#39;ll need to process the
+    /// parsed, it's only been outlined. You'll need to process the
     /// `FunctionBody` provided to test whether it parses and/or is valid.
-    </span>CodeSectionEntry(FunctionBody&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>CodeSectionEntry(FunctionBody&lt;<span class="lifetime">'a</span>&gt;),
 
     <span class="doccomment">/// A core module section was received and the provided parser can be
     /// used to parse the nested module.
@@ -1814,8 +1815,8 @@
     /// This variant is special in that it returns a sub-`Parser`. Upon
     /// receiving a `ModuleSection` it is expected that the returned
     /// `Parser` will be used instead of the parent `Parser` until the parse has
-    /// finished. You&#39;ll need to feed data into the `Parser` returned until it
-    /// returns `Payload::End`. After that you&#39;ll switch back to the parent
+    /// finished. You'll need to feed data into the `Parser` returned until it
+    /// returns `Payload::End`. After that you'll switch back to the parent
     /// parser to resume parsing the rest of the current component.
     ///
     /// Note that binaries will not be parsed correctly if you feed the data for
@@ -1831,20 +1832,20 @@
     /// used to parse the contents of the core instance section.
     ///
     /// Currently this section is only parsed in a component.
-    </span>InstanceSection(InstanceSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>InstanceSection(InstanceSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A core type section was received and the provided parser can be
     /// used to parse the contents of the core type section.
     ///
     /// Currently this section is only parsed in a component.
-    </span>CoreTypeSection(CoreTypeSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>CoreTypeSection(CoreTypeSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A component section from a WebAssembly component was received and the
     /// provided parser can be used to parse the nested component.
     ///
     /// This variant is special in that it returns a sub-`Parser`. Upon
     /// receiving a `ComponentSection` it is expected that the returned
     /// `Parser` will be used instead of the parent `Parser` until the parse has
-    /// finished. You&#39;ll need to feed data into the `Parser` returned until it
-    /// returns `Payload::End`. After that you&#39;ll switch back to the parent
+    /// finished. You'll need to feed data into the `Parser` returned until it
+    /// returns `Payload::End`. After that you'll switch back to the parent
     /// parser to resume parsing the rest of the current component.
     ///
     /// Note that binaries will not be parsed correctly if you feed the data for
@@ -1858,16 +1859,16 @@
     },
     <span class="doccomment">/// A component instance section was received and the provided reader can be
     /// used to parse the contents of the component instance section.
-    </span>ComponentInstanceSection(ComponentInstanceSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ComponentInstanceSection(ComponentInstanceSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A component alias section was received and the provided reader can be
     /// used to parse the contents of the component alias section.
-    </span>ComponentAliasSection(SectionLimited&lt;<span class="lifetime">&#39;a</span>, <span class="kw">crate</span>::ComponentAlias&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
+    </span>ComponentAliasSection(SectionLimited&lt;<span class="lifetime">'a</span>, <span class="kw">crate</span>::ComponentAlias&lt;<span class="lifetime">'a</span>&gt;&gt;),
     <span class="doccomment">/// A component type section was received and the provided reader can be
     /// used to parse the contents of the component type section.
-    </span>ComponentTypeSection(ComponentTypeSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ComponentTypeSection(ComponentTypeSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A component canonical section was received and the provided reader can be
     /// used to parse the contents of the component canonical section.
-    </span>ComponentCanonicalSection(ComponentCanonicalSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ComponentCanonicalSection(ComponentCanonicalSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A component start section was received.
     </span>ComponentStartSection {
         <span class="doccomment">/// The start function description.
@@ -1877,13 +1878,13 @@
     },
     <span class="doccomment">/// A component import section was received and the provided reader can be
     /// used to parse the contents of the component import section.
-    </span>ComponentImportSection(ComponentImportSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ComponentImportSection(ComponentImportSectionReader&lt;<span class="lifetime">'a</span>&gt;),
     <span class="doccomment">/// A component export section was received, and the provided reader can be
     /// used to parse the contents of the component export section.
-    </span>ComponentExportSection(ComponentExportSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>ComponentExportSection(ComponentExportSectionReader&lt;<span class="lifetime">'a</span>&gt;),
 
     <span class="doccomment">/// A module or component custom section was received.
-    </span>CustomSection(CustomSectionReader&lt;<span class="lifetime">&#39;a</span>&gt;),
+    </span>CustomSection(CustomSectionReader&lt;<span class="lifetime">'a</span>&gt;),
 
     <span class="doccomment">/// An unknown section was found.
     ///
@@ -1895,7 +1896,7 @@
         <span class="doccomment">/// The 8-bit identifier for this section.
         </span>id: u8,
         <span class="doccomment">/// The contents of this section.
-        </span>contents: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+        </span>contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
         <span class="doccomment">/// The range of bytes, relative to the start of the original data
         /// stream, that the contents of this section reside in.
         </span>range: Range&lt;usize&gt;,
@@ -1939,7 +1940,7 @@
     <span class="doccomment">/// Creates a new parser.
     ///
     /// Reports errors and ranges relative to `offset` provided, where `offset`
-    /// is some logical offset within the input stream that we&#39;re parsing.
+    /// is some logical offset within the input stream that we're parsing.
     </span><span class="kw">pub fn </span>new(offset: u64) -&gt; Parser {
         Parser {
             state: State::Header,
@@ -2003,15 +2004,15 @@
     /// * `Chunk::Parsed` - this indicates that a chunk of the input was
     ///   successfully parsed. The payload is available in this variant of what
     ///   was parsed, and this also indicates how many bytes of `data` was
-    ///   consumed. It&#39;s expected that the caller will not provide these bytes
+    ///   consumed. It's expected that the caller will not provide these bytes
     ///   back to the [`Parser`] again.
     ///
     /// Note that all `Chunk` return values are connected, with a lifetime, to
     /// the input buffer. Each parsed chunk borrows the input buffer and is a
     /// view into it for successfully parsed chunks.
     ///
-    /// It is expected that you&#39;ll call this method until `Payload::End` is
-    /// reached, at which point you&#39;re guaranteed that the parse has completed.
+    /// It is expected that you'll call this method until `Payload::End` is
+    /// reached, at which point you're guaranteed that the parse has completed.
     /// Note that complete parsing, for the top-level module or component,
     /// implies that `data` is empty and `eof` is `true`.
     ///
@@ -2049,7 +2050,7 @@
     ///                 // some more data into our buffer.
     ///                 //
     ///                 // Note that the buffer management here is not ideal,
-    ///                 // but it&#39;s compact enough to fit in an example!
+    ///                 // but it's compact enough to fit in an example!
     ///                 let len = buf.len();
     ///                 buf.extend((0..hint).map(|_| 0u8));
     ///                 let n = reader.read(&amp;mut buf[len..])?;
@@ -2077,7 +2078,7 @@
     ///             DataCountSection { .. } =&gt; { /* ... */ }
     ///             DataSection(_) =&gt; { /* ... */ }
     ///
-    ///             // Here we know how many functions we&#39;ll be receiving as
+    ///             // Here we know how many functions we'll be receiving as
     ///             // `CodeSectionEntry`, so we can prepare for that, and
     ///             // afterwards we can parse and handle each function
     ///             // individually.
@@ -2106,12 +2107,12 @@
     ///
     ///             CustomSection(_) =&gt; { /* ... */ }
     ///
-    ///             // most likely you&#39;d return an error here
+    ///             // most likely you'd return an error here
     ///             UnknownSection { id, .. } =&gt; { /* ... */ }
     ///
-    ///             // Once we&#39;ve reached the end of a parser we either resume
+    ///             // Once we've reached the end of a parser we either resume
     ///             // at the parent parser or we break out of the loop because
-    ///             // we&#39;re done.
+    ///             // we're done.
     ///             End(_) =&gt; {
     ///                 if let Some(parent_parser) = stack.pop() {
     ///                     cur = parent_parser;
@@ -2121,7 +2122,7 @@
     ///             }
     ///         }
     ///
-    ///         // once we&#39;re done processing the payload we can forget the
+    ///         // once we're done processing the payload we can forget the
     ///         // original.
     ///         buf.drain(..consumed);
     ///     }
@@ -2129,9 +2130,9 @@
     ///     Ok(())
     /// }
     ///
-    /// # parse(&amp;b&quot;\0asm\x01\0\0\0&quot;[..]).unwrap();
+    /// # parse(&amp;b"\0asm\x01\0\0\0"[..]).unwrap();
     /// ```
-    </span><span class="kw">pub fn </span>parse&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], eof: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Chunk&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    </span><span class="kw">pub fn </span>parse&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8], eof: bool) -&gt; <span class="prelude-ty">Result</span>&lt;Chunk&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">let </span>(data, eof) = <span class="kw">if </span>usize_to_u64(data.len()) &gt; <span class="self">self</span>.max_size {
             (<span class="kw-2">&amp;</span>data[..(<span class="self">self</span>.max_size <span class="kw">as </span>usize)], <span class="bool-val">true</span>)
         } <span class="kw">else </span>{
@@ -2152,15 +2153,15 @@
                 })
             }
             <span class="prelude-val">Err</span>(e) =&gt; {
-                <span class="comment">// If we&#39;re at EOF then there&#39;s no way we can recover from any
+                <span class="comment">// If we're at EOF then there's no way we can recover from any
                 // error, so continue to propagate it.
                 </span><span class="kw">if </span>eof {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(e);
                 }
 
-                <span class="comment">// If our error doesn&#39;t look like it can be resolved with more
+                <span class="comment">// If our error doesn't look like it can be resolved with more
                 // data being pulled down, then propagate it, otherwise switch
-                // the error to &quot;feed me please&quot;
+                // the error to "feed me please"
                 </span><span class="kw">match </span>e.inner.needed_hint {
                     <span class="prelude-val">Some</span>(hint) =&gt; <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(usize_to_u64(hint))),
                     <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(e),
@@ -2169,11 +2170,11 @@
         }
     }
 
-    <span class="kw">fn </span>parse_reader&lt;<span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">fn </span>parse_reader&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+        reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
         eof: bool,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Payload&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Payload&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">use </span>Payload::<span class="kw-2">*</span>;
 
         <span class="kw">match </span><span class="self">self</span>.state {
@@ -2183,7 +2184,7 @@
                 <span class="self">self</span>.encoding = <span class="kw">match </span>(header_version &gt;&gt; <span class="number">16</span>) <span class="kw">as </span>u16 {
                     KIND_MODULE =&gt; Encoding::Module,
                     KIND_COMPONENT =&gt; Encoding::Component,
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(start + <span class="number">4</span>, <span class="string">&quot;unknown binary version: {header_version:#10x}&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(start + <span class="number">4</span>, <span class="string">"unknown binary version: {header_version:#10x}"</span>),
                 };
                 <span class="kw">let </span>num = header_version <span class="kw">as </span>u16;
                 <span class="self">self</span>.state = State::SectionStart;
@@ -2194,8 +2195,8 @@
                 })
             }
             State::SectionStart =&gt; {
-                <span class="comment">// If we&#39;re at eof and there are no bytes in our buffer, then
-                // that means we reached the end of the data since it&#39;s
+                <span class="comment">// If we're at eof and there are no bytes in our buffer, then
+                // that means we reached the end of the data since it's
                 // just a bunch of sections concatenated after the header.
                 </span><span class="kw">if </span>eof &amp;&amp; reader.bytes_remaining() == <span class="number">0 </span>{
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(Payload::End(reader.original_position()));
@@ -2204,13 +2205,13 @@
                 <span class="kw">let </span>id_pos = reader.position;
                 <span class="kw">let </span>id = reader.read_u8()<span class="question-mark">?</span>;
                 <span class="kw">if </span>id &amp; <span class="number">0x80 </span>!= <span class="number">0 </span>{
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">&quot;malformed section id&quot;</span>, id_pos));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">"malformed section id"</span>, id_pos));
                 }
                 <span class="kw">let </span>len_pos = reader.original_position();
                 <span class="kw">let </span><span class="kw-2">mut </span>len = reader.read_var_u32()<span class="question-mark">?</span>;
 
                 <span class="comment">// Test to make sure that this section actually fits within
-                // `Parser::max_size`. This doesn&#39;t matter for top-level modules
+                // `Parser::max_size`. This doesn't matter for top-level modules
                 // but it is required for nested modules/components to correctly ensure
                 // that all sections live entirely within their section of the
                 // file.
@@ -2220,7 +2221,7 @@
                     .and_then(|s| s.checked_sub(len.into()))
                     .is_none();
                 <span class="kw">if </span>section_overflow {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">&quot;section too large&quot;</span>, len_pos));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">"section too large"</span>, len_pos));
                 }
 
                 <span class="kw">match </span>(<span class="self">self</span>.encoding, id) {
@@ -2250,7 +2251,7 @@
                         section(reader, len, ExportSectionReader::new, ExportSection)
                     }
                     (Encoding::Module, START_SECTION) =&gt; {
-                        <span class="kw">let </span>(func, range) = single_item(reader, len, <span class="string">&quot;start&quot;</span>)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>(func, range) = single_item(reader, len, <span class="string">"start"</span>)<span class="question-mark">?</span>;
                         <span class="prelude-val">Ok</span>(StartSection { func, range })
                     }
                     (Encoding::Module, ELEMENT_SECTION) =&gt; {
@@ -2274,7 +2275,7 @@
                         section(reader, len, DataSectionReader::new, DataSection)
                     }
                     (Encoding::Module, DATA_COUNT_SECTION) =&gt; {
-                        <span class="kw">let </span>(count, range) = single_item(reader, len, <span class="string">&quot;data count&quot;</span>)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>(count, range) = single_item(reader, len, <span class="string">"data count"</span>)<span class="question-mark">?</span>;
                         <span class="prelude-val">Ok</span>(DataCountSection { count, range })
                     }
                     (Encoding::Module, TAG_SECTION) =&gt; {
@@ -2287,8 +2288,8 @@
                         <span class="kw">if </span>len <span class="kw">as </span>usize &gt; MAX_WASM_MODULE_SIZE {
                             <span class="macro">bail!</span>(
                                 len_pos,
-                                <span class="string">&quot;{} section is too large&quot;</span>,
-                                <span class="kw">if </span>id == <span class="number">1 </span>{ <span class="string">&quot;module&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;component &quot; </span>}
+                                <span class="string">"{} section is too large"</span>,
+                                <span class="kw">if </span>id == <span class="number">1 </span>{ <span class="string">"module" </span>} <span class="kw">else </span>{ <span class="string">"component " </span>}
                             );
                         }
 
@@ -2333,7 +2334,7 @@
                         ComponentCanonicalSection,
                     ),
                     (Encoding::Component, COMPONENT_START_SECTION) =&gt; {
-                        <span class="kw">let </span>(start, range) = single_item(reader, len, <span class="string">&quot;component start&quot;</span>)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>(start, range) = single_item(reader, len, <span class="string">"component start"</span>)<span class="question-mark">?</span>;
                         <span class="prelude-val">Ok</span>(ComponentStartSection { start, range })
                     }
                     (Encoding::Component, COMPONENT_IMPORT_SECTION) =&gt; section(
@@ -2362,7 +2363,7 @@
             }
 
             <span class="comment">// Once we hit 0 remaining incrementally parsed items, with 0
-            // remaining bytes in each section, we&#39;re done and can switch back
+            // remaining bytes in each section, we're done and can switch back
             // to parsing sections.
             </span>State::FunctionBody {
                 remaining: <span class="number">0</span>,
@@ -2378,18 +2379,18 @@
                 <span class="macro">debug_assert!</span>(len &gt; <span class="number">0</span>);
                 <span class="kw">let </span>offset = reader.original_position();
                 <span class="prelude-val">Err</span>(BinaryReaderError::new(
-                    <span class="string">&quot;trailing bytes at end of section&quot;</span>,
+                    <span class="string">"trailing bytes at end of section"</span>,
                     offset,
                 ))
             }
 
-            <span class="comment">// Functions are relatively easy to parse when we know there&#39;s at
+            <span class="comment">// Functions are relatively easy to parse when we know there's at
             // least one remaining and at least one byte available to read
             // things.
             //
             // We use the remaining length try to read a u32 size of the
             // function, and using that size we require the entire function be
-            // resident in memory. This means that we&#39;re reading whole chunks of
+            // resident in memory. This means that we're reading whole chunks of
             // functions at a time.
             //
             // Limiting via `Parser::max_size` (nested parsing) happens above in
@@ -2453,7 +2454,7 @@
     ///             DataCountSection { .. } =&gt; { /* ... */ }
     ///             DataSection(_) =&gt; { /* ... */ }
     ///
-    ///             // Here we know how many functions we&#39;ll be receiving as
+    ///             // Here we know how many functions we'll be receiving as
     ///             // `CodeSectionEntry`, so we can prepare for that, and
     ///             // afterwards we can parse and handle each function
     ///             // individually.
@@ -2478,12 +2479,12 @@
     ///
     ///             CustomSection(_) =&gt; { /* ... */ }
     ///
-    ///             // most likely you&#39;d return an error here
+    ///             // most likely you'd return an error here
     ///             UnknownSection { id, .. } =&gt; { /* ... */ }
     ///
-    ///             // Once we&#39;ve reached the end of a parser we either resume
+    ///             // Once we've reached the end of a parser we either resume
     ///             // at the parent parser or the payload iterator is at its
-    ///             // end and we&#39;re done.
+    ///             // end and we're done.
     ///             End(_) =&gt; {}
     ///         }
     ///     }
@@ -2491,7 +2492,7 @@
     ///     Ok(())
     /// }
     ///
-    /// # parse(&amp;b&quot;\0asm\x01\0\0\0&quot;[..]).unwrap();
+    /// # parse(&amp;b"\0asm\x01\0\0\0"[..]).unwrap();
     /// ```
     </span><span class="kw">pub fn </span>parse_all(<span class="self">self</span>, <span class="kw-2">mut </span>data: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="prelude-ty">Result</span>&lt;Payload&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>stack = Vec::new();
@@ -2508,7 +2509,7 @@
                     <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e));
                 }
 
-                <span class="comment">// This isn&#39;t possible because `eof` is always true.
+                <span class="comment">// This isn't possible because `eof` is always true.
                 </span><span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="kw">_</span>)) =&gt; <span class="macro">unreachable!</span>(),
 
                 <span class="prelude-val">Ok</span>(Chunk::Parsed { payload, consumed }) =&gt; {
@@ -2546,7 +2547,7 @@
     ///
     /// # Panics
     ///
-    /// This function will panic if the parser is not in a state where it&#39;s
+    /// This function will panic if the parser is not in a state where it's
     /// parsing the code section.
     ///
     /// # Examples
@@ -2563,18 +2564,18 @@
     ///                 wasm = &amp;wasm[consumed..];
     ///                 payload
     ///             }
-    ///             // this state isn&#39;t possible with `eof = true`
+    ///             // this state isn't possible with `eof = true`
     ///             Chunk::NeedMoreData(_) =&gt; unreachable!(),
     ///         };
     ///         match payload {
-    ///             TypeSection(s) =&gt; print_range(&quot;type section&quot;, &amp;s.range()),
-    ///             ImportSection(s) =&gt; print_range(&quot;import section&quot;, &amp;s.range()),
+    ///             TypeSection(s) =&gt; print_range("type section", &amp;s.range()),
+    ///             ImportSection(s) =&gt; print_range("import section", &amp;s.range()),
     ///             // .. other sections
     ///
-    ///             // Print the range of the code section we see, but don&#39;t
+    ///             // Print the range of the code section we see, but don't
     ///             // actually iterate over each individual function.
     ///             CodeSectionStart { range, size, .. } =&gt; {
-    ///                 print_range(&quot;code section&quot;, &amp;range);
+    ///                 print_range("code section", &amp;range);
     ///                 parser.skip_section();
     ///                 wasm = &amp;wasm[size as usize..];
     ///             }
@@ -2586,13 +2587,13 @@
     /// }
     ///
     /// fn print_range(section: &amp;str, range: &amp;Range&lt;usize&gt;) {
-    ///     println!(&quot;{:&gt;40}: {:#010x} - {:#010x}&quot;, section, range.start, range.end);
+    ///     println!("{:&gt;40}: {:#010x} - {:#010x}", section, range.start, range.end);
     /// }
     /// ```
     </span><span class="kw">pub fn </span>skip_section(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>skip = <span class="kw">match </span><span class="self">self</span>.state {
             State::FunctionBody { remaining: <span class="kw">_</span>, len } =&gt; len,
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;wrong state to call `skip_section`&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"wrong state to call `skip_section`"</span>),
         };
         <span class="self">self</span>.offset += u64::from(skip);
         <span class="self">self</span>.max_size -= u64::from(skip);
@@ -2608,40 +2609,40 @@
 ///
 /// Requires that `len` bytes are resident in `reader` and uses `ctor`/`variant`
 /// to construct the section to return.
-</span><span class="kw">fn </span>section&lt;<span class="lifetime">&#39;a</span>, T&gt;(
-    reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">fn </span>section&lt;<span class="lifetime">'a</span>, T&gt;(
+    reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     len: u32,
-    ctor: <span class="kw">fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], usize) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
-    variant: <span class="kw">fn</span>(T) -&gt; Payload&lt;<span class="lifetime">&#39;a</span>&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Payload&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    ctor: <span class="kw">fn</span>(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8], usize) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
+    variant: <span class="kw">fn</span>(T) -&gt; Payload&lt;<span class="lifetime">'a</span>&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Payload&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let </span>offset = reader.original_position();
     <span class="kw">let </span>payload = reader.read_bytes(len <span class="kw">as </span>usize)<span class="question-mark">?</span>;
-    <span class="comment">// clear the hint for &quot;need this many more bytes&quot; here because we already
-    // read all the bytes, so it&#39;s not possible to read more bytes if this
+    <span class="comment">// clear the hint for "need this many more bytes" here because we already
+    // read all the bytes, so it's not possible to read more bytes if this
     // fails.
     </span><span class="kw">let </span>reader = ctor(payload, offset).map_err(clear_hint)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(variant(reader))
 }
 
 <span class="doccomment">/// Reads a section that is represented by a single uleb-encoded `u32`.
-</span><span class="kw">fn </span>single_item&lt;<span class="lifetime">&#39;a</span>, T&gt;(
-    reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">fn </span>single_item&lt;<span class="lifetime">'a</span>, T&gt;(
+    reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     len: u32,
     desc: <span class="kw-2">&amp;</span>str,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(T, Range&lt;usize&gt;)&gt;
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">let </span>range = reader.original_position()..reader.original_position() + len <span class="kw">as </span>usize;
     <span class="kw">let </span><span class="kw-2">mut </span>content = BinaryReader::new_with_offset(reader.read_bytes(len <span class="kw">as </span>usize)<span class="question-mark">?</span>, range.start);
-    <span class="comment">// We can&#39;t recover from &quot;unexpected eof&quot; here because our entire section is
+    <span class="comment">// We can't recover from "unexpected eof" here because our entire section is
     // already resident in memory, so clear the hint for how many more bytes are
     // expected.
     </span><span class="kw">let </span>ret = content.read().map_err(clear_hint)<span class="question-mark">?</span>;
     <span class="kw">if </span>!content.eof() {
         <span class="macro">bail!</span>(
             content.original_position(),
-            <span class="string">&quot;unexpected content in the {desc} section&quot;</span>,
+            <span class="string">"unexpected content in the {desc} section"</span>,
         );
     }
     <span class="prelude-val">Ok</span>((ret, range))
@@ -2652,10 +2653,10 @@
 /// This will update `*len` with the number of bytes consumed, and it will cause
 /// a failure to be returned instead of the number of bytes consumed exceeds
 /// what `*len` currently is.
-</span><span class="kw">fn </span>delimited&lt;<span class="lifetime">&#39;a</span>, T&gt;(
-    reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">fn </span>delimited&lt;<span class="lifetime">'a</span>, T&gt;(
+    reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     len: <span class="kw-2">&amp;mut </span>u32,
-    f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
+    f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
     <span class="kw">let </span>start = reader.position;
     <span class="kw">let </span>ret = f(reader)<span class="question-mark">?</span>;
@@ -2665,7 +2666,7 @@
         .and_then(|i| len.checked_sub(i))
     {
         <span class="prelude-val">Some</span>(i) =&gt; i,
-        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">&quot;unexpected end-of-file&quot;</span>, start)),
+        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">"unexpected end-of-file"</span>, start)),
     };
     <span class="prelude-val">Ok</span>(ret)
 }
@@ -2676,9 +2677,9 @@
     }
 }
 
-<span class="kw">impl </span>Payload&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">impl </span>Payload&lt;<span class="lifetime">'_</span>&gt; {
     <span class="doccomment">/// If this `Payload` represents a section in the original wasm module then
-    /// the section&#39;s id and range within the original wasm binary are returned.
+    /// the section's id and range within the original wasm binary are returned.
     ///
     /// Not all payloads refer to entire sections, such as the `Version` and
     /// `CodeSectionEntry` variants. These variants will return `None` from this
@@ -2732,8 +2733,8 @@
     }
 }
 
-<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Payload&lt;<span class="lifetime">&#39;_</span>&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Payload&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         <span class="kw">use </span>Payload::<span class="kw-2">*</span>;
         <span class="kw">match </span><span class="self">self </span>{
             Version {
@@ -2741,87 +2742,87 @@
                 encoding,
                 range,
             } =&gt; f
-                .debug_struct(<span class="string">&quot;Version&quot;</span>)
-                .field(<span class="string">&quot;num&quot;</span>, num)
-                .field(<span class="string">&quot;encoding&quot;</span>, encoding)
-                .field(<span class="string">&quot;range&quot;</span>, range)
+                .debug_struct(<span class="string">"Version"</span>)
+                .field(<span class="string">"num"</span>, num)
+                .field(<span class="string">"encoding"</span>, encoding)
+                .field(<span class="string">"range"</span>, range)
                 .finish(),
 
             <span class="comment">// Module sections
-            </span>TypeSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;TypeSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            ImportSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;ImportSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            FunctionSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;FunctionSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            TableSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;TableSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            MemorySection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;MemorySection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            TagSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;TagSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            GlobalSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;GlobalSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            ExportSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;ExportSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            ElementSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;ElementSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            DataSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;DataSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
+            </span>TypeSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"TypeSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            ImportSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"ImportSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            FunctionSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"FunctionSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            TableSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"TableSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            MemorySection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"MemorySection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            TagSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"TagSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            GlobalSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"GlobalSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            ExportSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"ExportSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            ElementSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"ElementSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            DataSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"DataSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
             StartSection { func, range } =&gt; f
-                .debug_struct(<span class="string">&quot;StartSection&quot;</span>)
-                .field(<span class="string">&quot;func&quot;</span>, func)
-                .field(<span class="string">&quot;range&quot;</span>, range)
+                .debug_struct(<span class="string">"StartSection"</span>)
+                .field(<span class="string">"func"</span>, func)
+                .field(<span class="string">"range"</span>, range)
                 .finish(),
             DataCountSection { count, range } =&gt; f
-                .debug_struct(<span class="string">&quot;DataCountSection&quot;</span>)
-                .field(<span class="string">&quot;count&quot;</span>, count)
-                .field(<span class="string">&quot;range&quot;</span>, range)
+                .debug_struct(<span class="string">"DataCountSection"</span>)
+                .field(<span class="string">"count"</span>, count)
+                .field(<span class="string">"range"</span>, range)
                 .finish(),
             CodeSectionStart { count, range, size } =&gt; f
-                .debug_struct(<span class="string">&quot;CodeSectionStart&quot;</span>)
-                .field(<span class="string">&quot;count&quot;</span>, count)
-                .field(<span class="string">&quot;range&quot;</span>, range)
-                .field(<span class="string">&quot;size&quot;</span>, size)
+                .debug_struct(<span class="string">"CodeSectionStart"</span>)
+                .field(<span class="string">"count"</span>, count)
+                .field(<span class="string">"range"</span>, range)
+                .field(<span class="string">"size"</span>, size)
                 .finish(),
-            CodeSectionEntry(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;CodeSectionEntry&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
+            CodeSectionEntry(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"CodeSectionEntry"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
 
             <span class="comment">// Component sections
             </span>ModuleSection { parser: <span class="kw">_</span>, range } =&gt; f
-                .debug_struct(<span class="string">&quot;ModuleSection&quot;</span>)
-                .field(<span class="string">&quot;range&quot;</span>, range)
+                .debug_struct(<span class="string">"ModuleSection"</span>)
+                .field(<span class="string">"range"</span>, range)
                 .finish(),
-            InstanceSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;InstanceSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
-            CoreTypeSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;CoreTypeSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
+            InstanceSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"InstanceSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
+            CoreTypeSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"CoreTypeSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
             ComponentSection { parser: <span class="kw">_</span>, range } =&gt; f
-                .debug_struct(<span class="string">&quot;ComponentSection&quot;</span>)
-                .field(<span class="string">&quot;range&quot;</span>, range)
+                .debug_struct(<span class="string">"ComponentSection"</span>)
+                .field(<span class="string">"range"</span>, range)
                 .finish(),
             ComponentInstanceSection(<span class="kw">_</span>) =&gt; f
-                .debug_tuple(<span class="string">&quot;ComponentInstanceSection&quot;</span>)
-                .field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>)
+                .debug_tuple(<span class="string">"ComponentInstanceSection"</span>)
+                .field(<span class="kw-2">&amp;</span><span class="string">"..."</span>)
                 .finish(),
             ComponentAliasSection(<span class="kw">_</span>) =&gt; f
-                .debug_tuple(<span class="string">&quot;ComponentAliasSection&quot;</span>)
-                .field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>)
+                .debug_tuple(<span class="string">"ComponentAliasSection"</span>)
+                .field(<span class="kw-2">&amp;</span><span class="string">"..."</span>)
                 .finish(),
-            ComponentTypeSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">&quot;ComponentTypeSection&quot;</span>).field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>).finish(),
+            ComponentTypeSection(<span class="kw">_</span>) =&gt; f.debug_tuple(<span class="string">"ComponentTypeSection"</span>).field(<span class="kw-2">&amp;</span><span class="string">"..."</span>).finish(),
             ComponentCanonicalSection(<span class="kw">_</span>) =&gt; f
-                .debug_tuple(<span class="string">&quot;ComponentCanonicalSection&quot;</span>)
-                .field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>)
+                .debug_tuple(<span class="string">"ComponentCanonicalSection"</span>)
+                .field(<span class="kw-2">&amp;</span><span class="string">"..."</span>)
                 .finish(),
             ComponentStartSection { .. } =&gt; f
-                .debug_tuple(<span class="string">&quot;ComponentStartSection&quot;</span>)
-                .field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>)
+                .debug_tuple(<span class="string">"ComponentStartSection"</span>)
+                .field(<span class="kw-2">&amp;</span><span class="string">"..."</span>)
                 .finish(),
             ComponentImportSection(<span class="kw">_</span>) =&gt; f
-                .debug_tuple(<span class="string">&quot;ComponentImportSection&quot;</span>)
-                .field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>)
+                .debug_tuple(<span class="string">"ComponentImportSection"</span>)
+                .field(<span class="kw-2">&amp;</span><span class="string">"..."</span>)
                 .finish(),
             ComponentExportSection(<span class="kw">_</span>) =&gt; f
-                .debug_tuple(<span class="string">&quot;ComponentExportSection&quot;</span>)
-                .field(<span class="kw-2">&amp;</span><span class="string">&quot;...&quot;</span>)
+                .debug_tuple(<span class="string">"ComponentExportSection"</span>)
+                .field(<span class="kw-2">&amp;</span><span class="string">"..."</span>)
                 .finish(),
 
-            CustomSection(c) =&gt; f.debug_tuple(<span class="string">&quot;CustomSection&quot;</span>).field(c).finish(),
+            CustomSection(c) =&gt; f.debug_tuple(<span class="string">"CustomSection"</span>).field(c).finish(),
 
             UnknownSection { id, range, .. } =&gt; f
-                .debug_struct(<span class="string">&quot;UnknownSection&quot;</span>)
-                .field(<span class="string">&quot;id&quot;</span>, id)
-                .field(<span class="string">&quot;range&quot;</span>, range)
+                .debug_struct(<span class="string">"UnknownSection"</span>)
+                .field(<span class="string">"id"</span>, id)
+                .field(<span class="string">"range"</span>, range)
                 .finish(),
 
-            End(offset) =&gt; f.debug_tuple(<span class="string">&quot;End&quot;</span>).field(offset).finish(),
+            End(offset) =&gt; f.debug_tuple(<span class="string">"End"</span>).field(offset).finish(),
         }
     }
 }
@@ -2839,7 +2840,7 @@
         (<span class="macro-nonterminal">$a</span>:expr, <span class="macro-nonterminal">$b</span>:pat $(,)<span class="question-mark">?</span>) =&gt; {
             <span class="kw">match </span><span class="macro-nonterminal">$a </span>{
                 <span class="macro-nonterminal">$b </span>=&gt; {}
-                a =&gt; <span class="macro">panic!</span>(<span class="string">&quot;`{:?}` doesn&#39;t match `{}`&quot;</span>, a, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$b</span>)),
+                a =&gt; <span class="macro">panic!</span>(<span class="string">"`{:?}` doesn't match `{}`"</span>, a, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$b</span>)),
             }
         };
     }
@@ -2852,15 +2853,15 @@
             <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">4</span>)),
         );
         <span class="macro">assert_matches!</span>(
-            Parser::default().parse(<span class="string">b&quot;\0&quot;</span>, <span class="bool-val">false</span>),
+            Parser::default().parse(<span class="string">b"\0"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">3</span>)),
         );
         <span class="macro">assert_matches!</span>(
-            Parser::default().parse(<span class="string">b&quot;\0asm&quot;</span>, <span class="bool-val">false</span>),
+            Parser::default().parse(<span class="string">b"\0asm"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">4</span>)),
         );
         <span class="macro">assert_matches!</span>(
-            Parser::default().parse(<span class="string">b&quot;\0asm\x01\0\0\0&quot;</span>, <span class="bool-val">false</span>),
+            Parser::default().parse(<span class="string">b"\0asm\x01\0\0\0"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">8</span>,
                 payload: Payload::Version { num: <span class="number">1</span>, .. },
@@ -2871,15 +2872,15 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>header_iter() {
         <span class="kw">for _ in </span>Parser::default().parse_all(<span class="kw-2">&amp;</span>[]) {}
-        <span class="kw">for _ in </span>Parser::default().parse_all(<span class="string">b&quot;\0&quot;</span>) {}
-        <span class="kw">for _ in </span>Parser::default().parse_all(<span class="string">b&quot;\0asm&quot;</span>) {}
-        <span class="kw">for _ in </span>Parser::default().parse_all(<span class="string">b&quot;\0asm\x01\x01\x01\x01&quot;</span>) {}
+        <span class="kw">for _ in </span>Parser::default().parse_all(<span class="string">b"\0"</span>) {}
+        <span class="kw">for _ in </span>Parser::default().parse_all(<span class="string">b"\0asm"</span>) {}
+        <span class="kw">for _ in </span>Parser::default().parse_all(<span class="string">b"\0asm\x01\x01\x01\x01"</span>) {}
     }
 
     <span class="kw">fn </span>parser_after_header() -&gt; Parser {
         <span class="kw">let </span><span class="kw-2">mut </span>p = Parser::default();
         <span class="macro">assert_matches!</span>(
-            p.parse(<span class="string">b&quot;\0asm\x01\0\0\0&quot;</span>, <span class="bool-val">false</span>),
+            p.parse(<span class="string">b"\0asm\x01\0\0\0"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">8</span>,
                 payload: Payload::Version {
@@ -2895,7 +2896,7 @@
     <span class="kw">fn </span>parser_after_component_header() -&gt; Parser {
         <span class="kw">let </span><span class="kw-2">mut </span>p = Parser::default();
         <span class="macro">assert_matches!</span>(
-            p.parse(<span class="string">b&quot;\0asm\x0d\0\x01\0&quot;</span>, <span class="bool-val">false</span>),
+            p.parse(<span class="string">b"\0asm\x0d\0\x01\0"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">8</span>,
                 payload: Payload::Version {
@@ -2994,33 +2995,33 @@
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">3</span>,
                 payload: Payload::CustomSection(CustomSectionReader {
-                    name: <span class="string">&quot;&quot;</span>,
+                    name: <span class="string">""</span>,
                     data_offset: <span class="number">11</span>,
-                    data: <span class="string">b&quot;&quot;</span>,
+                    data: <span class="string">b""</span>,
                     range: Range { start: <span class="number">10</span>, end: <span class="number">11 </span>},
                 }),
             }),
         );
         <span class="macro">assert_matches!</span>(
-            parser_after_header().parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="string">b&#39;a&#39;</span>], <span class="bool-val">false</span>),
+            parser_after_header().parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="string">b'a'</span>], <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">4</span>,
                 payload: Payload::CustomSection(CustomSectionReader {
-                    name: <span class="string">&quot;a&quot;</span>,
+                    name: <span class="string">"a"</span>,
                     data_offset: <span class="number">12</span>,
-                    data: <span class="string">b&quot;&quot;</span>,
+                    data: <span class="string">b""</span>,
                     range: Range { start: <span class="number">10</span>, end: <span class="number">12 </span>},
                 }),
             }),
         );
         <span class="macro">assert_matches!</span>(
-            parser_after_header().parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="string">b&#39;a&#39;</span>], <span class="bool-val">false</span>),
+            parser_after_header().parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="string">b'a'</span>], <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">4</span>,
                 payload: Payload::CustomSection(CustomSectionReader {
-                    name: <span class="string">&quot;&quot;</span>,
+                    name: <span class="string">""</span>,
                     data_offset: <span class="number">11</span>,
-                    data: <span class="string">b&quot;a&quot;</span>,
+                    data: <span class="string">b"a"</span>,
                     range: Range { start: <span class="number">10</span>, end: <span class="number">12 </span>},
                 }),
             }),
@@ -3078,7 +3079,7 @@
             }),
         );
 
-        <span class="comment">// 1 byte section with 1 function can&#39;t read the function body because
+        <span class="comment">// 1 byte section with 1 function can't read the function body because
         // the section is too small
         </span><span class="kw">let </span><span class="kw-2">mut </span>p = parser_after_header();
         <span class="macro">assert_matches!</span>(
@@ -3090,7 +3091,7 @@
         );
         <span class="macro">assert_eq!</span>(
             p.parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>], <span class="bool-val">false</span>).unwrap_err().message(),
-            <span class="string">&quot;unexpected end-of-file&quot;
+            <span class="string">"unexpected end-of-file"
         </span>);
 
         <span class="comment">// section with 2 functions but section is cut off
@@ -3112,7 +3113,7 @@
         <span class="macro">assert_matches!</span>(p.parse(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>), <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">1</span>)));
         <span class="macro">assert_eq!</span>(
             p.parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>], <span class="bool-val">false</span>).unwrap_err().message(),
-            <span class="string">&quot;unexpected end-of-file&quot;</span>,
+            <span class="string">"unexpected end-of-file"</span>,
         );
 
         <span class="comment">// trailing data is bad
@@ -3133,7 +3134,7 @@
         );
         <span class="macro">assert_eq!</span>(
             p.parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>], <span class="bool-val">false</span>).unwrap_err().message(),
-            <span class="string">&quot;trailing bytes at end of section&quot;</span>,
+            <span class="string">"trailing bytes at end of section"</span>,
         );
     }
 
@@ -3142,20 +3143,20 @@
         <span class="kw">let </span><span class="kw-2">mut </span>p = parser_after_component_header();
         <span class="macro">assert_matches!</span>(p.parse(<span class="kw-2">&amp;</span>[<span class="number">4</span>], <span class="bool-val">false</span>), <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">1</span>)));
 
-        <span class="comment">// A module that&#39;s 8 bytes in length
+        <span class="comment">// A module that's 8 bytes in length
         </span><span class="kw">let </span><span class="kw-2">mut </span>sub = <span class="kw">match </span>p.parse(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">8</span>], <span class="bool-val">false</span>) {
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">2</span>,
                 payload: Payload::ModuleSection { parser, .. },
             }) =&gt; parser,
-            other =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse {:?}&quot;</span>, other),
+            other =&gt; <span class="macro">panic!</span>(<span class="string">"bad parse {:?}"</span>, other),
         };
 
         <span class="comment">// Parse the header of the submodule with the sub-parser.
         </span><span class="macro">assert_matches!</span>(sub.parse(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>), <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">4</span>)));
-        <span class="macro">assert_matches!</span>(sub.parse(<span class="string">b&quot;\0asm&quot;</span>, <span class="bool-val">false</span>), <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">4</span>)));
+        <span class="macro">assert_matches!</span>(sub.parse(<span class="string">b"\0asm"</span>, <span class="bool-val">false</span>), <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">4</span>)));
         <span class="macro">assert_matches!</span>(
-            sub.parse(<span class="string">b&quot;\0asm\x01\0\0\0&quot;</span>, <span class="bool-val">false</span>),
+            sub.parse(<span class="string">b"\0asm\x01\0\0\0"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">8</span>,
                 payload: Payload::Version {
@@ -3166,8 +3167,8 @@
             }),
         );
 
-        <span class="comment">// The sub-parser should be byte-limited so the next byte shouldn&#39;t get
-        // consumed, it&#39;s intended for the parent parser.
+        <span class="comment">// The sub-parser should be byte-limited so the next byte shouldn't get
+        // consumed, it's intended for the parent parser.
         </span><span class="macro">assert_matches!</span>(
             sub.parse(<span class="kw-2">&amp;</span>[<span class="number">10</span>], <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
@@ -3177,7 +3178,7 @@
         );
 
         <span class="comment">// The parent parser should now be back to resuming, and we simulate it
-        // being done with bytes to ensure that it&#39;s safely at the end,
+        // being done with bytes to ensure that it's safely at the end,
         // completing the module code section.
         </span><span class="macro">assert_matches!</span>(p.parse(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>), <span class="prelude-val">Ok</span>(Chunk::NeedMoreData(<span class="number">1</span>)));
         <span class="macro">assert_matches!</span>(
@@ -3193,32 +3194,32 @@
     </span><span class="kw">fn </span>nested_section_too_big() {
         <span class="kw">let </span><span class="kw-2">mut </span>p = parser_after_component_header();
 
-        <span class="comment">// A module that&#39;s 10 bytes in length
+        <span class="comment">// A module that's 10 bytes in length
         </span><span class="kw">let </span><span class="kw-2">mut </span>sub = <span class="kw">match </span>p.parse(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">10</span>], <span class="bool-val">false</span>) {
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">2</span>,
                 payload: Payload::ModuleSection { parser, .. },
             }) =&gt; parser,
-            other =&gt; <span class="macro">panic!</span>(<span class="string">&quot;bad parse {:?}&quot;</span>, other),
+            other =&gt; <span class="macro">panic!</span>(<span class="string">"bad parse {:?}"</span>, other),
         };
 
         <span class="comment">// use 8 bytes to parse the header, leaving 2 remaining bytes in our
         // module.
         </span><span class="macro">assert_matches!</span>(
-            sub.parse(<span class="string">b&quot;\0asm\x01\0\0\0&quot;</span>, <span class="bool-val">false</span>),
+            sub.parse(<span class="string">b"\0asm\x01\0\0\0"</span>, <span class="bool-val">false</span>),
             <span class="prelude-val">Ok</span>(Chunk::Parsed {
                 consumed: <span class="number">8</span>,
                 payload: Payload::Version { num: <span class="number">1</span>, .. },
             }),
         );
 
-        <span class="comment">// We can&#39;t parse a section which declares its bigger than the outer
+        <span class="comment">// We can't parse a section which declares its bigger than the outer
         // module. This is a custom section, one byte big, with one content byte. The
-        // content byte, however, lives outside of the parent&#39;s module code
+        // content byte, however, lives outside of the parent's module code
         // section.
         </span><span class="macro">assert_eq!</span>(
             sub.parse(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>], <span class="bool-val">false</span>).unwrap_err().message(),
-            <span class="string">&quot;section too large&quot;</span>,
+            <span class="string">"section too large"</span>,
         );
     }
 }

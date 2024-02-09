@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/externref.rs`."><title>externref.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/externref.rs`."><title>externref.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1080,8 +1081,8 @@
 //! additionally always fits in a pointer-sized word. `VMExternRef` is
 //! non-nullable, but `Option&lt;VMExternRef&gt;` is a null pointer.
 //!
-//! The one part of `VMExternRef` that can&#39;t ever be opaque to us is the
-//! reference count. Even when we don&#39;t know what&#39;s inside an `VMExternRef`, we
+//! The one part of `VMExternRef` that can't ever be opaque to us is the
+//! reference count. Even when we don't know what's inside an `VMExternRef`, we
 //! need to be able to manipulate its reference count as we add and remove
 //! references to it. And we need to do this from compiled Wasm code, so it must
 //! be `repr(C)`!
@@ -1099,7 +1100,7 @@
 //!      |                                                       |
 //!      V                                                       |
 //!     +----------------------------+-----------+-----------+   |
-//!     | dynamically-sized value... | ref_count | value_ptr |---&#39;
+//!     | dynamically-sized value... | ref_count | value_ptr |---'
 //!     +----------------------------+-----------+-----------+
 //!                                  | VMExternData          |
 //!                                  +-----------------------+
@@ -1115,19 +1116,19 @@
 //!   ...                            ===
 //!                                   |
 //! +-------------+                   |
-//! | VMExternRef |-------------------&#39;
+//! | VMExternRef |-------------------'
 //! +-------------+
 //! ```
 //!
 //! The `value_ptr` member always points backwards to the start of the
 //! dynamically-sized value (which is also the start of the heap allocation for
 //! this value-and-`VMExternData` pair). Because it is a `dyn` pointer, it is
-//! fat, and also points to the value&#39;s `Any` vtable.
+//! fat, and also points to the value's `Any` vtable.
 //!
 //! The boxed value and the `VMExternRef` footer are held a single heap
 //! allocation. The layout described above is used to make satisfying the
-//! value&#39;s alignment easy: we just need to ensure that the heap allocation used
-//! to hold everything satisfies its alignment. It also ensures that we don&#39;t
+//! value's alignment easy: we just need to ensure that the heap allocation used
+//! to hold everything satisfies its alignment. It also ensures that we don't
 //! need a ton of excess padding between the `VMExternData` and the value for
 //! values with large alignment.
 //!
@@ -1136,12 +1137,12 @@
 //! For host VM code, we use plain reference counting, where cloning increments
 //! the reference count, and dropping decrements it. We can avoid many of the
 //! on-stack increment/decrement operations that typically plague the
-//! performance of reference counting via Rust&#39;s ownership and borrowing system.
+//! performance of reference counting via Rust's ownership and borrowing system.
 //! Moving a `VMExternRef` avoids mutating its reference count, and borrowing it
 //! either avoids the reference count increment or delays it until if/when the
 //! `VMExternRef` is cloned.
 //!
-//! When passing a `VMExternRef` into compiled Wasm code, we don&#39;t want to do
+//! When passing a `VMExternRef` into compiled Wasm code, we don't want to do
 //! reference count mutations for every compiled `local.{get,set}`, nor for
 //! every function call. Therefore, we use a variation of **deferred reference
 //! counting**, where we only mutate reference counts when storing
@@ -1158,14 +1159,14 @@
 //! The `VMExternRefActivationsTable` implements the over-approximized set of
 //! `VMExternRef`s referenced by Wasm activations. Calling a Wasm function and
 //! passing it a `VMExternRef` moves the `VMExternRef` into the table, and the
-//! compiled Wasm function logically &quot;borrows&quot; the `VMExternRef` from the
+//! compiled Wasm function logically "borrows" the `VMExternRef` from the
 //! table. Similarly, `global.get` and `table.get` operations clone the gotten
-//! `VMExternRef` into the `VMExternRefActivationsTable` and then &quot;borrow&quot; the
+//! `VMExternRef` into the `VMExternRefActivationsTable` and then "borrow" the
 //! reference out of the table.
 //!
 //! When a `VMExternRef` is returned to host code from a Wasm function, the host
 //! increments the reference count (because the reference is logically
-//! &quot;borrowed&quot; from the `VMExternRefActivationsTable` and the reference count
+//! "borrowed" from the `VMExternRefActivationsTable` and the reference count
 //! from the table will be dropped at the next GC).
 //!
 //! For more general information on deferred reference counting, see *An
@@ -1215,9 +1216,9 @@
 /// use std::cell::RefCell;
 /// use wasmtime_runtime::VMExternRef;
 ///
-/// // Open a file. Wasm doesn&#39;t know about files, but we can let Wasm instances
+/// // Open a file. Wasm doesn't know about files, but we can let Wasm instances
 /// // work with files via opaque `externref` handles.
-/// let file = std::fs::File::create(&quot;some/file/path&quot;)?;
+/// let file = std::fs::File::create("some/file/path")?;
 ///
 /// // Wrap the file up as an `VMExternRef` that can be passed to Wasm.
 /// let extern_ref_to_file = VMExternRef::new(file);
@@ -1230,7 +1231,7 @@
 ///
 /// if let Some(mut file) = extern_ref_to_file.downcast_ref::&lt;std::fs::File&gt;() {
 ///     use std::io::Write;
-///     writeln!(&amp;mut file, &quot;Hello, `VMExternRef`!&quot;)?;
+///     writeln!(&amp;mut file, "Hello, `VMExternRef`!")?;
 /// }
 /// # Ok(())
 /// # }
@@ -1240,7 +1241,7 @@
 </span><span class="kw">pub struct </span>VMExternRef(SendSyncPtr&lt;VMExternData&gt;);
 
 <span class="kw">impl </span>std::fmt::Pointer <span class="kw">for </span>VMExternRef {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         std::fmt::Pointer::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, f)
     }
 }
@@ -1257,7 +1258,7 @@
     /// allocation. This is an `UnsafeCell`, rather than plain `Cell`, because
     /// it can be modified by compiled Wasm code.
     ///
-    /// Note: this field&#39;s offset must be kept in sync with
+    /// Note: this field's offset must be kept in sync with
     /// `wasmtime_environ::VMOffsets::vm_extern_data_ref_count()` which is
     /// currently always zero.
     </span>ref_count: AtomicUsize,
@@ -1283,7 +1284,7 @@
         <span class="comment">// Note that the memory orderings here also match the standard library
         // itself. Documentation is more available in the implementation of
         // `Arc`, but the general idea is that this is a special pattern allowed
-        // by the C standard with atomic orderings where we &quot;release&quot; for all
+        // by the C standard with atomic orderings where we "release" for all
         // the decrements and only the final decrementer performs an acquire
         // fence. This properly ensures that the final thread, which actually
         // destroys the data, sees all the updates from all other threads.
@@ -1302,9 +1303,9 @@
     <span class="doccomment">/// Get the `Layout` for a value with the given size and alignment, and the
     /// offset within that layout where the `VMExternData` footer resides.
     ///
-    /// This doesn&#39;t take a `value: &amp;T` because `VMExternRef::new_with` hasn&#39;t
-    /// constructed a `T` value yet, and it isn&#39;t generic over `T` because
-    /// `VMExternData::drop_and_dealloc` doesn&#39;t know what `T` to use, and has
+    /// This doesn't take a `value: &amp;T` because `VMExternRef::new_with` hasn't
+    /// constructed a `T` value yet, and it isn't generic over `T` because
+    /// `VMExternData::drop_and_dealloc` doesn't know what `T` to use, and has
     /// to use `std::mem::{size,align}_of_val` instead.
     </span><span class="kw">unsafe fn </span>layout_for(value_size: usize, value_align: usize) -&gt; (Layout, usize) {
         <span class="kw">let </span>extern_data_size = mem::size_of::&lt;VMExternData&gt;();
@@ -1317,7 +1318,7 @@
 
         <span class="macro">debug_assert!</span>(
             Layout::from_size_align(alloc_size, alloc_align).is_ok(),
-            <span class="string">&quot;should create a `Layout` for size={} and align={} okay&quot;</span>,
+            <span class="string">"should create a `Layout` for size={} and align={} okay"</span>,
             alloc_size,
             alloc_align,
         );
@@ -1329,7 +1330,7 @@
 
     <span class="doccomment">/// Drop the inner value and then free this `VMExternData` heap allocation.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>drop_and_dealloc(<span class="kw-2">mut </span>data: SendSyncPtr&lt;VMExternData&gt;) {
-        <span class="macro">log::trace!</span>(<span class="string">&quot;Dropping externref data @ {:p}&quot;</span>, data);
+        <span class="macro">log::trace!</span>(<span class="string">"Dropping externref data @ {:p}"</span>, data);
 
         <span class="comment">// Note: we introduce a block scope so that we drop the live
         // reference to the data before we free the heap allocation it
@@ -1359,8 +1360,8 @@
     </span><span class="kw">fn </span>increment_ref_count(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="comment">// This is only using during cloning operations, and like the standard
         // library we use `Relaxed` here. The rationale is better documented in
-        // libstd&#39;s implementation of `Arc`, but the general gist is that we&#39;re
-        // creating a new pointer for our own thread, so there&#39;s no need to have
+        // libstd's implementation of `Arc`, but the general gist is that we're
+        // creating a new pointer for our own thread, so there's no need to have
         // any synchronization with orderings. The synchronization with other
         // threads with respect to orderings happens when the pointer is sent to
         // another thread.
@@ -1379,7 +1380,7 @@
     <span class="doccomment">/// Wrap the given value inside an `VMExternRef`.
     </span><span class="kw">pub fn </span>new&lt;T&gt;(value: T) -&gt; VMExternRef
     <span class="kw">where
-        </span>T: <span class="lifetime">&#39;static </span>+ Any + Send + Sync,
+        </span>T: <span class="lifetime">'static </span>+ Any + Send + Sync,
     {
         VMExternRef::new_with(|| value)
     }
@@ -1387,7 +1388,7 @@
     <span class="doccomment">/// Construct a new `VMExternRef` in place by invoking `make_value`.
     </span><span class="kw">pub fn </span>new_with&lt;T&gt;(make_value: <span class="kw">impl </span>FnOnce() -&gt; T) -&gt; VMExternRef
     <span class="kw">where
-        </span>T: <span class="lifetime">&#39;static </span>+ Any + Send + Sync,
+        </span>T: <span class="lifetime">'static </span>+ Any + Send + Sync,
     {
         <span class="kw">unsafe </span>{
             <span class="kw">let </span>(layout, footer_offset) =
@@ -1413,7 +1414,7 @@
                 },
             );
 
-            <span class="macro">log::trace!</span>(<span class="string">&quot;New externref data @ {:p}&quot;</span>, extern_data_ptr);
+            <span class="macro">log::trace!</span>(<span class="string">"New externref data @ {:p}"</span>, extern_data_ptr);
             VMExternRef(NonNull::new_unchecked(extern_data_ptr).into())
         }
     }
@@ -1469,7 +1470,7 @@
     /// `as_raw` call!
     ///
     /// Additionally, it is your responsibility to ensure that this raw
-    /// `VMExternRef`&#39;s reference count has not dropped to zero. Failure to do
+    /// `VMExternRef`'s reference count has not dropped to zero. Failure to do
     /// so will result in use after free!
     </span><span class="kw">pub unsafe fn </span>clone_from_raw(ptr: <span class="kw-2">*mut </span>u8) -&gt; <span class="self">Self </span>{
         <span class="macro">debug_assert!</span>(!ptr.is_null());
@@ -1492,8 +1493,8 @@
     }
 }
 
-<span class="doccomment">/// Methods that would normally be trait implementations, but aren&#39;t to avoid
-/// potential footguns around `VMExternRef`&#39;s pointer-equality semantics.
+<span class="doccomment">/// Methods that would normally be trait implementations, but aren't to avoid
+/// potential footguns around `VMExternRef`'s pointer-equality semantics.
 ///
 /// Note that none of these methods are on `&amp;self`, they all require a
 /// fully-qualified `VMExternRef::foo(my_ref)` invocation.
@@ -1501,7 +1502,7 @@
     <span class="doccomment">/// Check whether two `VMExternRef`s point to the same inner allocation.
     ///
     /// Note that this uses pointer-equality semantics, not structural-equality
-    /// semantics, and so only pointers are compared, and doesn&#39;t use any `Eq`
+    /// semantics, and so only pointers are compared, and doesn't use any `Eq`
     /// or `PartialEq` implementation of the pointed-to values.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>eq(a: <span class="kw-2">&amp;</span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
@@ -1511,7 +1512,7 @@
     <span class="doccomment">/// Hash a given `VMExternRef`.
     ///
     /// Note that this just hashes the pointer to the inner value, it does *not*
-    /// use the inner value&#39;s `Hash` implementation (if any).
+    /// use the inner value's `Hash` implementation (if any).
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>hash&lt;H&gt;(externref: <span class="kw-2">&amp;</span><span class="self">Self</span>, hasher: <span class="kw-2">&amp;mut </span>H)
     <span class="kw">where
@@ -1523,7 +1524,7 @@
     <span class="doccomment">/// Compare two `VMExternRef`s.
     ///
     /// Note that this uses pointer-equality semantics, not structural-equality
-    /// semantics, and so only pointers are compared, and doesn&#39;t use any `Cmp`
+    /// semantics, and so only pointers are compared, and doesn't use any `Cmp`
     /// or `PartialCmp` implementation of the pointed-to values.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>cmp(a: <span class="kw-2">&amp;</span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; cmp::Ordering {
@@ -1545,7 +1546,7 @@
 /// pointer semantics.
 ///
 /// We use this so that we can morally put `VMExternRef`s inside of `HashSet`s
-/// even though they don&#39;t implement `Eq` and `Hash` to avoid foot guns.
+/// even though they don't implement `Eq` and `Hash` to avoid foot guns.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">struct </span>VMExternRefWithTraits(VMExternRef);
 
@@ -1573,7 +1574,7 @@
 ///
 /// Under the covers, this is a simple bump allocator that allows duplicate
 /// entries. Deduplication happens at GC time.
-</span><span class="attr">#[repr(C)] </span><span class="comment">// `alloc` must be the first member, it&#39;s accessed from JIT code.
+</span><span class="attr">#[repr(C)] </span><span class="comment">// `alloc` must be the first member, it's accessed from JIT code.
 </span><span class="kw">pub struct </span>VMExternRefActivationsTable {
     <span class="doccomment">/// Structures used to perform fast bump allocation of storage of externref
     /// values.
@@ -1625,7 +1626,7 @@
 }
 
 <span class="comment">// This gets around the usage of `UnsafeCell` throughout the internals of this
-// allocator, but the storage should all be Send/Sync and synchronization isn&#39;t
+// allocator, but the storage should all be Send/Sync and synchronization isn't
 // necessary since operations require `&amp;mut self`.
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>VMExternRefTableAlloc {}
 <span class="kw">unsafe impl </span>Sync <span class="kw">for </span>VMExternRefTableAlloc {}
@@ -1641,8 +1642,8 @@
 
     <span class="doccomment">/// Create a new `VMExternRefActivationsTable`.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="comment">// Start with an empty chunk in case this activations table isn&#39;t used.
-        // This means that there&#39;s no space in the bump-allocation area which
+        <span class="comment">// Start with an empty chunk in case this activations table isn't used.
+        // This means that there's no space in the bump-allocation area which
         // will force any path trying to use this to the slow gc path. The first
         // time this happens, though, the slow gc path will allocate a new chunk
         // for actual fast-bumping.
@@ -1695,7 +1696,7 @@
 
             <span class="macro">debug_assert!</span>(
                 (<span class="kw-2">*</span>next.as_ref().get()).is_none(),
-                <span class="string">&quot;slots &gt;= the `next` bump finger are always `None`&quot;
+                <span class="string">"slots &gt;= the `next` bump finger are always `None`"
             </span>);
             ptr::write(next.as_ptr(), UnsafeCell::new(<span class="prelude-val">Some</span>(externref)));
 
@@ -1785,14 +1786,14 @@
         root: NonNull&lt;VMExternData&gt;,
     ) {
         <span class="kw">let </span>root = <span class="kw">unsafe </span>{ VMExternRef::clone_from_raw(root.as_ptr().cast()) };
-        <span class="macro">log::trace!</span>(<span class="string">&quot;Found externref on stack: {:p}&quot;</span>, root);
+        <span class="macro">log::trace!</span>(<span class="string">"Found externref on stack: {:p}"</span>, root);
         precise_stack_roots.insert(VMExternRefWithTraits(root));
     }
 
-    <span class="doccomment">/// Sweep the bump allocation table after we&#39;ve discovered our precise stack
+    <span class="doccomment">/// Sweep the bump allocation table after we've discovered our precise stack
     /// roots.
     </span><span class="kw">fn </span>sweep(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="macro">log::trace!</span>(<span class="string">&quot;begin GC sweep&quot;</span>);
+        <span class="macro">log::trace!</span>(<span class="string">"begin GC sweep"</span>);
 
         <span class="comment">// Sweep our bump chunk.
         </span><span class="kw">let </span>num_filled = <span class="self">self</span>.num_filled_in_bump_chunk();
@@ -1809,7 +1810,7 @@
                 .chunk
                 .iter()
                 .all(|slot| <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>slot.get()).as_ref().is_none() }),
-            <span class="string">&quot;after sweeping the bump chunk, all slots should be `None`&quot;
+            <span class="string">"after sweeping the bump chunk, all slots should be `None`"
         </span>);
 
         <span class="comment">// If this is the first instance of gc then the initial chunk is empty,
@@ -1840,10 +1841,10 @@
         //
         // Note that this may run arbitrary code as we run externref
         // destructors. Because of our `&amp;mut` borrow above on this table,
-        // though, we&#39;re guaranteed that nothing will touch this table.
+        // though, we're guaranteed that nothing will touch this table.
         </span><span class="self">self</span>.precise_stack_roots.clear();
 
-        <span class="macro">log::trace!</span>(<span class="string">&quot;end GC sweep&quot;</span>);
+        <span class="macro">log::trace!</span>(<span class="string">"end GC sweep"</span>);
     }
 
     <span class="doccomment">/// Set whether it is okay to GC or not right now.
@@ -1891,8 +1892,8 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>.inner
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(
-                <span class="string">&quot;only deref `DebugOnly` when `cfg(debug_assertions)` or \
-                 inside a `debug_assert!(..)`&quot;
+                <span class="string">"only deref `DebugOnly` when `cfg(debug_assertions)` or \
+                 inside a `debug_assert!(..)`"
             </span>)
         }
     }
@@ -1904,8 +1905,8 @@
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.inner
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(
-                <span class="string">&quot;only deref `DebugOnly` when `cfg(debug_assertions)` or \
-                 inside a `debug_assert!(..)`&quot;
+                <span class="string">"only deref `DebugOnly` when `cfg(debug_assertions)` or \
+                 inside a `debug_assert!(..)`"
             </span>)
         }
     }
@@ -1916,7 +1917,7 @@
 /// # Unsafety
 ///
 /// You must have called `VMExternRefActivationsTable::set_stack_canary` for at
-/// least the oldest host--&gt;Wasm stack frame transition on this thread&#39;s stack
+/// least the oldest host--&gt;Wasm stack frame transition on this thread's stack
 /// (it is idempotent to call it more than once) and keep its return value alive
 /// across the duration of that host--&gt;Wasm call.
 ///
@@ -1927,7 +1928,7 @@
     module_info_lookup: <span class="kw-2">&amp;</span><span class="kw">dyn </span>ModuleInfoLookup,
     externref_activations_table: <span class="kw-2">&amp;mut </span>VMExternRefActivationsTable,
 ) {
-    <span class="macro">log::debug!</span>(<span class="string">&quot;start GC&quot;</span>);
+    <span class="macro">log::debug!</span>(<span class="string">"start GC"</span>);
 
     <span class="attr">#[cfg(debug_assertions)]
     </span><span class="macro">assert!</span>(externref_activations_table.gc_okay);
@@ -1935,7 +1936,7 @@
     <span class="macro">debug_assert!</span>({
         <span class="comment">// This set is only non-empty within this function. It is built up when
         // walking the stack and interpreting stack maps, and then drained back
-        // into the activations table&#39;s bump-allocated space at the
+        // into the activations table's bump-allocated space at the
         // end. Therefore, it should always be empty upon entering this
         // function.
         </span>externref_activations_table.precise_stack_roots.is_empty()
@@ -1948,12 +1949,12 @@
     // * finding the precise set of roots inside Wasm frames via our stack maps,
     //   and
     //
-    // * resetting our bump-allocated table&#39;s over-approximation to the
+    // * resetting our bump-allocated table's over-approximation to the
     //   newly-discovered precise set.
 
     // The `activations_table_set` is used for `debug_assert!`s checking that
     // every reference we read out from the stack via stack maps is actually in
-    // the table. If that weren&#39;t true, than either we forgot to insert a
+    // the table. If that weren't true, than either we forgot to insert a
     // reference in the table when passing it into Wasm (a bug) or we are
     // reading invalid references from the stack (another bug).
     </span><span class="kw">let </span><span class="kw-2">mut </span>activations_table_set: DebugOnly&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt; = Default::default();
@@ -1963,30 +1964,30 @@
         });
     }
 
-    <span class="macro">log::trace!</span>(<span class="string">&quot;begin GC trace&quot;</span>);
+    <span class="macro">log::trace!</span>(<span class="string">"begin GC trace"</span>);
     Backtrace::trace(limits, |frame| {
         <span class="kw">let </span>pc = frame.pc();
-        <span class="macro">debug_assert!</span>(pc != <span class="number">0</span>, <span class="string">&quot;we should always get a valid PC for Wasm frames&quot;</span>);
+        <span class="macro">debug_assert!</span>(pc != <span class="number">0</span>, <span class="string">"we should always get a valid PC for Wasm frames"</span>);
 
         <span class="kw">let </span>fp = frame.fp();
         <span class="macro">debug_assert!</span>(
             fp != <span class="number">0</span>,
-            <span class="string">&quot;we should always get a valid frame pointer for Wasm frames&quot;
+            <span class="string">"we should always get a valid frame pointer for Wasm frames"
         </span>);
 
         <span class="kw">let </span>module_info = module_info_lookup
             .lookup(pc)
-            .expect(<span class="string">&quot;should have module info for Wasm frame&quot;</span>);
+            .expect(<span class="string">"should have module info for Wasm frame"</span>);
 
         <span class="kw">let </span>stack_map = <span class="kw">match </span>module_info.lookup_stack_map(pc) {
             <span class="prelude-val">Some</span>(sm) =&gt; sm,
             <span class="prelude-val">None </span>=&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">&quot;No stack map for this Wasm frame&quot;</span>);
+                <span class="macro">log::trace!</span>(<span class="string">"No stack map for this Wasm frame"</span>);
                 <span class="kw">return </span>std::ops::ControlFlow::Continue(());
             }
         };
         <span class="macro">log::trace!</span>(
-            <span class="string">&quot;We have a stack map that maps {} words in this Wasm frame&quot;</span>,
+            <span class="string">"We have a stack map that maps {} words in this Wasm frame"</span>,
             stack_map.mapped_words()
         );
 
@@ -2001,7 +2002,7 @@
 
             <span class="kw">if </span>!stack_map.get_bit(i) {
                 <span class="macro">log::trace!</span>(
-                    <span class="string">&quot;Stack slot @ {:p} does not contain externrefs&quot;</span>,
+                    <span class="string">"Stack slot @ {:p} does not contain externrefs"</span>,
                     stack_slot <span class="kw">as </span><span class="kw-2">*const </span>(),
                 );
                 <span class="kw">continue</span>;
@@ -2009,13 +2010,13 @@
 
             <span class="kw">let </span>stack_slot = stack_slot <span class="kw">as </span><span class="kw-2">*const *mut </span>VMExternData;
             <span class="kw">let </span>r = std::ptr::read(stack_slot);
-            <span class="macro">log::trace!</span>(<span class="string">&quot;Stack slot @ {:p} = {:p}&quot;</span>, stack_slot, r);
+            <span class="macro">log::trace!</span>(<span class="string">"Stack slot @ {:p} = {:p}"</span>, stack_slot, r);
 
             <span class="macro">debug_assert!</span>(
                 r.is_null() || activations_table_set.contains(<span class="kw-2">&amp;</span>r),
-                <span class="string">&quot;every on-stack externref inside a Wasm frame should \
+                <span class="string">"every on-stack externref inside a Wasm frame should \
                  have an entry in the VMExternRefActivationsTable; \
-                 {:?} is not in the table&quot;</span>,
+                 {:?} is not in the table"</span>,
                 r
             );
 
@@ -2029,11 +2030,11 @@
 
         std::ops::ControlFlow::Continue(())
     });
-    <span class="macro">log::trace!</span>(<span class="string">&quot;end GC trace&quot;</span>);
+    <span class="macro">log::trace!</span>(<span class="string">"end GC trace"</span>);
 
     externref_activations_table.sweep();
 
-    <span class="macro">log::debug!</span>(<span class="string">&quot;end GC&quot;</span>);
+    <span class="macro">log::debug!</span>(<span class="string">"end GC"</span>);
 }
 
 <span class="attr">#[cfg(test)]
@@ -2057,7 +2058,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ref_count_is_at_correct_offset() {
-        <span class="kw">let </span>s = <span class="string">&quot;hi&quot;</span>;
+        <span class="kw">let </span>s = <span class="string">"hi"</span>;
         <span class="kw">let </span>s: <span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Any + Send + Sync) = <span class="kw-2">&amp;</span>s <span class="kw">as _</span>;
         <span class="kw">let </span>s: <span class="kw-2">*const </span>(<span class="kw">dyn </span>Any + Send + Sync) = s <span class="kw">as _</span>;
         <span class="kw">let </span>s: <span class="kw-2">*mut </span>(<span class="kw">dyn </span>Any + Send + Sync) = s <span class="kw">as _</span>;

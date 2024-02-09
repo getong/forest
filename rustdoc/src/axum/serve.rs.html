@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/axum-0.7.4/src/serve.rs`."><title>serve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="axum" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/axum-0.7.4/src/serve.rs`."><title>serve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="axum" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -594,7 +595,7 @@
 
 <span class="doccomment">/// Serve the service with the supplied listener.
 ///
-/// This method of running a service is intentionally simple and doesn&#39;t support any configuration.
+/// This method of running a service is intentionally simple and doesn't support any configuration.
 /// Use hyper or hyper-util if you need configuration.
 ///
 /// It supports both HTTP/1 as well as HTTP/2.
@@ -607,9 +608,9 @@
 /// use axum::{Router, routing::get};
 ///
 /// # async {
-/// let router = Router::new().route(&quot;/&quot;, get(|| async { &quot;Hello, World!&quot; }));
+/// let router = Router::new().route("/", get(|| async { "Hello, World!" }));
 ///
-/// let listener = tokio::net::TcpListener::bind(&quot;0.0.0.0:3000&quot;).await.unwrap();
+/// let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 /// axum::serve(listener, router).await.unwrap();
 /// # };
 /// ```
@@ -622,9 +623,9 @@
 /// use axum::routing::get;
 ///
 /// # async {
-/// let router = get(|| async { &quot;Hello, World!&quot; });
+/// let router = get(|| async { "Hello, World!" });
 ///
-/// let listener = tokio::net::TcpListener::bind(&quot;0.0.0.0:3000&quot;).await.unwrap();
+/// let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 /// axum::serve(listener, router).await.unwrap();
 /// # };
 /// ```
@@ -637,11 +638,11 @@
 /// use axum::handler::HandlerWithoutStateExt;
 ///
 /// # async {
-/// async fn handler() -&gt; &amp;&#39;static str {
-///     &quot;Hello, World!&quot;
+/// async fn handler() -&gt; &amp;'static str {
+///     "Hello, World!"
 /// }
 ///
-/// let listener = tokio::net::TcpListener::bind(&quot;0.0.0.0:3000&quot;).await.unwrap();
+/// let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 /// axum::serve(listener, handler.into_make_service()).await.unwrap();
 /// # };
 /// ```
@@ -656,11 +657,11 @@
 /// [`Handler`]: crate::handler::Handler
 /// [`HandlerWithoutStateExt::into_make_service_with_connect_info`]: crate::handler::HandlerWithoutStateExt::into_make_service_with_connect_info
 /// [`HandlerService::into_make_service_with_connect_info`]: crate::handler::HandlerService::into_make_service_with_connect_info
-</span><span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
+</span><span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
 </span><span class="kw">pub fn </span>serve&lt;M, S&gt;(tcp_listener: TcpListener, make_service: M) -&gt; Serve&lt;M, S&gt;
 <span class="kw">where
-    </span>M: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Service&lt;IncomingStream&lt;<span class="lifetime">&#39;a</span>&gt;, Error = Infallible, Response = S&gt;,
-    S: Service&lt;Request, Response = Response, Error = Infallible&gt; + Clone + Send + <span class="lifetime">&#39;static</span>,
+    </span>M: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Service&lt;IncomingStream&lt;<span class="lifetime">'a</span>&gt;, Error = Infallible, Response = S&gt;,
+    S: Service&lt;Request, Response = Response, Error = Infallible&gt; + Clone + Send + <span class="lifetime">'static</span>,
     S::Future: Send,
 {
     Serve {
@@ -671,15 +672,15 @@
 }
 
 <span class="doccomment">/// Future returned by [`serve`].
-</span><span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
-#[must_use = <span class="string">&quot;futures must be awaited or polled&quot;</span>]
+</span><span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
+#[must_use = <span class="string">"futures must be awaited or polled"</span>]
 </span><span class="kw">pub struct </span>Serve&lt;M, S&gt; {
     tcp_listener: TcpListener,
     make_service: M,
     _marker: PhantomData&lt;S&gt;,
 }
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
 </span><span class="kw">impl</span>&lt;M, S&gt; Serve&lt;M, S&gt; {
     <span class="doccomment">/// Prepares a server to handle graceful shutdown when the provided future completes.
     ///
@@ -689,9 +690,9 @@
     /// use axum::{Router, routing::get};
     ///
     /// # async {
-    /// let router = Router::new().route(&quot;/&quot;, get(|| async { &quot;Hello, World!&quot; }));
+    /// let router = Router::new().route("/", get(|| async { "Hello, World!" }));
     ///
-    /// let listener = tokio::net::TcpListener::bind(&quot;0.0.0.0:3000&quot;).await.unwrap();
+    /// let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     /// axum::serve(listener, router)
     ///     .with_graceful_shutdown(shutdown_signal())
     ///     .await
@@ -704,7 +705,7 @@
     /// ```
     </span><span class="kw">pub fn </span>with_graceful_shutdown&lt;F&gt;(<span class="self">self</span>, signal: F) -&gt; WithGracefulShutdown&lt;M, S, F&gt;
     <span class="kw">where
-        </span>F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">'static</span>,
     {
         WithGracefulShutdown {
             tcp_listener: <span class="self">self</span>.tcp_listener,
@@ -715,31 +716,31 @@
     }
 }
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
 </span><span class="kw">impl</span>&lt;M, S&gt; Debug <span class="kw">for </span>Serve&lt;M, S&gt;
 <span class="kw">where
     </span>M: Debug,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">let </span><span class="self">Self </span>{
             tcp_listener,
             make_service,
             _marker: <span class="kw">_</span>,
         } = <span class="self">self</span>;
 
-        f.debug_struct(<span class="string">&quot;Serve&quot;</span>)
-            .field(<span class="string">&quot;tcp_listener&quot;</span>, tcp_listener)
-            .field(<span class="string">&quot;make_service&quot;</span>, make_service)
+        f.debug_struct(<span class="string">"Serve"</span>)
+            .field(<span class="string">"tcp_listener"</span>, tcp_listener)
+            .field(<span class="string">"make_service"</span>, make_service)
             .finish()
     }
 }
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
 </span><span class="kw">impl</span>&lt;M, S&gt; IntoFuture <span class="kw">for </span>Serve&lt;M, S&gt;
 <span class="kw">where
-    </span>M: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Service&lt;IncomingStream&lt;<span class="lifetime">&#39;a</span>&gt;, Error = Infallible, Response = S&gt; + Send + <span class="lifetime">&#39;static</span>,
-    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; &lt;M <span class="kw">as </span>Service&lt;IncomingStream&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt;::Future: Send,
-    S: Service&lt;Request, Response = Response, Error = Infallible&gt; + Clone + Send + <span class="lifetime">&#39;static</span>,
+    </span>M: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Service&lt;IncomingStream&lt;<span class="lifetime">'a</span>&gt;, Error = Infallible, Response = S&gt; + Send + <span class="lifetime">'static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; &lt;M <span class="kw">as </span>Service&lt;IncomingStream&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;::Future: Send,
+    S: Service&lt;Request, Response = Response, Error = Infallible&gt; + Clone + Send + <span class="lifetime">'static</span>,
     S::Future: Send,
 {
     <span class="kw">type </span>Output = io::Result&lt;()&gt;;
@@ -784,10 +785,10 @@
                     </span>{
                         <span class="prelude-val">Ok</span>(()) =&gt; {}
                         <span class="prelude-val">Err</span>(_err) =&gt; {
-                            <span class="comment">// This error only appears when the client doesn&#39;t send a request and
+                            <span class="comment">// This error only appears when the client doesn't send a request and
                             // terminate the connection.
                             //
-                            // If client sends one request then terminate connection whenever, it doesn&#39;t
+                            // If client sends one request then terminate connection whenever, it doesn't
                             // appear.
                         </span>}
                     }
@@ -798,8 +799,8 @@
 }
 
 <span class="doccomment">/// Serve future with graceful shutdown enabled.
-</span><span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
-#[must_use = <span class="string">&quot;futures must be awaited or polled&quot;</span>]
+</span><span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
+#[must_use = <span class="string">"futures must be awaited or polled"</span>]
 </span><span class="kw">pub struct </span>WithGracefulShutdown&lt;M, S, F&gt; {
     tcp_listener: TcpListener,
     make_service: M,
@@ -807,14 +808,14 @@
     _marker: PhantomData&lt;S&gt;,
 }
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
 </span><span class="kw">impl</span>&lt;M, S, F&gt; Debug <span class="kw">for </span>WithGracefulShutdown&lt;M, S, F&gt;
 <span class="kw">where
     </span>M: Debug,
     S: Debug,
     F: Debug,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">let </span><span class="self">Self </span>{
             tcp_listener,
             make_service,
@@ -822,22 +823,22 @@
             _marker: <span class="kw">_</span>,
         } = <span class="self">self</span>;
 
-        f.debug_struct(<span class="string">&quot;WithGracefulShutdown&quot;</span>)
-            .field(<span class="string">&quot;tcp_listener&quot;</span>, tcp_listener)
-            .field(<span class="string">&quot;make_service&quot;</span>, make_service)
-            .field(<span class="string">&quot;signal&quot;</span>, signal)
+        f.debug_struct(<span class="string">"WithGracefulShutdown"</span>)
+            .field(<span class="string">"tcp_listener"</span>, tcp_listener)
+            .field(<span class="string">"make_service"</span>, make_service)
+            .field(<span class="string">"signal"</span>, signal)
             .finish()
     }
 }
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;tokio&quot;</span>, any(feature = <span class="string">&quot;http1&quot;</span>, feature = <span class="string">&quot;http2&quot;</span>)))]
+<span class="attr">#[cfg(all(feature = <span class="string">"tokio"</span>, any(feature = <span class="string">"http1"</span>, feature = <span class="string">"http2"</span>)))]
 </span><span class="kw">impl</span>&lt;M, S, F&gt; IntoFuture <span class="kw">for </span>WithGracefulShutdown&lt;M, S, F&gt;
 <span class="kw">where
-    </span>M: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Service&lt;IncomingStream&lt;<span class="lifetime">&#39;a</span>&gt;, Error = Infallible, Response = S&gt; + Send + <span class="lifetime">&#39;static</span>,
-    <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; &lt;M <span class="kw">as </span>Service&lt;IncomingStream&lt;<span class="lifetime">&#39;a</span>&gt;&gt;&gt;::Future: Send,
-    S: Service&lt;Request, Response = Response, Error = Infallible&gt; + Clone + Send + <span class="lifetime">&#39;static</span>,
+    </span>M: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; Service&lt;IncomingStream&lt;<span class="lifetime">'a</span>&gt;, Error = Infallible, Response = S&gt; + Send + <span class="lifetime">'static</span>,
+    <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; &lt;M <span class="kw">as </span>Service&lt;IncomingStream&lt;<span class="lifetime">'a</span>&gt;&gt;&gt;::Future: Send,
+    S: Service&lt;Request, Response = Response, Error = Infallible&gt; + Clone + Send + <span class="lifetime">'static</span>,
     S::Future: Send,
-    F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
+    F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Output = io::Result&lt;()&gt;;
     <span class="kw">type </span>IntoFuture = private::ServeFuture;
@@ -854,7 +855,7 @@
         <span class="kw">let </span>signal_tx = Arc::new(signal_tx);
         tokio::spawn(<span class="kw">async move </span>{
             signal.<span class="kw">await</span>;
-            <span class="macro">trace!</span>(<span class="string">&quot;received graceful shutdown signal. Telling tasks to shutdown&quot;</span>);
+            <span class="macro">trace!</span>(<span class="string">"received graceful shutdown signal. Telling tasks to shutdown"</span>);
             drop(signal_rx);
         });
 
@@ -870,13 +871,13 @@
                         }
                     }
                     <span class="kw">_ </span>= signal_tx.closed() =&gt; {
-                        <span class="macro">trace!</span>(<span class="string">&quot;signal received, not accepting new connections&quot;</span>);
+                        <span class="macro">trace!</span>(<span class="string">"signal received, not accepting new connections"</span>);
                         <span class="kw">break</span>;
                     }
                 };
                 <span class="kw">let </span>tcp_stream = TokioIo::new(tcp_stream);
 
-                <span class="macro">trace!</span>(<span class="string">&quot;connection {remote_addr} accepted&quot;</span>);
+                <span class="macro">trace!</span>(<span class="string">"connection {remote_addr} accepted"</span>);
 
                 poll_fn(|cx| make_service.poll_ready(cx))
                     .<span class="kw">await
@@ -910,18 +911,18 @@
                         <span class="macro">tokio::select! </span>{
                             result = conn.as_mut() =&gt; {
                                 <span class="kw">if let </span><span class="prelude-val">Err</span>(_err) = result {
-                                    <span class="macro">trace!</span>(<span class="string">&quot;failed to serve connection: {_err:#}&quot;</span>);
+                                    <span class="macro">trace!</span>(<span class="string">"failed to serve connection: {_err:#}"</span>);
                                 }
                                 <span class="kw">break</span>;
                             }
                             <span class="kw">_ </span>= <span class="kw-2">&amp;mut </span>signal_closed =&gt; {
-                                <span class="macro">trace!</span>(<span class="string">&quot;signal received in task, starting graceful shutdown&quot;</span>);
+                                <span class="macro">trace!</span>(<span class="string">"signal received in task, starting graceful shutdown"</span>);
                                 conn.as_mut().graceful_shutdown();
                             }
                         }
                     }
 
-                    <span class="macro">trace!</span>(<span class="string">&quot;connection {remote_addr} closed&quot;</span>);
+                    <span class="macro">trace!</span>(<span class="string">"connection {remote_addr} closed"</span>);
 
                     drop(close_rx);
                 });
@@ -931,7 +932,7 @@
             drop(tcp_listener);
 
             <span class="macro">trace!</span>(
-                <span class="string">&quot;waiting for {} task(s) to finish&quot;</span>,
+                <span class="string">"waiting for {} task(s) to finish"</span>,
                 close_tx.receiver_count()
             );
             close_tx.closed().<span class="kw">await</span>;
@@ -962,14 +963,14 @@
             //
             // &gt; A possible scenario is that the process has hit the max open files
             // &gt; allowed, and so trying to accept a new connection will fail with
-            // &gt; `EMFILE`. In some cases, it&#39;s preferable to just wait for some time, if
+            // &gt; `EMFILE`. In some cases, it's preferable to just wait for some time, if
             // &gt; the application will likely close some files (or connections), and try
             // &gt; to accept the connection again. If this option is `true`, the error
             // &gt; will be logged at the `error` level, since it is still a big deal,
             // &gt; and then the listener will sleep for 1 second.
             //
             // hyper allowed customizing this but axum does not.
-            </span><span class="macro">error!</span>(<span class="string">&quot;accept error: {e}&quot;</span>);
+            </span><span class="macro">error!</span>(<span class="string">"accept error: {e}"</span>);
             tokio::time::sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
             <span class="prelude-val">None
         </span>}
@@ -984,20 +985,20 @@
         task::{Context, Poll},
     };
 
-    <span class="kw">pub struct </span>ServeFuture(<span class="kw">pub</span>(<span class="kw">super</span>) futures_util::future::BoxFuture&lt;<span class="lifetime">&#39;static</span>, io::Result&lt;()&gt;&gt;);
+    <span class="kw">pub struct </span>ServeFuture(<span class="kw">pub</span>(<span class="kw">super</span>) futures_util::future::BoxFuture&lt;<span class="lifetime">'static</span>, io::Result&lt;()&gt;&gt;);
 
     <span class="kw">impl </span>Future <span class="kw">for </span>ServeFuture {
         <span class="kw">type </span>Output = io::Result&lt;()&gt;;
 
         <span class="attr">#[inline]
-        </span><span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        </span><span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
             <span class="self">self</span>.<span class="number">0</span>.as_mut().poll(cx)
         }
     }
 
     <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>ServeFuture {
-        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-            f.debug_struct(<span class="string">&quot;ServeFuture&quot;</span>).finish_non_exhaustive()
+        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+            f.debug_struct(<span class="string">"ServeFuture"</span>).finish_non_exhaustive()
         }
     }
 }
@@ -1040,7 +1041,7 @@
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;S::Response, S::Error&gt;;
 
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    </span><span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="self">self</span>.project().future.poll(cx)
     }
 }
@@ -1051,12 +1052,12 @@
 ///
 /// [`IntoMakeServiceWithConnectInfo`]: crate::extract::connect_info::IntoMakeServiceWithConnectInfo
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>IncomingStream&lt;<span class="lifetime">&#39;a</span>&gt; {
-    tcp_stream: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>TokioIo&lt;TcpStream&gt;,
+</span><span class="kw">pub struct </span>IncomingStream&lt;<span class="lifetime">'a</span>&gt; {
+    tcp_stream: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>TokioIo&lt;TcpStream&gt;,
     remote_addr: SocketAddr,
 }
 
-<span class="kw">impl </span>IncomingStream&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">impl </span>IncomingStream&lt;<span class="lifetime">'_</span>&gt; {
     <span class="doccomment">/// Returns the local address that this stream is bound to.
     </span><span class="kw">pub fn </span>local_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::io::Result&lt;SocketAddr&gt; {
         <span class="self">self</span>.tcp_stream.inner().local_addr()
@@ -1081,7 +1082,7 @@
     </span><span class="kw">async fn </span>if_it_compiles_it_works() {
         <span class="kw">let </span>router: Router = Router::new();
 
-        <span class="kw">let </span>addr = <span class="string">&quot;0.0.0.0:0&quot;</span>;
+        <span class="kw">let </span>addr = <span class="string">"0.0.0.0:0"</span>;
 
         <span class="comment">// router
         </span>serve(TcpListener::bind(addr).<span class="kw">await</span>.unwrap(), router.clone());

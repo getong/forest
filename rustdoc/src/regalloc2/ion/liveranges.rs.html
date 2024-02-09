@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/regalloc2-0.9.3/src/ion/liveranges.rs`."><title>liveranges.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="regalloc2" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/regalloc2-0.9.3/src/ion/liveranges.rs`."><title>liveranges.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="regalloc2" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1060,7 +1061,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, F: Function&gt; Env&lt;<span class="lifetime">&#39;a</span>, F&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, F: Function&gt; Env&lt;<span class="lifetime">'a</span>, F&gt; {
     <span class="kw">pub fn </span>create_pregs_and_vregs(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="comment">// Create PRegs from the env.
         </span><span class="self">self</span>.pregs.resize(
@@ -1082,14 +1083,14 @@
         }
         <span class="comment">// Create VRegs from the vreg count.
         </span><span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.func.num_vregs() {
-            <span class="comment">// We&#39;ll fill in the real details when we see the def.
+            <span class="comment">// We'll fill in the real details when we see the def.
             </span><span class="self">self</span>.vregs.add(
                 VReg::new(idx, RegClass::Int),
                 VRegData {
                     ranges: <span class="macro">smallvec!</span>[],
                     blockparam: Block::invalid(),
                     is_ref: <span class="bool-val">false</span>,
-                    <span class="comment">// We&#39;ll learn the RegClass as we scan the code.
+                    <span class="comment">// We'll learn the RegClass as we scan the code.
                     </span>class: <span class="prelude-val">None</span>,
                 },
             );
@@ -1115,7 +1116,7 @@
         vreg: VRegIndex,
         <span class="kw-2">mut </span>range: CodeRange,
     ) -&gt; LiveRangeIndex {
-        <span class="macro">trace!</span>(<span class="string">&quot;add_liverange_to_vreg: vreg {:?} range {:?}&quot;</span>, vreg, range);
+        <span class="macro">trace!</span>(<span class="string">"add_liverange_to_vreg: vreg {:?} range {:?}"</span>, vreg, range);
 
         <span class="comment">// Invariant: as we are building liveness information, we
         // *always* process instructions bottom-to-top, and as a
@@ -1138,7 +1139,7 @@
                     // existing range, return it.
                     </span><span class="kw">return </span>last_range_index;
                 }
-                <span class="comment">// If this range&#39;s end falls in the middle of the last
+                <span class="comment">// If this range's end falls in the middle of the last
                 // range, truncate it to be contiguous so we can merge
                 // below.
                 </span><span class="kw">if </span>range.to &gt;= last_range.from &amp;&amp; range.to &lt;= last_range.to {
@@ -1147,7 +1148,7 @@
             }
             <span class="macro">debug_assert!</span>(
                 range.to &lt;= last_range.from,
-                <span class="string">&quot;range {:?}, last_range {:?}&quot;</span>,
+                <span class="string">"range {:?}, last_range {:?}"</span>,
                 range,
                 last_range
             );
@@ -1190,7 +1191,7 @@
         u.weight = weight.to_bits();
 
         <span class="macro">trace!</span>(
-            <span class="string">&quot;insert use {:?} into lr {:?} with weight {:?}&quot;</span>,
+            <span class="string">"insert use {:?} into lr {:?} with weight {:?}"</span>,
             u,
             into,
             weight,
@@ -1206,7 +1207,7 @@
         </span><span class="kw">let </span>range_weight = <span class="self">self</span>.ranges[into].uses_spill_weight() + weight;
         <span class="self">self</span>.ranges[into].set_uses_spill_weight(range_weight);
         <span class="macro">trace!</span>(
-            <span class="string">&quot;  -&gt; now range has weight {:?}&quot;</span>,
+            <span class="string">"  -&gt; now range has weight {:?}"</span>,
             <span class="self">self</span>.ranges[into].uses_spill_weight(),
         );
     }
@@ -1225,7 +1226,7 @@
     </span>}
 
     <span class="kw">pub fn </span>add_liverange_to_preg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, range: CodeRange, reg: PReg) {
-        <span class="macro">trace!</span>(<span class="string">&quot;adding liverange to preg: {:?} to {}&quot;</span>, range, reg);
+        <span class="macro">trace!</span>(<span class="string">"adding liverange to preg: {:?} to {}"</span>, range, reg);
         <span class="kw">let </span>preg_idx = PRegIndex::new(reg.index());
         <span class="kw">let </span>res = <span class="self">self</span>.pregs[preg_idx.index()]
             .allocations
@@ -1259,12 +1260,12 @@
             workqueue_set.remove(<span class="kw-2">&amp;</span>block);
             <span class="kw">let </span>insns = <span class="self">self</span>.func.block_insns(block);
 
-            <span class="macro">trace!</span>(<span class="string">&quot;computing liveins for block{}&quot;</span>, block.index());
+            <span class="macro">trace!</span>(<span class="string">"computing liveins for block{}"</span>, block.index());
 
             <span class="self">self</span>.stats.livein_iterations += <span class="number">1</span>;
 
             <span class="kw">let </span><span class="kw-2">mut </span>live = <span class="self">self</span>.liveouts[block.index()].clone();
-            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; initial liveout set: {:?}&quot;</span>, live);
+            <span class="macro">trace!</span>(<span class="string">" -&gt; initial liveout set: {:?}"</span>, live);
 
             <span class="comment">// Include outgoing blockparams in the initial live set.
             </span><span class="kw">if </span><span class="self">self</span>.func.is_branch(insns.last()) {
@@ -1284,7 +1285,7 @@
                         }
                         <span class="kw">if </span>op.pos() == <span class="kw-2">*</span>pos {
                             <span class="kw">let </span>was_live = live.get(op.vreg().vreg());
-                            <span class="macro">trace!</span>(<span class="string">&quot;op {:?} was_live = {}&quot;</span>, op, was_live);
+                            <span class="macro">trace!</span>(<span class="string">"op {:?} was_live = {}"</span>, op, was_live);
                             <span class="kw">match </span>op.kind() {
                                 OperandKind::Use =&gt; {
                                     live.set(op.vreg().vreg(), <span class="bool-val">true</span>);
@@ -1312,14 +1313,14 @@
                 }
             }
 
-            <span class="macro">trace!</span>(<span class="string">&quot;computed liveins at block{}: {:?}&quot;</span>, block.index(), live);
+            <span class="macro">trace!</span>(<span class="string">"computed liveins at block{}: {:?}"</span>, block.index(), live);
             <span class="self">self</span>.liveins[block.index()] = live;
         }
 
         <span class="comment">// Check that there are no liveins to the entry block.
         </span><span class="kw">if </span>!<span class="self">self</span>.liveins[<span class="self">self</span>.func.entry_block().index()].is_empty() {
             <span class="macro">trace!</span>(
-                <span class="string">&quot;non-empty liveins to entry block: {:?}&quot;</span>,
+                <span class="string">"non-empty liveins to entry block: {:?}"</span>,
                 <span class="self">self</span>.liveins[<span class="self">self</span>.func.entry_block().index()]
             );
             <span class="kw">return </span><span class="prelude-val">Err</span>(RegAllocError::EntryLivein);
@@ -1337,8 +1338,8 @@
         // in LiveRanges.
         //
         // We already computed precise liveouts and liveins for every
-        // block above, so we don&#39;t need to run an iterative algorithm
-        // here; instead, every block&#39;s computation is purely local,
+        // block above, so we don't need to run an iterative algorithm
+        // here; instead, every block's computation is purely local,
         // from end to start.
 
         // Track current LiveRange for each vreg.
@@ -1388,7 +1389,7 @@
                     to: <span class="self">self</span>.cfginfo.block_exit[block.index()].next(),
                 };
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot;vreg {:?} live at end of block --&gt; create range {:?}&quot;</span>,
+                    <span class="string">"vreg {:?} live at end of block --&gt; create range {:?}"</span>,
                     VRegIndex::new(vreg),
                     range
                 );
@@ -1447,14 +1448,14 @@
                         <span class="kw">match </span>operand.pos() {
                             OperandPos::Late =&gt; {
                                 <span class="comment">// See note in fuzzing/func.rs: we
-                                // can&#39;t allow this, because there
+                                // can't allow this, because there
                                 // would be no way to move a value
                                 // into place for a late use *after*
                                 // the early point (i.e. in the middle
                                 // of the instruction).
                                 </span><span class="macro">assert!</span>(
                                     operand.kind() == OperandKind::Def,
-                                    <span class="string">&quot;Invalid operand: fixed constraint on Use/Mod at Late point&quot;
+                                    <span class="string">"Invalid operand: fixed constraint on Use/Mod at Late point"
                                 </span>);
 
                                 late_def_fixed.push(preg);
@@ -1471,7 +1472,7 @@
                         <span class="kw">match </span>operand.pos() {
                             OperandPos::Early <span class="kw">if </span>live.get(operand.vreg().vreg()) =&gt; {
                                 <span class="macro">assert!</span>(operand.kind() == OperandKind::Use,
-                                            <span class="string">&quot;Invalid operand: fixed constraint on Def/Mod at Early position&quot;</span>);
+                                            <span class="string">"Invalid operand: fixed constraint on Def/Mod at Early position"</span>);
 
                                 <span class="comment">// If we have a constraint at the
                                 // Early point for a fixed preg, and
@@ -1484,7 +1485,7 @@
                                 // constraint. See #53.
                                 //
                                 // We adjust the def liverange and Use
-                                // to an &quot;early&quot; position to reserve
+                                // to an "early" position to reserve
                                 // the register, it still must not be
                                 // used by some other vreg at the
                                 // use-site.
@@ -1498,9 +1499,9 @@
                                 {
                                     <span class="macro">trace!</span>(
                                         <span class="macro">concat!</span>(
-                                            <span class="string">&quot;-&gt; operand {:?} is fixed to preg {:?}, &quot;</span>,
-                                            <span class="string">&quot;is downward live, and there is also a &quot;</span>,
-                                            <span class="string">&quot;def or clobber at this preg&quot;
+                                            <span class="string">"-&gt; operand {:?} is fixed to preg {:?}, "</span>,
+                                            <span class="string">"is downward live, and there is also a "</span>,
+                                            <span class="string">"def or clobber at this preg"
                                         </span>),
                                         operand,
                                         preg
@@ -1542,7 +1543,7 @@
                 <span class="comment">// Process defs and uses.
                 </span><span class="kw">for </span><span class="kw-2">&amp;</span>cur_pos <span class="kw">in </span><span class="kw-2">&amp;</span>[InstPosition::After, InstPosition::Before] {
                     <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.func.inst_operands(inst).len() {
-                        <span class="comment">// don&#39;t borrow `self`
+                        <span class="comment">// don't borrow `self`
                         </span><span class="kw">let </span>operand = operand_rewrites
                             .get(<span class="kw-2">&amp;</span>i)
                             .cloned()
@@ -1572,14 +1573,14 @@
                         }
 
                         <span class="macro">trace!</span>(
-                            <span class="string">&quot;processing inst{} operand at {:?}: {:?}&quot;</span>,
+                            <span class="string">"processing inst{} operand at {:?}: {:?}"</span>,
                             inst.index(),
                             pos,
                             operand
                         );
 
-                        <span class="comment">// If this is a &quot;fixed non-allocatable
-                        // register&quot; operand, set the alloc
+                        <span class="comment">// If this is a "fixed non-allocatable
+                        // register" operand, set the alloc
                         // immediately and then ignore the operand
                         // hereafter.
                         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(preg) = operand.as_fixed_nonallocatable() {
@@ -1589,11 +1590,11 @@
 
                         <span class="kw">match </span>operand.kind() {
                             OperandKind::Def =&gt; {
-                                <span class="macro">trace!</span>(<span class="string">&quot;Def of {} at {:?}&quot;</span>, operand.vreg(), pos);
+                                <span class="macro">trace!</span>(<span class="string">"Def of {} at {:?}"</span>, operand.vreg(), pos);
 
                                 <span class="comment">// Get or create the LiveRange.
                                 </span><span class="kw">let </span><span class="kw-2">mut </span>lr = vreg_ranges[operand.vreg().vreg()];
-                                <span class="macro">trace!</span>(<span class="string">&quot; -&gt; has existing LR {:?}&quot;</span>, lr);
+                                <span class="macro">trace!</span>(<span class="string">" -&gt; has existing LR {:?}"</span>, lr);
                                 <span class="comment">// If there was no liverange (dead def), create a trivial one.
                                 </span><span class="kw">if </span>!live.get(operand.vreg().vreg()) {
                                     <span class="kw">let </span>from = pos;
@@ -1608,7 +1609,7 @@
                                         VRegIndex::new(operand.vreg().vreg()),
                                         CodeRange { from, to },
                                     );
-                                    <span class="macro">trace!</span>(<span class="string">&quot; -&gt; invalid; created {:?}&quot;</span>, lr);
+                                    <span class="macro">trace!</span>(<span class="string">" -&gt; invalid; created {:?}"</span>, lr);
                                     vreg_ranges[operand.vreg().vreg()] = lr;
                                     live.set(operand.vreg().vreg(), <span class="bool-val">true</span>);
                                 }
@@ -1625,7 +1626,7 @@
                                     </span><span class="kw">if </span><span class="self">self</span>.ranges[lr].range.from
                                         == <span class="self">self</span>.cfginfo.block_entry[block.index()]
                                     {
-                                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; started at block start; trimming to {:?}&quot;</span>, pos);
+                                        <span class="macro">trace!</span>(<span class="string">" -&gt; started at block start; trimming to {:?}"</span>, pos);
                                         <span class="self">self</span>.ranges[lr].range.from = pos;
                                     }
 
@@ -1638,7 +1639,7 @@
                             }
                             OperandKind::Use =&gt; {
                                 <span class="comment">// Create/extend the LiveRange if it
-                                // doesn&#39;t already exist, and add the use
+                                // doesn't already exist, and add the use
                                 // to the range.
                                 </span><span class="kw">let </span><span class="kw-2">mut </span>lr = vreg_ranges[operand.vreg().vreg()];
                                 <span class="kw">if </span>!live.get(operand.vreg().vreg()) {
@@ -1654,7 +1655,7 @@
                                 }
                                 <span class="macro">debug_assert!</span>(lr.is_valid());
 
-                                <span class="macro">trace!</span>(<span class="string">&quot;Use of {:?} at {:?} -&gt; {:?}&quot;</span>, operand, pos, lr,);
+                                <span class="macro">trace!</span>(<span class="string">"Use of {:?} at {:?} -&gt; {:?}"</span>, operand, pos, lr,);
 
                                 <span class="self">self</span>.insert_use_into_liverange(lr, Use::new(operand, pos, i <span class="kw">as </span>u8));
 
@@ -1666,11 +1667,11 @@
                 }
 
                 <span class="kw">if </span><span class="self">self</span>.func.requires_refs_on_stack(inst) {
-                    <span class="macro">trace!</span>(<span class="string">&quot;inst{} is safepoint&quot;</span>, inst.index());
+                    <span class="macro">trace!</span>(<span class="string">"inst{} is safepoint"</span>, inst.index());
                     <span class="self">self</span>.safepoints.push(inst);
                     <span class="kw">for </span>vreg <span class="kw">in </span>live.iter() {
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(safepoints) = <span class="self">self</span>.safepoints_per_vreg.get_mut(<span class="kw-2">&amp;</span>vreg) {
-                            <span class="macro">trace!</span>(<span class="string">&quot;vreg v{} live at safepoint inst{}&quot;</span>, vreg, inst.index());
+                            <span class="macro">trace!</span>(<span class="string">"vreg v{} live at safepoint inst{}"</span>, vreg, inst.index());
                             safepoints.insert(inst);
                         }
                     }
@@ -1761,7 +1762,7 @@
                     );
 
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;Safepoint-induced stack use of {:?} at {:?} -&gt; {:?}&quot;</span>,
+                        <span class="string">"Safepoint-induced stack use of {:?} at {:?} -&gt; {:?}"</span>,
                         operand,
                         pos,
                         index,
@@ -1807,7 +1808,7 @@
             <span class="kw">for </span>range_idx <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.vregs[vreg].ranges.len() {
                 <span class="kw">let </span>entry = <span class="self">self</span>.vregs[vreg].ranges[range_idx];
                 <span class="kw">let </span>range = entry.index;
-                <span class="macro">trace!</span>(<span class="string">&quot;multi-fixed-reg cleanup: vreg {:?} range {:?}&quot;</span>, vreg, range,);
+                <span class="macro">trace!</span>(<span class="string">"multi-fixed-reg cleanup: vreg {:?} range {:?}"</span>, vreg, range,);
 
                 <span class="comment">// Find groups of uses that occur in at the same program point.
                 </span><span class="kw">for </span>uses <span class="kw">in </span><span class="self">self</span>.ranges[range].uses.linear_group_by_key_mut(|u| u.pos) {
@@ -1843,7 +1844,7 @@
                             }
                             <span class="comment">// Maybe this could be supported in this future...
                             </span>OperandConstraint::Stack =&gt; <span class="macro">panic!</span>(
-                                <span class="string">&quot;multiple uses of vreg with a Stack constraint are not supported&quot;
+                                <span class="string">"multiple uses of vreg with a Stack constraint are not supported"
                             </span>),
                         }
                     }
@@ -1870,7 +1871,7 @@
                             <span class="kw">let </span>vreg_idx = VRegIndex::new(u.operand.vreg().vreg());
                             <span class="kw">let </span>preg_idx = PRegIndex::new(preg.index());
                             <span class="macro">trace!</span>(
-                                <span class="string">&quot;at pos {:?}, vreg {:?} has fixed constraint to preg {:?}&quot;</span>,
+                                <span class="string">"at pos {:?}, vreg {:?} has fixed constraint to preg {:?}"</span>,
                                 u.pos,
                                 vreg_idx,
                                 preg_idx
@@ -1888,7 +1889,7 @@
                                 <span class="kw">continue</span>;
                             }
 
-                            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; duplicate; switching to constraint Any&quot;</span>);
+                            <span class="macro">trace!</span>(<span class="string">" -&gt; duplicate; switching to constraint Any"</span>);
                             <span class="self">self</span>.multi_fixed_reg_fixups.push(MultiFixedRegFixup {
                                 pos: u.pos,
                                 from_slot: source_slot,
@@ -1903,7 +1904,7 @@
                                 u.operand.kind(),
                                 u.operand.pos(),
                             );
-                            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; extra clobber {} at inst{}&quot;</span>, preg, u.pos.inst().index());
+                            <span class="macro">trace!</span>(<span class="string">" -&gt; extra clobber {} at inst{}"</span>, preg, u.pos.inst().index());
                             extra_clobbers.push((preg, u.pos));
                         }
                     }

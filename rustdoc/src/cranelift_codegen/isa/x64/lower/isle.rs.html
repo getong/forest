@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/lower/isle.rs`."><title>isle.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/lower/isle.rs`."><title>isle.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1172,7 +1173,7 @@
     generated_code::constructor_lower_branch(<span class="kw-2">&amp;mut </span>isle_ctx, branch, <span class="kw-2">&amp;</span>targets.to_vec())
 }
 
-<span class="kw">impl </span>Context <span class="kw">for </span>IsleContext&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, MInst, X64Backend&gt; {
+<span class="kw">impl </span>Context <span class="kw">for </span>IsleContext&lt;<span class="lifetime">'_</span>, <span class="lifetime">'_</span>, MInst, X64Backend&gt; {
     <span class="macro">isle_lower_prelude_methods!</span>();
     <span class="macro">isle_prelude_caller_methods!</span>(X64ABIMachineSpec, X64CallSite);
 
@@ -1186,7 +1187,7 @@
         <span class="macro">debug_assert_eq!</span>(
             <span class="self">self</span>.lower_ctx.abi().call_conv(<span class="self">self</span>.lower_ctx.sigs()),
             caller_conv,
-            <span class="string">&quot;Can only do `return_call`s from within a `tail` calling convention function&quot;
+            <span class="string">"Can only do `return_call`s from within a `tail` calling convention function"
         </span>);
 
         <span class="kw">let </span>callee = <span class="self">self</span>.put_in_reg(callee);
@@ -1215,7 +1216,7 @@
         <span class="macro">debug_assert_eq!</span>(
             <span class="self">self</span>.lower_ctx.abi().call_conv(<span class="self">self</span>.lower_ctx.sigs()),
             caller_conv,
-            <span class="string">&quot;Can only do `return_call`s from within a `tail` calling convention function&quot;
+            <span class="string">"Can only do `return_call`s from within a `tail` calling convention function"
         </span>);
 
         <span class="kw">let </span>call_site = X64CallSite::from_func(
@@ -1698,7 +1699,7 @@
     </span><span class="kw">fn </span>ty_int_bool_or_ref(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: Type) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
         <span class="kw">match </span>ty {
             types::I8 | types::I16 | types::I32 | types::I64 | types::R64 =&gt; <span class="prelude-val">Some</span>(()),
-            types::R32 =&gt; <span class="macro">panic!</span>(<span class="string">&quot;shouldn&#39;t have 32-bits refs on x64&quot;</span>),
+            types::R32 =&gt; <span class="macro">panic!</span>(<span class="string">"shouldn't have 32-bits refs on x64"</span>),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
@@ -1792,7 +1793,7 @@
             <span class="kw-2">&amp;</span>[a],
             <span class="kw-2">&amp;</span>[output_reg],
         )
-        .expect(<span class="string">&quot;Failed to emit LibCall&quot;</span>);
+        .expect(<span class="string">"Failed to emit LibCall"</span>);
 
         output_reg.to_reg()
     }
@@ -1810,7 +1811,7 @@
             <span class="kw-2">&amp;</span>[a, b],
             <span class="kw-2">&amp;</span>[output_reg],
         )
-        .expect(<span class="string">&quot;Failed to emit LibCall&quot;</span>);
+        .expect(<span class="string">"Failed to emit LibCall"</span>);
 
         output_reg.to_reg()
     }
@@ -1828,7 +1829,7 @@
             <span class="kw-2">&amp;</span>[a, b, c],
             <span class="kw-2">&amp;</span>[output_reg],
         )
-        .expect(<span class="string">&quot;Failed to emit LibCall&quot;</span>);
+        .expect(<span class="string">"Failed to emit LibCall"</span>);
 
         output_reg.to_reg()
     }
@@ -2045,7 +2046,7 @@
     <span class="kw">fn </span>pshufhw_lhs_imm(<span class="kw-2">&amp;mut </span><span class="self">self</span>, imm: Immediate) -&gt; <span class="prelude-ty">Option</span>&lt;u8&gt; {
         <span class="comment">// Similar to `pshuflw` except that the first four operands must be
         // fixed and the second four are offset by an extra 4 and tested to
-        // make sure they&#39;re all in the range [4, 8).
+        // make sure they're all in the range [4, 8).
         </span><span class="kw">let </span>(a, b, c, d, e, f, g, h) = <span class="self">self</span>.shuffle16_from_imm(imm)<span class="question-mark">?</span>;
         <span class="kw">let </span>e = e.checked_sub(<span class="number">4</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>f = f.checked_sub(<span class="number">4</span>)<span class="question-mark">?</span>;
@@ -2060,7 +2061,7 @@
 
     <span class="kw">fn </span>pshufhw_rhs_imm(<span class="kw-2">&amp;mut </span><span class="self">self</span>, imm: Immediate) -&gt; <span class="prelude-ty">Option</span>&lt;u8&gt; {
         <span class="comment">// Note that everything here is offset by at least 8 and the upper
-        // bits are offset by 12 to test they&#39;re in the range of [12, 16).
+        // bits are offset by 12 to test they're in the range of [12, 16).
         </span><span class="kw">let </span>(a, b, c, d, e, f, g, h) = <span class="self">self</span>.shuffle16_from_imm(imm)<span class="question-mark">?</span>;
         <span class="kw">let </span>a = a.checked_sub(<span class="number">8</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>b = b.checked_sub(<span class="number">8</span>)<span class="question-mark">?</span>;
@@ -2132,7 +2133,7 @@
     }
 }
 
-<span class="kw">impl </span>IsleContext&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, MInst, X64Backend&gt; {
+<span class="kw">impl </span>IsleContext&lt;<span class="lifetime">'_</span>, <span class="lifetime">'_</span>, MInst, X64Backend&gt; {
     <span class="macro">isle_prelude_method_helpers!</span>(X64CallSite);
 
     <span class="kw">fn </span>load_xmm_unaligned(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: SyntheticAmode) -&gt; Xmm {
@@ -2146,7 +2147,7 @@
     }
 }
 
-<span class="comment">// Since x64 doesn&#39;t have 8x16 shifts and we must use a 16x8 shift instead, we
+<span class="comment">// Since x64 doesn't have 8x16 shifts and we must use a 16x8 shift instead, we
 // need to fix up the bits that migrate from one half of the lane to the
 // other. Each 16-byte mask is indexed by the shift amount: e.g. if we shift
 // right by 0 (no movement), we want to retain all the bits so we mask with

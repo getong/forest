@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/engine.rs`."><title>engine.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/engine.rs`."><title>engine.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -760,12 +761,12 @@
 <span class="kw">use </span>object::write::{Object, StandardSegment};
 <span class="kw">use </span>object::SectionKind;
 <span class="kw">use </span>once_cell::sync::OnceCell;
-<span class="attr">#[cfg(feature = <span class="string">&quot;parallel-compilation&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"parallel-compilation"</span>)]
 </span><span class="kw">use </span>rayon::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::sync::atomic::{AtomicU64, Ordering};
 <span class="kw">use </span>std::sync::Arc;
-<span class="attr">#[cfg(feature = <span class="string">&quot;cache&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"cache"</span>)]
 </span><span class="kw">use </span>wasmtime_cache::CacheConfig;
 <span class="kw">use </span>wasmtime_environ::obj;
 <span class="kw">use </span>wasmtime_environ::{FlagValue, ObjectKind};
@@ -782,14 +783,14 @@
 /// references to it have gone away.
 ///
 /// Engines store global configuration preferences such as compilation settings,
-/// enabled features, etc. You&#39;ll likely only need at most one of these for a
+/// enabled features, etc. You'll likely only need at most one of these for a
 /// program.
 ///
 /// ## Engines and `Clone`
 ///
 /// Using `clone` on an `Engine` is a cheap operation. It will not create an
 /// entirely new engine, but rather just a new reference to the existing engine.
-/// In other words it&#39;s a shallow copy, not a deep copy.
+/// In other words it's a shallow copy, not a deep copy.
 ///
 /// ## Engines and `Default`
 ///
@@ -803,7 +804,7 @@
 
 <span class="kw">struct </span>EngineInner {
     config: Config,
-    <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+    <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
     </span>compiler: Box&lt;<span class="kw">dyn </span>wasmtime_environ::Compiler&gt;,
     allocator: Box&lt;<span class="kw">dyn </span>InstanceAllocator + Send + Sync&gt;,
     profiler: Box&lt;<span class="kw">dyn </span>ProfilingAgent&gt;,
@@ -811,7 +812,7 @@
     epoch: AtomicU64,
     unique_id_allocator: CompiledModuleIdAllocator,
 
-    <span class="comment">// One-time check of whether the compiler&#39;s settings, if present, are
+    <span class="comment">// One-time check of whether the compiler's settings, if present, are
     // compatible with the native host.
     </span>compatible_with_native_host: OnceCell&lt;<span class="prelude-ty">Result</span>&lt;(), String&gt;&gt;,
 }
@@ -830,7 +831,7 @@
     /// to `true`, but explicitly disable these two compiler settings
     /// will cause errors.
     </span><span class="kw">pub fn </span>new(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;Engine&gt; {
-        <span class="comment">// Ensure that wasmtime_runtime&#39;s signal handlers are configured. This
+        <span class="comment">// Ensure that wasmtime_runtime's signal handlers are configured. This
         // is the per-program initialization required for handling traps, such
         // as configuring signals, vectored exception handlers, etc.
         </span>wasmtime_runtime::init_traps(<span class="kw">crate</span>::module::is_wasm_trap_pc);
@@ -840,7 +841,7 @@
         <span class="kw">let </span>config = config.clone();
         config.validate()<span class="question-mark">?</span>;
 
-        <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+        <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
         </span><span class="kw">let </span>(config, compiler) = config.build_compiler()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>allocator = config.build_allocator()<span class="question-mark">?</span>;
@@ -848,7 +849,7 @@
 
         <span class="prelude-val">Ok</span>(Engine {
             inner: Arc::new(EngineInner {
-                <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+                <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
                 </span>compiler,
                 config,
                 allocator,
@@ -863,7 +864,7 @@
 
     <span class="doccomment">/// Eagerly initialize thread-local functionality shared by all [`Engine`]s.
     ///
-    /// Wasmtime&#39;s implementation on some platforms may involve per-thread
+    /// Wasmtime's implementation on some platforms may involve per-thread
     /// setup that needs to happen whenever WebAssembly is invoked. This setup
     /// can take on the order of a few hundred microseconds, whereas the
     /// overhead of calling WebAssembly is otherwise on the order of a few
@@ -888,7 +889,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.inner.config
     }
 
-    <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+    <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>compiler(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>wasmtime_environ::Compiler {
         <span class="kw-2">&amp;*</span><span class="self">self</span>.inner.compiler
     }
@@ -901,7 +902,7 @@
         <span class="self">self</span>.inner.profiler.as_ref()
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;cache&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"cache"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>cache_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CacheConfig {
         <span class="kw-2">&amp;</span><span class="self">self</span>.config().cache_config
     }
@@ -926,7 +927,7 @@
     <span class="doccomment">/// Increments the epoch.
     ///
     /// When using epoch-based interruption, currently-executing Wasm
-    /// code within this engine will trap or yield &quot;soon&quot; when the
+    /// code within this engine will trap or yield "soon" when the
     /// epoch deadline is reached or exceeded. (The configuration, and
     /// the deadline, are set on the `Store`.) The intent of the
     /// design is for this method to be called by the embedder at some
@@ -972,10 +973,10 @@
     ///
     /// [binary]: https://webassembly.github.io/spec/core/binary/index.html
     /// [text]: https://webassembly.github.io/spec/core/text/index.html
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
     </span><span class="kw">pub fn </span>precompile_module(<span class="kw-2">&amp;</span><span class="self">self</span>, bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">&quot;wat&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">"wat"</span>)]
         </span><span class="kw">let </span>bytes = wat::parse_bytes(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
         <span class="kw">let </span>(mmap, <span class="kw">_</span>) = <span class="kw">crate</span>::Module::build_artifacts(<span class="self">self</span>, <span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(mmap.to_vec())
@@ -983,12 +984,12 @@
 
     <span class="doccomment">/// Same as [`Engine::precompile_module`] except for a
     /// [`Component`](crate::component::Component)
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))))]
-    #[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
-    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;component-model&quot;</span>)))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))))]
+    #[cfg(feature = <span class="string">"component-model"</span>)]
+    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"component-model"</span>)))]
     </span><span class="kw">pub fn </span>precompile_component(<span class="kw-2">&amp;</span><span class="self">self</span>, bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="attr">#[cfg(feature = <span class="string">&quot;wat&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">"wat"</span>)]
         </span><span class="kw">let </span>bytes = wat::parse_bytes(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
         <span class="kw">let </span>(mmap, <span class="kw">_</span>) = <span class="kw">crate</span>::component::Component::build_artifacts(<span class="self">self</span>, <span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(mmap.to_vec())
@@ -1000,9 +1001,9 @@
     /// are compatible with a different [`Engine`] instance only if the two engines use
     /// compatible [`Config`]s. If this Hash matches between two [`Engine`]s then binaries
     /// from one are guaranteed to deserialize in the other.
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;cranelift&quot;</span>)))] </span><span class="comment">// see build.rs
-    </span><span class="kw">pub fn </span>precompile_compatibility_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>std::hash::Hash + <span class="lifetime">&#39;_ </span>{
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"cranelift"</span>)))] </span><span class="comment">// see build.rs
+    </span><span class="kw">pub fn </span>precompile_compatibility_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>std::hash::Hash + <span class="lifetime">'_ </span>{
         <span class="kw">crate</span>::module::HashedEngineCompileEnv(<span class="self">self</span>)
     }
 
@@ -1017,7 +1018,7 @@
         f: F,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;B&gt;, E&gt; {
         <span class="kw">if </span><span class="self">self</span>.config().parallel_compilation {
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parallel-compilation&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"parallel-compilation"</span>)]
             </span><span class="kw">return </span>input
                 .into_par_iter()
                 .map(|a| f(a))
@@ -1045,7 +1046,7 @@
         U: Send,
     {
         <span class="kw">if </span><span class="self">self</span>.config().parallel_compilation {
-            <span class="attr">#[cfg(feature = <span class="string">&quot;parallel-compilation&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"parallel-compilation"</span>)]
             </span><span class="kw">return </span>rayon::join(f1, f2);
         }
         (f1(), f2())
@@ -1055,15 +1056,15 @@
     /// and/or running code for.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>target(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; target_lexicon::Triple {
         <span class="comment">// If a compiler is configured, use that target.
-        </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+        </span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
         </span><span class="kw">return </span><span class="self">self</span>.compiler().triple().clone();
 
-        <span class="comment">// ... otherwise it&#39;s the native target
-        </span><span class="attr">#[cfg(not(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>)))]
+        <span class="comment">// ... otherwise it's the native target
+        </span><span class="attr">#[cfg(not(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>)))]
         </span><span class="kw">return </span>target_lexicon::Triple::host();
     }
 
-    <span class="doccomment">/// Verify that this engine&#39;s configuration is compatible with loading
+    <span class="doccomment">/// Verify that this engine's configuration is compatible with loading
     /// modules onto the native host platform.
     ///
     /// This method is used as part of `Module::new` to ensure that this
@@ -1079,15 +1080,15 @@
     }
 
     <span class="kw">fn </span>_check_compatible_with_native_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
-        <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+        <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
         </span>{
             <span class="kw">let </span>compiler = <span class="self">self</span>.compiler();
 
-            <span class="comment">// Check to see that the config&#39;s target matches the host
+            <span class="comment">// Check to see that the config's target matches the host
             </span><span class="kw">let </span>target = compiler.triple();
             <span class="kw">if </span><span class="kw-2">*</span>target != target_lexicon::Triple::host() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(
-                    <span class="string">&quot;target &#39;{}&#39; specified in the configuration does not match the host&quot;</span>,
+                    <span class="string">"target '{}' specified in the configuration does not match the host"</span>,
                     target
                 ));
             }
@@ -1103,12 +1104,12 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Checks to see whether the &quot;shared flag&quot;, something enabled for
+    <span class="doccomment">/// Checks to see whether the "shared flag", something enabled for
     /// individual compilers, is compatible with the native host platform.
     ///
-    /// This is used both when validating an engine&#39;s compilation settings are
+    /// This is used both when validating an engine's compilation settings are
     /// compatible with the host as well as when deserializing modules from
-    /// disk to ensure they&#39;re compatible with the current host.
+    /// disk to ensure they're compatible with the current host.
     ///
     /// Note that most of the settings here are not configured by users that
     /// often. While theoretically possible via `Config` methods the more
@@ -1131,22 +1132,22 @@
             <span class="comment">// These settings must all have be enabled, since their value
             // can affect the way the generated code performs or behaves at
             // runtime.
-            </span><span class="string">&quot;libcall_call_conv&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Enum(<span class="string">&quot;isa_default&quot;</span>.into()),
-            <span class="string">&quot;preserve_frame_pointers&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">true</span>),
-            <span class="string">&quot;enable_probestack&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="kw">crate</span>::config::probestack_supported(target.architecture)),
-            <span class="string">&quot;probestack_strategy&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Enum(<span class="string">&quot;inline&quot;</span>.into()),
+            </span><span class="string">"libcall_call_conv" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Enum(<span class="string">"isa_default"</span>.into()),
+            <span class="string">"preserve_frame_pointers" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">true</span>),
+            <span class="string">"enable_probestack" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="kw">crate</span>::config::probestack_supported(target.architecture)),
+            <span class="string">"probestack_strategy" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Enum(<span class="string">"inline"</span>.into()),
 
-            <span class="comment">// Features wasmtime doesn&#39;t use should all be disabled, since
+            <span class="comment">// Features wasmtime doesn't use should all be disabled, since
             // otherwise if they are enabled it could change the behavior of
             // generated code.
-            </span><span class="string">&quot;enable_llvm_abi_extensions&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
-            <span class="string">&quot;enable_pinned_reg&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
-            <span class="string">&quot;use_colocated_libcalls&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
-            <span class="string">&quot;use_pinned_reg_as_heap_base&quot; </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
+            </span><span class="string">"enable_llvm_abi_extensions" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
+            <span class="string">"enable_pinned_reg" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
+            <span class="string">"use_colocated_libcalls" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
+            <span class="string">"use_pinned_reg_as_heap_base" </span>=&gt; <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">false</span>),
 
             <span class="comment">// If reference types are enabled this must be enabled, otherwise
             // this setting can have any value.
-            </span><span class="string">&quot;enable_safepoints&quot; </span>=&gt; {
+            </span><span class="string">"enable_safepoints" </span>=&gt; {
                 <span class="kw">if </span><span class="self">self</span>.config().features.reference_types {
                     <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">true</span>)
                 } <span class="kw">else </span>{
@@ -1155,7 +1156,7 @@
             }
 
             <span class="comment">// Windows requires unwind info as part of its ABI.
-            </span><span class="string">&quot;unwind_info&quot; </span>=&gt; {
+            </span><span class="string">"unwind_info" </span>=&gt; {
                 <span class="kw">if </span>target.operating_system == target_lexicon::OperatingSystem::Windows {
                     <span class="kw-2">*</span>value == FlagValue::Bool(<span class="bool-val">true</span>)
                 } <span class="kw">else </span>{
@@ -1163,39 +1164,39 @@
                 }
             }
 
-            <span class="comment">// These settings don&#39;t affect the interface or functionality of
-            // the module itself, so their configuration values shouldn&#39;t
+            <span class="comment">// These settings don't affect the interface or functionality of
+            // the module itself, so their configuration values shouldn't
             // matter.
-            </span><span class="string">&quot;enable_heap_access_spectre_mitigation&quot;
-            </span>| <span class="string">&quot;enable_table_access_spectre_mitigation&quot;
-            </span>| <span class="string">&quot;enable_nan_canonicalization&quot;
-            </span>| <span class="string">&quot;enable_jump_tables&quot;
-            </span>| <span class="string">&quot;enable_float&quot;
-            </span>| <span class="string">&quot;enable_verifier&quot;
-            </span>| <span class="string">&quot;regalloc_checker&quot;
-            </span>| <span class="string">&quot;regalloc_verbose_logs&quot;
-            </span>| <span class="string">&quot;is_pic&quot;
-            </span>| <span class="string">&quot;bb_padding_log2_minus_one&quot;
-            </span>| <span class="string">&quot;machine_code_cfg_info&quot;
-            </span>| <span class="string">&quot;tls_model&quot; </span><span class="comment">// wasmtime doesn&#39;t use tls right now
-            </span>| <span class="string">&quot;opt_level&quot; </span><span class="comment">// opt level doesn&#39;t change semantics
-            </span>| <span class="string">&quot;enable_alias_analysis&quot; </span><span class="comment">// alias analysis-based opts don&#39;t change semantics
-            </span>| <span class="string">&quot;probestack_func_adjusts_sp&quot; </span><span class="comment">// probestack above asserted disabled
-            </span>| <span class="string">&quot;probestack_size_log2&quot; </span><span class="comment">// probestack above asserted disabled
-            </span>| <span class="string">&quot;regalloc&quot; </span><span class="comment">// shouldn&#39;t change semantics
-            </span>| <span class="string">&quot;enable_incremental_compilation_cache_checks&quot; </span><span class="comment">// shouldn&#39;t change semantics
-            </span>| <span class="string">&quot;enable_atomics&quot; </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
+            </span><span class="string">"enable_heap_access_spectre_mitigation"
+            </span>| <span class="string">"enable_table_access_spectre_mitigation"
+            </span>| <span class="string">"enable_nan_canonicalization"
+            </span>| <span class="string">"enable_jump_tables"
+            </span>| <span class="string">"enable_float"
+            </span>| <span class="string">"enable_verifier"
+            </span>| <span class="string">"regalloc_checker"
+            </span>| <span class="string">"regalloc_verbose_logs"
+            </span>| <span class="string">"is_pic"
+            </span>| <span class="string">"bb_padding_log2_minus_one"
+            </span>| <span class="string">"machine_code_cfg_info"
+            </span>| <span class="string">"tls_model" </span><span class="comment">// wasmtime doesn't use tls right now
+            </span>| <span class="string">"opt_level" </span><span class="comment">// opt level doesn't change semantics
+            </span>| <span class="string">"enable_alias_analysis" </span><span class="comment">// alias analysis-based opts don't change semantics
+            </span>| <span class="string">"probestack_func_adjusts_sp" </span><span class="comment">// probestack above asserted disabled
+            </span>| <span class="string">"probestack_size_log2" </span><span class="comment">// probestack above asserted disabled
+            </span>| <span class="string">"regalloc" </span><span class="comment">// shouldn't change semantics
+            </span>| <span class="string">"enable_incremental_compilation_cache_checks" </span><span class="comment">// shouldn't change semantics
+            </span>| <span class="string">"enable_atomics" </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
 
             <span class="comment">// Everything else is unknown and needs to be added somewhere to
             // this list if encountered.
             </span><span class="kw">_ </span>=&gt; {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">&quot;unknown shared setting {:?} configured to {:?}&quot;</span>, flag, value))
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">"unknown shared setting {:?} configured to {:?}"</span>, flag, value))
             }
         };
 
         <span class="kw">if </span>!ok {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(
-                <span class="string">&quot;setting {:?} is configured to {:?} which is not supported&quot;</span>,
+                <span class="string">"setting {:?} is configured to {:?} which is not supported"</span>,
                 flag, value,
             ));
         }
@@ -1211,8 +1212,8 @@
         value: <span class="kw-2">&amp;</span>FlagValue,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="kw">match </span>value {
-            <span class="comment">// ISA flags are used for things like CPU features, so if they&#39;re
-            // disabled then it&#39;s compatible with the native host.
+            <span class="comment">// ISA flags are used for things like CPU features, so if they're
+            // disabled then it's compatible with the native host.
             </span>FlagValue::Bool(<span class="bool-val">false</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
 
             <span class="comment">// Fall through below where we test at runtime that features are
@@ -1223,7 +1224,7 @@
             // need more support here.
             </span><span class="kw">_ </span>=&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(
-                    <span class="string">&quot;isa-specific feature {:?} configured to unknown value {:?}&quot;</span>,
+                    <span class="string">"isa-specific feature {:?} configured to unknown value {:?}"</span>,
                     flag, value
                 ))
             }
@@ -1232,25 +1233,25 @@
         <span class="attr">#[allow(unused_assignments)]
         </span><span class="kw">let </span><span class="kw-2">mut </span>enabled = <span class="prelude-val">None</span>;
 
-        <span class="attr">#[cfg(target_arch = <span class="string">&quot;aarch64&quot;</span>)]
+        <span class="attr">#[cfg(target_arch = <span class="string">"aarch64"</span>)]
         </span>{
             enabled = <span class="kw">match </span>flag {
-                <span class="string">&quot;has_lse&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::arch::is_aarch64_feature_detected!</span>(<span class="string">&quot;lse&quot;</span>)),
+                <span class="string">"has_lse" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::arch::is_aarch64_feature_detected!</span>(<span class="string">"lse"</span>)),
                 <span class="comment">// No effect on its own, but in order to simplify the code on a
                 // platform without pointer authentication support we fail if
-                // &quot;has_pauth&quot; is enabled, but &quot;sign_return_address&quot; is not.
-                </span><span class="string">&quot;has_pauth&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::arch::is_aarch64_feature_detected!</span>(<span class="string">&quot;paca&quot;</span>)),
+                // "has_pauth" is enabled, but "sign_return_address" is not.
+                </span><span class="string">"has_pauth" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::arch::is_aarch64_feature_detected!</span>(<span class="string">"paca"</span>)),
                 <span class="comment">// No effect on its own.
-                </span><span class="string">&quot;sign_return_address_all&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                </span><span class="string">"sign_return_address_all" </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
                 <span class="comment">// The pointer authentication instructions act as a `NOP` when
-                // unsupported (but keep in mind &quot;has_pauth&quot; as well), so it is
+                // unsupported (but keep in mind "has_pauth" as well), so it is
                 // safe to enable them.
-                </span><span class="string">&quot;sign_return_address&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                </span><span class="string">"sign_return_address" </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
                 <span class="comment">// No effect on its own.
-                </span><span class="string">&quot;sign_return_address_with_bkey&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                </span><span class="string">"sign_return_address_with_bkey" </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
                 <span class="comment">// The `BTI` instruction acts as a `NOP` when unsupported, so it
                 // is safe to enable it.
-                </span><span class="string">&quot;use_bti&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+                </span><span class="string">"use_bti" </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
                 <span class="comment">// fall through to the very bottom to indicate that support is
                 // not enabled to test whether this feature is enabled on the
                 // host.
@@ -1260,7 +1261,7 @@
 
         <span class="comment">// There is no is_s390x_feature_detected macro yet, so for now
         // we use getauxval from the libc crate directly.
-        </span><span class="attr">#[cfg(all(target_arch = <span class="string">&quot;s390x&quot;</span>, target_os = <span class="string">&quot;linux&quot;</span>))]
+        </span><span class="attr">#[cfg(all(target_arch = <span class="string">"s390x"</span>, target_os = <span class="string">"linux"</span>))]
         </span>{
             <span class="kw">let </span>v = <span class="kw">unsafe </span>{ libc::getauxval(libc::AT_HWCAP) };
             <span class="kw">const </span>HWCAP_S390X_VXRS_EXT2: libc::c_ulong = <span class="number">32768</span>;
@@ -1268,7 +1269,7 @@
             enabled = <span class="kw">match </span>flag {
                 <span class="comment">// There is no separate HWCAP bit for mie2, so assume
                 // that any machine with vxrs_ext2 also has mie2.
-                </span><span class="string">&quot;has_vxrs_ext2&quot; </span>| <span class="string">&quot;has_mie2&quot; </span>=&gt; <span class="prelude-val">Some</span>((v &amp; HWCAP_S390X_VXRS_EXT2) != <span class="number">0</span>),
+                </span><span class="string">"has_vxrs_ext2" </span>| <span class="string">"has_mie2" </span>=&gt; <span class="prelude-val">Some</span>((v &amp; HWCAP_S390X_VXRS_EXT2) != <span class="number">0</span>),
                 <span class="comment">// fall through to the very bottom to indicate that support is
                 // not enabled to test whether this feature is enabled on the
                 // host.
@@ -1276,36 +1277,36 @@
             }
         }
 
-        <span class="attr">#[cfg(target_arch = <span class="string">&quot;riscv64&quot;</span>)]
+        <span class="attr">#[cfg(target_arch = <span class="string">"riscv64"</span>)]
         </span>{
             enabled = <span class="kw">match </span>flag {
                 <span class="comment">// make sure `test_isa_flags_mismatch` test pass.
-                </span><span class="string">&quot;not_a_flag&quot; </span>=&gt; <span class="prelude-val">None</span>,
+                </span><span class="string">"not_a_flag" </span>=&gt; <span class="prelude-val">None</span>,
                 <span class="comment">// due to `is_riscv64_feature_detected` is not stable.
                 // we cannot use it.
                 </span><span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
             }
         }
 
-        <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)]
+        <span class="attr">#[cfg(target_arch = <span class="string">"x86_64"</span>)]
         </span>{
             enabled = <span class="kw">match </span>flag {
-                <span class="string">&quot;has_sse3&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;sse3&quot;</span>)),
-                <span class="string">&quot;has_ssse3&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;ssse3&quot;</span>)),
-                <span class="string">&quot;has_sse41&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;sse4.1&quot;</span>)),
-                <span class="string">&quot;has_sse42&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;sse4.2&quot;</span>)),
-                <span class="string">&quot;has_popcnt&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;popcnt&quot;</span>)),
-                <span class="string">&quot;has_avx&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx&quot;</span>)),
-                <span class="string">&quot;has_avx2&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx2&quot;</span>)),
-                <span class="string">&quot;has_fma&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;fma&quot;</span>)),
-                <span class="string">&quot;has_bmi1&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;bmi1&quot;</span>)),
-                <span class="string">&quot;has_bmi2&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;bmi2&quot;</span>)),
-                <span class="string">&quot;has_avx512bitalg&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx512bitalg&quot;</span>)),
-                <span class="string">&quot;has_avx512dq&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx512dq&quot;</span>)),
-                <span class="string">&quot;has_avx512f&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx512f&quot;</span>)),
-                <span class="string">&quot;has_avx512vl&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx512vl&quot;</span>)),
-                <span class="string">&quot;has_avx512vbmi&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;avx512vbmi&quot;</span>)),
-                <span class="string">&quot;has_lzcnt&quot; </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">&quot;lzcnt&quot;</span>)),
+                <span class="string">"has_sse3" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"sse3"</span>)),
+                <span class="string">"has_ssse3" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"ssse3"</span>)),
+                <span class="string">"has_sse41" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"sse4.1"</span>)),
+                <span class="string">"has_sse42" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"sse4.2"</span>)),
+                <span class="string">"has_popcnt" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"popcnt"</span>)),
+                <span class="string">"has_avx" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx"</span>)),
+                <span class="string">"has_avx2" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx2"</span>)),
+                <span class="string">"has_fma" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"fma"</span>)),
+                <span class="string">"has_bmi1" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"bmi1"</span>)),
+                <span class="string">"has_bmi2" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"bmi2"</span>)),
+                <span class="string">"has_avx512bitalg" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx512bitalg"</span>)),
+                <span class="string">"has_avx512dq" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx512dq"</span>)),
+                <span class="string">"has_avx512f" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx512f"</span>)),
+                <span class="string">"has_avx512vl" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx512vl"</span>)),
+                <span class="string">"has_avx512vbmi" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"avx512vbmi"</span>)),
+                <span class="string">"has_lzcnt" </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro">std::is_x86_feature_detected!</span>(<span class="string">"lzcnt"</span>)),
 
                 <span class="comment">// fall through to the very bottom to indicate that support is
                 // not enabled to test whether this feature is enabled on the
@@ -1318,7 +1319,7 @@
             <span class="prelude-val">Some</span>(<span class="bool-val">true</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
             <span class="prelude-val">Some</span>(<span class="bool-val">false</span>) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">format!</span>(
-                    <span class="string">&quot;compilation setting {:?} is enabled, but not available on the host&quot;</span>,
+                    <span class="string">"compilation setting {:?} is enabled, but not available on the host"</span>,
                     flag
                 ))
             }
@@ -1327,18 +1328,18 @@
         }
 
         <span class="prelude-val">Err</span>(<span class="macro">format!</span>(
-            <span class="string">&quot;cannot test if target-specific flag {:?} is available at runtime&quot;</span>,
+            <span class="string">"cannot test if target-specific flag {:?} is available at runtime"</span>,
             flag
         ))
     }
 
-    <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>append_compiler_info(<span class="kw-2">&amp;</span><span class="self">self</span>, obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>append_compiler_info(<span class="kw-2">&amp;</span><span class="self">self</span>, obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">'_</span>&gt;) {
         serialization::append_compiler_info(<span class="self">self</span>, obj);
     }
 
-    <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>append_bti(<span class="kw-2">&amp;</span><span class="self">self</span>, obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>append_bti(<span class="kw-2">&amp;</span><span class="self">self</span>, obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span>section = obj.add_section(
             obj.segment_name(StandardSegment::Data).to_vec(),
             obj::ELF_WASM_BTI.as_bytes().to_vec(),
@@ -1373,7 +1374,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CodeMemory&gt;&gt; {
         <span class="self">self</span>.load_code(
             MmapVec::from_file(path).with_context(|| {
-                <span class="macro">format!</span>(<span class="string">&quot;failed to create file mapping for: {}&quot;</span>, path.display())
+                <span class="macro">format!</span>(<span class="string">"failed to create file mapping for: {}"</span>, path.display())
             })<span class="question-mark">?</span>,
             expected,
         )
@@ -1409,26 +1410,26 @@
     #[cfg_attr(miri, ignore)]
     </span><span class="kw">fn </span>cache_accounts_for_opt_level() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>td = TempDir::new()<span class="question-mark">?</span>;
-        <span class="kw">let </span>config_path = td.path().join(<span class="string">&quot;config.toml&quot;</span>);
+        <span class="kw">let </span>config_path = td.path().join(<span class="string">"config.toml"</span>);
         std::fs::write(
             <span class="kw-2">&amp;</span>config_path,
             <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                <span class="string">&quot;
+                <span class="string">"
                     [cache]
                     enabled = true
-                    directory = &#39;{}&#39;
-                &quot;</span>,
-                td.path().join(<span class="string">&quot;cache&quot;</span>).display()
+                    directory = '{}'
+                "</span>,
+                td.path().join(<span class="string">"cache"</span>).display()
             ),
         )<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>cfg = Config::new();
         cfg.cranelift_opt_level(OptLevel::None)
             .cache_config_load(<span class="kw-2">&amp;</span>config_path)<span class="question-mark">?</span>;
         <span class="kw">let </span>engine = Engine::new(<span class="kw-2">&amp;</span>cfg)<span class="question-mark">?</span>;
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">0</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
 
@@ -1436,10 +1437,10 @@
         cfg.cranelift_opt_level(OptLevel::Speed)
             .cache_config_load(<span class="kw-2">&amp;</span>config_path)<span class="question-mark">?</span>;
         <span class="kw">let </span>engine = Engine::new(<span class="kw-2">&amp;</span>cfg)<span class="question-mark">?</span>;
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">0</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
 
@@ -1447,20 +1448,20 @@
         cfg.cranelift_opt_level(OptLevel::SpeedAndSize)
             .cache_config_load(<span class="kw-2">&amp;</span>config_path)<span class="question-mark">?</span>;
         <span class="kw">let </span>engine = Engine::new(<span class="kw-2">&amp;</span>cfg)<span class="question-mark">?</span>;
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">0</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>cfg = Config::new();
         cfg.debug_info(<span class="bool-val">true</span>).cache_config_load(<span class="kw-2">&amp;</span>config_path)<span class="question-mark">?</span>;
         <span class="kw">let </span>engine = Engine::new(<span class="kw-2">&amp;</span>cfg)<span class="question-mark">?</span>;
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">0</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
-        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">&quot;(module (func))&quot;</span>)<span class="question-mark">?</span>;
+        Module::new(<span class="kw-2">&amp;</span>engine, <span class="string">"(module (func))"</span>)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_hits(), <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(engine.config().cache_config.cache_misses(), <span class="number">1</span>);
 
@@ -1470,7 +1471,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>precompile_compatibility_key_accounts_for_opt_level() {
         <span class="kw">fn </span>hash_for_config(cfg: <span class="kw-2">&amp;</span>Config) -&gt; u64 {
-            <span class="kw">let </span>engine = Engine::new(cfg).expect(<span class="string">&quot;Config should be valid&quot;</span>);
+            <span class="kw">let </span>engine = Engine::new(cfg).expect(<span class="string">"Config should be valid"</span>);
             <span class="kw">let </span><span class="kw-2">mut </span>hasher = DefaultHasher::new();
             engine.precompile_compatibility_hash().hash(<span class="kw-2">&amp;mut </span>hasher);
             hasher.finish()
@@ -1486,13 +1487,13 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>precompile_compatibility_key_accounts_for_module_version_strategy() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">fn </span>hash_for_config(cfg: <span class="kw-2">&amp;</span>Config) -&gt; u64 {
-            <span class="kw">let </span>engine = Engine::new(cfg).expect(<span class="string">&quot;Config should be valid&quot;</span>);
+            <span class="kw">let </span>engine = Engine::new(cfg).expect(<span class="string">"Config should be valid"</span>);
             <span class="kw">let </span><span class="kw-2">mut </span>hasher = DefaultHasher::new();
             engine.precompile_compatibility_hash().hash(<span class="kw-2">&amp;mut </span>hasher);
             hasher.finish()
         }
         <span class="kw">let </span><span class="kw-2">mut </span>cfg_custom_version = Config::new();
-        cfg_custom_version.module_version(ModuleVersionStrategy::Custom(<span class="string">&quot;1.0.1111&quot;</span>.to_string()))<span class="question-mark">?</span>;
+        cfg_custom_version.module_version(ModuleVersionStrategy::Custom(<span class="string">"1.0.1111"</span>.to_string()))<span class="question-mark">?</span>;
         <span class="kw">let </span>custom_version_hash = hash_for_config(<span class="kw-2">&amp;</span>cfg_custom_version);
 
         <span class="kw">let </span><span class="kw-2">mut </span>cfg_default_version = Config::new();

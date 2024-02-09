@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/compiler.rs`."><title>compiler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/compiler.rs`."><title>compiler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -677,7 +678,7 @@
 //!
 //! * The `UnlinkedCompileOutputs::pre_link` method re-arranges the compiled
 //!   functions into a flat list. This is the order we will place them within
-//!   the ELF file, so we must also keep track of all the functions&#39; indices
+//!   the ELF file, so we must also keep track of all the functions' indices
 //!   within this list, because we will need them for resolving
 //!   relocations. These indices are kept track of in the resulting
 //!   `FunctionIndices`.
@@ -698,7 +699,7 @@
 };
 <span class="kw">use </span>wasmtime_jit::{CompiledFunctionInfo, CompiledModuleInfo};
 
-<span class="kw">type </span>CompileInput&lt;<span class="lifetime">&#39;a</span>&gt; = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;</span><span class="kw">dyn </span>Compiler) -&gt; <span class="prelude-ty">Result</span>&lt;CompileOutput&gt; + Send + <span class="lifetime">&#39;a</span>&gt;;
+<span class="kw">type </span>CompileInput&lt;<span class="lifetime">'a</span>&gt; = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;</span><span class="kw">dyn </span>Compiler) -&gt; <span class="prelude-ty">Result</span>&lt;CompileOutput&gt; + Send + <span class="lifetime">'a</span>&gt;;
 
 <span class="doccomment">/// A sortable, comparable key for a compilation output.
 ///
@@ -767,7 +768,7 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
 </span><span class="kw">impl </span>CompileKey {
     <span class="kw">const </span>TRAMPOLINE_KIND: u32 = <span class="self">Self</span>::new_kind(<span class="number">4</span>);
     <span class="kw">const </span>RESOURCE_DROP_WASM_TO_NATIVE_KIND: u32 = <span class="self">Self</span>::new_kind(<span class="number">5</span>);
@@ -790,7 +791,7 @@
 <span class="attr">#[derive(Clone, Copy)]
 </span><span class="kw">enum </span>CompiledFunction&lt;T&gt; {
     Function(T),
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span>AllCallFunc(wasmtime_environ::component::AllCallFunc&lt;T&gt;),
 }
 
@@ -798,21 +799,21 @@
     <span class="kw">fn </span>unwrap_function(<span class="self">self</span>) -&gt; T {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Function(f) =&gt; f,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
-            </span><span class="self">Self</span>::AllCallFunc(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;CompiledFunction::unwrap_function&quot;</span>),
+            <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
+            </span><span class="self">Self</span>::AllCallFunc(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"CompiledFunction::unwrap_function"</span>),
         }
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">fn </span>unwrap_all_call_func(<span class="self">self</span>) -&gt; wasmtime_environ::component::AllCallFunc&lt;T&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::AllCallFunc(f) =&gt; f,
-            <span class="self">Self</span>::Function(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;CompiledFunction::unwrap_all_call_func&quot;</span>),
+            <span class="self">Self</span>::Function(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"CompiledFunction::unwrap_all_call_func"</span>),
         }
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
 </span><span class="kw">impl</span>&lt;T&gt; From&lt;wasmtime_environ::component::AllCallFunc&lt;T&gt;&gt; <span class="kw">for </span>CompiledFunction&lt;T&gt; {
     <span class="kw">fn </span>from(f: wasmtime_environ::component::AllCallFunc&lt;T&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::AllCallFunc(f)
@@ -828,20 +829,20 @@
 
 <span class="doccomment">/// The collection of things we need to compile for a Wasm module or component.
 </span><span class="attr">#[derive(Default)]
-</span><span class="kw">pub struct </span>CompileInputs&lt;<span class="lifetime">&#39;a</span>&gt; {
-    inputs: Vec&lt;CompileInput&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+</span><span class="kw">pub struct </span>CompileInputs&lt;<span class="lifetime">'a</span>&gt; {
+    inputs: Vec&lt;CompileInput&lt;<span class="lifetime">'a</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; CompileInputs&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>push_input(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span><span class="kw">dyn </span>Compiler) -&gt; <span class="prelude-ty">Result</span>&lt;CompileOutput&gt; + Send + <span class="lifetime">&#39;a</span>) {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; CompileInputs&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">fn </span>push_input(<span class="kw-2">&amp;mut </span><span class="self">self</span>, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span><span class="kw">dyn </span>Compiler) -&gt; <span class="prelude-ty">Result</span>&lt;CompileOutput&gt; + Send + <span class="lifetime">'a</span>) {
         <span class="self">self</span>.inputs.push(Box::new(f));
     }
 
     <span class="doccomment">/// Create the `CompileInputs` for a core Wasm module.
     </span><span class="kw">pub fn </span>for_module(
-        types: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ModuleTypes,
-        translation: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ModuleTranslation&lt;<span class="lifetime">&#39;a</span>&gt;,
-        functions: PrimaryMap&lt;DefinedFuncIndex, FunctionBodyData&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+        types: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ModuleTypes,
+        translation: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ModuleTranslation&lt;<span class="lifetime">'a</span>&gt;,
+        functions: PrimaryMap&lt;DefinedFuncIndex, FunctionBodyData&lt;<span class="lifetime">'a</span>&gt;&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>ret = <span class="self">Self</span>::default();
         <span class="kw">let </span>module_index = StaticModuleIndex::from_u32(<span class="number">0</span>);
@@ -852,15 +853,15 @@
     }
 
     <span class="doccomment">/// Create a `CompileInputs` for a component.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub fn </span>for_component(
-        types: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>wasmtime_environ::component::ComponentTypes,
-        component: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>wasmtime_environ::component::ComponentTranslation,
+        types: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>wasmtime_environ::component::ComponentTypes,
+        component: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>wasmtime_environ::component::ComponentTranslation,
         module_translations: <span class="kw">impl </span>IntoIterator&lt;
             Item = (
                 StaticModuleIndex,
-                <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ModuleTranslation&lt;<span class="lifetime">&#39;a</span>&gt;,
-                PrimaryMap&lt;DefinedFuncIndex, FunctionBodyData&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+                <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ModuleTranslation&lt;<span class="lifetime">'a</span>&gt;,
+                PrimaryMap&lt;DefinedFuncIndex, FunctionBodyData&lt;<span class="lifetime">'a</span>&gt;&gt;,
             ),
         &gt;,
     ) -&gt; <span class="self">Self </span>{
@@ -884,9 +885,9 @@
 
         <span class="comment">// If there are any resources defined within this component, the
         // signature for `resource.drop` is mentioned somewhere, and the
-        // wasm-to-native trampoline for `resource.drop` hasn&#39;t been created yet
+        // wasm-to-native trampoline for `resource.drop` hasn't been created yet
         // then insert that here. This is possibly required by destruction of
-        // resources from the embedder and otherwise won&#39;t be explicitly
+        // resources from the embedder and otherwise won't be explicitly
         // requested through initializers above or such.
         </span><span class="kw">if </span>component.component.num_resources &gt; <span class="number">0 </span>{
             <span class="kw">if let </span><span class="prelude-val">Some</span>(sig) = types.find_resource_drop_signature() {
@@ -894,7 +895,7 @@
                     <span class="kw">let </span>trampoline = compiler.compile_wasm_to_native_trampoline(<span class="kw-2">&amp;</span>types[sig])<span class="question-mark">?</span>;
                     <span class="prelude-val">Ok</span>(CompileOutput {
                         key: CompileKey::resource_drop_wasm_to_native_trampoline(),
-                        symbol: <span class="string">&quot;resource_drop_trampoline&quot;</span>.to_string(),
+                        symbol: <span class="string">"resource_drop_trampoline"</span>.to_string(),
                         function: CompiledFunction::Function(trampoline),
                         info: <span class="prelude-val">None</span>,
                     })
@@ -907,12 +908,12 @@
 
     <span class="kw">fn </span>collect_inputs_in_translations(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        types: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ModuleTypes,
+        types: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ModuleTypes,
         translations: <span class="kw">impl </span>IntoIterator&lt;
             Item = (
                 StaticModuleIndex,
-                <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ModuleTranslation&lt;<span class="lifetime">&#39;a</span>&gt;,
-                PrimaryMap&lt;DefinedFuncIndex, FunctionBodyData&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+                <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ModuleTranslation&lt;<span class="lifetime">'a</span>&gt;,
+                PrimaryMap&lt;DefinedFuncIndex, FunctionBodyData&lt;<span class="lifetime">'a</span>&gt;&gt;,
             ),
         &gt;,
     ) {
@@ -927,7 +928,7 @@
                     <span class="prelude-val">Ok</span>(CompileOutput {
                         key: CompileKey::wasm_function(module, def_func_index),
                         symbol: <span class="macro">format!</span>(
-                            <span class="string">&quot;wasm[{}]::function[{}]&quot;</span>,
+                            <span class="string">"wasm[{}]::function[{}]"</span>,
                             module.as_u32(),
                             func_index.as_u32()
                         ),
@@ -948,7 +949,7 @@
                         <span class="prelude-val">Ok</span>(CompileOutput {
                             key: CompileKey::array_to_wasm_trampoline(module, def_func_index),
                             symbol: <span class="macro">format!</span>(
-                                <span class="string">&quot;wasm[{}]::array_to_wasm_trampoline[{}]&quot;</span>,
+                                <span class="string">"wasm[{}]::array_to_wasm_trampoline[{}]"</span>,
                                 module.as_u32(),
                                 func_index.as_u32()
                             ),
@@ -967,7 +968,7 @@
                         <span class="prelude-val">Ok</span>(CompileOutput {
                             key: CompileKey::native_to_wasm_trampoline(module, def_func_index),
                             symbol: <span class="macro">format!</span>(
-                                <span class="string">&quot;wasm[{}]::native_to_wasm_trampoline[{}]&quot;</span>,
+                                <span class="string">"wasm[{}]::native_to_wasm_trampoline[{}]"</span>,
                                 module.as_u32(),
                                 func_index.as_u32()
                             ),
@@ -990,7 +991,7 @@
                 <span class="prelude-val">Ok</span>(CompileOutput {
                     key: CompileKey::wasm_to_native_trampoline(signature),
                     symbol: <span class="macro">format!</span>(
-                        <span class="string">&quot;signatures[{}]::wasm_to_native_trampoline&quot;</span>,
+                        <span class="string">"signatures[{}]::wasm_to_native_trampoline"</span>,
                         signature.as_u32()
                     ),
                     function: CompiledFunction::Function(trampoline),
@@ -1045,7 +1046,7 @@
         <span class="comment">// The order the functions end up within `compiled_funcs` is the order
         // that they will be laid out in the ELF file, so try and group hot and
         // cold functions together as best we can. However, because we bucket by
-        // kind, we shouldn&#39;t have any issues with, e.g., cold trampolines
+        // kind, we shouldn't have any issues with, e.g., cold trampolines
         // appearing in between hot Wasm functions.
         </span><span class="kw">let </span><span class="kw-2">mut </span>compiled_funcs = <span class="macro">vec!</span>[];
         <span class="kw">let </span><span class="kw-2">mut </span>indices = FunctionIndices::default();
@@ -1056,14 +1057,14 @@
                     compiled_funcs.push((x.symbol, f));
                     CompiledFunction::Function(index)
                 }
-                <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+                <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
                 </span>CompiledFunction::AllCallFunc(f) =&gt; {
                     <span class="kw">let </span>array_call = compiled_funcs.len();
-                    compiled_funcs.push((<span class="macro">format!</span>(<span class="string">&quot;{}_array_call&quot;</span>, x.symbol), f.array_call));
+                    compiled_funcs.push((<span class="macro">format!</span>(<span class="string">"{}_array_call"</span>, x.symbol), f.array_call));
                     <span class="kw">let </span>native_call = compiled_funcs.len();
-                    compiled_funcs.push((<span class="macro">format!</span>(<span class="string">&quot;{}_native_call&quot;</span>, x.symbol), f.native_call));
+                    compiled_funcs.push((<span class="macro">format!</span>(<span class="string">"{}_native_call"</span>, x.symbol), f.native_call));
                     <span class="kw">let </span>wasm_call = compiled_funcs.len();
-                    compiled_funcs.push((<span class="macro">format!</span>(<span class="string">&quot;{}_wasm_call&quot;</span>, x.symbol), f.wasm_call));
+                    compiled_funcs.push((<span class="macro">format!</span>(<span class="string">"{}_wasm_call"</span>, x.symbol), f.wasm_call));
                     CompiledFunction::AllCallFunc(wasmtime_environ::component::AllCallFunc {
                         array_call,
                         native_call,
@@ -1100,7 +1101,7 @@
     // `StaticModuleIndex` for that function.
     </span>compiled_func_index_to_module: HashMap&lt;usize, StaticModuleIndex&gt;,
 
-    <span class="comment">// A map from Wasm functions&#39; compile keys to their infos.
+    <span class="comment">// A map from Wasm functions' compile keys to their infos.
     </span>wasm_function_infos: HashMap&lt;CompileKey, WasmFunctionInfo&gt;,
 
     <span class="comment">// The index of each compiled function, bucketed by compile key kind.
@@ -1110,14 +1111,14 @@
 <span class="kw">impl </span>FunctionIndices {
     <span class="doccomment">/// Link the compiled functions together, resolving relocations, and append
     /// them to the given ELF file.
-    </span><span class="kw">pub fn </span>link_and_append_code&lt;<span class="lifetime">&#39;a</span>&gt;(
+    </span><span class="kw">pub fn </span>link_and_append_code&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>obj: object::write::Object&lt;<span class="lifetime">&#39;static</span>&gt;,
-        tunables: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Tunables,
+        <span class="kw-2">mut </span>obj: object::write::Object&lt;<span class="lifetime">'static</span>&gt;,
+        tunables: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tunables,
         compiler: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Compiler,
         compiled_funcs: Vec&lt;(String, Box&lt;<span class="kw">dyn </span>Any + Send&gt;)&gt;,
-        translations: PrimaryMap&lt;StaticModuleIndex, ModuleTranslation&lt;<span class="lifetime">&#39;_</span>&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(wasmtime_jit::ObjectBuilder&lt;<span class="lifetime">&#39;a</span>&gt;, Artifacts)&gt; {
+        translations: PrimaryMap&lt;StaticModuleIndex, ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(wasmtime_jit::ObjectBuilder&lt;<span class="lifetime">'a</span>&gt;, Artifacts)&gt; {
         <span class="comment">// Append all the functions to the ELF file.
         //
         // The result is a vector parallel to `compiled_funcs` where
@@ -1131,7 +1132,7 @@
                     </span>.compiled_func_index_to_module
                     .get(<span class="kw-2">&amp;</span>caller_index)
                     .copied()
-                    .expect(<span class="string">&quot;should only reloc inside wasm function callers&quot;</span>);
+                    .expect(<span class="string">"should only reloc inside wasm function callers"</span>);
                 <span class="kw">let </span>def_func_index = translations[module]
                     .module
                     .defined_func_index(callee_index)
@@ -1195,7 +1196,7 @@
                 btree_map::IntoIter&lt;CompileKey, CompiledFunction&lt;usize&gt;&gt;,
             &gt;,
             module: StaticModuleIndex,
-        ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (CompileKey, CompiledFunction&lt;usize&gt;)&gt; + <span class="lifetime">&#39;_ </span>{
+        ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (CompileKey, CompiledFunction&lt;usize&gt;)&gt; + <span class="lifetime">'_ </span>{
             std::iter::from_fn(<span class="kw">move </span>|| {
                 <span class="kw">let </span>(key, <span class="kw">_</span>) = wasm_functions.peek()<span class="question-mark">?</span>;
                 <span class="kw">if </span>key.module() == module {
@@ -1277,7 +1278,7 @@
             })
             .collect::&lt;<span class="prelude-ty">Result</span>&lt;PrimaryMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-        <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
         </span>{
             artifacts.trampolines = <span class="self">self
                 </span>.indices
@@ -1299,7 +1300,7 @@
 
         <span class="macro">debug_assert!</span>(
             <span class="self">self</span>.indices.is_empty(),
-            <span class="string">&quot;Should have processed all compile outputs&quot;
+            <span class="string">"Should have processed all compile outputs"
         </span>);
 
         <span class="prelude-val">Ok</span>((obj, artifacts))
@@ -1311,12 +1312,12 @@
 </span><span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>Artifacts {
     <span class="kw">pub </span>modules: PrimaryMap&lt;StaticModuleIndex, CompiledModuleInfo&gt;,
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub </span>trampolines: PrimaryMap&lt;
         wasmtime_environ::component::TrampolineIndex,
         wasmtime_environ::component::AllCallFunc&lt;wasmtime_environ::FunctionLoc&gt;,
     &gt;,
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub </span>resource_drop_wasm_to_native_trampoline: <span class="prelude-ty">Option</span>&lt;wasmtime_environ::FunctionLoc&gt;,
 }
 
@@ -1325,7 +1326,7 @@
     /// resulting `CompiledModuleInfo`.
     </span><span class="kw">pub fn </span>unwrap_as_module_info(<span class="self">self</span>) -&gt; CompiledModuleInfo {
         <span class="macro">assert_eq!</span>(<span class="self">self</span>.modules.len(), <span class="number">1</span>);
-        <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
         </span><span class="macro">assert!</span>(<span class="self">self</span>.trampolines.is_empty());
         <span class="self">self</span>.modules.into_iter().next().unwrap().<span class="number">1
     </span>}

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/alias_analysis.rs`."><title>alias_analysis.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/alias_analysis.rs`."><title>alias_analysis.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -407,13 +408,13 @@
 <a href="#407" id="407">407</a>
 <a href="#408" id="408">408</a>
 <a href="#409" id="409">409</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Alias analysis, consisting of a &quot;last store&quot; pass and a &quot;memory
-//! values&quot; pass. These two passes operate as one fused pass, and so
+</pre></div><pre class="rust"><code><span class="doccomment">//! Alias analysis, consisting of a "last store" pass and a "memory
+//! values" pass. These two passes operate as one fused pass, and so
 //! are implemented together here.
 //!
 //! We partition memory state into several *disjoint pieces* of
-//! &quot;abstract state&quot;. There are a finite number of such pieces:
-//! currently, we call them &quot;heap&quot;, &quot;table&quot;, &quot;vmctx&quot;, and &quot;other&quot;.Any
+//! "abstract state". There are a finite number of such pieces:
+//! currently, we call them "heap", "table", "vmctx", and "other".Any
 //! given address in memory belongs to exactly one disjoint piece.
 //!
 //! One never tracks which piece a concrete address belongs to at
@@ -430,33 +431,33 @@
 //! may-alias another load or store if both access the same category
 //! of abstract state.
 //!
-//! The &quot;last store&quot; pass helps to compute this aliasing: it scans the
+//! The "last store" pass helps to compute this aliasing: it scans the
 //! code, finding at each program point the last instruction that
 //! *might have* written to a given part of abstract state.
 //!
-//! We can&#39;t say for sure that the &quot;last store&quot; *did* actually write
+//! We can't say for sure that the "last store" *did* actually write
 //! that state, but we know for sure that no instruction *later* than
 //! it (up to the current instruction) did. However, we can get a
 //! must-alias property from this: if at a given load or store, we
-//! look backward to the &quot;last store&quot;, *AND* we find that it has
+//! look backward to the "last store", *AND* we find that it has
 //! exactly the same address expression and type, then we know that
-//! the current instruction&#39;s access *must* be to the same memory
+//! the current instruction's access *must* be to the same memory
 //! location.
 //!
 //! To get this must-alias property, we compute a sparse table of
-//! &quot;memory values&quot;: these are known equivalences between SSA `Value`s
+//! "memory values": these are known equivalences between SSA `Value`s
 //! and particular locations in memory. The memory-values table is a
 //! mapping from (last store, address expression, type) to SSA
 //! value. At a store, we can insert into this table directly. At a
-//! load, we can also insert, if we don&#39;t already have a value (from
-//! the store that produced the load&#39;s value).
+//! load, we can also insert, if we don't already have a value (from
+//! the store that produced the load's value).
 //!
 //! Then we can do two optimizations at once given this table. If a
 //! load accesses a location identified by a (last store, address,
 //! type) key already in the table, we replace it with the SSA value
-//! for that memory location. This is usually known as &quot;redundant load
-//! elimination&quot; if the value came from an earlier load of the same
-//! location, or &quot;store-to-load forwarding&quot; if the value came from an
+//! for that memory location. This is usually known as "redundant load
+//! elimination" if the value came from an earlier load of the same
+//! location, or "store-to-load forwarding" if the value came from an
 //! earlier store to the same location.
 //!
 //! In theory we could also do *dead-store elimination*, where if a
@@ -467,7 +468,7 @@
 //! *and* we can prove the original store could not have trapped, then
 //! we can eliminate the original store. Because this is so complex,
 //! and the conditions for doing it correctly when post-trap state
-//! must be correct likely reduce the potential benefit, we don&#39;t yet
+//! must be correct likely reduce the potential benefit, we don't yet
 //! do this.
 
 </span><span class="kw">use crate</span>::{
@@ -562,10 +563,10 @@
 ///
 /// For the result of a load to be equivalent to the result of another
 /// load, or the store data from a store, we need for (i) the
-/// &quot;version&quot; of memory (here ensured by having the same last store
-/// instruction to touch the disjoint category of abstract state we&#39;re
+/// "version" of memory (here ensured by having the same last store
+/// instruction to touch the disjoint category of abstract state we're
 /// accessing); (ii) the address must be the same (here ensured by
-/// having the same SSA value, which doesn&#39;t change after computed);
+/// having the same SSA value, which doesn't change after computed);
 /// (iii) the offset must be the same; and (iv) the accessed type and
 /// extension mode (e.g., 8-to-32, signed) must be the same.
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -584,14 +585,14 @@
     ///
     /// We could improve the transform to insert explicit extend ops
     /// in place of extending loads when we know the memory value, but
-    /// we haven&#39;t yet done this.
+    /// we haven't yet done this.
     </span>extending_opcode: <span class="prelude-ty">Option</span>&lt;Opcode&gt;,
 }
 
 <span class="doccomment">/// An alias-analysis pass.
-</span><span class="kw">pub struct </span>AliasAnalysis&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>AliasAnalysis&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// The domtree for the function.
-    </span>domtree: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTree,
+    </span>domtree: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTree,
 
     <span class="doccomment">/// Input state to a basic block.
     </span>block_input: FxHashMap&lt;Block, LastStores&gt;,
@@ -604,10 +605,10 @@
     </span>mem_values: FxHashMap&lt;MemoryLoc, (Inst, Value)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; AliasAnalysis&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AliasAnalysis&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Perform an alias analysis pass.
-    </span><span class="kw">pub fn </span>new(func: <span class="kw-2">&amp;</span>Function, domtree: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTree) -&gt; AliasAnalysis&lt;<span class="lifetime">&#39;a</span>&gt; {
-        <span class="macro">trace!</span>(<span class="string">&quot;alias analysis: input is:\n{:?}&quot;</span>, func);
+    </span><span class="kw">pub fn </span>new(func: <span class="kw-2">&amp;</span>Function, domtree: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTree) -&gt; AliasAnalysis&lt;<span class="lifetime">'a</span>&gt; {
+        <span class="macro">trace!</span>(<span class="string">"alias analysis: input is:\n{:?}"</span>, func);
         <span class="kw">let </span><span class="kw-2">mut </span>analysis = AliasAnalysis {
             domtree,
             block_input: FxHashMap::default(),
@@ -634,14 +635,14 @@
                 .clone();
 
             <span class="macro">trace!</span>(
-                <span class="string">&quot;alias analysis: input to block{} is {:?}&quot;</span>,
+                <span class="string">"alias analysis: input to block{} is {:?}"</span>,
                 block.index(),
                 state
             );
 
             <span class="kw">for </span>inst <span class="kw">in </span>func.layout.block_insts(block) {
                 state.update(func, inst);
-                <span class="macro">trace!</span>(<span class="string">&quot;after inst{}: state is {:?}&quot;</span>, inst.index(), state);
+                <span class="macro">trace!</span>(<span class="string">"after inst{}: state is {:?}"</span>, inst.index(), state);
             }
 
             visit_block_succs(func, block, |_inst, succ, _from_table| {
@@ -685,7 +686,7 @@
         inst: Inst,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;Value&gt; {
         <span class="macro">trace!</span>(
-            <span class="string">&quot;alias analysis: scanning at inst{} with state {:?} ({:?})&quot;</span>,
+            <span class="string">"alias analysis: scanning at inst{} with state {:?} ({:?})"</span>,
             inst.index(),
             state,
             func.dfg.insts[inst],
@@ -707,7 +708,7 @@
                     extending_opcode: get_ext_opcode(opcode),
                 };
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot;alias analysis: at inst{}: store with data v{} at loc {:?}&quot;</span>,
+                    <span class="string">"alias analysis: at inst{}: store with data v{} at loc {:?}"</span>,
                     inst.index(),
                     store_data.index(),
                     mem_loc
@@ -726,7 +727,7 @@
                     extending_opcode: get_ext_opcode(opcode),
                 };
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot;alias analysis: at inst{}: load with last_store inst{} at loc {:?}&quot;</span>,
+                    <span class="string">"alias analysis: at inst{}: load with last_store inst{} at loc {:?}"</span>,
                     inst.index(),
                     last_store.map(|inst| inst.index()).unwrap_or(usize::MAX),
                     mem_loc
@@ -745,13 +746,13 @@
                 </span><span class="kw">let </span>aliased =
                     <span class="kw">if let </span><span class="prelude-val">Some</span>((def_inst, value)) = <span class="self">self</span>.mem_values.get(<span class="kw-2">&amp;</span>mem_loc).cloned() {
                         <span class="macro">trace!</span>(
-                            <span class="string">&quot; -&gt; sees known value v{} from inst{}&quot;</span>,
+                            <span class="string">" -&gt; sees known value v{} from inst{}"</span>,
                             value.index(),
                             def_inst.index()
                         );
                         <span class="kw">if </span><span class="self">self</span>.domtree.dominates(def_inst, inst, <span class="kw-2">&amp;</span>func.layout) {
                             <span class="macro">trace!</span>(
-                                <span class="string">&quot; -&gt; dominates; value equiv from v{} to v{} inserted&quot;</span>,
+                                <span class="string">" -&gt; dominates; value equiv from v{} to v{} inserted"</span>,
                                 load_result.index(),
                                 value.index()
                             );
@@ -767,7 +768,7 @@
                 // as a new equivalent value.
                 </span><span class="kw">if </span>aliased.is_none() {
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot; -&gt; inserting load result v{} at loc {:?}&quot;</span>,
+                        <span class="string">" -&gt; inserting load result v{} at loc {:?}"</span>,
                         load_result.index(),
                         mem_loc
                     );

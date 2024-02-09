@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/memory.rs`."><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/memory.rs`."><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1074,7 +1075,7 @@
                     // to report the growth failure to but the error should not
                     // be dropped
                     // (https://github.com/bytecodealliance/wasmtime/issues/4240).
-                    </span>store.memory_grow_failed(<span class="kw-2">&amp;</span><span class="macro">format_err!</span>(<span class="string">&quot;Memory maximum size exceeded&quot;</span>));
+                    </span>store.memory_grow_failed(<span class="kw-2">&amp;</span><span class="macro">format_err!</span>(<span class="string">"Memory maximum size exceeded"</span>));
                 }
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
@@ -1097,7 +1098,7 @@
 
     <span class="doccomment">/// Grow memory to the specified amount of bytes.
     ///
-    /// Returns an error if memory can&#39;t be grown by the specified amount
+    /// Returns an error if memory can't be grown by the specified amount
     /// of bytes.
     </span><span class="kw">fn </span>grow_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, size: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
@@ -1134,7 +1135,7 @@
 
     <span class="comment">// The optional maximum accessible size, in bytes, for this linear memory.
     //
-    // Note that this maximum does not factor in guard pages, so this isn&#39;t the
+    // Note that this maximum does not factor in guard pages, so this isn't the
     // maximum size of the linear address space reservation for this memory.
     </span>maximum: <span class="prelude-ty">Option</span>&lt;usize&gt;,
 
@@ -1161,7 +1162,7 @@
         <span class="kw-2">mut </span>maximum: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         memory_image: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Arc&lt;MemoryImage&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="comment">// It&#39;s a programmer error for these two configuration values to exceed
+        <span class="comment">// It's a programmer error for these two configuration values to exceed
         // the host available address space, so panic if such a configuration is
         // found (mostly an issue for hypothetical 32-bit hosts).
         </span><span class="kw">let </span>offset_guard_bytes = usize::try_from(plan.offset_guard_size).unwrap();
@@ -1190,7 +1191,7 @@
             .checked_add(alloc_bytes)
             .and_then(|i| i.checked_add(extra_to_reserve_on_growth))
             .and_then(|i| i.checked_add(offset_guard_bytes))
-            .ok_or_else(|| <span class="macro">format_err!</span>(<span class="string">&quot;cannot allocate {} with guard regions&quot;</span>, minimum))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">format_err!</span>(<span class="string">"cannot allocate {} with guard regions"</span>, minimum))<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>mmap = Mmap::accessible_reserved(<span class="number">0</span>, request_bytes)<span class="question-mark">?</span>;
 
         <span class="kw">if </span>minimum &gt; <span class="number">0 </span>{
@@ -1208,7 +1209,7 @@
                     alloc_bytes + extra_to_reserve_on_growth,
                 );
                 slot.instantiate(minimum, <span class="prelude-val">Some</span>(image), <span class="kw-2">&amp;</span>plan)<span class="question-mark">?</span>;
-                <span class="comment">// On drop, we will unmap our mmap&#39;d range that this slot was
+                <span class="comment">// On drop, we will unmap our mmap'd range that this slot was
                 // mapped on top of, so there is no need for the slot to wipe
                 // it with an anonymous mapping first.
                 </span>slot.no_clear_on_drop();
@@ -1249,7 +1250,7 @@
                 .checked_add(new_size)
                 .and_then(|s| s.checked_add(<span class="self">self</span>.extra_to_reserve_on_growth))
                 .and_then(|s| s.checked_add(<span class="self">self</span>.offset_guard_size))
-                .ok_or_else(|| <span class="macro">format_err!</span>(<span class="string">&quot;overflow calculating size of memory allocation&quot;</span>))<span class="question-mark">?</span>;
+                .ok_or_else(|| <span class="macro">format_err!</span>(<span class="string">"overflow calculating size of memory allocation"</span>))<span class="question-mark">?</span>;
 
             <span class="kw">let </span><span class="kw-2">mut </span>new_mmap = Mmap::accessible_reserved(<span class="number">0</span>, request_bytes)<span class="question-mark">?</span>;
             new_mmap.make_accessible(<span class="self">self</span>.pre_guard_size, new_size)<span class="question-mark">?</span>;
@@ -1264,7 +1265,7 @@
                 dst.copy_from_slice(src);
             }
 
-            <span class="comment">// Now drop the MemoryImageSlot, if any. We&#39;ve lost the CoW
+            <span class="comment">// Now drop the MemoryImageSlot, if any. We've lost the CoW
             // advantages by explicitly copying all data, but we have
             // preserved all of its content; so we no longer need the
             // mapping. We need to do this before we (implicitly) drop the
@@ -1279,8 +1280,8 @@
         } <span class="kw">else </span>{
             <span class="comment">// If the new size of this heap fits within the existing allocation
             // then all we need to do is to make the new pages accessible. This
-            // can happen either for &quot;static&quot; heaps which always hit this case,
-            // or &quot;dynamic&quot; heaps which have some space reserved after the
+            // can happen either for "static" heaps which always hit this case,
+            // or "dynamic" heaps which have some space reserved after the
             // initial allocation to grow into before the heap is moved in
             // memory.
             </span><span class="macro">assert!</span>(new_size &gt; <span class="self">self</span>.accessible);
@@ -1303,7 +1304,7 @@
     }
 
     <span class="kw">fn </span>needs_init(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="comment">// If we&#39;re using a CoW mapping, then no initialization
+        <span class="comment">// If we're using a CoW mapping, then no initialization
         // is needed.
         </span><span class="self">self</span>.memory_image.is_none()
     }
@@ -1319,7 +1320,7 @@
     }
 }
 
-<span class="doccomment">/// A &quot;static&quot; memory where the lifetime of the backing memory is managed
+<span class="doccomment">/// A "static" memory where the lifetime of the backing memory is managed
 /// elsewhere. Currently used with the pooling allocator.
 </span><span class="kw">struct </span>StaticMemory {
     <span class="doccomment">/// The base pointer of this static memory, wrapped up in a send/sync
@@ -1352,8 +1353,8 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">if </span>base_capacity &lt; initial_size {
             <span class="macro">bail!</span>(
-                <span class="string">&quot;initial memory size of {} exceeds the pooling allocator&#39;s \
-                 configured maximum memory size of {} bytes&quot;</span>,
+                <span class="string">"initial memory size of {} exceeds the pooling allocator's \
+                 configured maximum memory size of {} bytes"</span>,
                 initial_size,
                 base_capacity,
             );
@@ -1420,9 +1421,9 @@
 
 <span class="doccomment">/// For shared memory (and only for shared memory), this lock-version restricts
 /// access when growing the memory or checking its size. This is to conform with
-/// the [thread proposal]: &quot;When `IsSharedArrayBuffer(...)` is true, the return
+/// the [thread proposal]: "When `IsSharedArrayBuffer(...)` is true, the return
 /// value should be the result of an atomic read-modify-write of the new size to
-/// the internal `length` slot.&quot;
+/// the internal `length` slot."
 ///
 /// [thread proposal]:
 ///     https://github.com/WebAssembly/threads/blob/master/proposals/threads/Overview.md#webassemblymemoryprototypegrow
@@ -1451,14 +1452,14 @@
         ty: wasmtime_environ::Memory,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">if </span>!ty.shared {
-            <span class="macro">bail!</span>(<span class="string">&quot;shared memory must have a `shared` memory type&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"shared memory must have a `shared` memory type"</span>);
         }
         <span class="kw">if </span>!<span class="macro">matches!</span>(plan.style, MemoryStyle::Static { .. }) {
-            <span class="macro">bail!</span>(<span class="string">&quot;shared memory can only be built from a static memory allocation&quot;</span>)
+            <span class="macro">bail!</span>(<span class="string">"shared memory can only be built from a static memory allocation"</span>)
         }
         <span class="macro">assert!</span>(
             memory.as_any_mut().type_id() != std::any::TypeId::of::&lt;SharedMemory&gt;(),
-            <span class="string">&quot;cannot re-wrap a shared memory&quot;
+            <span class="string">"cannot re-wrap a shared memory"
         </span>);
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(Arc::new(SharedMemoryInner {
             ty,
@@ -1478,7 +1479,7 @@
         Memory(Box::new(<span class="self">self</span>))
     }
 
-    <span class="doccomment">/// Return a pointer to the shared memory&#39;s [VMMemoryDefinition].
+    <span class="doccomment">/// Return a pointer to the shared memory's [VMMemoryDefinition].
     </span><span class="kw">pub fn </span>vmmemory_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>VMMemoryDefinition {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.def.<span class="number">0
     </span>}
@@ -1505,9 +1506,9 @@
             // now-valid due to changes to the page flags in `grow` above but
             // beyond the `memory.size` that we are about to assign to. In these
             // and similar cases, discussion in the thread proposal concluded
-            // that: &quot;multiple accesses in one thread racing with another
-            // thread&#39;s `memory.grow` that are in-bounds only after the grow
-            // commits may independently succeed or trap&quot; (see
+            // that: "multiple accesses in one thread racing with another
+            // thread's `memory.grow` that are in-bounds only after the grow
+            // commits may independently succeed or trap" (see
             // https://github.com/WebAssembly/threads/issues/26#issuecomment-433930711).
             // In other words, some non-determinism is acceptable when using
             // `memory.size` on work being done by `memory.grow`.
@@ -1667,14 +1668,14 @@
             // (which is torn down with the instance), the current shared memory
             // implementation will cause problems; see
             // https://github.com/bytecodealliance/wasmtime/issues/4244.
-            </span><span class="macro">todo!</span>(<span class="string">&quot;using shared memory with the pooling allocator is a work in progress&quot;</span>);
+            </span><span class="macro">todo!</span>(<span class="string">"using shared memory with the pooling allocator is a work in progress"</span>);
         } <span class="kw">else </span>{
             allocation
         };
         <span class="prelude-val">Ok</span>(Memory(allocation))
     }
 
-    <span class="doccomment">/// Calls the `store`&#39;s limiter to optionally prevent a memory from being allocated.
+    <span class="doccomment">/// Calls the `store`'s limiter to optionally prevent a memory from being allocated.
     ///
     /// Returns the minimum size and optional maximum size of the memory, in
     /// bytes.
@@ -1693,19 +1694,19 @@
 
         <span class="comment">// This is the absolute possible maximum that the module can try to
         // allocate, which is our entire address space minus a wasm page. That
-        // shouldn&#39;t ever actually work in terms of an allocation because
+        // shouldn't ever actually work in terms of an allocation because
         // presumably the kernel wants *something* for itself, but this is used
-        // to pass to the `store`&#39;s limiter for a requested size
+        // to pass to the `store`'s limiter for a requested size
         // to approximate the scale of the request that the wasm module is
         // making. This is necessary because the limiter works on `usize` bytes
-        // whereas we&#39;re working with possibly-overflowing `u64` calculations
+        // whereas we're working with possibly-overflowing `u64` calculations
         // here. To actually faithfully represent the byte requests of modules
-        // we&#39;d have to represent things as `u128`, but that&#39;s kinda
+        // we'd have to represent things as `u128`, but that's kinda
         // overkill for this purpose.
         </span><span class="kw">let </span>absolute_max = <span class="number">0usize</span>.wrapping_sub(WASM_PAGE_SIZE);
 
         <span class="comment">// If the minimum memory size overflows the size of our own address
-        // space, then we can&#39;t satisfy this request, but defer the error to
+        // space, then we can't satisfy this request, but defer the error to
         // later so the `store` can be informed that an effective oom is
         // happening.
         </span><span class="kw">let </span>minimum = plan
@@ -1719,7 +1720,7 @@
         // the effective maximum size to `absolute_max` above if the maximum is
         // too large. This should be ok since as a wasm runtime we get to
         // arbitrarily decide the actual maximum size of memory, regardless of
-        // what&#39;s actually listed on the memory itself.
+        // what's actually listed on the memory itself.
         </span><span class="kw">let </span><span class="kw-2">mut </span>maximum = plan.memory.maximum.map(|max| {
             usize::try_from(max)
                 .ok()
@@ -1729,19 +1730,19 @@
 
         <span class="comment">// If this is a 32-bit memory and no maximum is otherwise listed then we
         // need to still specify a maximum size of 4GB. If the host platform is
-        // 32-bit then there&#39;s no need to limit the maximum this way since no
+        // 32-bit then there's no need to limit the maximum this way since no
         // allocation of 4GB can succeed, but for 64-bit platforms this is
         // required to limit memories to 4GB.
         </span><span class="kw">if </span>!plan.memory.memory64 &amp;&amp; maximum.is_none() {
             maximum = usize::try_from(<span class="number">1u64 </span>&lt;&lt; <span class="number">32</span>).ok();
         }
 
-        <span class="comment">// Inform the store&#39;s limiter what&#39;s about to happen. This will let the
+        <span class="comment">// Inform the store's limiter what's about to happen. This will let the
         // limiter reject anything if necessary, and this also guarantees that
         // we should call the limiter for all requested memories, even if our
-        // `minimum` calculation overflowed. This means that the `minimum` we&#39;re
+        // `minimum` calculation overflowed. This means that the `minimum` we're
         // informing the limiter is lossy and may not be 100% accurate, but for
-        // now the expected uses of limiter means that&#39;s ok.
+        // now the expected uses of limiter means that's ok.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(store) = store {
             <span class="comment">// We ignore the store limits for shared memories since they are
             // technically not created within a store (though, trickily, they
@@ -1749,7 +1750,7 @@
             </span><span class="kw">if </span>!plan.memory.shared {
                 <span class="kw">if </span>!store.memory_growing(<span class="number">0</span>, minimum.unwrap_or(absolute_max), maximum)<span class="question-mark">? </span>{
                     <span class="macro">bail!</span>(
-                        <span class="string">&quot;memory minimum size of {} pages exceeds memory limits&quot;</span>,
+                        <span class="string">"memory minimum size of {} pages exceeds memory limits"</span>,
                         plan.memory.minimum
                     );
                 }
@@ -1760,7 +1761,7 @@
         // an error if we made it this far.
         </span><span class="kw">let </span>minimum = minimum.ok_or_else(|| {
             <span class="macro">format_err!</span>(
-                <span class="string">&quot;memory minimum size of {} pages exceeds memory limits&quot;</span>,
+                <span class="string">"memory minimum size of {} pages exceeds memory limits"</span>,
                 plan.memory.minimum
             )
         })<span class="question-mark">?</span>;
@@ -1776,7 +1777,7 @@
     ///
     /// Returns `None` if the memory is unbounded.
     ///
-    /// The runtime maximum may not be equal to the maximum from the linear memory&#39;s
+    /// The runtime maximum may not be equal to the maximum from the linear memory's
     /// Wasm type when it is being constrained by an instance allocator.
     </span><span class="kw">pub fn </span>maximum_byte_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="self">self</span>.<span class="number">0</span>.maximum_byte_size()
@@ -1791,14 +1792,14 @@
 
     <span class="doccomment">/// Grow memory by the specified amount of wasm pages.
     ///
-    /// Returns `None` if memory can&#39;t be grown by the specified amount
+    /// Returns `None` if memory can't be grown by the specified amount
     /// of wasm pages. Returns `Some` with the old size of memory, in bytes, on
     /// successful growth.
     ///
     /// # Safety
     ///
     /// Resizing the memory can reallocate the memory buffer for dynamic memories.
-    /// An instance&#39;s `VMContext` may have pointers to the memory&#39;s base and will
+    /// An instance's `VMContext` may have pointers to the memory's base and will
     /// need to be fixed up after growing the memory.
     ///
     /// Generally, prefer using `InstanceHandle::memory_grow`, which encapsulates
@@ -1824,7 +1825,7 @@
     <span class="doccomment">/// Consume the memory, returning its [`MemoryImageSlot`] if any is present.
     /// The image should only be present for a subset of memories created with
     /// [`Memory::new_static()`].
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;pooling-allocator&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"pooling-allocator"</span>)]
     </span><span class="kw">pub fn </span>unwrap_static_image(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; MemoryImageSlot {
         <span class="kw">let </span>mem = <span class="self">self</span>.<span class="number">0</span>.as_any_mut().downcast_mut::&lt;StaticMemory&gt;().unwrap();
         std::mem::replace(<span class="kw-2">&amp;mut </span>mem.memory_image, MemoryImageSlot::dummy())
@@ -1894,7 +1895,7 @@
 
 <span class="doccomment">/// In the configurations where bounds checks were elided in JIT code (because
 /// we are using static memories with virtual memory guard pages) this manual
-/// check is here so we don&#39;t segfault from Rust. For other configurations,
+/// check is here so we don't segfault from Rust. For other configurations,
 /// these checks are required anyways.
 </span><span class="kw">fn </span>validate_atomic_addr(
     def: <span class="kw-2">&amp;</span>VMMemoryDefinition,

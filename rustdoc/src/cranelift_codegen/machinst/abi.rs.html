@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/abi.rs`."><title>abi.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/abi.rs`."><title>abi.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -2648,7 +2649,7 @@
 //! registers. Most modern machines, e.g. x86-64 and AArch64, should fit this
 //! mold and thus both of these backends use this shared implementation.
 //!
-//! See the documentation in specific machine backends for the &quot;instantiation&quot;
+//! See the documentation in specific machine backends for the "instantiation"
 //! of this generic ABI, i.e., which registers are caller/callee-save, arguments
 //! and return values, and any other special requirements.
 //!
@@ -2668,10 +2669,10 @@
 //! access arguments, stack slots, and spill slots before we know how
 //! many spill slots or clobber-saves there will be, because of our
 //! pass structure. We also prefer positive offsets to negative
-//! offsets because of an asymmetry in some machines&#39; addressing modes
+//! offsets because of an asymmetry in some machines' addressing modes
 //! (e.g., on AArch64, positive offsets have a larger possible range
 //! without a long-form sequence to synthesize an arbitrary
-//! offset). We also need clobber-save registers to be &quot;near&quot; the
+//! offset). We also need clobber-save registers to be "near" the
 //! frame pointer: Windows unwind information requires it to be within
 //! 240 bytes of RBP. Finally, it is not allowed to access memory
 //! below the current SP value.
@@ -2684,18 +2685,18 @@
 //! for the rest of the function. We can then access frame storage
 //! slots using positive offsets from SP. In order to allow codegen
 //! for the latter before knowing how SP might be adjusted around
-//! callsites, we implement a &quot;nominal SP&quot; tracking feature by which a
-//! fixup (distance between actual SP and a &quot;nominal&quot; SP) is known at
+//! callsites, we implement a "nominal SP" tracking feature by which a
+//! fixup (distance between actual SP and a "nominal" SP) is known at
 //! each instruction.
 //!
 //! Note that if we ever support dynamic stack-space allocation (for
 //! `alloca`), we will need a way to reference spill slots and stack
-//! slots without &quot;nominal SP&quot;, because we will no longer be able to
+//! slots without "nominal SP", because we will no longer be able to
 //! know a static offset from SP to the slots at any particular
 //! program point. Probably the best solution at that point will be to
 //! revert to using the frame pointer as the reference for all slots,
-//! and creating a &quot;nominal FP&quot; synthetic addressing mode (analogous
-//! to &quot;nominal SP&quot; today) to allow generating spill/reload and
+//! and creating a "nominal FP" synthetic addressing mode (analogous
+//! to "nominal SP" today) to allow generating spill/reload and
 //! stackslot accesses before we know how large the clobber-saves will
 //! be.
 //!
@@ -2725,7 +2726,7 @@
 //!                              |          ...              |
 //!                              | stack slots               |
 //!                              | (accessed via nominal SP) |
-//! nominal SP ---------------&gt;  | (alloc&#39;d by prologue)     |
+//! nominal SP ---------------&gt;  | (alloc'd by prologue)     |
 //! (SP at end of prologue)      +---------------------------+
 //!                              | [alignment as needed]     |
 //!                              |          ...              |
@@ -2740,7 +2741,7 @@
 //!
 //! We support multi-value returns by using multiple return-value
 //! registers. In some cases this is an extension of the base system
-//! ABI. See each platform&#39;s `abi.rs` implementation for details.
+//! ABI. See each platform's `abi.rs` implementation for details.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::binemit::StackMap;
 <span class="kw">use </span><span class="kw">crate</span>::entity::{PrimaryMap, SecondaryMap};
@@ -2765,29 +2766,29 @@
 /// a small fixed sequence implementing one operation.
 </span><span class="kw">pub type </span>SmallInstVec&lt;I&gt; = SmallVec&lt;[I; <span class="number">4</span>]&gt;;
 
-<span class="doccomment">/// A type used by backends to track argument-binding info in the &quot;args&quot;
+<span class="doccomment">/// A type used by backends to track argument-binding info in the "args"
 /// pseudoinst. The pseudoinst holds a vec of `ArgPair` structs.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>ArgPair {
     <span class="doccomment">/// The vreg that is defined by this args pseudoinst.
     </span><span class="kw">pub </span>vreg: Writable&lt;Reg&gt;,
-    <span class="doccomment">/// The preg that the arg arrives in; this constrains the vreg&#39;s
+    <span class="doccomment">/// The preg that the arg arrives in; this constrains the vreg's
     /// placement at the pseudoinst.
     </span><span class="kw">pub </span>preg: Reg,
 }
 
-<span class="doccomment">/// A type used by backends to track return register binding info in the &quot;ret&quot;
+<span class="doccomment">/// A type used by backends to track return register binding info in the "ret"
 /// pseudoinst. The pseudoinst holds a vec of `RetPair` structs.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>RetPair {
     <span class="doccomment">/// The vreg that is returned by this pseudionst.
     </span><span class="kw">pub </span>vreg: Reg,
-    <span class="doccomment">/// The preg that the arg is returned through; this constrains the vreg&#39;s
+    <span class="doccomment">/// The preg that the arg is returned through; this constrains the vreg's
     /// placement at the pseudoinst.
     </span><span class="kw">pub </span>preg: Reg,
 }
 
-<span class="doccomment">/// A location for (part of) an argument or return value. These &quot;storage slots&quot;
+<span class="doccomment">/// A location for (part of) an argument or return value. These "storage slots"
 /// are specified for each register-sized part of an argument.
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>ABIArgSlot {
@@ -2830,7 +2831,7 @@
 /// Value to be passed with its parts in more than one location at the ABI
 /// level. For example, a 128-bit integer may be passed in two 64-bit registers,
 /// or even a 64-bit register and a 64-bit stack slot, on a 64-bit machine. The
-/// number of &quot;parts&quot; should correspond to the number of registers used to store
+/// number of "parts" should correspond to the number of registers used to store
 /// this type according to the machine backend.
 ///
 /// As an invariant, the `purpose` for every part must match. As a further
@@ -2851,7 +2852,7 @@
     /// and received in the corresponding block param, is a *pointer*. On the
     /// caller side, we memcpy the data from the passed-in pointer to the stack
     /// area; on the callee side, we compute a pointer to this stack area and
-    /// provide that as the argument&#39;s value.
+    /// provide that as the argument's value.
     </span>StructArg {
         <span class="doccomment">/// Register or stack slot holding a pointer to the buffer as passed
         /// by the caller to the callee.  If None, the ABI defines the buffer
@@ -2913,7 +2914,7 @@
 
 <span class="doccomment">/// Are we computing information about arguments or return values? Much of the
 /// handling is factored out into common routines; this enum allows us to
-/// distinguish which case we&#39;re handling.
+/// distinguish which case we're handling.
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>ArgsOrRets {
     <span class="doccomment">/// Arguments.
@@ -2960,14 +2961,14 @@
 /// `ABIMachineSpec::compute_arg_locs`. Wraps the shared allocation for all
 /// `ABIArg`s in `SigSet` and exposes just the args for the current
 /// `compute_arg_locs` call.
-</span><span class="kw">pub struct </span>ArgsAccumulator&lt;<span class="lifetime">&#39;a</span>&gt; {
-    sig_set_abi_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;ABIArg&gt;,
+</span><span class="kw">pub struct </span>ArgsAccumulator&lt;<span class="lifetime">'a</span>&gt; {
+    sig_set_abi_args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Vec&lt;ABIArg&gt;,
     start: usize,
     non_formal_flag: bool,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ArgsAccumulator&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>new(sig_set_abi_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;ABIArg&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; ArgsAccumulator&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">fn </span>new(sig_set_abi_args: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Vec&lt;ABIArg&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>start = sig_set_abi_args.len();
         ArgsAccumulator {
             sig_set_abi_args,
@@ -3045,16 +3046,16 @@
     /// Returns the stack-space used (rounded up to as alignment requires), and
     /// if `add_ret_area_ptr` was passed, the index of the extra synthetic arg
     /// that was added.
-    </span><span class="kw">fn </span>compute_arg_locs&lt;<span class="lifetime">&#39;a</span>, I&gt;(
+    </span><span class="kw">fn </span>compute_arg_locs&lt;<span class="lifetime">'a</span>, I&gt;(
         call_conv: isa::CallConv,
         flags: <span class="kw-2">&amp;</span>settings::Flags,
         params: I,
         args_or_rets: ArgsOrRets,
         add_ret_area_ptr: bool,
-        args: ArgsAccumulator&lt;<span class="lifetime">&#39;_</span>&gt;,
+        args: ArgsAccumulator&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; CodegenResult&lt;(u32, <span class="prelude-ty">Option</span>&lt;usize&gt;)&gt;
     <span class="kw">where
-        </span>I: IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ir::AbiParam&gt;;
+        </span>I: IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ir::AbiParam&gt;;
 
     <span class="doccomment">/// Returns the offset from FP to the argument area, i.e., jumping over the saved FP, return
     /// address, and maybe other standard elements depending on ABI (e.g. Wasm TLS reg).
@@ -3078,7 +3079,7 @@
         to_bits: u8,
     ) -&gt; <span class="self">Self</span>::I;
 
-    <span class="doccomment">/// Generate an &quot;args&quot; pseudo-instruction to capture input args in
+    <span class="doccomment">/// Generate an "args" pseudo-instruction to capture input args in
     /// registers.
     </span><span class="kw">fn </span>gen_args(isa_flags: <span class="kw-2">&amp;</span><span class="self">Self</span>::F, args: Vec&lt;ArgPair&gt;) -&gt; <span class="self">Self</span>::I;
 
@@ -3086,7 +3087,7 @@
     ///
     /// Optionally given non-zero number of additional stack bytes to pop after
     /// popping the return address from the stack, if any, and just before the
-    /// actual return. This is used by the &quot;tail&quot; calling convention to clean up
+    /// actual return. This is used by the "tail" calling convention to clean up
     /// stack arguments in the callee because we cannot rely on the caller to do
     /// it.
     </span><span class="kw">fn </span>gen_ret(
@@ -3198,7 +3199,7 @@
     ) -&gt; bool;
 
     <span class="doccomment">/// Generate a clobber-save sequence. The implementation here should return
-    /// a sequence of instructions that &quot;push&quot; or otherwise save to the stack all
+    /// a sequence of instructions that "push" or otherwise save to the stack all
     /// registers written/modified by the function body that are callee-saved.
     /// The sequence of instructions should adjust the stack pointer downward,
     /// and should align as necessary according to ABI requirements.
@@ -3262,7 +3263,7 @@
     <span class="doccomment">/// Get the current virtual-SP offset from an instruction-emission state.
     </span><span class="kw">fn </span>get_virtual_sp_offset_from_state(s: <span class="kw-2">&amp;</span>&lt;<span class="self">Self</span>::I <span class="kw">as </span>MachInstEmit&gt;::State) -&gt; i64;
 
-    <span class="doccomment">/// Get the &quot;nominal SP to FP&quot; offset from an instruction-emission state.
+    <span class="doccomment">/// Get the "nominal SP to FP" offset from an instruction-emission state.
     </span><span class="kw">fn </span>get_nominal_sp_to_fp(s: <span class="kw-2">&amp;</span>&lt;<span class="self">Self</span>::I <span class="kw">as </span>MachInstEmit&gt;::State) -&gt; i64;
 
     <span class="doccomment">/// Get all caller-save registers, that is, registers that we expect
@@ -3272,7 +3273,7 @@
     <span class="doccomment">/// Get the needed extension mode, given the mode attached to the argument
     /// in the signature and the calling convention. The input (the attribute in
     /// the signature) specifies what extension type should be done *if* the ABI
-    /// requires extension to the full register; this method&#39;s return value
+    /// requires extension to the full register; this method's return value
     /// indicates whether the extension actually *will* be done.
     </span><span class="kw">fn </span>get_ext_mode(
         call_conv: isa::CallConv,
@@ -3322,11 +3323,11 @@
     /// This is a index into the `SigSet::abi_args`.
     </span>rets_end: u32,
 
-    <span class="doccomment">/// Space on stack used to store arguments. We&#39;re storing the size in u32 to
+    <span class="doccomment">/// Space on stack used to store arguments. We're storing the size in u32 to
     /// reduce the size of the struct.
     </span>sized_stack_arg_space: u32,
 
-    <span class="doccomment">/// Space on stack used to store return values. We&#39;re storing the size in u32 to
+    <span class="doccomment">/// Space on stack used to store return values. We're storing the size in u32 to
     /// reduce the size of the struct.
     </span>sized_stack_ret_space: u32,
 
@@ -3361,7 +3362,7 @@
 
 <span class="doccomment">/// A (mostly) deduplicated set of ABI signatures.
 ///
-/// We say &quot;mostly&quot; because we do not dedupe between signatures interned via
+/// We say "mostly" because we do not dedupe between signatures interned via
 /// `ir::SigRef` (direct and indirect calls; the vast majority of signatures in
 /// this set) vs via `ir::Signature` (the callee itself and libcalls). Doing
 /// this final bit of deduplication would require filling out the
@@ -3370,7 +3371,7 @@
 /// to avoid.
 ///
 /// In general, prefer using the `ir::SigRef`-taking methods to the
-/// `ir::Signature`-taking methods when you can get away with it, as they don&#39;t
+/// `ir::Signature`-taking methods when you can get away with it, as they don't
 /// require cloning non-copy types that will trigger heap allocations.
 ///
 /// This type can be indexed by `Sig` to access its associated `SigData`.
@@ -3430,10 +3431,10 @@
     {
         <span class="comment">// Because the `HashMap` entry API requires taking ownership of the
         // lookup key -- and we want to avoid unnecessary clones of
-        // `ir::Signature`s, even at the cost of duplicate lookups -- we can&#39;t
+        // `ir::Signature`s, even at the cost of duplicate lookups -- we can't
         // have a single, get-or-create-style method for interning
         // `ir::Signature`s into ABI signatures. So at least (debug) assert that
-        // we aren&#39;t creating duplicate ABI signatures for the same
+        // we aren't creating duplicate ABI signatures for the same
         // `ir::Signature`.
         </span><span class="macro">debug_assert!</span>(!<span class="self">self</span>.have_abi_sig_for_signature(<span class="kw-2">&amp;</span>signature));
 
@@ -3467,9 +3468,9 @@
         <span class="self">self</span>.ir_sig_ref_to_abi_sig
             .get(sig_ref)
             <span class="comment">// Should have a secondary map entry...
-            </span>.expect(<span class="string">&quot;must call `make_abi_sig_from_ir_sig_ref` before `get_abi_sig_for_sig_ref`&quot;</span>)
+            </span>.expect(<span class="string">"must call `make_abi_sig_from_ir_sig_ref` before `get_abi_sig_for_sig_ref`"</span>)
             <span class="comment">// ...and that entry should be initialized.
-            </span>.expect(<span class="string">&quot;must call `make_abi_sig_from_ir_sig_ref` before `get_abi_sig_for_sig_ref`&quot;</span>)
+            </span>.expect(<span class="string">"must call `make_abi_sig_from_ir_sig_ref` before `get_abi_sig_for_sig_ref`"</span>)
     }
 
     <span class="doccomment">/// Get the already-interned ABI signature id for the given `ir::Signature`.
@@ -3477,7 +3478,7 @@
         <span class="self">self</span>.ir_signature_to_abi_sig
             .get(signature)
             .copied()
-            .expect(<span class="string">&quot;must call `make_abi_sig_from_ir_signature` before `get_abi_sig_for_signature`&quot;</span>)
+            .expect(<span class="string">"must call `make_abi_sig_from_ir_signature` before `get_abi_sig_for_signature`"</span>)
     }
 
     <span class="kw">pub fn </span>from_func_sig&lt;M: ABIMachineSpec&gt;(
@@ -3516,8 +3517,8 @@
         <span class="kw">let </span>args_end = u32::try_from(<span class="self">self</span>.abi_args.len()).unwrap();
 
         <span class="macro">trace!</span>(
-            <span class="string">&quot;ABISig: sig {:?} =&gt; args end = {} rets end = {}
-             arg stack = {} ret stack = {} stack_ret_arg = {:?}&quot;</span>,
+            <span class="string">"ABISig: sig {:?} =&gt; args end = {} rets end = {}
+             arg stack = {} ret stack = {} stack_ret_arg = {:?}"</span>,
             sig,
             args_end,
             rets_end,
@@ -3537,7 +3538,7 @@
         })
     }
 
-    <span class="doccomment">/// Get this signature&#39;s ABI arguments.
+    <span class="doccomment">/// Get this signature's ABI arguments.
     </span><span class="kw">pub fn </span>args(<span class="kw-2">&amp;</span><span class="self">self</span>, sig: Sig) -&gt; <span class="kw-2">&amp;</span>[ABIArg] {
         <span class="kw">let </span>sig_data = <span class="kw-2">&amp;</span><span class="self">self</span>.sigs[sig];
         <span class="comment">// Please see comments in `SigSet::from_func_sig` of how we store the offsets.
@@ -3562,7 +3563,7 @@
         <span class="self">self</span>.args(sig)[idx].clone()
     }
 
-    <span class="doccomment">/// Get this signature&#39;s ABI returns.
+    <span class="doccomment">/// Get this signature's ABI returns.
     </span><span class="kw">pub fn </span>rets(<span class="kw-2">&amp;</span><span class="self">self</span>, sig: Sig) -&gt; <span class="kw-2">&amp;</span>[ABIArg] {
         <span class="kw">let </span>sig_data = <span class="kw-2">&amp;</span><span class="self">self</span>.sigs[sig];
         <span class="comment">// Please see comments in `SigSet::from_func_sig` of how we store the offsets.
@@ -3597,7 +3598,7 @@
                 <span class="kw">for </span>slot <span class="kw">in </span>slots {
                     <span class="kw">match </span>slot {
                         <span class="kw-2">&amp;</span>ABIArgSlot::Reg { reg, .. } =&gt; {
-                            <span class="macro">crate::trace!</span>(<span class="string">&quot;call_clobbers: retval reg {:?}&quot;</span>, reg);
+                            <span class="macro">crate::trace!</span>(<span class="string">"call_clobbers: retval reg {:?}"</span>, reg);
                             clobbers.remove(PReg::from(reg));
                         }
                         <span class="kw">_ </span>=&gt; {}
@@ -3656,12 +3657,12 @@
     </span>reg_args: Vec&lt;ArgPair&gt;,
     <span class="doccomment">/// Clobbered registers, from regalloc.
     </span>clobbered: Vec&lt;Writable&lt;RealReg&gt;&gt;,
-    <span class="doccomment">/// Total number of spillslots, including for &#39;dynamic&#39; types, from regalloc.
+    <span class="doccomment">/// Total number of spillslots, including for 'dynamic' types, from regalloc.
     </span>spillslots: <span class="prelude-ty">Option</span>&lt;usize&gt;,
     <span class="doccomment">/// Storage allocated for the fixed part of the stack frame.  This is
     /// usually the same as the total frame size below.
     </span>fixed_frame_storage_size: u32,
-    <span class="doccomment">/// &quot;Total frame size&quot;, as defined by &quot;distance between FP and nominal SP&quot;.
+    <span class="doccomment">/// "Total frame size", as defined by "distance between FP and nominal SP".
     /// Some items are pushed below nominal SP, so the function may actually use
     /// more stack than this would otherwise imply. It is simply the initial
     /// frame/allocation size needed for stackslots and spillslots.
@@ -3672,11 +3673,11 @@
     </span>arg_temp_reg: Vec&lt;<span class="prelude-ty">Option</span>&lt;Writable&lt;Reg&gt;&gt;&gt;,
     <span class="doccomment">/// Calling convention this function expects.
     </span>call_conv: isa::CallConv,
-    <span class="doccomment">/// The settings controlling this function&#39;s compilation.
+    <span class="doccomment">/// The settings controlling this function's compilation.
     </span>flags: settings::Flags,
-    <span class="doccomment">/// The ISA-specific flag values controlling this function&#39;s compilation.
+    <span class="doccomment">/// The ISA-specific flag values controlling this function's compilation.
     </span>isa_flags: M::F,
-    <span class="doccomment">/// Whether or not this function is a &quot;leaf&quot;, meaning it calls no other
+    <span class="doccomment">/// Whether or not this function is a "leaf", meaning it calls no other
     /// functions
     </span>is_leaf: bool,
     <span class="doccomment">/// If this function has a stack limit specified, then `Reg` is where the
@@ -3721,13 +3722,13 @@
 
 <span class="kw">impl</span>&lt;M: ABIMachineSpec&gt; Callee&lt;M&gt; {
     <span class="doccomment">/// Create a new body ABI instance.
-    </span><span class="kw">pub fn </span>new&lt;<span class="lifetime">&#39;a</span>&gt;(
+    </span><span class="kw">pub fn </span>new&lt;<span class="lifetime">'a</span>&gt;(
         f: <span class="kw-2">&amp;</span>ir::Function,
         isa: <span class="kw-2">&amp;</span><span class="kw">dyn </span>TargetIsa,
         isa_flags: <span class="kw-2">&amp;</span>M::F,
         sigs: <span class="kw-2">&amp;</span>SigSet,
     ) -&gt; CodegenResult&lt;<span class="self">Self</span>&gt; {
-        <span class="macro">trace!</span>(<span class="string">&quot;ABI: func signature {:?}&quot;</span>, f.signature);
+        <span class="macro">trace!</span>(<span class="string">"ABI: func signature {:?}"</span>, f.signature);
 
         <span class="kw">let </span>flags = isa.flags().clone();
         <span class="kw">let </span>sig = sigs.abi_sig_for_signature(<span class="kw-2">&amp;</span>f.signature);
@@ -3742,7 +3743,7 @@
                 || call_conv.extends_windows_fastcall()
                 || call_conv == isa::CallConv::WasmtimeSystemV
                 || call_conv == isa::CallConv::AppleAarch64,
-            <span class="string">&quot;Unsupported calling convention: {:?}&quot;</span>,
+            <span class="string">"Unsupported calling convention: {:?}"</span>,
             call_conv
         );
 
@@ -3768,7 +3769,7 @@
             <span class="macro">debug_assert_eq!</span>(stackslot.as_u32() <span class="kw">as </span>usize, dynamic_stackslots.len());
             <span class="kw">let </span>off = dynamic_stack_offset;
             <span class="kw">let </span>ty = f.get_concrete_dynamic_ty(data.dyn_ty).ok_or_else(|| {
-                CodegenError::Unsupported(<span class="macro">format!</span>(<span class="string">&quot;invalid dynamic vector type: {}&quot;</span>, data.dyn_ty))
+                CodegenError::Unsupported(<span class="macro">format!</span>(<span class="string">"invalid dynamic vector type: {}"</span>, data.dyn_ty))
             })<span class="question-mark">?</span>;
             dynamic_stack_offset = dynamic_stack_offset
                 .checked_add(isa.dynamic_vector_bytes(ty))
@@ -3784,7 +3785,7 @@
         <span class="kw">for </span>(dyn_ty, _data) <span class="kw">in </span>f.dfg.dynamic_types.iter() {
             <span class="kw">let </span>ty = f
                 .get_concrete_dynamic_ty(dyn_ty)
-                .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;invalid dynamic vector type: {}&quot;</span>, dyn_ty));
+                .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"invalid dynamic vector type: {}"</span>, dyn_ty));
             <span class="kw">let </span>size = isa.dynamic_vector_bytes(ty);
             dynamic_type_sizes.insert(ty, size);
         }
@@ -3806,7 +3807,7 @@
         </span><span class="kw">let </span>probestack_min_frame = <span class="kw">if </span>flags.enable_probestack() {
             <span class="macro">assert!</span>(
                 !flags.probestack_func_adjusts_sp(),
-                <span class="string">&quot;SP-adjusting probestack not supported in new backends&quot;
+                <span class="string">"SP-adjusting probestack not supported in new backends"
             </span>);
             <span class="prelude-val">Some</span>(<span class="number">1 </span>&lt;&lt; flags.probestack_size_log2())
         } <span class="kw">else </span>{
@@ -3846,8 +3847,8 @@
     /// check at the header of a function. The stack check is intended to trap
     /// if the stack pointer goes below a particular threshold, preventing stack
     /// overflow in wasm or other code. The `stack_limit` argument here is the
-    /// register which holds the threshold below which we&#39;re supposed to trap.
-    /// This function is known to allocate `stack_size` bytes and we&#39;ll push
+    /// register which holds the threshold below which we're supposed to trap.
+    /// This function is known to allocate `stack_size` bytes and we'll push
     /// instructions onto `insts`.
     ///
     /// Note that the instructions generated here are special because this is
@@ -3857,9 +3858,9 @@
     /// this routine makes do with the `spilltmp_reg` as one temporary
     /// register, and a second register of `tmp2` which is caller-saved. This
     /// should be fine for us since no spills should happen in this sequence of
-    /// instructions, so our register won&#39;t get accidentally clobbered.
+    /// instructions, so our register won't get accidentally clobbered.
     ///
-    /// No values can be live after the prologue, but in this case that&#39;s ok
+    /// No values can be live after the prologue, but in this case that's ok
     /// because we just need to perform a stack check before progressing with
     /// the rest of the function.
     </span><span class="kw">fn </span>insert_stack_check(
@@ -3870,7 +3871,7 @@
     ) {
         <span class="comment">// With no explicit stack allocated we can just emit the simple check of
         // the stack registers against the stack limit register, and trap if
-        // it&#39;s out of bounds.
+        // it's out of bounds.
         </span><span class="kw">if </span>stack_size == <span class="number">0 </span>{
             insts.extend(M::gen_stack_lower_bound_trap(stack_limit));
             <span class="kw">return</span>;
@@ -3878,7 +3879,7 @@
 
         <span class="comment">// Note that the 32k stack size here is pretty special. See the
         // documentation in x86/abi.rs for why this is here. The general idea is
-        // that we&#39;re protecting against overflow in the addition that happens
+        // that we're protecting against overflow in the addition that happens
         // below.
         </span><span class="kw">if </span>stack_size &gt;= <span class="number">32 </span>* <span class="number">1024 </span>{
             insts.extend(M::gen_stack_lower_bound_trap(stack_limit));
@@ -3887,8 +3888,8 @@
         <span class="comment">// Add the `stack_size` to `stack_limit`, placing the result in
         // `scratch`.
         //
-        // Note though that `stack_limit`&#39;s register may be the same as
-        // `scratch`. If our stack size doesn&#39;t fit into an immediate this
+        // Note though that `stack_limit`'s register may be the same as
+        // `scratch`. If our stack size doesn't fit into an immediate this
         // means we need a second scratch register for loading the stack size
         // into a register.
         </span><span class="kw">let </span>scratch = Writable::from_reg(M::get_stacklimit_reg(<span class="self">self</span>.call_conv));
@@ -3906,7 +3907,7 @@
 ///
 /// Note that global values are typically lowered to instructions via the
 /// standard legalization pass. Unfortunately though prologue generation happens
-/// so late in the pipeline that we can&#39;t use these legalization passes to
+/// so late in the pipeline that we can't use these legalization passes to
 /// generate the instructions for `gv`. As a result we duplicate some lowering
 /// of `gv` here and support only some global values. This is similar to what
 /// the x86 backend does for now, and hopefully this can be somewhat cleaned up
@@ -3914,8 +3915,8 @@
 ///
 /// Also note that this function will make use of `writable_spilltmp_reg()` as a
 /// temporary register to store values in if necessary. Currently after we write
-/// to this register there&#39;s guaranteed to be no spilled values between where
-/// it&#39;s used, because we&#39;re not participating in register allocation anyway!
+/// to this register there's guaranteed to be no spilled values between where
+/// it's used, because we're not participating in register allocation anyway!
 </span><span class="kw">fn </span>gen_stack_limit&lt;M: ABIMachineSpec&gt;(
     f: <span class="kw-2">&amp;</span>ir::Function,
     sigs: <span class="kw-2">&amp;</span>SigSet,
@@ -3938,7 +3939,7 @@
         <span class="comment">// Return the direct register the vmcontext is in
         </span>ir::GlobalValueData::VMContext =&gt; {
             get_special_purpose_param_register(f, sigs, sig, ir::ArgumentPurpose::VMContext)
-                .expect(<span class="string">&quot;no vmcontext parameter found&quot;</span>)
+                .expect(<span class="string">"no vmcontext parameter found"</span>)
         }
         <span class="comment">// Load our base value into a register, then load from that register
         // in to a temporary register.
@@ -3958,7 +3959,7 @@
             ));
             <span class="kw">return </span>into_reg.to_reg();
         }
-        <span class="kw-2">ref </span>other =&gt; <span class="macro">panic!</span>(<span class="string">&quot;global value for stack limit not supported: {}&quot;</span>, other),
+        <span class="kw-2">ref </span>other =&gt; <span class="macro">panic!</span>(<span class="string">"global value for stack limit not supported: {}"</span>, other),
     }
 }
 
@@ -4021,7 +4022,7 @@
     </span><span class="kw">pub fn </span>signature(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ir::Signature {
         <span class="macro">debug_assert!</span>(
             missing_struct_return(<span class="kw-2">&amp;</span><span class="self">self</span>.ir_sig).is_none(),
-            <span class="string">&quot;`Callee::ir_sig` is always legalized&quot;
+            <span class="string">"`Callee::ir_sig` is always legalized"
         </span>);
         <span class="kw-2">&amp;</span><span class="self">self</span>.ir_sig
     }
@@ -4112,8 +4113,8 @@
             <span class="kw">match </span>slot {
                 <span class="kw-2">&amp;</span>ABIArgSlot::Reg { reg, .. } =&gt; {
                     <span class="comment">// Add a preg -&gt; def pair to the eventual `args`
-                    // instruction.  Extension mode doesn&#39;t matter
-                    // (we&#39;re copying out, not in; we ignore high bits
+                    // instruction.  Extension mode doesn't matter
+                    // (we're copying out, not in; we ignore high bits
                     // by convention).
                     </span><span class="kw">let </span>arg = ArgPair {
                         vreg: <span class="kw-2">*</span>into_reg,
@@ -4272,10 +4273,10 @@
                             <span class="kw">let </span><span class="kw-2">mut </span>ty = ty;
                             <span class="kw">let </span>from_bits = ty_bits(ty) <span class="kw">as </span>u8;
                             <span class="comment">// A machine ABI implementation should ensure that stack frames
-                            // have &quot;reasonable&quot; size. All current ABIs for machinst
+                            // have "reasonable" size. All current ABIs for machinst
                             // backends (aarch64 and x64) enforce a 128MB limit.
                             </span><span class="kw">let </span>off = i32::try_from(offset).expect(
-                                <span class="string">&quot;Argument stack offset greater than 2GB; should hit impl limit first&quot;</span>,
+                                <span class="string">"Argument stack offset greater than 2GB; should hit impl limit first"</span>,
                                 );
                             <span class="kw">let </span>ext = M::get_ext_mode(sigs[<span class="self">self</span>.sig].call_conv, extension);
                             <span class="comment">// Trash the from_reg; it should be its last use.
@@ -4309,10 +4310,10 @@
                 }
             }
             ABIArg::StructArg { .. } =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;StructArg in return position is unsupported&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"StructArg in return position is unsupported"</span>);
             }
             ABIArg::ImplicitPtrArg { .. } =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;ImplicitPtrArg in return position is unsupported&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"ImplicitPtrArg in return position is unsupported"</span>);
             }
         }
         (reg_pairs, ret)
@@ -4337,14 +4338,14 @@
             );
             insts.into_iter().next().map(|inst| {
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot;gen_retval_area_setup: inst {:?}; ptr reg is {:?}&quot;</span>,
+                    <span class="string">"gen_retval_area_setup: inst {:?}; ptr reg is {:?}"</span>,
                     inst,
                     <span class="self">self</span>.ret_area_ptr.unwrap().to_reg()
                 );
                 inst
             })
         } <span class="kw">else </span>{
-            <span class="macro">trace!</span>(<span class="string">&quot;gen_retval_area_setup: not needed&quot;</span>);
+            <span class="macro">trace!</span>(<span class="string">"gen_retval_area_setup: not needed"</span>);
             <span class="prelude-val">None
         </span>}
     }
@@ -4403,7 +4404,7 @@
         </span><span class="kw">let </span>islot = slot.index() <span class="kw">as </span>i64;
         <span class="kw">let </span>spill_off = islot * M::word_bytes() <span class="kw">as </span>i64;
         <span class="kw">let </span>sp_off = <span class="self">self</span>.stackslots_size <span class="kw">as </span>i64 + spill_off;
-        <span class="macro">trace!</span>(<span class="string">&quot;load_spillslot: slot {:?} -&gt; sp_off {}&quot;</span>, slot, sp_off);
+        <span class="macro">trace!</span>(<span class="string">"load_spillslot: slot {:?} -&gt; sp_off {}"</span>, slot, sp_off);
 
         gen_load_stack_multi::&lt;M&gt;(StackAMode::NominalSPOffset(sp_off, ty), into_regs, ty)
     }
@@ -4419,7 +4420,7 @@
         </span><span class="kw">let </span>islot = slot.index() <span class="kw">as </span>i64;
         <span class="kw">let </span>spill_off = islot * M::word_bytes() <span class="kw">as </span>i64;
         <span class="kw">let </span>sp_off = <span class="self">self</span>.stackslots_size <span class="kw">as </span>i64 + spill_off;
-        <span class="macro">trace!</span>(<span class="string">&quot;store_spillslot: slot {:?} -&gt; sp_off {}&quot;</span>, slot, sp_off);
+        <span class="macro">trace!</span>(<span class="string">"store_spillslot: slot {:?} -&gt; sp_off {}"</span>, slot, sp_off);
 
         gen_store_stack_multi::&lt;M&gt;(StackAMode::NominalSPOffset(sp_off, ty), from_regs, ty)
     }
@@ -4469,7 +4470,7 @@
         <span class="kw">let </span>nominal_sp_to_fp = M::get_nominal_sp_to_fp(state);
         <span class="macro">assert!</span>(virtual_sp_offset &gt;= <span class="number">0</span>);
         <span class="macro">trace!</span>(
-            <span class="string">&quot;spillslots_to_stackmap: slots = {:?}, state = {:?}&quot;</span>,
+            <span class="string">"spillslots_to_stackmap: slots = {:?}, state = {:?}"</span>,
             slots,
             state
         );
@@ -4533,7 +4534,7 @@
             </span>insts.extend(M::gen_prologue_frame_setup(<span class="kw-2">&amp;</span><span class="self">self</span>.flags).into_iter());
         }
 
-        <span class="comment">// Leaf functions with zero stack don&#39;t need a stack check if one&#39;s
+        <span class="comment">// Leaf functions with zero stack don't need a stack check if one's
         // specified, otherwise always insert the stack check.
         </span><span class="kw">if </span>total_stacksize &gt; <span class="number">0 </span>|| !<span class="self">self</span>.is_leaf {
             <span class="kw">if let </span><span class="prelude-val">Some</span>((reg, stack_limit_load)) = <span class="kw-2">&amp;</span><span class="self">self</span>.stack_limit {
@@ -4572,7 +4573,7 @@
         );
         insts.extend(clobber_insts);
 
-        <span class="comment">// N.B.: &quot;nominal SP&quot;, which we use to refer to stackslots and
+        <span class="comment">// N.B.: "nominal SP", which we use to refer to stackslots and
         // spillslots, is defined to be equal to the stack pointer at this point
         // in the prologue.
         //
@@ -4615,8 +4616,8 @@
             insts.extend(M::gen_epilogue_frame_restore(<span class="kw-2">&amp;</span><span class="self">self</span>.flags));
         }
 
-        <span class="comment">// This `ret` doesn&#39;t need any return registers attached
-        // because we are post-regalloc and don&#39;t need to
+        <span class="comment">// This `ret` doesn't need any return registers attached
+        // because we are post-regalloc and don't need to
         // represent the implicit uses anymore.
         </span>insts.push(M::gen_ret(
             <span class="self">self</span>.setup_frame,
@@ -4625,7 +4626,7 @@
             <span class="self">self</span>.stack_bytes_to_pop(sigs),
         ));
 
-        <span class="macro">trace!</span>(<span class="string">&quot;Epilogue: {:?}&quot;</span>, insts);
+        <span class="macro">trace!</span>(<span class="string">"Epilogue: {:?}"</span>, insts);
         insts
     }
 
@@ -4635,7 +4636,7 @@
     /// at callsites within this function, or other ephemeral pushes).
     </span><span class="kw">pub fn </span>frame_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
         <span class="self">self</span>.total_frame_size
-            .expect(<span class="string">&quot;frame size not computed before prologue generation&quot;</span>)
+            .expect(<span class="string">"frame size not computed before prologue generation"</span>)
     }
 
     <span class="doccomment">/// Returns the size of arguments expected on the stack.
@@ -4706,7 +4707,7 @@
 
 <span class="doccomment">/// ABI object for a callsite.
 </span><span class="kw">pub struct </span>CallSite&lt;M: ABIMachineSpec&gt; {
-    <span class="doccomment">/// The called function&#39;s signature.
+    <span class="doccomment">/// The called function's signature.
     </span>sig: Sig,
     <span class="doccomment">/// All register uses for the callsite, i.e., function args, with
     /// VReg and the physical register it is constrained to.
@@ -4719,7 +4720,7 @@
     </span>dest: CallDest,
     <span class="doccomment">/// Actual call opcode; used to distinguish various types of calls.
     </span>opcode: ir::Opcode,
-    <span class="doccomment">/// Caller&#39;s calling convention.
+    <span class="doccomment">/// Caller's calling convention.
     </span>caller_conv: isa::CallConv,
     <span class="doccomment">/// The settings controlling this compilation.
     </span>flags: settings::Flags,
@@ -4840,7 +4841,7 @@
         sigs.num_args(<span class="self">self</span>.sig)
     }
 
-    <span class="doccomment">/// Allocate space for building a `return_call`&#39;s temporary frame before we
+    <span class="doccomment">/// Allocate space for building a `return_call`'s temporary frame before we
     /// copy it over the current frame.
     </span><span class="kw">pub fn </span>emit_allocate_tail_call_frame(<span class="kw-2">&amp;</span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Lower&lt;M::I&gt;) -&gt; u32 {
         <span class="comment">// The necessary stack space is:
@@ -4874,7 +4875,7 @@
         <span class="kw">let </span>sig = <span class="kw-2">&amp;</span>ctx.sigs()[<span class="self">self</span>.sig];
 
         <span class="kw">let </span>stack_space = <span class="kw">if </span>sig.call_conv() == isa::CallConv::Tail {
-            <span class="comment">// The &quot;tail&quot; calling convention has callees clean up stack
+            <span class="comment">// The "tail" calling convention has callees clean up stack
             // arguments, not callers. Callers still clean up any stack return
             // space, however.
             </span>sig.sized_stack_ret_space
@@ -4944,7 +4945,7 @@
         <span class="kw">let </span>word_bits = M::word_bits() <span class="kw">as </span>usize;
 
         <span class="comment">// How many temps do we need for extends? Allocate them ahead
-        // of time, since we can&#39;t do it while we&#39;re iterating over
+        // of time, since we can't do it while we're iterating over
         // the sig and immutably borrowing `ctx`.
         </span><span class="kw">let </span>needed_tmps = <span class="kw">match </span><span class="kw-2">&amp;</span>ctx.sigs().args(<span class="self">self</span>.sig)[idx] {
             <span class="kw-2">&amp;</span>ABIArg::Slots { <span class="kw-2">ref </span>slots, .. } =&gt; slots
@@ -4989,7 +4990,7 @@
                                     <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
                                 };
                                 <span class="kw">let </span>extend_result =
-                                    temps.pop().expect(<span class="string">&quot;Must have allocated enough temps&quot;</span>);
+                                    temps.pop().expect(<span class="string">"Must have allocated enough temps"</span>);
                                 insts.push(M::gen_extend(
                                     extend_result,
                                     <span class="kw-2">*</span>from_reg,
@@ -5007,7 +5008,7 @@
                                 // is constrained to the stack and
                                 // this copy is in a reg.
                                 </span><span class="kw">let </span>ref_copy =
-                                    temps.pop().expect(<span class="string">&quot;Must have allocated enough temps&quot;</span>);
+                                    temps.pop().expect(<span class="string">"Must have allocated enough temps"</span>);
                                 insts.push(M::gen_move(ref_copy, <span class="kw-2">*</span>from_reg, M::word_type()));
                                 <span class="self">self</span>.uses.push(CallArgPair {
                                     vreg: ref_copy.to_reg(),
@@ -5036,7 +5037,7 @@
                                         <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
                                     };
                                     <span class="kw">let </span>extend_result =
-                                        temps.pop().expect(<span class="string">&quot;Must have allocated enough temps&quot;</span>);
+                                        temps.pop().expect(<span class="string">"Must have allocated enough temps"</span>);
                                     insts.push(M::gen_extend(
                                         extend_result,
                                         <span class="kw-2">*</span>from_reg,
@@ -5121,8 +5122,8 @@
     </span><span class="kw">pub fn </span>emit_stack_ret_arg_for_tail_call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Lower&lt;M::I&gt;) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = ctx.sigs()[<span class="self">self</span>.sig].stack_ret_arg() {
             <span class="kw">let </span>ret_area_ptr = ctx.abi().ret_area_ptr.expect(
-                <span class="string">&quot;if the tail callee has a return pointer, then the tail caller \
-                 must as well&quot;</span>,
+                <span class="string">"if the tail callee has a return pointer, then the tail caller \
+                 must as well"</span>,
             );
             <span class="kw">for </span>inst <span class="kw">in </span><span class="self">self</span>.gen_arg(ctx, i.into(), ValueRegs::one(ret_area_ptr.to_reg())) {
                 ctx.emit(inst);
@@ -5133,11 +5134,11 @@
     <span class="doccomment">/// Builds a new temporary callee frame for the tail call and puts arguments into
     /// registers and stack slots (within the new temporary frame).
     ///
-    /// It is the caller&#39;s responsibility to move the temporary callee frame on
+    /// It is the caller's responsibility to move the temporary callee frame on
     /// top of the current caller frame before performing the actual tail call.
     ///
-    /// Returns a pair of the old caller&#39;s stack argument size and the new
-    /// callee&#39;s stack argument size.
+    /// Returns a pair of the old caller's stack argument size and the new
+    /// callee's stack argument size.
     </span><span class="kw">pub fn </span>emit_temporary_tail_call_frame(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         ctx: <span class="kw-2">&amp;mut </span>Lower&lt;M::I&gt;,
@@ -5170,7 +5171,7 @@
                 <span class="macro">assert_eq!</span>(into_regs.len(), slots.len());
                 <span class="kw">for </span>(slot, into_reg) <span class="kw">in </span>slots.iter().zip(into_regs.regs().iter()) {
                     <span class="kw">match </span>slot {
-                        <span class="comment">// Extension mode doesn&#39;t matter because we&#39;re copying out, not in,
+                        <span class="comment">// Extension mode doesn't matter because we're copying out, not in,
                         // and we ignore high bits in our own registers by convention.
                         </span><span class="kw-2">&amp;</span>ABIArgSlot::Reg { reg, .. } =&gt; {
                             <span class="self">self</span>.defs.push(CallRetPair {
@@ -5200,10 +5201,10 @@
                 }
             }
             <span class="kw-2">&amp;</span>ABIArg::StructArg { .. } =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;StructArg not supported in return position&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"StructArg not supported in return position"</span>);
             }
             <span class="kw-2">&amp;</span>ABIArg::ImplicitPtrArg { .. } =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;ImplicitPtrArg not supported in return position&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"ImplicitPtrArg not supported in return position"</span>);
             }
         }
         insts
@@ -5217,7 +5218,7 @@
     ///
     /// (Arg registers are uses, and retval registers are defs. Clobbered
     /// registers are also logically defs, but should never be read; their
-    /// values are &quot;defined&quot; (to the regalloc) but &quot;undefined&quot; in every other
+    /// values are "defined" (to the regalloc) but "undefined" in every other
     /// sense.)
     ///
     /// This function should only be called once, as it is allowed to re-use
@@ -5276,7 +5277,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>sig_data_size() {
         <span class="comment">// The size of `SigData` is performance sensitive, so make sure
-        // we don&#39;t regress it unintentionally.
+        // we don't regress it unintentionally.
         </span><span class="macro">assert_eq!</span>(std::mem::size_of::&lt;SigData&gt;(), <span class="number">24</span>);
     }
 }

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.13.1/src/connection.rs`."><title>connection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.13.1/src/connection.rs`."><title>connection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -933,13 +934,13 @@
 
 <span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Id {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{:08x}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+        <span class="macro">write!</span>(f, <span class="string">"{:08x}"</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
 <span class="kw">impl </span>fmt::Display <span class="kw">for </span>Id {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{:08x}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+        <span class="macro">write!</span>(f, <span class="string">"{:08x}"</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
@@ -963,7 +964,7 @@
     <span class="doccomment">/// Poll for a new outbound stream.
     ///
     /// This function will fail if the current state does not allow opening new outbound streams.
-    </span><span class="kw">pub fn </span>poll_new_outbound(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt; {
+    </span><span class="kw">pub fn </span>poll_new_outbound(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt; {
         <span class="kw">loop </span>{
             <span class="kw">match </span>std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.inner, ConnectionState::Poisoned) {
                 ConnectionState::Active(<span class="kw-2">mut </span>active) =&gt; <span class="kw">match </span>active.poll_new_outbound(cx) {
@@ -1016,7 +1017,7 @@
     <span class="doccomment">/// Poll for the next inbound stream.
     ///
     /// If this function returns `None`, the underlying connection is closed.
-    </span><span class="kw">pub fn </span>poll_next_inbound(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt;&gt; {
+    </span><span class="kw">pub fn </span>poll_next_inbound(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt;&gt; {
         <span class="kw">loop </span>{
             <span class="kw">match </span>std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.inner, ConnectionState::Poisoned) {
                 ConnectionState::Active(<span class="kw-2">mut </span>active) =&gt; <span class="kw">match </span>active.poll(cx) {
@@ -1071,7 +1072,7 @@
     }
 
     <span class="doccomment">/// Close the connection.
-    </span><span class="kw">pub fn </span>poll_close(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;()&gt;&gt; {
+    </span><span class="kw">pub fn </span>poll_close(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;()&gt;&gt; {
         <span class="kw">loop </span>{
             <span class="kw">match </span>std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.inner, ConnectionState::Poisoned) {
                 ConnectionState::Active(active) =&gt; {
@@ -1088,7 +1089,7 @@
                 },
                 ConnectionState::Cleanup(<span class="kw-2">mut </span>cleanup) =&gt; <span class="kw">match </span>cleanup.poll_unpin(cx) {
                     Poll::Ready(reason) =&gt; {
-                        <span class="macro">log::warn!</span>(<span class="string">&quot;Failure while closing connection: {}&quot;</span>, reason);
+                        <span class="macro">log::warn!</span>(<span class="string">"Failure while closing connection: {}"</span>, reason);
                         <span class="self">self</span>.inner = ConnectionState::Closed;
                         <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(()));
                     }
@@ -1135,13 +1136,13 @@
 }
 
 <span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>ConnectionState&lt;T&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
-            ConnectionState::Active(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Active&quot;</span>),
-            ConnectionState::Closing(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Closing&quot;</span>),
-            ConnectionState::Cleanup(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Cleanup&quot;</span>),
-            ConnectionState::Closed =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Closed&quot;</span>),
-            ConnectionState::Poisoned =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Poisoned&quot;</span>),
+            ConnectionState::Active(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">"Active"</span>),
+            ConnectionState::Closing(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">"Closing"</span>),
+            ConnectionState::Cleanup(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">"Cleanup"</span>),
+            ConnectionState::Closed =&gt; <span class="macro">write!</span>(f, <span class="string">"Closed"</span>),
+            ConnectionState::Poisoned =&gt; <span class="macro">write!</span>(f, <span class="string">"Poisoned"</span>),
         }
     }
 }
@@ -1163,8 +1164,8 @@
 
     rtt: rtt::Rtt,
 
-    <span class="doccomment">/// A stream&#39;s `max_stream_receive_window` can grow beyond [`DEFAULT_CREDIT`], see
-    /// [`Stream::next_window_update`]. This field is the sum of the bytes by which all streams&#39;
+    <span class="doccomment">/// A stream's `max_stream_receive_window` can grow beyond [`DEFAULT_CREDIT`], see
+    /// [`Stream::next_window_update`]. This field is the sum of the bytes by which all streams'
     /// `max_stream_receive_window` have each exceeded [`DEFAULT_CREDIT`]. Used to enforce
     /// [`Config::max_connection_receive_window`].
     </span>accumulated_max_stream_windows: Arc&lt;Mutex&lt;usize&gt;&gt;,
@@ -1193,11 +1194,11 @@
 
 <span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>Active&lt;T&gt; {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;Connection&quot;</span>)
-            .field(<span class="string">&quot;id&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id)
-            .field(<span class="string">&quot;mode&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.mode)
-            .field(<span class="string">&quot;streams&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.streams.len())
-            .field(<span class="string">&quot;next_id&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.next_id)
+        f.debug_struct(<span class="string">"Connection"</span>)
+            .field(<span class="string">"id"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id)
+            .field(<span class="string">"mode"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.mode)
+            .field(<span class="string">"streams"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.streams.len())
+            .field(<span class="string">"next_id"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.next_id)
             .finish()
     }
 }
@@ -1206,7 +1207,7 @@
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;(Connection {} {:?} (streams {}))&quot;</span>,
+            <span class="string">"(Connection {} {:?} (streams {}))"</span>,
             <span class="self">self</span>.id,
             <span class="self">self</span>.mode,
             <span class="self">self</span>.streams.len()
@@ -1218,7 +1219,7 @@
     <span class="doccomment">/// Create a new `Connection` from the given I/O resource.
     </span><span class="kw">fn </span>new(socket: T, cfg: Config, mode: Mode) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>id = Id::random();
-        <span class="macro">log::debug!</span>(<span class="string">&quot;new connection: {} ({:?})&quot;</span>, id, mode);
+        <span class="macro">log::debug!</span>(<span class="string">"new connection: {} ({:?})"</span>, id, mode);
         <span class="kw">let </span>socket = frame::Io::new(id, socket).fuse();
         Active {
             id,
@@ -1253,7 +1254,7 @@
         Cleanup::new(<span class="self">self</span>.stream_receivers, error)
     }
 
-    <span class="kw">fn </span>poll(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt; {
+    <span class="kw">fn </span>poll(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt; {
         <span class="kw">loop </span>{
             <span class="kw">if </span><span class="self">self</span>.socket.poll_ready_unpin(cx).is_ready() {
                 <span class="comment">// Note `next_ping` does not register a waker and thus if not called regularly (idle
@@ -1312,24 +1313,24 @@
         }
     }
 
-    <span class="kw">fn </span>poll_new_outbound(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt; {
+    <span class="kw">fn </span>poll_new_outbound(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Stream&gt;&gt; {
         <span class="kw">if </span><span class="self">self</span>.streams.len() &gt;= <span class="self">self</span>.config.max_num_streams {
-            <span class="macro">log::error!</span>(<span class="string">&quot;{}: maximum number of streams reached&quot;</span>, <span class="self">self</span>.id);
+            <span class="macro">log::error!</span>(<span class="string">"{}: maximum number of streams reached"</span>, <span class="self">self</span>.id);
             <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(ConnectionError::TooManyStreams));
         }
 
         <span class="kw">if </span><span class="self">self</span>.ack_backlog() &gt;= MAX_ACK_BACKLOG {
-            <span class="macro">log::debug!</span>(<span class="string">&quot;{MAX_ACK_BACKLOG} streams waiting for ACK, registering task for wake-up until remote acknowledges at least one stream&quot;</span>);
+            <span class="macro">log::debug!</span>(<span class="string">"{MAX_ACK_BACKLOG} streams waiting for ACK, registering task for wake-up until remote acknowledges at least one stream"</span>);
             <span class="self">self</span>.new_outbound_stream_waker = <span class="prelude-val">Some</span>(cx.waker().clone());
             <span class="kw">return </span>Poll::Pending;
         }
 
-        <span class="macro">log::trace!</span>(<span class="string">&quot;{}: creating new outbound stream&quot;</span>, <span class="self">self</span>.id);
+        <span class="macro">log::trace!</span>(<span class="string">"{}: creating new outbound stream"</span>, <span class="self">self</span>.id);
 
         <span class="kw">let </span>id = <span class="self">self</span>.next_stream_id()<span class="question-mark">?</span>;
         <span class="kw">let </span>stream = <span class="self">self</span>.make_new_outbound_stream(id);
 
-        <span class="macro">log::debug!</span>(<span class="string">&quot;{}: new outbound {} of {}&quot;</span>, <span class="self">self</span>.id, stream, <span class="self">self</span>);
+        <span class="macro">log::debug!</span>(<span class="string">"{}: new outbound {} of {}"</span>, <span class="self">self</span>.id, stream, <span class="self">self</span>);
         <span class="self">self</span>.streams.insert(id, stream.clone_shared());
 
         Poll::Ready(<span class="prelude-val">Ok</span>(stream))
@@ -1337,7 +1338,7 @@
 
     <span class="kw">fn </span>on_send_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame: Frame&lt;Either&lt;Data, WindowUpdate&gt;&gt;) {
         <span class="macro">log::trace!</span>(
-            <span class="string">&quot;{}/{}: sending: {}&quot;</span>,
+            <span class="string">"{}/{}: sending: {}"</span>,
             <span class="self">self</span>.id,
             frame.header().stream_id(),
             frame.header()
@@ -1346,15 +1347,15 @@
     }
 
     <span class="kw">fn </span>on_close_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: StreamId, ack: bool) {
-        <span class="macro">log::trace!</span>(<span class="string">&quot;{}/{}: sending close&quot;</span>, <span class="self">self</span>.id, id);
+        <span class="macro">log::trace!</span>(<span class="string">"{}/{}: sending close"</span>, <span class="self">self</span>.id, id);
         <span class="self">self</span>.pending_frames
             .push_back(Frame::close_stream(id, ack).into());
     }
 
     <span class="kw">fn </span>on_drop_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stream_id: StreamId) {
-        <span class="kw">let </span>s = <span class="self">self</span>.streams.remove(<span class="kw-2">&amp;</span>stream_id).expect(<span class="string">&quot;stream not found&quot;</span>);
+        <span class="kw">let </span>s = <span class="self">self</span>.streams.remove(<span class="kw-2">&amp;</span>stream_id).expect(<span class="string">"stream not found"</span>);
 
-        <span class="macro">log::trace!</span>(<span class="string">&quot;{}: removing dropped stream {}&quot;</span>, <span class="self">self</span>.id, stream_id);
+        <span class="macro">log::trace!</span>(<span class="string">"{}: removing dropped stream {}"</span>, <span class="self">self</span>.id, stream_id);
         <span class="kw">let </span>frame = {
             <span class="kw">let </span><span class="kw-2">mut </span>shared = s.lock();
             <span class="kw">let </span>frame = <span class="kw">match </span>shared.update_state(<span class="self">self</span>.id, stream_id, State::Closed) {
@@ -1398,7 +1399,7 @@
             frame
         };
         <span class="kw">if let </span><span class="prelude-val">Some</span>(f) = frame {
-            <span class="macro">log::trace!</span>(<span class="string">&quot;{}/{}: sending: {}&quot;</span>, <span class="self">self</span>.id, stream_id, f.header());
+            <span class="macro">log::trace!</span>(<span class="string">"{}/{}: sending: {}"</span>, <span class="self">self</span>.id, stream_id, f.header());
             <span class="self">self</span>.pending_frames.push_back(f.into());
         }
     }
@@ -1410,7 +1411,7 @@
     /// Otherwise we process the frame and potentially return a new `Stream`
     /// if one was opened by the remote.
     </span><span class="kw">fn </span>on_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame: Frame&lt;()&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Stream&gt;&gt; {
-        <span class="macro">log::trace!</span>(<span class="string">&quot;{}: received: {}&quot;</span>, <span class="self">self</span>.id, frame.header());
+        <span class="macro">log::trace!</span>(<span class="string">"{}: received: {}"</span>, <span class="self">self</span>.id, frame.header());
 
         <span class="kw">if </span>frame.header().flags().contains(header::ACK)
             &amp;&amp; <span class="macro">matches!</span>(frame.header().tag(), Tag::Data | Tag::WindowUpdate)
@@ -1435,15 +1436,15 @@
         <span class="kw">match </span>action {
             Action::None =&gt; {}
             Action::New(stream) =&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">&quot;{}: new inbound {} of {}&quot;</span>, <span class="self">self</span>.id, stream, <span class="self">self</span>);
+                <span class="macro">log::trace!</span>(<span class="string">"{}: new inbound {} of {}"</span>, <span class="self">self</span>.id, stream, <span class="self">self</span>);
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(stream));
             }
             Action::Ping(f) =&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">&quot;{}/{}: pong&quot;</span>, <span class="self">self</span>.id, f.header().stream_id());
+                <span class="macro">log::trace!</span>(<span class="string">"{}/{}: pong"</span>, <span class="self">self</span>.id, f.header().stream_id());
                 <span class="self">self</span>.pending_frames.push_back(f.into());
             }
             Action::Terminate(f) =&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">&quot;{}: sending term&quot;</span>, <span class="self">self</span>.id);
+                <span class="macro">log::trace!</span>(<span class="string">"{}: sending term"</span>, <span class="self">self</span>.id);
                 <span class="self">self</span>.pending_frames.push_back(f.into());
             }
         }
@@ -1474,23 +1475,23 @@
         </span><span class="kw">if </span>frame.header().flags().contains(header::SYN) {
             <span class="comment">// new stream
             </span><span class="kw">if </span>!<span class="self">self</span>.is_valid_remote_id(stream_id, Tag::Data) {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{}: invalid stream id {}&quot;</span>, <span class="self">self</span>.id, stream_id);
+                <span class="macro">log::error!</span>(<span class="string">"{}: invalid stream id {}"</span>, <span class="self">self</span>.id, stream_id);
                 <span class="kw">return </span>Action::Terminate(Frame::protocol_error());
             }
             <span class="kw">if </span>frame.body().len() &gt; DEFAULT_CREDIT <span class="kw">as </span>usize {
                 <span class="macro">log::error!</span>(
-                    <span class="string">&quot;{}/{}: 1st body of stream exceeds default credit&quot;</span>,
+                    <span class="string">"{}/{}: 1st body of stream exceeds default credit"</span>,
                     <span class="self">self</span>.id,
                     stream_id
                 );
                 <span class="kw">return </span>Action::Terminate(Frame::protocol_error());
             }
             <span class="kw">if </span><span class="self">self</span>.streams.contains_key(<span class="kw-2">&amp;</span>stream_id) {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{}/{}: stream already exists&quot;</span>, <span class="self">self</span>.id, stream_id);
+                <span class="macro">log::error!</span>(<span class="string">"{}/{}: stream already exists"</span>, <span class="self">self</span>.id, stream_id);
                 <span class="kw">return </span>Action::Terminate(Frame::protocol_error());
             }
             <span class="kw">if </span><span class="self">self</span>.streams.len() == <span class="self">self</span>.config.max_num_streams {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{}: maximum number of streams reached&quot;</span>, <span class="self">self</span>.id);
+                <span class="macro">log::error!</span>(<span class="string">"{}: maximum number of streams reached"</span>, <span class="self">self</span>.id);
                 <span class="kw">return </span>Action::Terminate(Frame::internal_error());
             }
             <span class="kw">let </span>stream = <span class="self">self</span>.make_new_inbound_stream(stream_id, DEFAULT_CREDIT);
@@ -1510,7 +1511,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>shared = s.lock();
             <span class="kw">if </span>frame.body_len() &gt; shared.receive_window() {
                 <span class="macro">log::error!</span>(
-                    <span class="string">&quot;{}/{}: frame body larger than window of stream&quot;</span>,
+                    <span class="string">"{}/{}: frame body larger than window of stream"</span>,
                     <span class="self">self</span>.id,
                     stream_id
                 );
@@ -1526,14 +1527,14 @@
             }
         } <span class="kw">else </span>{
             <span class="macro">log::trace!</span>(
-                <span class="string">&quot;{}/{}: data frame for unknown stream, possibly dropped earlier: {:?}&quot;</span>,
+                <span class="string">"{}/{}: data frame for unknown stream, possibly dropped earlier: {:?}"</span>,
                 <span class="self">self</span>.id,
                 stream_id,
                 frame
             );
             <span class="comment">// We do not consider this a protocol violation and thus do not send a stream reset
             // because we may still be processing pending `StreamCommand`s of this stream that were
-            // sent before it has been dropped and &quot;garbage collected&quot;. Such a stream reset would
+            // sent before it has been dropped and "garbage collected". Such a stream reset would
             // interfere with the frames that still need to be sent, causing premature stream
             // termination for the remote.
             //
@@ -1566,15 +1567,15 @@
         </span><span class="kw">if </span>frame.header().flags().contains(header::SYN) {
             <span class="comment">// new stream
             </span><span class="kw">if </span>!<span class="self">self</span>.is_valid_remote_id(stream_id, Tag::WindowUpdate) {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{}: invalid stream id {}&quot;</span>, <span class="self">self</span>.id, stream_id);
+                <span class="macro">log::error!</span>(<span class="string">"{}: invalid stream id {}"</span>, <span class="self">self</span>.id, stream_id);
                 <span class="kw">return </span>Action::Terminate(Frame::protocol_error());
             }
             <span class="kw">if </span><span class="self">self</span>.streams.contains_key(<span class="kw-2">&amp;</span>stream_id) {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{}/{}: stream already exists&quot;</span>, <span class="self">self</span>.id, stream_id);
+                <span class="macro">log::error!</span>(<span class="string">"{}/{}: stream already exists"</span>, <span class="self">self</span>.id, stream_id);
                 <span class="kw">return </span>Action::Terminate(Frame::protocol_error());
             }
             <span class="kw">if </span><span class="self">self</span>.streams.len() == <span class="self">self</span>.config.max_num_streams {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{}: maximum number of streams reached&quot;</span>, <span class="self">self</span>.id);
+                <span class="macro">log::error!</span>(<span class="string">"{}: maximum number of streams reached"</span>, <span class="self">self</span>.id);
                 <span class="kw">return </span>Action::Terminate(Frame::protocol_error());
             }
 
@@ -1601,14 +1602,14 @@
             }
         } <span class="kw">else </span>{
             <span class="macro">log::trace!</span>(
-                <span class="string">&quot;{}/{}: window update for unknown stream, possibly dropped earlier: {:?}&quot;</span>,
+                <span class="string">"{}/{}: window update for unknown stream, possibly dropped earlier: {:?}"</span>,
                 <span class="self">self</span>.id,
                 stream_id,
                 frame
             );
             <span class="comment">// We do not consider this a protocol violation and thus do not send a stream reset
             // because we may still be processing pending `StreamCommand`s of this stream that were
-            // sent before it has been dropped and &quot;garbage collected&quot;. Such a stream reset would
+            // sent before it has been dropped and "garbage collected". Such a stream reset would
             // interfere with the frames that still need to be sent, causing premature stream
             // termination for the remote.
             //
@@ -1629,14 +1630,14 @@
             <span class="kw">return </span>Action::Ping(Frame::new(hdr));
         }
         <span class="macro">log::debug!</span>(
-            <span class="string">&quot;{}/{}: ping for unknown stream, possibly dropped earlier: {:?}&quot;</span>,
+            <span class="string">"{}/{}: ping for unknown stream, possibly dropped earlier: {:?}"</span>,
             <span class="self">self</span>.id,
             stream_id,
             frame
         );
         <span class="comment">// We do not consider this a protocol violation and thus do not send a stream reset because
         // we may still be processing pending `StreamCommand`s of this stream that were sent before
-        // it has been dropped and &quot;garbage collected&quot;. Such a stream reset would interfere with the
+        // it has been dropped and "garbage collected". Such a stream reset would interfere with the
         // frames that still need to be sent, causing premature stream termination for the remote.
         //
         // See https://github.com/paritytech/yamux/issues/110 for details.

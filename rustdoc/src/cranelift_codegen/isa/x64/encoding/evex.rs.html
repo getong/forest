@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/encoding/evex.rs`."><title>evex.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/encoding/evex.rs`."><title>evex.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -752,11 +753,11 @@
 //!
 //! Byte 0:  0x62
 //!         ┌───┬───┬───┬───┬───┬───┬───┬───┐
-//! Byte 1: │ R │ X │ B │ R&#39;│ 0 │ 0 │ m │ m │
+//! Byte 1: │ R │ X │ B │ R'│ 0 │ 0 │ m │ m │
 //!         ├───┼───┼───┼───┼───┼───┼───┼───┤
 //! Byte 2: │ W │ v │ v │ v │ v │ 1 │ p │ p │
 //!         ├───┼───┼───┼───┼───┼───┼───┼───┤
-//! Byte 3: │ z │ L&#39;│ L │ b │ V&#39;│ a │ a │ a │
+//! Byte 3: │ z │ L'│ L │ b │ V'│ a │ a │ a │
 //!         └───┴───┴───┴───┴───┴───┴───┴───┘
 //!
 //! The prefix is then followed by the opcode byte, the ModR/M byte, and other optional suffixes
@@ -771,7 +772,7 @@
 <span class="kw">use </span>core::ops::RangeInclusive;
 
 <span class="doccomment">/// Constructs an EVEX-encoded instruction using a builder pattern. This approach makes it visually
-/// easier to transform something the manual&#39;s syntax, `EVEX.256.66.0F38.W1 1F /r` to code:
+/// easier to transform something the manual's syntax, `EVEX.256.66.0F38.W1 1F /r` to code:
 /// `EvexInstruction::new().length(...).prefix(...).map(...).w(true).opcode(0x1F).reg(...).rm(...)`.
 </span><span class="kw">pub struct </span>EvexInstruction {
     bits: u32,
@@ -787,7 +788,7 @@
 /// - the first byte is always `0x62` but you will notice it at the end of the default `bits` value
 ///   implemented--remember the little-endian order
 /// - some bits are always set to certain values: bits 10-11 to 0, bit 18 to 1
-/// - the other bits set correspond to reversed bits: R, X, B, R&#39; (byte 1), vvvv (byte 2), V&#39; (byte
+/// - the other bits set correspond to reversed bits: R, X, B, R' (byte 1), vvvv (byte 2), V' (byte
 ///   3).
 ///
 /// See the `default_emission` test for what these defaults are equivalent to (e.g. using RAX,
@@ -805,7 +806,7 @@
     }
 }
 
-<span class="attr">#[allow(non_upper_case_globals)] </span><span class="comment">// This makes it easier to match the bit range names to the manual&#39;s names.
+<span class="attr">#[allow(non_upper_case_globals)] </span><span class="comment">// This makes it easier to match the bit range names to the manual's names.
 </span><span class="kw">impl </span>EvexInstruction {
     <span class="doccomment">/// Construct a default EVEX instruction.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
@@ -854,7 +855,7 @@
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Set the &quot;tuple type&quot; which is used for 8-bit scaling when a memory
+    <span class="doccomment">/// Set the "tuple type" which is used for 8-bit scaling when a memory
     /// operand is used.
     </span><span class="attr">#[inline(always)]
     </span><span class="kw">pub fn </span>tuple_type(<span class="kw-2">mut </span><span class="self">self</span>, tt: Avx512TupleType) -&gt; <span class="self">Self </span>{
@@ -875,7 +876,7 @@
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Set the mask to use. See section 2.6 in the Intel Software Developer&#39;s Manual, volume 2A for
+    <span class="doccomment">/// Set the mask to use. See section 2.6 in the Intel Software Developer's Manual, volume 2A for
     /// more details.
     </span><span class="attr">#[allow(dead_code)]
     #[inline(always)]
@@ -897,7 +898,7 @@
     </span>}
 
     <span class="doccomment">/// Set the register to use for the `rm` bits; many instructions use this
-    /// as the &quot;read from register/memory&quot; operand. Setting this affects both
+    /// as the "read from register/memory" operand. Setting this affects both
     /// the ModRM byte (`rm` section) and the EVEX prefix (the extension bits
     /// for register encodings &gt; 8).
     </span><span class="attr">#[inline(always)]
@@ -911,7 +912,7 @@
                 index.to_real_reg().unwrap().hw_enc() &gt;&gt; <span class="number">3
             </span>}
 
-            <span class="comment">// These two modes technically don&#39;t use the X bit, so leave it at
+            <span class="comment">// These two modes technically don't use the X bit, so leave it at
             // 0.
             </span>RegisterOrAmode::Amode(Amode::ImmReg { .. }) =&gt; <span class="number">0</span>,
             RegisterOrAmode::Amode(Amode::RipRelative { .. }) =&gt; <span class="number">0</span>,
@@ -981,11 +982,11 @@
     // chart should be read from right-to-left, top-to-bottom. Note also that we start ranges at bit
     // 8, leaving bits 0-7 for the mandatory `0x62`.
     //         ┌───┬───┬───┬───┬───┬───┬───┬───┐
-    // Byte 1: │ R │ X │ B │ R&#39;│ 0 │ 0 │ m │ m │
+    // Byte 1: │ R │ X │ B │ R'│ 0 │ 0 │ m │ m │
     //         ├───┼───┼───┼───┼───┼───┼───┼───┤
     // Byte 2: │ W │ v │ v │ v │ v │ 1 │ p │ p │
     //         ├───┼───┼───┼───┼───┼───┼───┼───┤
-    // Byte 3: │ z │ L&#39;│ L │ b │ V&#39;│ a │ a │ a │
+    // Byte 3: │ z │ L'│ L │ b │ V'│ a │ a │ a │
     //         └───┴───┴───┴───┴───┴───┴───┴───┘
 
     // Byte 1:
@@ -1015,7 +1016,7 @@
         </span><span class="kw">let </span>mask: u32 = (<span class="number">1 </span>&lt;&lt; size) - <span class="number">1</span>; <span class="comment">// Generate a bit mask.
         </span><span class="macro">debug_assert!</span>(
             value &lt;= mask,
-            <span class="string">&quot;The written value should have fewer than {} bits.&quot;</span>,
+            <span class="string">"The written value should have fewer than {} bits."</span>,
             size
         );
         <span class="kw">let </span>mask_complement = !(mask &lt;&lt; <span class="kw-2">*</span>range.start()); <span class="comment">// Create the bitwise complement for the clear mask.
@@ -1055,7 +1056,7 @@
             }
             <span class="prelude-val">Some</span>(FullMem) =&gt; vector_size_scaling(),
             <span class="prelude-val">Some</span>(Mem128) =&gt; <span class="number">16</span>,
-            <span class="prelude-val">None </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;tuple type was not set&quot;</span>),
+            <span class="prelude-val">None </span>=&gt; <span class="macro">panic!</span>(<span class="string">"tuple type was not set"</span>),
         }
     }
 }
@@ -1095,7 +1096,7 @@
     }
 }
 
-<span class="doccomment">/// Defines the EVEX context for the `L&#39;`, `L`, and `b` bits (bits 6:4 of EVEX P2 byte). Table 2-36 in
+<span class="doccomment">/// Defines the EVEX context for the `L'`, `L`, and `b` bits (bits 6:4 of EVEX P2 byte). Table 2-36 in
 /// section 2.6.10 (Intel Software Development Manual, volume 2A) describes how these bits can be
 /// used together for certain classes of instructions; i.e., special care should be taken to ensure
 /// that instructions use an applicable correct `EvexContext`. Table 2-39 contains cases where
@@ -1127,7 +1128,7 @@
 }
 
 <span class="kw">impl </span>EvexContext {
-    <span class="doccomment">/// Encode the `L&#39;`, `L`, and `b` bits (bits 6:4 of EVEX P2 byte) for merging with the P2 byte.
+    <span class="doccomment">/// Encode the `L'`, `L`, and `b` bits (bits 6:4 of EVEX P2 byte) for merging with the P2 byte.
     </span><span class="kw">pub fn </span>bits(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::RoundingRegToRegFP { rc } =&gt; <span class="number">0b001 </span>| rc.bits() &lt;&lt; <span class="number">1</span>,
@@ -1138,7 +1139,7 @@
     }
 }
 
-<span class="doccomment">/// The EVEX format allows choosing a vector length in the `L&#39;` and `L` bits; see `EvexContext`.
+<span class="doccomment">/// The EVEX format allows choosing a vector length in the `L'` and `L` bits; see `EvexContext`.
 </span><span class="attr">#[allow(dead_code, missing_docs)] </span><span class="comment">// Wider-length vectors are not yet used.
 </span><span class="kw">pub enum </span>EvexVectorLength {
     V128,
@@ -1147,7 +1148,7 @@
 }
 
 <span class="kw">impl </span>EvexVectorLength {
-    <span class="doccomment">/// Encode the `L&#39;` and `L` bits for merging with the P2 byte.
+    <span class="doccomment">/// Encode the `L'` and `L` bits for merging with the P2 byte.
     </span><span class="kw">fn </span>bits(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::V128 =&gt; <span class="number">0b00</span>,
@@ -1164,7 +1165,7 @@
     }
 }
 
-<span class="doccomment">/// The EVEX format allows defining rounding control in the `L&#39;` and `L` bits; see `EvexContext`.
+<span class="doccomment">/// The EVEX format allows defining rounding control in the `L'` and `L` bits; see `EvexContext`.
 </span><span class="attr">#[allow(dead_code, missing_docs)] </span><span class="comment">// Rounding controls are not yet used.
 </span><span class="kw">pub enum </span>EvexRoundingControl {
     RNE,
@@ -1174,7 +1175,7 @@
 }
 
 <span class="kw">impl </span>EvexRoundingControl {
-    <span class="doccomment">/// Encode the `L&#39;` and `L` bits for merging with the P2 byte.
+    <span class="doccomment">/// Encode the `L'` and `L` bits for merging with the P2 byte.
     </span><span class="kw">fn </span>bits(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::RNE =&gt; <span class="number">0b00</span>,
@@ -1229,8 +1230,8 @@
     <span class="kw">use </span><span class="kw">crate</span>::isa::x64::inst::regs;
     <span class="kw">use </span>std::vec::Vec;
 
-    <span class="comment">// As a sanity test, we verify that the output of `xed-asmparse-main &#39;vpabsq xmm0{k0},
-    // xmm1&#39;` matches this EVEX encoding machinery.
+    <span class="comment">// As a sanity test, we verify that the output of `xed-asmparse-main 'vpabsq xmm0{k0},
+    // xmm1'` matches this EVEX encoding machinery.
     </span><span class="attr">#[test]
     </span><span class="kw">fn </span>vpabsq() {
         <span class="kw">let </span><span class="kw-2">mut </span>tmp = MachBuffer::&lt;Inst&gt;::new();
@@ -1461,13 +1462,13 @@
             <span class="macro">assert_eq!</span>(
                 bytes0.as_slice(),
                 encoding.as_slice(),
-                <span class="string">&quot;dst={dst:?} src={src:?}&quot;
+                <span class="string">"dst={dst:?} src={src:?}"
             </span>);
         }
     }
 
     <span class="doccomment">/// Verify that the defaults are equivalent to an instruction with a `0x00` opcode using the
-    /// &quot;0&quot; register (i.e. `rax`), with sane defaults for the various configurable parameters. This
+    /// "0" register (i.e. `rax`), with sane defaults for the various configurable parameters. This
     /// test is more interesting than it may appear because some of the parameters have flipped-bit
     /// representations (e.g. `vvvvv`) so emitting 0s as a default will not work.
     </span><span class="attr">#[test]

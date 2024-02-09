@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libsecp256k1-core-0.3.0/src/ecmult.rs`."><title>ecmult.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libsecp256k1_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libsecp256k1-core-0.3.0/src/ecmult.rs`."><title>ecmult.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libsecp256k1_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -693,7 +694,7 @@
 }
 
 <span class="doccomment">/// Calculate the (modular) inverses of a batch of field
-/// elements. Requires the inputs&#39; magnitudes to be at most 8. The
+/// elements. Requires the inputs' magnitudes to be at most 8. The
 /// output magnitudes are 1 (but not guaranteed to be
 /// normalized).
 </span><span class="kw">pub fn </span>inv_all_var(fields: <span class="kw-2">&amp;</span>[Field]) -&gt; Vec&lt;Field&gt; {
@@ -795,8 +796,8 @@
 
         <span class="comment">// Construct a group element with no known corresponding scalar (nothing up my sleeve).
         </span><span class="kw">let </span><span class="kw-2">mut </span>nums_32 = [<span class="number">0u8</span>; <span class="number">32</span>];
-        <span class="macro">debug_assert!</span>(<span class="string">b&quot;The scalar for this x is unknown&quot;</span>.len() == <span class="number">32</span>);
-        <span class="kw">for </span>(i, v) <span class="kw">in </span><span class="string">b&quot;The scalar for this x is unknown&quot;</span>.iter().enumerate() {
+        <span class="macro">debug_assert!</span>(<span class="string">b"The scalar for this x is unknown"</span>.len() == <span class="number">32</span>);
+        <span class="kw">for </span>(i, v) <span class="kw">in </span><span class="string">b"The scalar for this x is unknown"</span>.iter().enumerate() {
             nums_32[i] = <span class="kw-2">*</span>v;
         }
         <span class="kw">let </span><span class="kw-2">mut </span>nums_x = Field::default();
@@ -981,7 +982,7 @@
     <span class="comment">/* Note that we cannot handle even numbers by negating them to be
      * odd, as is done in other implementations, since if our scalars
      * were specified to have width &lt; 256 for performance reasons,
-     * their negations would have width 256 and we&#39;d lose any
+     * their negations would have width 256 and we'd lose any
      * performance benefit. Instead, we use a technique from Section
      * 4.2 of the Okeya/Tagaki paper, which is to add either 1 (for
      * even) or 2 (for odd) to the number we are encoding, returning a
@@ -1084,8 +1085,8 @@
         <span class="kw">let </span>skew_1 = ecmult_wnaf_const(<span class="kw-2">&amp;mut </span>wnaf_1, <span class="kw-2">&amp;</span>sc, WINDOW_A - <span class="number">1</span>);
 
         <span class="comment">/* Calculate odd multiples of a.  All multiples are brought to
-         * the same Z &#39;denominator&#39;, which is stored in Z. Due to
-         * secp256k1&#39; isomorphism we can do all operations pretending
+         * the same Z 'denominator', which is stored in Z. Due to
+         * secp256k1' isomorphism we can do all operations pretending
          * that the Z coordinate was 1, use affine addition formulae,
          * and correct the Z coordinate of the result once at the end.
          */

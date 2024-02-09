@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/merkletree-0.23.0/src/store/mmap.rs`."><title>mmap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="merkletree" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/merkletree-0.23.0/src/store/mmap.rs`."><title>mmap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="merkletree" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -328,7 +329,7 @@
     <span class="kw">type </span>Target = [u8];
 
     <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.map.as_ref().expect(<span class="string">&quot;couldn&#39;t dereference&quot;</span>)[..]
+        <span class="kw-2">&amp;</span><span class="self">self</span>.map.as_ref().expect(<span class="string">"couldn't dereference"</span>)[..]
     }
 }
 
@@ -382,16 +383,16 @@
     <span class="attr">#[allow(unsafe_code)]
     </span><span class="kw">fn </span>new_from_disk(size: usize, _branches: usize, config: <span class="kw-2">&amp;</span>StoreConfig) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>data_path = StoreConfig::data_path(<span class="kw-2">&amp;</span>config.path, <span class="kw-2">&amp;</span>config.id);
-        <span class="macro">ensure!</span>(Path::new(<span class="kw-2">&amp;</span>data_path).exists(), <span class="string">&quot;[MmapStore] new_from_disk constructor can be used only for instantiating already existing storages&quot;</span>);
+        <span class="macro">ensure!</span>(Path::new(<span class="kw-2">&amp;</span>data_path).exists(), <span class="string">"[MmapStore] new_from_disk constructor can be used only for instantiating already existing storages"</span>);
 
         <span class="comment">// MmapStore expects only read/write file
         </span><span class="kw">let </span>file = <span class="kw">match </span>OpenOptions::new().write(<span class="bool-val">true</span>).read(<span class="bool-val">true</span>).open(<span class="kw-2">&amp;</span>data_path) {
             <span class="prelude-val">Ok</span>(file) =&gt; file,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="kw">if </span>e.kind() == std::io::ErrorKind::PermissionDenied {
-                    <span class="macro">error!</span>(<span class="string">&quot;MmapStore doesn&#39;t support read-only storages&quot;</span>);
+                    <span class="macro">error!</span>(<span class="string">"MmapStore doesn't support read-only storages"</span>);
                 }
-                <span class="macro">panic!</span>(<span class="string">&quot;{}&quot;</span>, e)
+                <span class="macro">panic!</span>(<span class="string">"{}"</span>, e)
             }
         };
 
@@ -401,7 +402,7 @@
         <span class="comment">// Sanity check.
         </span><span class="macro">ensure!</span>(
             store_size == size * E::byte_len(),
-            <span class="string">&quot;Invalid formatted file provided. Expected {} bytes, found {} bytes&quot;</span>,
+            <span class="string">"Invalid formatted file provided. Expected {} bytes, found {} bytes"</span>,
             size * E::byte_len(),
             store_size
         );
@@ -434,7 +435,7 @@
     <span class="kw">fn </span>copy_from_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8], start: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">ensure!</span>(
             buf.len() % E::byte_len() == <span class="number">0</span>,
-            <span class="string">&quot;buf size must be a multiple of {}&quot;</span>,
+            <span class="string">"buf size must be a multiple of {}"</span>,
             E::byte_len()
         );
 
@@ -460,7 +461,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             data.len() % E::byte_len() == <span class="number">0</span>,
-            <span class="string">&quot;data size must be a multiple of {}&quot;</span>,
+            <span class="string">"data size must be a multiple of {}"</span>,
             E::byte_len()
         );
 
@@ -488,12 +489,12 @@
     <span class="kw">fn </span>new_from_slice(size: usize, data: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             data.len() % E::byte_len() == <span class="number">0</span>,
-            <span class="string">&quot;data size must be a multiple of {}&quot;</span>,
+            <span class="string">"data size must be a multiple of {}"</span>,
             E::byte_len()
         );
 
         <span class="kw">let </span><span class="kw-2">mut </span>store = <span class="self">Self</span>::new(size)<span class="question-mark">?</span>;
-        <span class="macro">ensure!</span>(store.map.is_some(), <span class="string">&quot;Internal map needs to be initialized&quot;</span>);
+        <span class="macro">ensure!</span>(store.map.is_some(), <span class="string">"Internal map needs to be initialized"</span>);
 
         <span class="kw">let </span>len = data.len();
         <span class="comment">// unwrap is safe as we checked map to be initialised
@@ -508,13 +509,13 @@
         <span class="kw">let </span>end = start + E::byte_len();
         <span class="kw">let </span>len = <span class="self">self</span>.len * E::byte_len();
 
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
 
         <span class="kw">let </span>data = <span class="self">self
             </span>.map
             .as_ref()
-            .context(<span class="string">&quot;Internal map needs to be initialized&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"Internal map needs to be initialized"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(E::from_slice(<span class="kw-2">&amp;</span>data[start..end]))
     }
 
@@ -523,20 +524,20 @@
         <span class="kw">let </span>end = start + E::byte_len();
         <span class="kw">let </span>len = <span class="self">self</span>.len * E::byte_len();
 
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
 
         <span class="kw">let </span>data = <span class="self">self
             </span>.map
             .as_ref()
-            .context(<span class="string">&quot;Internal map needs to be initialized&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"Internal map needs to be initialized"</span>)<span class="question-mark">?</span>;
         buf.copy_from_slice(<span class="kw-2">&amp;</span>data[start..end]);
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>read_range_into(<span class="kw-2">&amp;</span><span class="self">self</span>, _start: usize, _end: usize, _buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;Not required here&quot;</span>);
+        <span class="macro">unimplemented!</span>(<span class="string">"Not required here"</span>);
     }
 
     <span class="kw">fn </span>read_range(<span class="kw-2">&amp;</span><span class="self">self</span>, r: ops::Range&lt;usize&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;E&gt;&gt; {
@@ -544,13 +545,13 @@
         <span class="kw">let </span>end = r.end * E::byte_len();
         <span class="kw">let </span>len = <span class="self">self</span>.len * E::byte_len();
 
-        <span class="macro">ensure!</span>(start &lt; len, <span class="string">&quot;start out of range {} &gt;= {}&quot;</span>, start, len);
-        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">&quot;end out of range {} &gt; {}&quot;</span>, end, len);
+        <span class="macro">ensure!</span>(start &lt; len, <span class="string">"start out of range {} &gt;= {}"</span>, start, len);
+        <span class="macro">ensure!</span>(end &lt;= len, <span class="string">"end out of range {} &gt; {}"</span>, end, len);
 
         <span class="kw">let </span>data = <span class="self">self
             </span>.map
             .as_ref()
-            .context(<span class="string">&quot;Internal map needs to be initialized&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"Internal map needs to be initialized"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(data[start..end]
             .chunks(E::byte_len())
             .map(E::from_slice)
@@ -579,7 +580,7 @@
     <span class="attr">#[allow(unsafe_code)]
     </span><span class="kw">fn </span>reinit(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.map = <span class="kw">unsafe </span>{ <span class="prelude-val">Some</span>(MmapMut::map_mut(<span class="kw-2">&amp;</span><span class="self">self</span>.file)<span class="question-mark">?</span>) };
-        <span class="macro">ensure!</span>(<span class="self">self</span>.map.is_some(), <span class="string">&quot;Re-init mapping failed&quot;</span>);
+        <span class="macro">ensure!</span>(<span class="self">self</span>.map.is_some(), <span class="string">"Re-init mapping failed"</span>);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -602,7 +603,7 @@
         <span class="macro">ensure!</span>(
             <span class="comment">// unwrap is safe as we checked map to be initialised
             </span>(l + <span class="number">1</span>) * E::byte_len() &lt;= <span class="self">self</span>.map.as_ref().unwrap().len(),
-            <span class="string">&quot;not enough space&quot;
+            <span class="string">"not enough space"
         </span>);
 
         <span class="self">self</span>.write_at(el, l)

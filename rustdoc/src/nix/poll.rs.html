@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/nix-0.27.1/src/poll.rs`."><title>poll.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="nix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/nix-0.27.1/src/poll.rs`."><title>poll.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="nix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -239,7 +240,7 @@
 
 <span class="doccomment">/// This is a wrapper around `libc::pollfd`.
 ///
-/// It&#39;s meant to be used as an argument to the [`poll`](fn.poll.html) and
+/// It's meant to be used as an argument to the [`poll`](fn.poll.html) and
 /// [`ppoll`](fn.ppoll.html) functions to specify the events of interest
 /// for a specific file descriptor.
 ///
@@ -247,12 +248,12 @@
 /// retrieved by calling [`revents()`](#method.revents) on the `PollFd`.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-</span><span class="kw">pub struct </span>PollFd&lt;<span class="lifetime">&#39;fd</span>&gt; {
+</span><span class="kw">pub struct </span>PollFd&lt;<span class="lifetime">'fd</span>&gt; {
     pollfd: libc::pollfd,
-    _fd: std::marker::PhantomData&lt;BorrowedFd&lt;<span class="lifetime">&#39;fd</span>&gt;&gt;,
+    _fd: std::marker::PhantomData&lt;BorrowedFd&lt;<span class="lifetime">'fd</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;fd</span>&gt; PollFd&lt;<span class="lifetime">&#39;fd</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'fd</span>&gt; PollFd&lt;<span class="lifetime">'fd</span>&gt; {
     <span class="doccomment">/// Creates a new `PollFd` specifying the events of interest
     /// for a given file descriptor.
     </span><span class="comment">//
@@ -269,7 +270,7 @@
     //
     // // Do something with `pollfd`, which uses the CLOSED fd.
     // ```
-    </span><span class="kw">pub fn </span>new&lt;Fd: AsFd&gt;(fd: <span class="kw-2">&amp;</span><span class="lifetime">&#39;fd </span>Fd, events: PollFlags) -&gt; PollFd&lt;<span class="lifetime">&#39;fd</span>&gt; {
+    </span><span class="kw">pub fn </span>new&lt;Fd: AsFd&gt;(fd: <span class="kw-2">&amp;</span><span class="lifetime">'fd </span>Fd, events: PollFlags) -&gt; PollFd&lt;<span class="lifetime">'fd</span>&gt; {
         PollFd {
             pollfd: libc::pollfd {
                 fd: fd.as_fd().as_raw_fd(),
@@ -317,21 +318,21 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;fd</span>&gt; AsFd <span class="kw">for </span>PollFd&lt;<span class="lifetime">&#39;fd</span>&gt; {
-    <span class="kw">fn </span>as_fd(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BorrowedFd&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'fd</span>&gt; AsFd <span class="kw">for </span>PollFd&lt;<span class="lifetime">'fd</span>&gt; {
+    <span class="kw">fn </span>as_fd(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BorrowedFd&lt;<span class="lifetime">'_</span>&gt; {
         <span class="comment">// Safety:
         //
         // BorrowedFd::borrow_raw(RawFd) requires that the raw fd being passed
         // must remain open for the duration of the returned BorrowedFd, this is
         // guaranteed as the returned BorrowedFd has the lifetime parameter same
         // as `self`:
-        // &quot;fn as_fd&lt;&#39;self&gt;(&amp;&#39;self self) -&gt; BorrowedFd&lt;&#39;self&gt;&quot;
+        // "fn as_fd&lt;'self&gt;(&amp;'self self) -&gt; BorrowedFd&lt;'self&gt;"
         // which means that `self` (PollFd) is guaranteed to outlive the returned
         // BorrowedFd. (Lifetime: PollFd &gt; BorrowedFd)
         //
         // And the lifetime parameter of PollFd::new(fd, ...) ensures that `fd`
         // (an owned file descriptor) must outlive the returned PollFd:
-        // &quot;pub fn new&lt;Fd: AsFd&gt;(fd: &amp;&#39;fd Fd, events: PollFlags) -&gt; PollFd&lt;&#39;fd&gt;&quot;
+        // "pub fn new&lt;Fd: AsFd&gt;(fd: &amp;'fd Fd, events: PollFlags) -&gt; PollFd&lt;'fd&gt;"
         // (Lifetime: Owned fd &gt; PollFd)
         //
         // With two above relationships, we can conclude that the `Owned file
@@ -365,19 +366,19 @@
         /// `O_NONBLOCK` is set).
         </span>POLLOUT;
         <span class="doccomment">/// Equivalent to [`POLLIN`](constant.POLLIN.html)
-        </span><span class="attr">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]
+        </span><span class="attr">#[cfg(not(target_os = <span class="string">"redox"</span>))]
         #[cfg_attr(docsrs, doc(cfg(all())))]
         </span>POLLRDNORM;
-        <span class="attr">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]
+        <span class="attr">#[cfg(not(target_os = <span class="string">"redox"</span>))]
         #[cfg_attr(docsrs, doc(cfg(all())))]
         </span><span class="doccomment">/// Equivalent to [`POLLOUT`](constant.POLLOUT.html)
         </span>POLLWRNORM;
         <span class="doccomment">/// Priority band data can be read (generally unused on Linux).
-        </span><span class="attr">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]
+        </span><span class="attr">#[cfg(not(target_os = <span class="string">"redox"</span>))]
         #[cfg_attr(docsrs, doc(cfg(all())))]
         </span>POLLRDBAND;
         <span class="doccomment">/// Priority data may be written.
-        </span><span class="attr">#[cfg(not(target_os = <span class="string">&quot;redox&quot;</span>))]
+        </span><span class="attr">#[cfg(not(target_os = <span class="string">"redox"</span>))]
         #[cfg_attr(docsrs, doc(cfg(all())))]
         </span>POLLWRBAND;
         <span class="doccomment">/// Error condition (only returned in
@@ -434,7 +435,7 @@
 }
 
 <span class="macro">feature! </span>{
-<span class="attr">#![feature = <span class="string">&quot;signal&quot;</span>]
+<span class="attr">#![feature = <span class="string">"signal"</span>]
 </span><span class="doccomment">/// `ppoll()` allows an application to safely wait until either a file
 /// descriptor becomes ready or until a signal is caught.
 /// ([`poll(2)`](https://man7.org/linux/man-pages/man2/poll.2.html))
@@ -446,7 +447,7 @@
 /// so in that case `ppoll` differs from `poll` only in the precision of the
 /// timeout argument.
 ///
-</span><span class="attr">#[cfg(any(target_os = <span class="string">&quot;android&quot;</span>, target_os = <span class="string">&quot;dragonfly&quot;</span>, target_os = <span class="string">&quot;freebsd&quot;</span>, target_os = <span class="string">&quot;linux&quot;</span>))]
+</span><span class="attr">#[cfg(any(target_os = <span class="string">"android"</span>, target_os = <span class="string">"dragonfly"</span>, target_os = <span class="string">"freebsd"</span>, target_os = <span class="string">"linux"</span>))]
 </span><span class="kw">pub fn </span>ppoll(
     fds: <span class="kw-2">&amp;mut </span>[PollFd],
     timeout: <span class="prelude-ty">Option</span>&lt;<span class="kw">crate</span>::sys::time::TimeSpec&gt;,

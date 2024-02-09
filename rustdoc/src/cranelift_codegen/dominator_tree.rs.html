@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/dominator_tree.rs`."><title>dominator_tree.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/dominator_tree.rs`."><title>dominator_tree.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -833,7 +834,7 @@
     <span class="doccomment">/// The immediate dominator of this block, represented as the branch or jump instruction at the
     /// end of the dominating basic block.
     ///
-    /// This is `None` for unreachable blocks and the entry block which doesn&#39;t have an immediate
+    /// This is `None` for unreachable blocks and the entry block which doesn't have an immediate
     /// dominator.
     </span>idom: PackedOption&lt;Inst&gt;,
 }
@@ -936,7 +937,7 @@
             ProgramPoint::Inst(inst_a) =&gt; {
                 <span class="kw">let </span>block_a = layout
                     .inst_block(inst_a)
-                    .expect(<span class="string">&quot;Instruction not in layout.&quot;</span>);
+                    .expect(<span class="string">"Instruction not in layout."</span>);
                 <span class="kw">match </span><span class="self">self</span>.last_dominator(block_a, b, layout) {
                     <span class="prelude-val">Some</span>(last) =&gt; layout.pp_cmp(inst_a, last) != Ordering::Greater,
                     <span class="prelude-val">None </span>=&gt; <span class="bool-val">false</span>,
@@ -954,7 +955,7 @@
         <span class="kw">let </span>(<span class="kw-2">mut </span>block_b, <span class="kw-2">mut </span>inst_b) = <span class="kw">match </span>b.into() {
             ProgramPoint::Block(block) =&gt; (block, <span class="prelude-val">None</span>),
             ProgramPoint::Inst(inst) =&gt; (
-                layout.inst_block(inst).expect(<span class="string">&quot;Instruction not in layout.&quot;</span>),
+                layout.inst_block(inst).expect(<span class="string">"Instruction not in layout."</span>),
                 <span class="prelude-val">Some</span>(inst),
             ),
         };
@@ -967,7 +968,7 @@
                 <span class="prelude-val">Some</span>(idom) =&gt; idom,
                 <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>, <span class="comment">// a is unreachable, so we climbed past the entry
             </span>};
-            block_b = layout.inst_block(idom).expect(<span class="string">&quot;Dominator got removed.&quot;</span>);
+            block_b = layout.inst_block(idom).expect(<span class="string">"Dominator got removed."</span>);
             inst_b = <span class="prelude-val">Some</span>(idom);
         }
         <span class="kw">if </span>a == block_b {
@@ -990,17 +991,17 @@
             <span class="kw">match </span><span class="self">self</span>.rpo_cmp_block(a.block, b.block) {
                 Ordering::Less =&gt; {
                     <span class="comment">// `a` comes before `b` in the RPO. Move `b` up.
-                    </span><span class="kw">let </span>idom = <span class="self">self</span>.nodes[b.block].idom.expect(<span class="string">&quot;Unreachable basic block?&quot;</span>);
+                    </span><span class="kw">let </span>idom = <span class="self">self</span>.nodes[b.block].idom.expect(<span class="string">"Unreachable basic block?"</span>);
                     b = BlockPredecessor::new(
-                        layout.inst_block(idom).expect(<span class="string">&quot;Dangling idom instruction&quot;</span>),
+                        layout.inst_block(idom).expect(<span class="string">"Dangling idom instruction"</span>),
                         idom,
                     );
                 }
                 Ordering::Greater =&gt; {
                     <span class="comment">// `b` comes before `a` in the RPO. Move `a` up.
-                    </span><span class="kw">let </span>idom = <span class="self">self</span>.nodes[a.block].idom.expect(<span class="string">&quot;Unreachable basic block?&quot;</span>);
+                    </span><span class="kw">let </span>idom = <span class="self">self</span>.nodes[a.block].idom.expect(<span class="string">"Unreachable basic block?"</span>);
                     a = BlockPredecessor::new(
-                        layout.inst_block(idom).expect(<span class="string">&quot;Dangling idom instruction&quot;</span>),
+                        layout.inst_block(idom).expect(<span class="string">"Dangling idom instruction"</span>),
                         idom,
                     );
                 }
@@ -1010,10 +1011,10 @@
 
         <span class="macro">debug_assert_eq!</span>(
             a.block, b.block,
-            <span class="string">&quot;Unreachable block passed to common_dominator?&quot;
+            <span class="string">"Unreachable block passed to common_dominator?"
         </span>);
 
-        <span class="comment">// We&#39;re in the same block. The common dominator is the earlier instruction.
+        <span class="comment">// We're in the same block. The common dominator is the earlier instruction.
         </span><span class="kw">if </span>layout.pp_cmp(a.inst, b.inst) == Ordering::Less {
             a
         } <span class="kw">else </span>{
@@ -1067,7 +1068,7 @@
 
     <span class="doccomment">/// Check if the dominator tree is in a valid state.
     ///
-    /// Note that this doesn&#39;t perform any kind of validity checks. It simply checks if the
+    /// Note that this doesn't perform any kind of validity checks. It simply checks if the
     /// `compute()` method has been called since the last `clear()`. It does not check that the
     /// dominator tree is consistent with the CFG.
     </span><span class="kw">pub fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
@@ -1083,14 +1084,14 @@
 
         <span class="comment">// This algorithm is a depth first traversal (DFT) of the control flow graph, computing a
         // post-order of the blocks that are reachable form the entry block. A DFT post-order is not
-        // unique. The specific order we get is controlled by the order each node&#39;s children are
+        // unique. The specific order we get is controlled by the order each node's children are
         // visited.
         //
         // We view the CFG as a graph where each `BlockCall` value of a terminating branch
         // instruction is an edge. A consequence of this is that we visit successor nodes in the
         // reverse order specified by the branch instruction that terminates the basic block.
         // (Reversed because we are using a stack to control traversal, and push the successors in
-        // the order the branch instruction specifies -- there&#39;s no good reason for this particular
+        // the order the branch instruction specifies -- there's no good reason for this particular
         // order.)
         //
         // During this algorithm only, use `rpo_number` to hold the following state:
@@ -1119,7 +1120,7 @@
                             // successor block first in the postorder, all other things being
                             // equal, which tends to prioritize loop backedges over out-edges,
                             // putting the edge-block closer to the loop body and minimizing
-                            // live-ranges in linear instruction space. This heuristic doesn&#39;t have
+                            // live-ranges in linear instruction space. This heuristic doesn't have
                             // any effect on the computation of dominators, and is purely for other
                             // consumers of the postorder we cache here.
                             </span><span class="kw">for </span>block <span class="kw">in </span>func.stencil.dfg.insts[inst]
@@ -1130,7 +1131,7 @@
                                 <span class="kw">let </span>succ = block.block(<span class="kw-2">&amp;</span>func.stencil.dfg.value_lists);
 
                                 <span class="comment">// This is purely an optimization to avoid additional iterations of
-                                // the loop, and is not required; it&#39;s merely inlining the check
+                                // the loop, and is not required; it's merely inlining the check
                                 // from the outer conditional of this case to avoid the extra loop
                                 // iteration.
                                 </span><span class="kw">if </span><span class="self">self</span>.nodes[succ].rpo_number == <span class="number">0 </span>{
@@ -1142,15 +1143,15 @@
                 }
 
                 Visit::Last =&gt; {
-                    <span class="comment">// We&#39;ve finished all this node&#39;s successors.
+                    <span class="comment">// We've finished all this node's successors.
                     </span><span class="self">self</span>.postorder.push(block);
                 }
             }
         }
     }
 
-    <span class="doccomment">/// Build a dominator tree from a control flow graph using Keith D. Cooper&#39;s
-    /// &quot;Simple, Fast Dominator Algorithm.&quot;
+    <span class="doccomment">/// Build a dominator tree from a control flow graph using Keith D. Cooper's
+    /// "Simple, Fast Dominator Algorithm."
     </span><span class="kw">fn </span>compute_domtree(<span class="kw-2">&amp;mut </span><span class="self">self</span>, func: <span class="kw-2">&amp;</span>Function, cfg: <span class="kw-2">&amp;</span>ControlFlowGraph) {
         <span class="comment">// During this algorithm, `rpo_number` has the following values:
         //
@@ -1159,7 +1160,7 @@
         // `compute_postorder`.
         // 2+: block is reachable and has an assigned RPO number.
 
-        // We&#39;ll be iterating over a reverse post-order of the CFG, skipping the entry block.
+        // We'll be iterating over a reverse post-order of the CFG, skipping the entry block.
         </span><span class="kw">let </span>(entry_block, postorder) = <span class="kw">match </span><span class="self">self</span>.postorder.as_slice().split_last() {
             <span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>eb, rest)) =&gt; (eb, rest),
             <span class="prelude-val">None </span>=&gt; <span class="kw">return</span>,
@@ -1205,7 +1206,7 @@
     // nodes.
     </span><span class="kw">fn </span>compute_idom(<span class="kw-2">&amp;</span><span class="self">self</span>, block: Block, cfg: <span class="kw-2">&amp;</span>ControlFlowGraph, layout: <span class="kw-2">&amp;</span>Layout) -&gt; Inst {
         <span class="comment">// Get an iterator with just the reachable, already visited predecessors to `block`.
-        // Note that during the first pass, `rpo_number` is 1 for reachable blocks that haven&#39;t
+        // Note that during the first pass, `rpo_number` is 1 for reachable blocks that haven't
         // been visited yet, 0 for unreachable blocks.
         </span><span class="kw">let </span><span class="kw-2">mut </span>reachable_preds = cfg
             .pred_iter(block)
@@ -1214,7 +1215,7 @@
         <span class="comment">// The RPO must visit at least one predecessor before this node.
         </span><span class="kw">let </span><span class="kw-2">mut </span>idom = reachable_preds
             .next()
-            .expect(<span class="string">&quot;block node must have one reachable predecessor&quot;</span>);
+            .expect(<span class="string">"block node must have one reachable predecessor"</span>);
 
         <span class="kw">for </span>pred <span class="kw">in </span>reachable_preds {
             idom = <span class="self">self</span>.common_dominator(idom, pred, layout);
@@ -1281,7 +1282,7 @@
             <span class="kw">if let </span><span class="prelude-val">Some</span>(idom_inst) = domtree.idom(block) {
                 <span class="kw">let </span>idom = layout
                     .inst_block(idom_inst)
-                    .expect(<span class="string">&quot;Instruction not in layout.&quot;</span>);
+                    .expect(<span class="string">"Instruction not in layout."</span>);
                 <span class="kw">let </span>sib = mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.nodes[idom].child, block.into());
                 <span class="self">self</span>.nodes[block].sibling = sib;
             } <span class="kw">else </span>{
@@ -1313,7 +1314,7 @@
             <span class="kw">if let </span><span class="prelude-val">Some</span>(idom_inst) = domtree.idom(block) {
                 <span class="kw">let </span>idom = layout
                     .inst_block(idom_inst)
-                    .expect(<span class="string">&quot;Instruction not in layout.&quot;</span>);
+                    .expect(<span class="string">"Instruction not in layout."</span>);
                 <span class="kw">let </span>pre_max = cmp::max(<span class="self">self</span>.nodes[block].pre_max, <span class="self">self</span>.nodes[idom].pre_max);
                 <span class="self">self</span>.nodes[idom].pre_max = pre_max;
             }
@@ -1322,12 +1323,12 @@
 }
 
 <span class="doccomment">/// An iterator that enumerates the direct children of a block in the dominator tree.
-</span><span class="kw">pub struct </span>ChildIter&lt;<span class="lifetime">&#39;a</span>&gt; {
-    dtpo: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTreePreorder,
+</span><span class="kw">pub struct </span>ChildIter&lt;<span class="lifetime">'a</span>&gt; {
+    dtpo: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTreePreorder,
     next: PackedOption&lt;Block&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>ChildIter&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Iterator <span class="kw">for </span>ChildIter&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">type </span>Item = Block;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Block&gt; {
@@ -1343,7 +1344,7 @@
 </span><span class="kw">impl </span>DominatorTreePreorder {
     <span class="doccomment">/// Get an iterator over the direct children of `block` in the dominator tree.
     ///
-    /// These are the block&#39;s whose immediate dominator is an instruction in `block`, ordered according
+    /// These are the block's whose immediate dominator is an instruction in `block`, ordered according
     /// to the CFG reverse post-order.
     </span><span class="kw">pub fn </span>children(<span class="kw-2">&amp;</span><span class="self">self</span>, block: Block) -&gt; ChildIter {
         ChildIter {

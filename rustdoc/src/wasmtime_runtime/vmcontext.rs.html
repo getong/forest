@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/vmcontext.rs`."><title>vmcontext.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/vmcontext.rs`."><title>vmcontext.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1244,7 +1245,7 @@
 ///
 /// * Callee `vmctx` for the function itself.
 ///
-/// * Caller&#39;s `vmctx` (so that host functions can access the linear memory of
+/// * Caller's `vmctx` (so that host functions can access the linear memory of
 ///   their Wasm callers).
 ///
 /// * A pointer to a buffer of `ValRaw`s where both arguments are passed into
@@ -1253,12 +1254,12 @@
 /// * The capacity of the `ValRaw` buffer. Must always be at least
 ///   `max(len(wasm_params), len(wasm_results))`.
 </span><span class="kw">pub type </span>VMArrayCallFunction =
-    <span class="kw">unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>VMOpaqueContext, <span class="kw-2">*mut </span>VMOpaqueContext, <span class="kw-2">*mut </span>ValRaw, usize);
+    <span class="kw">unsafe extern </span><span class="string">"C" </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>VMOpaqueContext, <span class="kw-2">*mut </span>VMOpaqueContext, <span class="kw-2">*mut </span>ValRaw, usize);
 
 <span class="doccomment">/// A function pointer that exposes the native calling convention.
 ///
 /// Different Wasm function types end up mapping to different Rust function
-/// types, so this isn&#39;t simply a type alias the way that `VMArrayCallFunction`
+/// types, so this isn't simply a type alias the way that `VMArrayCallFunction`
 /// is.
 ///
 /// This is the default calling convention for the target (e.g. System-V or
@@ -1270,7 +1271,7 @@
 <span class="doccomment">/// A function pointer that exposes the Wasm calling convention.
 ///
 /// In practice, different Wasm function types end up mapping to different Rust
-/// function types, so this isn&#39;t simply a type alias the way that
+/// function types, so this isn't simply a type alias the way that
 /// `VMArrayCallFunction` is. However, the exact details of the calling
 /// convention are left to the Wasm compiler (e.g. Cranelift or Winch). Runtime
 /// code never does anything with these function pointers except shuffle them
@@ -1289,7 +1290,7 @@
     </span><span class="kw">pub </span>native_call: NonNull&lt;VMNativeCallFunction&gt;,
 
     <span class="doccomment">/// Function pointer to use when calling this imported function with the
-    /// &quot;array&quot; calling convention that `Func::new` et al use.
+    /// "array" calling convention that `Func::new` et al use.
     </span><span class="kw">pub </span>array_call: VMArrayCallFunction,
 
     <span class="doccomment">/// The VM state associated with this function.
@@ -1301,7 +1302,7 @@
     </span><span class="kw">pub </span>vmctx: <span class="kw-2">*mut </span>VMOpaqueContext,
 }
 
-<span class="comment">// Declare that this type is send/sync, it&#39;s the responsibility of users of
+<span class="comment">// Declare that this type is send/sync, it's the responsibility of users of
 // `VMFunctionImport` to uphold this guarantee.
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>VMFunctionImport {}
 <span class="kw">unsafe impl </span>Sync <span class="kw">for </span>VMFunctionImport {}
@@ -1341,8 +1342,8 @@
 }
 
 <span class="doccomment">/// A placeholder byte-sized type which is just used to provide some amount of type
-/// safety when dealing with pointers to JIT-compiled function bodies. Note that it&#39;s
-/// deliberately not Copy, as we shouldn&#39;t be carelessly copying function body bytes
+/// safety when dealing with pointers to JIT-compiled function bodies. Note that it's
+/// deliberately not Copy, as we shouldn't be carelessly copying function body bytes
 /// around.
 </span><span class="attr">#[repr(C)]
 </span><span class="kw">pub struct </span>VMFunctionBody(u8);
@@ -1370,7 +1371,7 @@
     </span><span class="kw">pub </span>vmctx: <span class="kw-2">*mut </span>VMContext,
 }
 
-<span class="comment">// Declare that this type is send/sync, it&#39;s the responsibility of users of
+<span class="comment">// Declare that this type is send/sync, it's the responsibility of users of
 // `VMTableImport` to uphold this guarantee.
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>VMTableImport {}
 <span class="kw">unsafe impl </span>Sync <span class="kw">for </span>VMTableImport {}
@@ -1416,7 +1417,7 @@
     </span><span class="kw">pub </span>index: DefinedMemoryIndex,
 }
 
-<span class="comment">// Declare that this type is send/sync, it&#39;s the responsibility of users of
+<span class="comment">// Declare that this type is send/sync, it's the responsibility of users of
 // `VMMemoryImport` to uphold this guarantee.
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>VMMemoryImport {}
 <span class="kw">unsafe impl </span>Sync <span class="kw">for </span>VMMemoryImport {}
@@ -1451,7 +1452,7 @@
 /// variable imported from another instance.
 ///
 /// Note that unlike with functions, tables, and memories, `VMGlobalImport`
-/// doesn&#39;t include a `vmctx` pointer. Globals are never resized, and don&#39;t
+/// doesn't include a `vmctx` pointer. Globals are never resized, and don't
 /// require a `vmctx` pointer to access.
 </span><span class="attr">#[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -1460,7 +1461,7 @@
     </span><span class="kw">pub </span>from: <span class="kw-2">*mut </span>VMGlobalDefinition,
 }
 
-<span class="comment">// Declare that this type is send/sync, it&#39;s the responsibility of users of
+<span class="comment">// Declare that this type is send/sync, it's the responsibility of users of
 // `VMGlobalImport` to uphold this guarantee.
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>VMGlobalImport {}
 <span class="kw">unsafe impl </span>Sync <span class="kw">for </span>VMGlobalImport {}
@@ -1846,7 +1847,7 @@
     }
 }
 
-<span class="doccomment">/// The VM caller-checked &quot;funcref&quot; record, for caller-side signature checking.
+<span class="doccomment">/// The VM caller-checked "funcref" record, for caller-side signature checking.
 ///
 /// It consists of function pointer(s), a signature id to be checked by the
 /// caller, and the vmctx closure associated with this function.
@@ -1857,7 +1858,7 @@
     /// convention.
     </span><span class="kw">pub </span>native_call: NonNull&lt;VMNativeCallFunction&gt;,
 
-    <span class="doccomment">/// Function pointer for this funcref if being called via the &quot;array&quot;
+    <span class="doccomment">/// Function pointer for this funcref if being called via the "array"
     /// calling convention that `Func::new` et al use.
     </span><span class="kw">pub </span>array_call: VMArrayCallFunction,
 
@@ -1866,15 +1867,15 @@
     ///
     /// Most functions come with a function pointer that we can use when they
     /// are called from Wasm. The notable exception is when we `Func::wrap` a
-    /// host function, and we don&#39;t have a Wasm compiler on hand to compile a
+    /// host function, and we don't have a Wasm compiler on hand to compile a
     /// Wasm-to-native trampoline for the function. In this case, we leave
     /// `wasm_call` empty until the function is passed as an import to Wasm (or
     /// otherwise exposed to Wasm via tables/globals). At this point, we look up
-    /// a Wasm-to-native trampoline for the function in the the Wasm&#39;s compiled
+    /// a Wasm-to-native trampoline for the function in the the Wasm's compiled
     /// module and use that fill in `VMFunctionImport::wasm_call`. **However**
     /// there is no guarantee that the Wasm module has a trampoline for this
-    /// function&#39;s signature. The Wasm module only has trampolines for its
-    /// types, and if this function isn&#39;t of one of those types, then the Wasm
+    /// function's signature. The Wasm module only has trampolines for its
+    /// types, and if this function isn't of one of those types, then the Wasm
     /// module will not have a trampoline for it. This is actually okay, because
     /// it means that the Wasm cannot actually call this function. But it does
     /// mean that this field needs to be an `Option` even though it is non-null
@@ -1943,11 +1944,11 @@
         )*
     ) =&gt; {
         <span class="doccomment">/// An array that stores addresses of builtin functions. We translate code
-        /// to use indirect calls. This way, we don&#39;t have to patch the code.
+        /// to use indirect calls. This way, we don't have to patch the code.
         </span><span class="attr">#[repr(C)]
         </span><span class="kw">pub struct </span>VMBuiltinFunctionsArray {
             $(
-                <span class="macro-nonterminal">$name</span>: <span class="kw">unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn</span>(
+                <span class="macro-nonterminal">$name</span>: <span class="kw">unsafe extern </span><span class="string">"C" </span><span class="kw">fn</span>(
                     $(<span class="macro">define_builtin_array!</span>(@ty <span class="macro-nonterminal">$param</span>)),*
                 ) $( -&gt; <span class="macro">define_builtin_array!</span>(@ty <span class="macro-nonterminal">$result</span>))<span class="question-mark">?</span>,
             )*
@@ -2071,7 +2072,7 @@
     </span><span class="kw">pub </span>last_wasm_entry_sp: UnsafeCell&lt;usize&gt;,
 }
 
-<span class="comment">// The `VMRuntimeLimits` type is a pod-type with no destructor, and we don&#39;t
+<span class="comment">// The `VMRuntimeLimits` type is a pod-type with no destructor, and we don't
 // access any fields from other threads, so add in these trait impls which are
 // otherwise not available due to the `fuel_consumed` and `epoch_deadline`
 // variables in `VMRuntimeLimits`.
@@ -2139,20 +2140,20 @@
     }
 }
 
-<span class="doccomment">/// The VM &quot;context&quot;, which is pointed to by the `vmctx` arg in Cranelift.
+<span class="doccomment">/// The VM "context", which is pointed to by the `vmctx` arg in Cranelift.
 /// This has information about globals, memories, tables, and other runtime
 /// state associated with the current instance.
 ///
 /// The struct here is empty, as the sizes of these fields are dynamic, and
-/// we can&#39;t describe them in Rust&#39;s type system. Sufficient memory is
+/// we can't describe them in Rust's type system. Sufficient memory is
 /// allocated at runtime.
 </span><span class="attr">#[derive(Debug)]
 #[repr(C, align(<span class="number">16</span>))] </span><span class="comment">// align 16 since globals are aligned to that and contained inside
 </span><span class="kw">pub struct </span>VMContext {
-    <span class="doccomment">/// There&#39;s some more discussion about this within `wasmtime/src/lib.rs` but
+    <span class="doccomment">/// There's some more discussion about this within `wasmtime/src/lib.rs` but
     /// the idea is that we want to tell the compiler that this contains
     /// pointers which transitively refers to itself, to suppress some
-    /// optimizations that might otherwise assume this doesn&#39;t exist.
+    /// optimizations that might otherwise assume this doesn't exist.
     ///
     /// The self-referential pointer we care about is the `*mut Store` pointer
     /// early on in this context, which if you follow through enough levels of
@@ -2165,19 +2166,19 @@
     /// protect against some mistakes.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub unsafe fn </span>from_opaque(opaque: <span class="kw-2">*mut </span>VMOpaqueContext) -&gt; <span class="kw-2">*mut </span>VMContext {
-        <span class="comment">// Note that in general the offset of the &quot;magic&quot; field is stored in
+        <span class="comment">// Note that in general the offset of the "magic" field is stored in
         // `VMOffsets::vmctx_magic`. Given though that this is a sanity check
-        // about converting this pointer to another type we ideally don&#39;t want
+        // about converting this pointer to another type we ideally don't want
         // to read the offset from potentially corrupt memory. Instead it would
         // be better to catch errors here as soon as possible.
         //
         // To accomplish this the `VMContext` structure is laid out with the
-        // magic field at a statically known offset (here it&#39;s 0 for now). This
+        // magic field at a statically known offset (here it's 0 for now). This
         // static offset is asserted in `VMOffsets::from` and needs to be kept
         // in sync with this line for this debug assertion to work.
         //
         // Also note that this magic is only ever invalid in the presence of
-        // bugs, meaning we don&#39;t actually read the magic and act differently
+        // bugs, meaning we don't actually read the magic and act differently
         // at runtime depending what it is, so this is a debug assertion as
         // opposed to a regular assertion.
         </span><span class="macro">debug_assert_eq!</span>((<span class="kw-2">*</span>opaque).magic, VMCONTEXT_MAGIC);
@@ -2185,13 +2186,13 @@
     }
 }
 
-<span class="doccomment">/// A &quot;raw&quot; and unsafe representation of a WebAssembly value.
+<span class="doccomment">/// A "raw" and unsafe representation of a WebAssembly value.
 ///
 /// This is provided for use with the `Func::new_unchecked` and
-/// `Func::call_unchecked` APIs. In general it&#39;s unlikely you should be using
+/// `Func::call_unchecked` APIs. In general it's unlikely you should be using
 /// this from Rust, rather using APIs like `Func::wrap` and `TypedFunc::call`.
 ///
-/// This is notably an &quot;unsafe&quot; way to work with `Val` and it&#39;s recommended to
+/// This is notably an "unsafe" way to work with `Val` and it's recommended to
 /// instead use `Val` where possible. An important note about this union is that
 /// fields are all stored in little-endian format, regardless of the endianness
 /// of the host system.
@@ -2268,7 +2269,7 @@
     </span>externref: <span class="kw-2">*mut </span>c_void,
 }
 
-<span class="comment">// This type is just a bag-of-bits so it&#39;s up to the caller to figure out how
+<span class="comment">// This type is just a bag-of-bits so it's up to the caller to figure out how
 // to safely deal with threading concerns and safely access interior bits.
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>ValRaw {}
 <span class="kw">unsafe impl </span>Sync <span class="kw">for </span>ValRaw {}
@@ -2397,11 +2398,11 @@
     }
 }
 
-<span class="doccomment">/// An &quot;opaque&quot; version of `VMContext` which must be explicitly casted to a
+<span class="doccomment">/// An "opaque" version of `VMContext` which must be explicitly casted to a
 /// target context.
 ///
 /// This context is used to represent that contexts specified in
-/// `VMFuncRef` can have any type and don&#39;t have an implicit
+/// `VMFuncRef` can have any type and don't have an implicit
 /// structure. Neither wasmtime nor cranelift-generated code can rely on the
 /// structure of an opaque context in general and only the code which configured
 /// the context is able to rely on a particular structure. This is because the
@@ -2409,7 +2410,7 @@
 /// the first parameter passed.
 ///
 /// Note that Wasmtime currently has a layout where all contexts that are casted
-/// to an opaque context start with a 32-bit &quot;magic&quot; which can be used in debug
+/// to an opaque context start with a 32-bit "magic" which can be used in debug
 /// mode to debug-assert that the casts here are correct and have at least a
 /// little protection against incorrect casts.
 </span><span class="kw">pub struct </span>VMOpaqueContext {

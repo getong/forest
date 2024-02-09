@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/procfs-0.16.0/src/process/task.rs`."><title>task.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="procfs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/procfs-0.16.0/src/process/task.rs`."><title>task.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="procfs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -326,28 +327,28 @@
     ///
     /// Many of the returned fields will be the same as the parent process, but some fields like `utime` and `stime` will be per-task
     </span><span class="kw">pub fn </span>stat(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcResult&lt;Stat&gt; {
-        <span class="self">self</span>.read(<span class="string">&quot;stat&quot;</span>)
+        <span class="self">self</span>.read(<span class="string">"stat"</span>)
     }
 
     <span class="doccomment">/// Thread info from `/proc/&lt;pid&gt;/task/&lt;tid&gt;/status`
     ///
     /// Many of the returned fields will be the same as the parent process
     </span><span class="kw">pub fn </span>status(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcResult&lt;Status&gt; {
-        <span class="self">self</span>.read(<span class="string">&quot;status&quot;</span>)
+        <span class="self">self</span>.read(<span class="string">"status"</span>)
     }
 
     <span class="doccomment">/// Thread IO info from `/proc/&lt;pid&gt;/task/&lt;tid&gt;/io`
     ///
     /// This data will be unique per task.
     </span><span class="kw">pub fn </span>io(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcResult&lt;Io&gt; {
-        <span class="self">self</span>.read(<span class="string">&quot;io&quot;</span>)
+        <span class="self">self</span>.read(<span class="string">"io"</span>)
     }
 
     <span class="doccomment">/// Thread scheduler info from `/proc/&lt;pid&gt;/task/&lt;tid&gt;/schedstat`
     ///
     /// This data will be unique per task.
     </span><span class="kw">pub fn </span>schedstat(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcResult&lt;Schedstat&gt; {
-        <span class="self">self</span>.read(<span class="string">&quot;schedstat&quot;</span>)
+        <span class="self">self</span>.read(<span class="string">"schedstat"</span>)
     }
 
     <span class="doccomment">/// Thread children from `/proc/&lt;pid&gt;/task/&lt;tid&gt;/children`
@@ -360,13 +361,13 @@
     /// This data will be unique per task.
     </span><span class="kw">pub fn </span>children(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcResult&lt;Vec&lt;u32&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>buf = String::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>file = FileWrapper::open_at(<span class="kw-2">&amp;</span><span class="self">self</span>.root, <span class="kw-2">&amp;</span><span class="self">self</span>.fd, <span class="string">&quot;children&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>file = FileWrapper::open_at(<span class="kw-2">&amp;</span><span class="self">self</span>.root, <span class="kw-2">&amp;</span><span class="self">self</span>.fd, <span class="string">"children"</span>)<span class="question-mark">?</span>;
         file.read_to_string(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
         buf.split_whitespace()
             .map(|child| {
                 child
                     .parse()
-                    .map_err(|<span class="kw">_</span>| ProcError::Other(<span class="string">&quot;Failed to parse task&#39;s child PIDs&quot;</span>.to_string()))
+                    .map_err(|<span class="kw">_</span>| ProcError::Other(<span class="string">"Failed to parse task's child PIDs"</span>.to_string()))
             })
             .collect()
     }
@@ -374,7 +375,7 @@
     <span class="doccomment">/// Deliberately generate an IO error
     </span><span class="attr">#[cfg(test)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generate_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProcResult&lt;()&gt; {
-        <span class="kw">let _ </span>= FileWrapper::open_at(<span class="kw-2">&amp;</span><span class="self">self</span>.root, <span class="kw-2">&amp;</span><span class="self">self</span>.fd, <span class="string">&quot;does_not_exist&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let _ </span>= FileWrapper::open_at(<span class="kw-2">&amp;</span><span class="self">self</span>.root, <span class="kw-2">&amp;</span><span class="self">self</span>.fd, <span class="string">"does_not_exist"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -393,7 +394,7 @@
     <span class="kw">use </span>std::sync::{Arc, Barrier};
 
     <span class="attr">#[test]
-    #[cfg(not(tarpaulin))] </span><span class="comment">// this test is unstable under tarpaulin, and i&#39;m yet sure why
+    #[cfg(not(tarpaulin))] </span><span class="comment">// this test is unstable under tarpaulin, and i'm yet sure why
                            // When this test runs in CI, run it single-threaded
     </span><span class="kw">fn </span>test_task_runsinglethread() {
         <span class="kw">use </span>std::io::Read;
@@ -413,15 +414,15 @@
 
         <span class="comment">// create a new task to do some work
         </span><span class="kw">let </span>join_a = std::thread::Builder::new()
-            .name(<span class="string">&quot;one&quot;</span>.to_owned())
+            .name(<span class="string">"one"</span>.to_owned())
             .spawn(<span class="kw">move </span>|| {
                 <span class="kw">let </span><span class="kw-2">mut </span>vec = Vec::new();
-                <span class="kw">let </span>zero = std::fs::File::open(<span class="string">&quot;/dev/zero&quot;</span>).unwrap();
+                <span class="kw">let </span>zero = std::fs::File::open(<span class="string">"/dev/zero"</span>).unwrap();
 
                 zero.take(bytes_to_read).read_to_end(<span class="kw-2">&amp;mut </span>vec).unwrap();
                 <span class="macro">assert_eq!</span>(vec.len(), bytes_to_read <span class="kw">as </span>usize);
 
-                <span class="comment">// spin for about 52 ticks (utime accounting isn&#39;t perfectly accurate)
+                <span class="comment">// spin for about 52 ticks (utime accounting isn't perfectly accurate)
                 </span><span class="kw">let </span>dur = std::time::Duration::from_millis(<span class="number">52 </span>* (<span class="number">1000 </span>/ <span class="kw">crate</span>::ticks_per_second()) <span class="kw">as </span>u64);
                 <span class="kw">let </span>start = std::time::Instant::now();
                 <span class="kw">while </span>start.elapsed() &lt;= dur {
@@ -435,7 +436,7 @@
 
         <span class="comment">// create a new task that does nothing
         </span><span class="kw">let </span>join_b = std::thread::Builder::new()
-            .name(<span class="string">&quot;two&quot;</span>.to_owned())
+            .name(<span class="string">"two"</span>.to_owned())
             .spawn(<span class="kw">move </span>|| {
                 w_b.wait();
                 d_b.wait();
@@ -469,12 +470,12 @@
             summed_io.write_bytes += io.write_bytes;
             summed_io.cancelled_write_bytes += io.cancelled_write_bytes;
 
-            <span class="kw">if </span>stat.comm == <span class="string">&quot;one&quot; </span>&amp;&amp; status.name == <span class="string">&quot;one&quot; </span>{
+            <span class="kw">if </span>stat.comm == <span class="string">"one" </span>&amp;&amp; status.name == <span class="string">"one" </span>{
                 found_one = <span class="bool-val">true</span>;
                 <span class="macro">assert!</span>(io.rchar &gt;= bytes_to_read);
-                <span class="macro">assert!</span>(stat.utime &gt;= <span class="number">50</span>, <span class="string">&quot;utime({}) too small&quot;</span>, stat.utime);
+                <span class="macro">assert!</span>(stat.utime &gt;= <span class="number">50</span>, <span class="string">"utime({}) too small"</span>, stat.utime);
             }
-            <span class="kw">if </span>stat.comm == <span class="string">&quot;two&quot; </span>&amp;&amp; status.name == <span class="string">&quot;two&quot; </span>{
+            <span class="kw">if </span>stat.comm == <span class="string">"two" </span>&amp;&amp; status.name == <span class="string">"two" </span>{
                 found_two = <span class="bool-val">true</span>;
                 <span class="comment">// The process might read miscellaneous things from procfs or
                 // things like /sys/devices/system/cpu/online; allow some small
@@ -487,8 +488,8 @@
 
         <span class="kw">let </span>proc_io = me.io().unwrap();
         <span class="comment">// these should be mostly the same (though creating the IO struct in the above line will cause some IO to occur)
-        </span><span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, summed_io);
-        <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, proc_io);
+        </span><span class="macro">println!</span>(<span class="string">"{:?}"</span>, summed_io);
+        <span class="macro">println!</span>(<span class="string">"{:?}"</span>, proc_io);
 
         <span class="comment">// signal the threads to exit
         </span>done_barrier.wait();
@@ -502,8 +503,8 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_task_children() {
         <span class="comment">// Use tail -f /dev/null to create two infinite processes
-        </span><span class="kw">let </span><span class="kw-2">mut </span>command = process::Command::new(<span class="string">&quot;tail&quot;</span>);
-        command.arg(<span class="string">&quot;-f&quot;</span>).arg(<span class="string">&quot;/dev/null&quot;</span>);
+        </span><span class="kw">let </span><span class="kw-2">mut </span>command = process::Command::new(<span class="string">"tail"</span>);
+        command.arg(<span class="string">"-f"</span>).arg(<span class="string">"/dev/null"</span>);
         <span class="kw">let </span>(<span class="kw-2">mut </span>child1, <span class="kw-2">mut </span>child2) = (command.spawn().unwrap(), command.spawn().unwrap());
 
         <span class="kw">let </span>tid = rustix::thread::gettid();
@@ -534,12 +535,12 @@
                 <span class="macro">assert!</span>(
                     p.display()
                         .to_string()
-                        .ends_with(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;/task/{}/does_not_exist&quot;</span>, task.tid)),
-                    <span class="string">&quot;NotFound path({:?}) doesn&#39;t look right&quot;</span>,
+                        .ends_with(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"/task/{}/does_not_exist"</span>, task.tid)),
+                    <span class="string">"NotFound path({:?}) doesn't look right"</span>,
                     p
                 );
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;Unexpected error from task.generate_error()&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"Unexpected error from task.generate_error()"</span>);
             }
         }
     }

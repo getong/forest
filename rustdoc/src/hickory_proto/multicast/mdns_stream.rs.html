@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-proto-0.24.0/src/multicast/mdns_stream.rs`."><title>mdns_stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_proto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-proto-0.24.0/src/multicast/mdns_stream.rs`."><title>mdns_stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_proto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -774,7 +775,7 @@
 });
 
 <span class="doccomment">/// A UDP stream of DNS binary packets
-</span><span class="attr">#[must_use = <span class="string">&quot;futures do nothing unless polled&quot;</span>]
+</span><span class="attr">#[must_use = <span class="string">"futures do nothing unless polled"</span>]
 </span><span class="kw">pub struct </span>MdnsStream {
     <span class="doccomment">/// Multicast address used for mDNS queries
     </span>multicast_addr: SocketAddr,
@@ -867,7 +868,7 @@
         <span class="comment">// while 0 is meant to keep the packet on localhost, linux regards this as an error,
         //   while macOS (BSD?) and Windows allow it.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(ttl) = packet_ttl {
-            <span class="macro">assert!</span>(ttl &gt; <span class="number">0</span>, <span class="string">&quot;TTL must be greater than 0&quot;</span>);
+            <span class="macro">assert!</span>(ttl &gt; <span class="number">0</span>, <span class="string">"TTL must be greater than 0"</span>);
         }
 
         <span class="comment">// This set of futures collapses the next udp socket into a stream which can be used for
@@ -884,7 +885,7 @@
                         <span class="kw">let </span>datagram: <span class="prelude-ty">Option</span>&lt;<span class="kw">_</span>&gt; =
                             socket.map(|socket| UdpStream::from_parts(socket, outbound_messages));
                         <span class="kw">let </span>multicast: <span class="prelude-ty">Option</span>&lt;<span class="kw">_</span>&gt; = multicast_socket.map(|multicast_socket| {
-                            Arc::new(UdpSocket::from_std(multicast_socket).expect(<span class="string">&quot;bad handle?&quot;</span>))
+                            Arc::new(UdpSocket::from_std(multicast_socket).expect(<span class="string">"bad handle?"</span>))
                         });
 
                         <span class="self">Self </span>{
@@ -932,11 +933,11 @@
         }
 
         <span class="kw">let </span>ip_addr = multicast_addr.ip();
-        <span class="comment">// it&#39;s an error to not use a proper mDNS address
+        <span class="comment">// it's an error to not use a proper mDNS address
         </span><span class="kw">if </span>!ip_addr.is_multicast() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(io::Error::new(
                 io::ErrorKind::Other,
-                <span class="macro">format!</span>(<span class="string">&quot;expected multicast address for binding: {ip_addr}&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">"expected multicast address for binding: {ip_addr}"</span>),
             ));
         }
 
@@ -968,11 +969,11 @@
 
         socket.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
         socket.set_reuse_address(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-        <span class="attr">#[cfg(unix)] </span><span class="comment">// this is currently restricted to Unix&#39;s in socket2
+        <span class="attr">#[cfg(unix)] </span><span class="comment">// this is currently restricted to Unix's in socket2
         </span>socket.set_reuse_port(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="self">Self</span>::bind_multicast(<span class="kw-2">&amp;</span>socket, multicast_addr)<span class="question-mark">?</span>;
 
-        <span class="macro">debug!</span>(<span class="string">&quot;joined {multicast_addr}&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"joined {multicast_addr}"</span>);
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(std::net::UdpSocket::from(socket)))
     }
 
@@ -1002,10 +1003,10 @@
 <span class="kw">impl </span>Stream <span class="kw">for </span>MdnsStream {
     <span class="kw">type </span>Item = io::Result&lt;SerialMessage&gt;;
 
-    <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+    <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
         <span class="macro">assert!</span>(<span class="self">self</span>.datagram.is_some() || <span class="self">self</span>.multicast.is_some());
 
-        <span class="comment">// we poll the datagram socket first, if available, since it&#39;s a direct response or direct request
+        <span class="comment">// we poll the datagram socket first, if available, since it's a direct response or direct request
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>datagram) = <span class="self">self</span>.as_mut().datagram {
             <span class="kw">match </span>datagram.poll_next_unpin(cx) {
                 Poll::Ready(ready) =&gt; <span class="kw">return </span>Poll::Ready(ready),
@@ -1015,7 +1016,7 @@
 
         <span class="kw">loop </span>{
             <span class="kw">let </span>msg = <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>receiving) = <span class="self">self</span>.rcving_mcast {
-                <span class="comment">// TODO: should we drop this packet if it&#39;s not from the same src as dest?
+                <span class="comment">// TODO: should we drop this packet if it's not from the same src as dest?
                 </span><span class="kw">let </span>msg = <span class="macro">ready!</span>(receiving.as_mut().poll_unpin(cx))<span class="question-mark">?</span>;
 
                 <span class="prelude-val">Some</span>(Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(msg))))
@@ -1049,7 +1050,7 @@
     }
 }
 
-<span class="attr">#[must_use = <span class="string">&quot;futures do nothing unless polled&quot;</span>]
+<span class="attr">#[must_use = <span class="string">"futures do nothing unless polled"</span>]
 </span><span class="kw">struct </span>NextRandomUdpSocket {
     bind_address: IpAddr,
     mdns_query_type: MdnsQueryType,
@@ -1061,11 +1062,11 @@
 <span class="kw">impl </span>NextRandomUdpSocket {
     <span class="kw">fn </span>prepare_sender(<span class="kw-2">&amp;</span><span class="self">self</span>, socket: std::net::UdpSocket) -&gt; io::Result&lt;std::net::UdpSocket&gt; {
         <span class="kw">let </span>addr = socket.local_addr()<span class="question-mark">?</span>;
-        <span class="macro">debug!</span>(<span class="string">&quot;preparing sender on: {addr}&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"preparing sender on: {addr}"</span>);
 
         <span class="kw">let </span>socket = Socket::from(socket);
 
-        <span class="comment">// TODO: TTL doesn&#39;t work on ipv6
+        <span class="comment">// TODO: TTL doesn't work on ipv6
         </span><span class="kw">match </span>addr {
             SocketAddr::V4(..) =&gt; {
                 socket.set_multicast_loop_v4(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
@@ -1079,7 +1080,7 @@
             }
             SocketAddr::V6(..) =&gt; {
                 <span class="kw">let </span>ipv6_if = <span class="self">self</span>.ipv6_if.unwrap_or_else(|| {
-                    <span class="macro">panic!</span>(<span class="string">&quot;for ipv6 multicasting the interface must be specified&quot;</span>)
+                    <span class="macro">panic!</span>(<span class="string">"for ipv6 multicasting the interface must be specified"</span>)
                 });
 
                 socket.set_multicast_loop_v6(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
@@ -1096,27 +1097,27 @@
 }
 
 <span class="kw">impl </span>Future <span class="kw">for </span>NextRandomUdpSocket {
-    <span class="comment">// TODO: clean this up, the RandomUdpSocket shouldn&#39;t care about the query type
+    <span class="comment">// TODO: clean this up, the RandomUdpSocket shouldn't care about the query type
     </span><span class="kw">type </span>Output = io::Result&lt;<span class="prelude-ty">Option</span>&lt;std::net::UdpSocket&gt;&gt;;
 
     <span class="doccomment">/// polls until there is an available next random UDP port.
     ///
     /// if there is no port available after 10 attempts, returns NotReady
-    </span><span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    </span><span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="comment">// non-one-shot, i.e. continuous, always use one of the well-known mdns ports and bind to the multicast addr
         </span><span class="kw">if </span>!<span class="self">self</span>.mdns_query_type.sender() {
-            <span class="macro">debug!</span>(<span class="string">&quot;skipping sending stream&quot;</span>);
+            <span class="macro">debug!</span>(<span class="string">"skipping sending stream"</span>);
             Poll::Ready(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>))
         } <span class="kw">else if </span><span class="self">self</span>.mdns_query_type.bind_on_5353() {
             <span class="kw">let </span>addr = SocketAddr::new(<span class="self">self</span>.bind_address, MDNS_PORT);
-            <span class="macro">debug!</span>(<span class="string">&quot;binding sending stream to {}&quot;</span>, addr);
+            <span class="macro">debug!</span>(<span class="string">"binding sending stream to {}"</span>, addr);
             <span class="kw">let </span>socket = std::net::UdpSocket::bind(addr)<span class="question-mark">?</span>;
             <span class="kw">let </span>socket = <span class="self">self</span>.prepare_sender(socket)<span class="question-mark">?</span>;
 
             Poll::Ready(<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(socket)))
         } <span class="kw">else </span>{
             <span class="comment">// TODO: this is basically identical to UdpStream from here... share some code? (except for the port restriction)
-            // one-shot queries look very similar to UDP socket, but can&#39;t listen on 5353
+            // one-shot queries look very similar to UDP socket, but can't listen on 5353
 
             // Per RFC 6056 Section 2.1:
             //
@@ -1132,23 +1133,23 @@
                 //  the MDNS_PORT is used to signal to remote processes that this is capable of receiving multicast packets
                 //  i.e. is joined to the multicast address.
                 </span><span class="kw">if </span>port == MDNS_PORT {
-                    <span class="macro">trace!</span>(<span class="string">&quot;unlucky, got MDNS_PORT&quot;</span>);
+                    <span class="macro">trace!</span>(<span class="string">"unlucky, got MDNS_PORT"</span>);
                     <span class="kw">continue</span>;
                 }
 
                 <span class="kw">let </span>addr = SocketAddr::new(<span class="self">self</span>.bind_address, port);
-                <span class="macro">debug!</span>(<span class="string">&quot;binding sending stream to {}&quot;</span>, addr);
+                <span class="macro">debug!</span>(<span class="string">"binding sending stream to {}"</span>, addr);
 
                 <span class="kw">match </span>std::net::UdpSocket::bind(addr) {
                     <span class="prelude-val">Ok</span>(socket) =&gt; {
                         <span class="kw">let </span>socket = <span class="self">self</span>.prepare_sender(socket)<span class="question-mark">?</span>;
                         <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(socket)));
                     }
-                    <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">debug!</span>(<span class="string">&quot;unable to bind port, attempt: {}: {}&quot;</span>, attempt, err),
+                    <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">debug!</span>(<span class="string">"unable to bind port, attempt: {}: {}"</span>, attempt, err),
                 }
             }
 
-            <span class="macro">debug!</span>(<span class="string">&quot;could not get next random port, delaying&quot;</span>);
+            <span class="macro">debug!</span>(<span class="string">"could not get next random port, delaying"</span>);
 
             <span class="comment">// TODO: this replaced a task::current().notify, is it correct?
             </span>cx.waker().wake_by_ref();
@@ -1192,8 +1193,8 @@
         <span class="kw">let </span>result = io_loop.block_on(stream);
 
         <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = result {
-            <span class="macro">println!</span>(<span class="string">&quot;Random address error: {error:#?}&quot;</span>);
-            <span class="macro">panic!</span>(<span class="string">&quot;failed to get next random address&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">"Random address error: {error:#?}"</span>);
+            <span class="macro">panic!</span>(<span class="string">"failed to get next random address"</span>);
         }
     }
 
@@ -1216,13 +1217,13 @@
 
         <span class="kw">let </span>client_done = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(<span class="bool-val">false</span>));
 
-        <span class="kw">let </span>test_bytes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[u8; <span class="number">8</span>] = <span class="string">b&quot;DEADBEEF&quot;</span>;
+        <span class="kw">let </span>test_bytes: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8; <span class="number">8</span>] = <span class="string">b"DEADBEEF"</span>;
         <span class="kw">let </span>send_recv_times = <span class="number">10</span>;
         <span class="kw">let </span>client_done_clone = client_done.clone();
 
         <span class="comment">// an in and out server
         </span><span class="kw">let </span>server_handle = std::thread::Builder::new()
-            .name(<span class="string">&quot;test_one_shot_mdns:server&quot;</span>.to_string())
+            .name(<span class="string">"test_one_shot_mdns:server"</span>.to_string())
             .spawn(<span class="kw">move </span>|| {
                 <span class="kw">let </span>server_loop = runtime::Runtime::new().unwrap();
                 <span class="kw">let </span><span class="kw-2">mut </span>timeout = future::lazy(|<span class="kw">_</span>| tokio::time::sleep(Duration::from_millis(<span class="number">100</span>)))
@@ -1230,7 +1231,7 @@
                     .boxed();
 
                 <span class="comment">// TTLs are 0 so that multicast test packets never leave the test host...
-                // FIXME: this is hardcoded to index 5 for ipv6, which isn&#39;t going to be correct in most cases...
+                // FIXME: this is hardcoded to index 5 for ipv6, which isn't going to be correct in most cases...
                 </span><span class="kw">let </span>(server_stream_future, <span class="kw-2">mut </span>server_sender) = MdnsStream::new(
                     mdns_addr,
                     MdnsQueryType::OneShotJoin,
@@ -1242,7 +1243,7 @@
                 <span class="comment">// For one-shot responses we are competing with a system mDNS responder, we will respond from a different port...
                 </span><span class="kw">let </span><span class="kw-2">mut </span>server_stream = server_loop
                     .block_on(server_stream_future)
-                    .expect(<span class="string">&quot;could not create mDNS listener&quot;</span>)
+                    .expect(<span class="string">"could not create mDNS listener"</span>)
                     .into_future();
 
                 <span class="kw">for _ in </span><span class="number">0</span>..=send_recv_times {
@@ -1262,17 +1263,17 @@
                             server_stream = stream_tmp.into_future();
                             timeout = timeout_tmp;
                             <span class="kw">let </span>(buffer, addr) = buffer_and_addr
-                                .expect(<span class="string">&quot;no msg received&quot;</span>)
-                                .expect(<span class="string">&quot;error receiving msg&quot;</span>)
+                                .expect(<span class="string">"no msg received"</span>)
+                                .expect(<span class="string">"error receiving msg"</span>)
                                 .into_parts();
 
                             <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>buffer, test_bytes);
-                            <span class="comment">//println!(&quot;server got data! {}&quot;, addr);
+                            <span class="comment">//println!("server got data! {}", addr);
 
                             // bounce them right back...
                             </span>server_sender
                                 .send(SerialMessage::new(test_bytes.to_vec(), addr))
-                                .expect(<span class="string">&quot;could not send to client&quot;</span>);
+                                .expect(<span class="string">"could not send to client"</span>);
                         }
                         Either::Right(((), buffer_and_addr_stream_tmp)) =&gt; {
                             server_stream = buffer_and_addr_stream_tmp;
@@ -1292,7 +1293,7 @@
         <span class="comment">// setup the client, which is going to run on the testing thread...
         </span><span class="kw">let </span>io_loop = runtime::Runtime::new().unwrap();
 
-        <span class="comment">// FIXME: this is hardcoded to index 5 for ipv6, which isn&#39;t going to be correct in most cases...
+        <span class="comment">// FIXME: this is hardcoded to index 5 for ipv6, which isn't going to be correct in most cases...
         </span><span class="kw">let </span>(stream, <span class="kw-2">mut </span>sender) =
             MdnsStream::new(mdns_addr, MdnsQueryType::OneShot, <span class="prelude-val">Some</span>(<span class="number">1</span>), <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">5</span>));
         <span class="kw">let </span><span class="kw-2">mut </span>stream = io_loop.block_on(stream).ok().unwrap().into_future();
@@ -1307,9 +1308,9 @@
                 .send(SerialMessage::new(test_bytes.to_vec(), mdns_addr))
                 .unwrap();
 
-            <span class="macro">println!</span>(<span class="string">&quot;client sending data!&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">"client sending data!"</span>);
 
-            <span class="comment">// TODO: this lazy isn&#39;t needed is it?
+            <span class="comment">// TODO: this lazy isn't needed is it?
             </span><span class="kw">match </span>io_loop.block_on(future::lazy(|<span class="kw">_</span>| future::select(stream, timeout)).flatten()) {
                 Either::Left((buffer_and_addr_stream_tmp, timeout_tmp)) =&gt; {
                     <span class="kw">let </span>(buffer_and_addr, stream_tmp) = buffer_and_addr_stream_tmp;
@@ -1317,10 +1318,10 @@
                     timeout = timeout_tmp;
 
                     <span class="kw">let </span>(buffer, _addr) = buffer_and_addr
-                        .expect(<span class="string">&quot;no msg received&quot;</span>)
-                        .expect(<span class="string">&quot;error receiving msg&quot;</span>)
+                        .expect(<span class="string">"no msg received"</span>)
+                        .expect(<span class="string">"error receiving msg"</span>)
                         .into_parts();
-                    <span class="macro">println!</span>(<span class="string">&quot;client got data!&quot;</span>);
+                    <span class="macro">println!</span>(<span class="string">"client got data!"</span>);
 
                     <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>buffer, test_bytes);
                     successes += <span class="number">1</span>;
@@ -1335,9 +1336,9 @@
         }
 
         client_done.store(<span class="bool-val">true</span>, std::sync::atomic::Ordering::Relaxed);
-        <span class="macro">println!</span>(<span class="string">&quot;successes: {successes}&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"successes: {successes}"</span>);
         <span class="macro">assert!</span>(successes &gt;= <span class="number">1</span>);
-        server_handle.join().expect(<span class="string">&quot;server thread failed&quot;</span>);
+        server_handle.join().expect(<span class="string">"server thread failed"</span>);
     }
 
     <span class="comment">// FIXME: reenable after breakage in async/await
@@ -1366,13 +1367,13 @@
 
         <span class="kw">let </span>server_got_packet = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(<span class="bool-val">false</span>));
 
-        <span class="kw">let </span>test_bytes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[u8; <span class="number">8</span>] = <span class="string">b&quot;DEADBEEF&quot;</span>;
+        <span class="kw">let </span>test_bytes: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8; <span class="number">8</span>] = <span class="string">b"DEADBEEF"</span>;
         <span class="kw">let </span>send_recv_times = <span class="number">10</span>;
         <span class="kw">let </span>server_got_packet_clone = server_got_packet.clone();
 
         <span class="comment">// an in and out server
         </span><span class="kw">let </span>_server_handle = std::thread::Builder::new()
-            .name(<span class="string">&quot;test_one_shot_mdns:server&quot;</span>.to_string())
+            .name(<span class="string">"test_one_shot_mdns:server"</span>.to_string())
             .spawn(<span class="kw">move </span>|| {
                 <span class="kw">let </span>io_loop = runtime::Runtime::new().unwrap();
                 <span class="kw">let </span><span class="kw-2">mut </span>timeout = future::lazy(|<span class="kw">_</span>| tokio::time::sleep(Duration::from_millis(<span class="number">100</span>)))
@@ -1380,14 +1381,14 @@
                     .boxed();
 
                 <span class="comment">// TTLs are 0 so that multicast test packets never leave the test host...
-                // FIXME: this is hardcoded to index 5 for ipv6, which isn&#39;t going to be correct in most cases...
+                // FIXME: this is hardcoded to index 5 for ipv6, which isn't going to be correct in most cases...
                 </span><span class="kw">let </span>(server_stream_future, _server_sender) =
                     MdnsStream::new(mdns_addr, mdns_query_type, <span class="prelude-val">Some</span>(<span class="number">1</span>), <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">5</span>));
 
                 <span class="comment">// For one-shot responses we are competing with a system mDNS responder, we will respond from a different port...
                 </span><span class="kw">let </span><span class="kw-2">mut </span>server_stream = io_loop
                     .block_on(server_stream_future)
-                    .expect(<span class="string">&quot;could not create mDNS listener&quot;</span>)
+                    .expect(<span class="string">"could not create mDNS listener"</span>)
                     .into_future();
 
                 <span class="kw">for _ in </span><span class="number">0</span>..=send_recv_times {
@@ -1400,10 +1401,10 @@
 
                             // server_stream = stream_tmp.into_future();
                             // timeout = timeout_tmp;
-                            // let (buffer, addr) = buffer_and_addr.expect(&quot;no buffer received&quot;);
+                            // let (buffer, addr) = buffer_and_addr.expect("no buffer received");
 
                             // assert_eq!(&amp;buffer, test_bytes);
-                            // println!(&quot;server got data! {}&quot;, addr);
+                            // println!("server got data! {}", addr);
 
                             </span>server_got_packet_clone
                                 .store(<span class="bool-val">true</span>, std::sync::atomic::Ordering::Relaxed);
@@ -1426,7 +1427,7 @@
 
         <span class="comment">// setup the client, which is going to run on the testing thread...
         </span><span class="kw">let </span>io_loop = runtime::Runtime::new().unwrap();
-        <span class="comment">// FIXME: this is hardcoded to index 5 for ipv6, which isn&#39;t going to be correct in most cases...
+        <span class="comment">// FIXME: this is hardcoded to index 5 for ipv6, which isn't going to be correct in most cases...
         </span><span class="kw">let </span>(stream, <span class="kw-2">mut </span>sender) =
             MdnsStream::new(mdns_addr, MdnsQueryType::OneShot, <span class="prelude-val">Some</span>(<span class="number">1</span>), <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">5</span>));
         <span class="kw">let </span><span class="kw-2">mut </span>stream = io_loop.block_on(stream).ok().unwrap().into_future();
@@ -1440,7 +1441,7 @@
                 .send(SerialMessage::new(test_bytes.to_vec(), mdns_addr))
                 .unwrap();
 
-            <span class="macro">println!</span>(<span class="string">&quot;client sending data!&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">"client sending data!"</span>);
 
             <span class="comment">// TODO: this lazy is probably unnecessary?
             </span><span class="kw">let </span>run_result =
@@ -1465,7 +1466,7 @@
             }
         }
 
-        <span class="macro">panic!</span>(<span class="string">&quot;server never got packet.&quot;</span>);
+        <span class="macro">panic!</span>(<span class="string">"server never got packet."</span>);
     }
 }
 </code></pre></div></section></main></body></html>

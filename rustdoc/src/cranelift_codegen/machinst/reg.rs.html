@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/reg.rs`."><title>reg.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/reg.rs`."><title>reg.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -564,10 +565,10 @@
     Allocation, Operand, OperandConstraint, OperandKind, OperandPos, PReg, PRegSet, VReg,
 };
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;enable-serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
 </span><span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="doccomment">/// The first 192 vregs (64 int, 64 float, 64 vec) are &quot;pinned&quot; to
+<span class="doccomment">/// The first 192 vregs (64 int, 64 float, 64 vec) are "pinned" to
 /// physical registers: this means that they are always constrained to
 /// the corresponding register at all use/mod/def sites.
 ///
@@ -591,7 +592,7 @@
 </span><span class="kw">pub fn </span>first_user_vreg_index() -&gt; usize {
     <span class="comment">// This is just the constant defined above, but we keep the
     // constant private and expose only this helper function with the
-    // specific name in order to ensure other parts of the code don&#39;t
+    // specific name in order to ensure other parts of the code don't
     // open-code and depend on the index-space scheme.
     </span>PINNED_VREGS
 }
@@ -602,7 +603,7 @@
 /// `MachInst::get_operands()` when the `Reg`s are converted to
 /// `Operand`s.
 </span><span class="attr">#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>Reg(VReg);
 
 <span class="kw">impl </span>Reg {
@@ -646,10 +647,10 @@
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter) -&gt; std::fmt::Result {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(rreg) = <span class="self">self</span>.to_real_reg() {
             <span class="kw">let </span>preg: PReg = rreg.into();
-            <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, preg)
+            <span class="macro">write!</span>(f, <span class="string">"{}"</span>, preg)
         } <span class="kw">else if let </span><span class="prelude-val">Some</span>(vreg) = <span class="self">self</span>.to_virtual_reg() {
             <span class="kw">let </span>vreg: VReg = vreg.into();
-            <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, vreg)
+            <span class="macro">write!</span>(f, <span class="string">"{}"</span>, vreg)
         } <span class="kw">else </span>{
             <span class="macro">unreachable!</span>()
         }
@@ -657,9 +658,9 @@
 }
 
 <span class="doccomment">/// A real (physical) register. This corresponds to one of the target
-/// ISA&#39;s named registers and can be used as an instruction operand.
+/// ISA's named registers and can be used as an instruction operand.
 </span><span class="attr">#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>RealReg(VReg);
 
 <span class="kw">impl </span>RealReg {
@@ -685,7 +686,7 @@
 /// before register allocation occurs, in order to allow us to name as
 /// many register-carried values as necessary.
 </span><span class="attr">#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>VirtualReg(VReg);
 
 <span class="kw">impl </span>VirtualReg {
@@ -708,14 +709,14 @@
 <span class="doccomment">/// A type wrapper that indicates a register type is writable. The
 /// underlying register can be extracted, and the type wrapper can be
 /// built using an arbitrary register. Hence, this type-level wrapper
-/// is not strictly a guarantee. However, &quot;casting&quot; to a writable
+/// is not strictly a guarantee. However, "casting" to a writable
 /// register is an explicit operation for which we can
 /// audit. Ordinarily, internal APIs in the compiler backend should
 /// take a `Writable&lt;Reg&gt;` whenever the register is written, and the
 /// usual, frictionless way to get one of these is to allocate a new
 /// temporary.
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>Writable&lt;T: Clone + Copy + Debug + PartialEq + Eq + PartialOrd + Ord + Hash&gt; {
     reg: T,
 }
@@ -723,7 +724,7 @@
 <span class="kw">impl</span>&lt;T: Clone + Copy + Debug + PartialEq + Eq + PartialOrd + Ord + Hash&gt; Writable&lt;T&gt; {
     <span class="doccomment">/// Explicitly construct a `Writable&lt;T&gt;` from a `T`. As noted in
     /// the documentation for `Writable`, this is not hidden or
-    /// disallowed from the outside; anyone can perform the &quot;cast&quot;;
+    /// disallowed from the outside; anyone can perform the "cast";
     /// but it is explicit so that we can audit the use sites.
     </span><span class="kw">pub fn </span>from_reg(reg: T) -&gt; Writable&lt;T&gt; {
         Writable { reg }
@@ -843,8 +844,8 @@
 /// gathers operands from a single instruction and provides the range
 /// in the flattened array.
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>OperandCollector&lt;<span class="lifetime">&#39;a</span>, F: Fn(VReg) -&gt; VReg&gt; {
-    operands: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;Operand&gt;,
+</span><span class="kw">pub struct </span>OperandCollector&lt;<span class="lifetime">'a</span>, F: Fn(VReg) -&gt; VReg&gt; {
+    operands: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Vec&lt;Operand&gt;,
     operands_start: usize,
     clobbers: PRegSet,
 
@@ -854,9 +855,9 @@
     renamer: F,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, F: Fn(VReg) -&gt; VReg&gt; OperandCollector&lt;<span class="lifetime">&#39;a</span>, F&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, F: Fn(VReg) -&gt; VReg&gt; OperandCollector&lt;<span class="lifetime">'a</span>, F&gt; {
     <span class="doccomment">/// Start gathering operands into one flattened operand array.
-    </span><span class="kw">pub fn </span>new(operands: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;Operand&gt;, allocatable: PRegSet, renamer: F) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(operands: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Vec&lt;Operand&gt;, allocatable: PRegSet, renamer: F) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>operands_start = operands.len();
         <span class="self">Self </span>{
             operands,
@@ -950,7 +951,7 @@
         }
     }
 
-    <span class="doccomment">/// Add a register &quot;early def&quot;, which logically occurs at the
+    <span class="doccomment">/// Add a register "early def", which logically occurs at the
     /// beginning of the instruction, alongside all uses. Use this
     /// when the def may be written before all uses are read; the
     /// regalloc will ensure that it does not overwrite any uses.
@@ -963,11 +964,11 @@
         }
     }
 
-    <span class="doccomment">/// Add a register &quot;fixed use&quot;, which ties a vreg to a particular
+    <span class="doccomment">/// Add a register "fixed use", which ties a vreg to a particular
     /// RealReg at the end of the instruction.
     </span><span class="kw">pub fn </span>reg_fixed_late_use(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Reg, rreg: Reg) {
         <span class="macro">debug_assert!</span>(reg.is_virtual());
-        <span class="kw">let </span>rreg = rreg.to_real_reg().expect(<span class="string">&quot;fixed reg is not a RealReg&quot;</span>);
+        <span class="kw">let </span>rreg = rreg.to_real_reg().expect(<span class="string">"fixed reg is not a RealReg"</span>);
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_allocatable_preg(rreg.into()));
         <span class="self">self</span>.add_operand(Operand::new(
             reg.into(),
@@ -977,39 +978,39 @@
         ));
     }
 
-    <span class="doccomment">/// Add a register &quot;fixed use&quot;, which ties a vreg to a particular
+    <span class="doccomment">/// Add a register "fixed use", which ties a vreg to a particular
     /// RealReg at this point.
     </span><span class="kw">pub fn </span>reg_fixed_use(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Reg, rreg: Reg) {
         <span class="macro">debug_assert!</span>(reg.is_virtual());
-        <span class="kw">let </span>rreg = rreg.to_real_reg().expect(<span class="string">&quot;fixed reg is not a RealReg&quot;</span>);
+        <span class="kw">let </span>rreg = rreg.to_real_reg().expect(<span class="string">"fixed reg is not a RealReg"</span>);
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_allocatable_preg(rreg.into()));
         <span class="self">self</span>.add_operand(Operand::reg_fixed_use(reg.into(), rreg.into()));
     }
 
-    <span class="doccomment">/// Add a register &quot;fixed def&quot;, which ties a vreg to a particular
+    <span class="doccomment">/// Add a register "fixed def", which ties a vreg to a particular
     /// RealReg at this point.
     </span><span class="kw">pub fn </span>reg_fixed_def(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Writable&lt;Reg&gt;, rreg: Reg) {
         <span class="macro">debug_assert!</span>(reg.to_reg().is_virtual());
-        <span class="kw">let </span>rreg = rreg.to_real_reg().expect(<span class="string">&quot;fixed reg is not a RealReg&quot;</span>);
+        <span class="kw">let </span>rreg = rreg.to_real_reg().expect(<span class="string">"fixed reg is not a RealReg"</span>);
         <span class="macro">debug_assert!</span>(
             <span class="self">self</span>.is_allocatable_preg(rreg.into()),
-            <span class="string">&quot;{rreg:?} is not allocatable&quot;
+            <span class="string">"{rreg:?} is not allocatable"
         </span>);
         <span class="self">self</span>.add_operand(Operand::reg_fixed_def(reg.to_reg().into(), rreg.into()));
     }
 
-    <span class="doccomment">/// Add a register def that reuses an earlier use-operand&#39;s
+    <span class="doccomment">/// Add a register def that reuses an earlier use-operand's
     /// allocation. The index of that earlier operand (relative to the
-    /// current instruction&#39;s start of operands) must be known.
+    /// current instruction's start of operands) must be known.
     </span><span class="kw">pub fn </span>reg_reuse_def(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Writable&lt;Reg&gt;, idx: usize) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(rreg) = reg.to_reg().to_real_reg() {
             <span class="comment">// In some cases we see real register arguments to a reg_reuse_def
-            // constraint. We assume the creator knows what they&#39;re doing
+            // constraint. We assume the creator knows what they're doing
             // here, though we do also require that the real register be a
             // fixed-nonallocatable register.
             </span><span class="self">self</span>.reg_fixed_nonallocatable(rreg.into());
         } <span class="kw">else </span>{
-            <span class="comment">// The operand we&#39;re reusing must not be fixed-nonallocatable, as
+            <span class="comment">// The operand we're reusing must not be fixed-nonallocatable, as
             // that would imply that the register has been allocated to a
             // virtual register.
             </span><span class="self">self</span>.add_operand(Operand::reg_reuse_def(reg.to_reg().into(), idx));
@@ -1030,7 +1031,7 @@
 /// `eax` for the register by those names on x86-64, depending on a
 /// 64- or 32-bit context.
 </span><span class="kw">pub trait </span>PrettyPrint {
-    <span class="kw">fn </span>pretty_print(<span class="kw-2">&amp;</span><span class="self">self</span>, size_bytes: u8, allocs: <span class="kw-2">&amp;mut </span>AllocationConsumer&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; String;
+    <span class="kw">fn </span>pretty_print(<span class="kw-2">&amp;</span><span class="self">self</span>, size_bytes: u8, allocs: <span class="kw-2">&amp;mut </span>AllocationConsumer&lt;<span class="lifetime">'_</span>&gt;) -&gt; String;
 
     <span class="kw">fn </span>pretty_print_default(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="self">self</span>.pretty_print(<span class="number">0</span>, <span class="kw-2">&amp;mut </span>AllocationConsumer::new(<span class="kw-2">&amp;</span>[]))
@@ -1050,12 +1051,12 @@
 /// instruction, provide it the Regs in the same order as they were
 /// provided to the OperandCollector.
 </span><span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>AllocationConsumer&lt;<span class="lifetime">&#39;a</span>&gt; {
-    allocs: std::slice::Iter&lt;<span class="lifetime">&#39;a</span>, Allocation&gt;,
+</span><span class="kw">pub struct </span>AllocationConsumer&lt;<span class="lifetime">'a</span>&gt; {
+    allocs: std::slice::Iter&lt;<span class="lifetime">'a</span>, Allocation&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; AllocationConsumer&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub fn </span>new(allocs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Allocation]) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; AllocationConsumer&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub fn </span>new(allocs: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[Allocation]) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             allocs: allocs.iter(),
         }
@@ -1067,7 +1068,7 @@
             Reg::from(
                 alloc
                     .as_reg()
-                    .expect(<span class="string">&quot;Should not have gotten a stack allocation&quot;</span>),
+                    .expect(<span class="string">"Should not have gotten a stack allocation"</span>),
             )
         });
 
@@ -1085,7 +1086,7 @@
             Reg::from(
                 alloc
                     .as_reg()
-                    .expect(<span class="string">&quot;Should not have gotten a stack allocation&quot;</span>),
+                    .expect(<span class="string">"Should not have gotten a stack allocation"</span>),
             )
         });
 
@@ -1105,7 +1106,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; std::default::Default <span class="kw">for </span>AllocationConsumer&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; std::default::Default <span class="kw">for </span>AllocationConsumer&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{ allocs: [].iter() }
     }

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.13.1/src/connection/stream/flow_control.rs`."><title>flow_control.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.13.1/src/connection/stream/flow_control.rs`."><title>flow_control.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -354,13 +355,13 @@
         <span class="kw">let </span><span class="kw-2">mut </span>next_window_update =
             bytes_received.saturating_sub(buffer_len.try_into().unwrap_or(u32::MAX));
 
-        <span class="comment">// Don&#39;t send an update in case half or more of the window is still available to the sender.
+        <span class="comment">// Don't send an update in case half or more of the window is still available to the sender.
         </span><span class="kw">if </span>next_window_update &lt; <span class="self">self</span>.max_receive_window / <span class="number">2 </span>{
             <span class="kw">return </span><span class="prelude-val">None</span>;
         }
 
         <span class="macro">log::trace!</span>(
-            <span class="string">&quot;received {} mb in {} seconds ({} mbit/s)&quot;</span>,
+            <span class="string">"received {} mb in {} seconds ({} mbit/s)"</span>,
             next_window_update <span class="kw">as </span>f64 / <span class="kw">crate</span>::MIB <span class="kw">as </span>f64,
             <span class="self">self</span>.last_window_update.elapsed().as_secs_f64(),
             next_window_update <span class="kw">as </span>f64 / <span class="kw">crate</span>::MIB <span class="kw">as </span>f64 * <span class="number">8.0
@@ -414,7 +415,7 @@
             drop(accumulated_max_stream_windows);
 
             <span class="macro">log::debug!</span>(
-                <span class="string">&quot;old window_max: {} mb, new window_max: {} mb&quot;</span>,
+                <span class="string">"old window_max: {} mb, new window_max: {} mb"</span>,
                 <span class="self">self</span>.max_receive_window <span class="kw">as </span>f64 / <span class="kw">crate</span>::MIB <span class="kw">as </span>f64,
                 new_max <span class="kw">as </span>f64 / <span class="kw">crate</span>::MIB <span class="kw">as </span>f64
             );
@@ -446,27 +447,27 @@
 
         <span class="macro">assert!</span>(
             buffer_len &lt;= <span class="self">self</span>.max_receive_window <span class="kw">as </span>usize,
-            <span class="string">&quot;The current buffer size never exceeds the maximum stream receive window.&quot;
+            <span class="string">"The current buffer size never exceeds the maximum stream receive window."
         </span>);
         <span class="macro">assert!</span>(
             <span class="self">self</span>.receive_window &lt;= <span class="self">self</span>.max_receive_window,
-            <span class="string">&quot;The current window never exceeds the maximum.&quot;
+            <span class="string">"The current window never exceeds the maximum."
         </span>);
         <span class="macro">assert!</span>(
             (<span class="self">self</span>.max_receive_window - DEFAULT_CREDIT) <span class="kw">as </span>usize
                 &lt;= config.max_connection_receive_window.unwrap_or(usize::MAX)
                     - config.max_num_streams * DEFAULT_CREDIT <span class="kw">as </span>usize,
-            <span class="string">&quot;The maximum never exceeds its maximum portion of the configured connection limit.&quot;
+            <span class="string">"The maximum never exceeds its maximum portion of the configured connection limit."
         </span>);
         <span class="macro">assert!</span>(
             (<span class="self">self</span>.max_receive_window - DEFAULT_CREDIT) <span class="kw">as </span>usize
                 &lt;= accumulated_max_stream_windows,
-            <span class="string">&quot;The amount by which the stream maximum exceeds DEFAULT_CREDIT is tracked in accumulated_max_stream_windows.&quot;
+            <span class="string">"The amount by which the stream maximum exceeds DEFAULT_CREDIT is tracked in accumulated_max_stream_windows."
         </span>);
         <span class="kw">if </span>rtt.is_none() {
             <span class="macro">assert_eq!</span>(
                 <span class="self">self</span>.max_receive_window, DEFAULT_CREDIT,
-                <span class="string">&quot;The maximum is only increased iff an rtt measurement is available.&quot;
+                <span class="string">"The maximum is only increased iff an rtt measurement is available."
             </span>);
         }
     }
@@ -479,14 +480,14 @@
         <span class="self">self</span>.send_window = <span class="self">self
             </span>.send_window
             .checked_sub(i)
-            .expect(<span class="string">&quot;not exceed send window&quot;</span>);
+            .expect(<span class="string">"not exceed send window"</span>);
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>increase_send_window_by(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: u32) {
         <span class="self">self</span>.send_window = <span class="self">self
             </span>.send_window
             .checked_add(i)
-            .expect(<span class="string">&quot;send window not to exceed u32&quot;</span>);
+            .expect(<span class="string">"send window not to exceed u32"</span>);
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>receive_window(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
@@ -497,7 +498,7 @@
         <span class="self">self</span>.receive_window = <span class="self">self
             </span>.receive_window
             .checked_sub(i)
-            .expect(<span class="string">&quot;not exceed receive window&quot;</span>);
+            .expect(<span class="string">"not exceed receive window"</span>);
     }
 }
 
@@ -507,7 +508,7 @@
 
         <span class="macro">debug_assert!</span>(
             <span class="kw-2">*</span>accumulated_max_stream_windows &gt;= (<span class="self">self</span>.max_receive_window - DEFAULT_CREDIT) <span class="kw">as </span>usize,
-            <span class="string">&quot;{accumulated_max_stream_windows} {}&quot;</span>,
+            <span class="string">"{accumulated_max_stream_windows} {}"</span>,
             <span class="self">self</span>.max_receive_window
         );
 

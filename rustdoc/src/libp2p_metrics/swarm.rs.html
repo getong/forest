@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-metrics-0.14.1/src/swarm.rs`."><title>swarm.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_metrics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-metrics-0.14.1/src/swarm.rs`."><title>swarm.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_metrics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -449,7 +450,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2021 Protocol Labs.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the &quot;Software&quot;),
+// copy of this software and associated documentation files (the "Software"),
 // to deal in the Software without restriction, including without limitation
 // the rights to use, copy, modify, merge, publish, distribute, sublicense,
 // and/or sell copies of the Software, and to permit persons to whom the
@@ -458,7 +459,7 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -504,89 +505,89 @@
 
 <span class="kw">impl </span>Metrics {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(registry: <span class="kw-2">&amp;mut </span>Registry) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>sub_registry = registry.sub_registry_with_prefix(<span class="string">&quot;swarm&quot;</span>);
+        <span class="kw">let </span>sub_registry = registry.sub_registry_with_prefix(<span class="string">"swarm"</span>);
 
         <span class="kw">let </span>connections_incoming = Family::default();
         sub_registry.register(
-            <span class="string">&quot;connections_incoming&quot;</span>,
-            <span class="string">&quot;Number of incoming connections per address stack&quot;</span>,
+            <span class="string">"connections_incoming"</span>,
+            <span class="string">"Number of incoming connections per address stack"</span>,
             connections_incoming.clone(),
         );
 
         <span class="kw">let </span>connections_incoming_error = Family::default();
         sub_registry.register(
-            <span class="string">&quot;connections_incoming_error&quot;</span>,
-            <span class="string">&quot;Number of incoming connection errors&quot;</span>,
+            <span class="string">"connections_incoming_error"</span>,
+            <span class="string">"Number of incoming connection errors"</span>,
             connections_incoming_error.clone(),
         );
 
         <span class="kw">let </span>new_listen_addr = Family::default();
         sub_registry.register(
-            <span class="string">&quot;new_listen_addr&quot;</span>,
-            <span class="string">&quot;Number of new listen addresses&quot;</span>,
+            <span class="string">"new_listen_addr"</span>,
+            <span class="string">"Number of new listen addresses"</span>,
             new_listen_addr.clone(),
         );
 
         <span class="kw">let </span>expired_listen_addr = Family::default();
         sub_registry.register(
-            <span class="string">&quot;expired_listen_addr&quot;</span>,
-            <span class="string">&quot;Number of expired listen addresses&quot;</span>,
+            <span class="string">"expired_listen_addr"</span>,
+            <span class="string">"Number of expired listen addresses"</span>,
             expired_listen_addr.clone(),
         );
 
         <span class="kw">let </span>external_addr_candidates = Family::default();
         sub_registry.register(
-            <span class="string">&quot;external_addr_candidates&quot;</span>,
-            <span class="string">&quot;Number of new external address candidates&quot;</span>,
+            <span class="string">"external_addr_candidates"</span>,
+            <span class="string">"Number of new external address candidates"</span>,
             external_addr_candidates.clone(),
         );
 
         <span class="kw">let </span>external_addr_confirmed = Family::default();
         sub_registry.register(
-            <span class="string">&quot;external_addr_confirmed&quot;</span>,
-            <span class="string">&quot;Number of confirmed external addresses&quot;</span>,
+            <span class="string">"external_addr_confirmed"</span>,
+            <span class="string">"Number of confirmed external addresses"</span>,
             external_addr_confirmed.clone(),
         );
 
         <span class="kw">let </span>external_addr_expired = Family::default();
         sub_registry.register(
-            <span class="string">&quot;external_addr_expired&quot;</span>,
-            <span class="string">&quot;Number of expired external addresses&quot;</span>,
+            <span class="string">"external_addr_expired"</span>,
+            <span class="string">"Number of expired external addresses"</span>,
             external_addr_expired.clone(),
         );
 
         <span class="kw">let </span>listener_closed = Family::default();
         sub_registry.register(
-            <span class="string">&quot;listener_closed&quot;</span>,
-            <span class="string">&quot;Number of listeners closed&quot;</span>,
+            <span class="string">"listener_closed"</span>,
+            <span class="string">"Number of listeners closed"</span>,
             listener_closed.clone(),
         );
 
         <span class="kw">let </span>listener_error = Counter::default();
         sub_registry.register(
-            <span class="string">&quot;listener_error&quot;</span>,
-            <span class="string">&quot;Number of listener errors&quot;</span>,
+            <span class="string">"listener_error"</span>,
+            <span class="string">"Number of listener errors"</span>,
             listener_error.clone(),
         );
 
         <span class="kw">let </span>dial_attempt = Counter::default();
         sub_registry.register(
-            <span class="string">&quot;dial_attempt&quot;</span>,
-            <span class="string">&quot;Number of dial attempts&quot;</span>,
+            <span class="string">"dial_attempt"</span>,
+            <span class="string">"Number of dial attempts"</span>,
             dial_attempt.clone(),
         );
 
         <span class="kw">let </span>outgoing_connection_error = Family::default();
         sub_registry.register(
-            <span class="string">&quot;outgoing_connection_error&quot;</span>,
-            <span class="string">&quot;Number outgoing connection errors&quot;</span>,
+            <span class="string">"outgoing_connection_error"</span>,
+            <span class="string">"Number outgoing connection errors"</span>,
             outgoing_connection_error.clone(),
         );
 
         <span class="kw">let </span>connections_established = Family::default();
         sub_registry.register(
-            <span class="string">&quot;connections_established&quot;</span>,
-            <span class="string">&quot;Number of connections established&quot;</span>,
+            <span class="string">"connections_established"</span>,
+            <span class="string">"Number of connections established"</span>,
             connections_established.clone(),
         );
 
@@ -596,8 +597,8 @@
             Family::new_with_constructor(constructor)
         };
         sub_registry.register(
-            <span class="string">&quot;connections_establishment_duration&quot;</span>,
-            <span class="string">&quot;Time it took (locally) to establish connections&quot;</span>,
+            <span class="string">"connections_establishment_duration"</span>,
+            <span class="string">"Time it took (locally) to establish connections"</span>,
             connections_establishment_duration.clone(),
         );
 
@@ -607,8 +608,8 @@
             Family::new_with_constructor(constructor)
         };
         sub_registry.register_with_unit(
-            <span class="string">&quot;connections_duration&quot;</span>,
-            <span class="string">&quot;Time a connection was alive&quot;</span>,
+            <span class="string">"connections_duration"</span>,
+            <span class="string">"Time a connection was alive"</span>,
             Unit::Seconds,
             connections_duration.clone(),
         );
@@ -653,7 +654,7 @@
                     .observe(time_taken.as_secs_f64());
                 <span class="self">self</span>.connections
                     .lock()
-                    .expect(<span class="string">&quot;lock not to be poisoned&quot;</span>)
+                    .expect(<span class="string">"lock not to be poisoned"</span>)
                     .insert(<span class="kw-2">*</span>connection_id, Instant::now());
             }
             SwarmEvent::ConnectionClosed {
@@ -672,9 +673,9 @@
                 <span class="self">self</span>.connections_duration.get_or_create(<span class="kw-2">&amp;</span>labels).observe(
                     <span class="self">self</span>.connections
                         .lock()
-                        .expect(<span class="string">&quot;lock not to be poisoned&quot;</span>)
+                        .expect(<span class="string">"lock not to be poisoned"</span>)
                         .remove(connection_id)
-                        .expect(<span class="string">&quot;closed connection to previously be established&quot;</span>)
+                        .expect(<span class="string">"closed connection to previously be established"</span>)
                         .elapsed()
                         .as_secs_f64(),
                 );

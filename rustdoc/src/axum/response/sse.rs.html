@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/axum-0.7.4/src/response/sse.rs`."><title>sse.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="axum" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/axum-0.7.4/src/response/sse.rs`."><title>sse.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="axum" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -711,11 +712,11 @@
 //! use tokio_stream::StreamExt as _ ;
 //! use futures_util::stream::{self, Stream};
 //!
-//! let app = Router::new().route(&quot;/sse&quot;, get(sse_handler));
+//! let app = Router::new().route("/sse", get(sse_handler));
 //!
 //! async fn sse_handler() -&gt; Sse&lt;impl Stream&lt;Item = Result&lt;Event, Infallible&gt;&gt;&gt; {
 //!     // A `Stream` that repeats an event every second
-//!     let stream = stream::repeat_with(|| Event::default().data(&quot;hi!&quot;))
+//!     let stream = stream::repeat_with(|| Event::default().data("hi!"))
 //!         .map(Ok)
 //!         .throttle(Duration::from_secs(1));
 //!
@@ -764,7 +765,7 @@
     /// See the [module docs](self) for more details.
     </span><span class="kw">pub fn </span>new(stream: S) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>S: TryStream&lt;<span class="prelude-val">Ok </span>= Event&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>S: TryStream&lt;<span class="prelude-val">Ok </span>= Event&gt; + Send + <span class="lifetime">'static</span>,
         S::Error: Into&lt;BoxError&gt;,
     {
         Sse {
@@ -783,24 +784,24 @@
 }
 
 <span class="kw">impl</span>&lt;S&gt; fmt::Debug <span class="kw">for </span>Sse&lt;S&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;Sse&quot;</span>)
-            .field(<span class="string">&quot;stream&quot;</span>, <span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">&quot;{}&quot;</span>, std::any::type_name::&lt;S&gt;()))
-            .field(<span class="string">&quot;keep_alive&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.keep_alive)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"Sse"</span>)
+            .field(<span class="string">"stream"</span>, <span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"{}"</span>, std::any::type_name::&lt;S&gt;()))
+            .field(<span class="string">"keep_alive"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.keep_alive)
             .finish()
     }
 }
 
 <span class="kw">impl</span>&lt;S, E&gt; IntoResponse <span class="kw">for </span>Sse&lt;S&gt;
 <span class="kw">where
-    </span>S: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;Event, E&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+    </span>S: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;Event, E&gt;&gt; + Send + <span class="lifetime">'static</span>,
     E: Into&lt;BoxError&gt;,
 {
     <span class="kw">fn </span>into_response(<span class="self">self</span>) -&gt; Response {
         (
             [
                 (http::header::CONTENT_TYPE, mime::TEXT_EVENT_STREAM.as_ref()),
-                (http::header::CACHE_CONTROL, <span class="string">&quot;no-cache&quot;</span>),
+                (http::header::CACHE_CONTROL, <span class="string">"no-cache"</span>),
             ],
             Body::new(SseBody {
                 event_stream: SyncWrapper::new(<span class="self">self</span>.stream),
@@ -829,7 +830,7 @@
 
     <span class="kw">fn </span>poll_frame(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;Frame&lt;<span class="self">Self</span>::Data&gt;, <span class="self">Self</span>::Error&gt;&gt;&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.project();
 
@@ -862,11 +863,11 @@
 }
 
 <span class="kw">impl </span>Event {
-    <span class="doccomment">/// Set the event&#39;s data data field(s) (`data: &lt;content&gt;`)
+    <span class="doccomment">/// Set the event's data data field(s) (`data: &lt;content&gt;`)
     ///
     /// Newlines in `data` will automatically be broken across `data: ` fields.
     ///
-    /// This corresponds to [`MessageEvent`&#39;s data field].
+    /// This corresponds to [`MessageEvent`'s data field].
     ///
     /// Note that events with an empty data field will be ignored by the browser.
     ///
@@ -875,17 +876,17 @@
     /// - Panics if `data` contains any carriage returns, as they cannot be transmitted over SSE.
     /// - Panics if `data` or `json_data` have already been called.
     ///
-    /// [`MessageEvent`&#39;s data field]: https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent/data
+    /// [`MessageEvent`'s data field]: https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent/data
     </span><span class="kw">pub fn </span>data&lt;T&gt;(<span class="kw-2">mut </span><span class="self">self</span>, data: T) -&gt; Event
     <span class="kw">where
         </span>T: AsRef&lt;str&gt;,
     {
         <span class="kw">if </span><span class="self">self</span>.flags.contains(EventFlags::HAS_DATA) {
-            <span class="macro">panic!</span>(<span class="string">&quot;Called `EventBuilder::data` multiple times&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"Called `EventBuilder::data` multiple times"</span>);
         }
 
-        <span class="kw">for </span>line <span class="kw">in </span>memchr_split(<span class="string">b&#39;\n&#39;</span>, data.as_ref().as_bytes()) {
-            <span class="self">self</span>.field(<span class="string">&quot;data&quot;</span>, line);
+        <span class="kw">for </span>line <span class="kw">in </span>memchr_split(<span class="string">b'\n'</span>, data.as_ref().as_bytes()) {
+            <span class="self">self</span>.field(<span class="string">"data"</span>, line);
         }
 
         <span class="self">self</span>.flags.insert(EventFlags::HAS_DATA);
@@ -893,34 +894,34 @@
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Set the event&#39;s data field to a value serialized as unformatted JSON (`data: &lt;content&gt;`).
+    <span class="doccomment">/// Set the event's data field to a value serialized as unformatted JSON (`data: &lt;content&gt;`).
     ///
-    /// This corresponds to [`MessageEvent`&#39;s data field].
+    /// This corresponds to [`MessageEvent`'s data field].
     ///
     /// # Panics
     ///
     /// Panics if `data` or `json_data` have already been called.
     ///
-    /// [`MessageEvent`&#39;s data field]: https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent/data
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;json&quot;</span>)]
+    /// [`MessageEvent`'s data field]: https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent/data
+    </span><span class="attr">#[cfg(feature = <span class="string">"json"</span>)]
     </span><span class="kw">pub fn </span>json_data&lt;T&gt;(<span class="kw-2">mut </span><span class="self">self</span>, data: T) -&gt; <span class="prelude-ty">Result</span>&lt;Event, axum_core::Error&gt;
     <span class="kw">where
         </span>T: serde::Serialize,
     {
         <span class="kw">if </span><span class="self">self</span>.flags.contains(EventFlags::HAS_DATA) {
-            <span class="macro">panic!</span>(<span class="string">&quot;Called `EventBuilder::json_data` multiple times&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"Called `EventBuilder::json_data` multiple times"</span>);
         }
 
-        <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b&quot;data: &quot;</span>);
+        <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b"data: "</span>);
         serde_json::to_writer((<span class="kw-2">&amp;mut </span><span class="self">self</span>.buffer).writer(), <span class="kw-2">&amp;</span>data).map_err(axum_core::Error::new)<span class="question-mark">?</span>;
-        <span class="self">self</span>.buffer.put_u8(<span class="string">b&#39;\n&#39;</span>);
+        <span class="self">self</span>.buffer.put_u8(<span class="string">b'\n'</span>);
 
         <span class="self">self</span>.flags.insert(EventFlags::HAS_DATA);
 
         <span class="prelude-val">Ok</span>(<span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Set the event&#39;s comment field (`:&lt;comment-text&gt;`).
+    <span class="doccomment">/// Set the event's comment field (`:&lt;comment-text&gt;`).
     ///
     /// This field will be ignored by most SSE clients.
     ///
@@ -934,15 +935,15 @@
     <span class="kw">where
         </span>T: AsRef&lt;str&gt;,
     {
-        <span class="self">self</span>.field(<span class="string">&quot;&quot;</span>, comment.as_ref());
+        <span class="self">self</span>.field(<span class="string">""</span>, comment.as_ref());
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Set the event&#39;s name field (`event:&lt;event-name&gt;`).
+    <span class="doccomment">/// Set the event's name field (`event:&lt;event-name&gt;`).
     ///
     /// This corresponds to the `type` parameter given when calling `addEventListener` on an
-    /// [`EventSource`]. For example, `.event(&quot;update&quot;)` should correspond to
-    /// `.addEventListener(&quot;update&quot;, ...)`. If no event type is given, browsers will fire a
+    /// [`EventSource`]. For example, `.event("update")` should correspond to
+    /// `.addEventListener("update", ...)`. If no event type is given, browsers will fire a
     /// [`message` event] instead.
     ///
     /// [`EventSource`]: https://developer.mozilla.org/en-US/docs/Web/API/EventSource
@@ -957,16 +958,16 @@
         </span>T: AsRef&lt;str&gt;,
     {
         <span class="kw">if </span><span class="self">self</span>.flags.contains(EventFlags::HAS_EVENT) {
-            <span class="macro">panic!</span>(<span class="string">&quot;Called `EventBuilder::event` multiple times&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"Called `EventBuilder::event` multiple times"</span>);
         }
         <span class="self">self</span>.flags.insert(EventFlags::HAS_EVENT);
 
-        <span class="self">self</span>.field(<span class="string">&quot;event&quot;</span>, event.as_ref());
+        <span class="self">self</span>.field(<span class="string">"event"</span>, event.as_ref());
 
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Set the event&#39;s retry timeout field (`retry:&lt;timeout&gt;`).
+    <span class="doccomment">/// Set the event's retry timeout field (`retry:&lt;timeout&gt;`).
     ///
     /// This sets how long clients will wait before reconnecting if they are disconnected from the
     /// SSE endpoint. Note that this is just a hint: clients are free to wait for longer if they
@@ -977,11 +978,11 @@
     /// Panics if this function has already been called on this event.
     </span><span class="kw">pub fn </span>retry(<span class="kw-2">mut </span><span class="self">self</span>, duration: Duration) -&gt; Event {
         <span class="kw">if </span><span class="self">self</span>.flags.contains(EventFlags::HAS_RETRY) {
-            <span class="macro">panic!</span>(<span class="string">&quot;Called `EventBuilder::retry` multiple times&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"Called `EventBuilder::retry` multiple times"</span>);
         }
         <span class="self">self</span>.flags.insert(EventFlags::HAS_RETRY);
 
-        <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b&quot;retry:&quot;</span>);
+        <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b"retry:"</span>);
 
         <span class="kw">let </span>secs = duration.as_secs();
         <span class="kw">let </span>millis = duration.subsec_millis();
@@ -993,9 +994,9 @@
 
             <span class="comment">// pad milliseconds
             </span><span class="kw">if </span>millis &lt; <span class="number">10 </span>{
-                <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b&quot;00&quot;</span>);
+                <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b"00"</span>);
             } <span class="kw">else if </span>millis &lt; <span class="number">100 </span>{
-                <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b&quot;0&quot;</span>);
+                <span class="self">self</span>.buffer.extend_from_slice(<span class="string">b"0"</span>);
             }
         }
 
@@ -1003,18 +1004,18 @@
         </span><span class="self">self</span>.buffer
             .extend_from_slice(itoa::Buffer::new().format(millis).as_bytes());
 
-        <span class="self">self</span>.buffer.put_u8(<span class="string">b&#39;\n&#39;</span>);
+        <span class="self">self</span>.buffer.put_u8(<span class="string">b'\n'</span>);
 
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Set the event&#39;s identifier field (`id:&lt;identifier&gt;`).
+    <span class="doccomment">/// Set the event's identifier field (`id:&lt;identifier&gt;`).
     ///
-    /// This corresponds to [`MessageEvent`&#39;s `lastEventId` field]. If no ID is in the event itself,
+    /// This corresponds to [`MessageEvent`'s `lastEventId` field]. If no ID is in the event itself,
     /// the browser will set that field to the last known message ID, starting with the empty
     /// string.
     ///
-    /// [`MessageEvent`&#39;s `lastEventId` field]: https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent/lastEventId
+    /// [`MessageEvent`'s `lastEventId` field]: https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent/lastEventId
     ///
     /// # Panics
     ///
@@ -1025,37 +1026,37 @@
         </span>T: AsRef&lt;str&gt;,
     {
         <span class="kw">if </span><span class="self">self</span>.flags.contains(EventFlags::HAS_ID) {
-            <span class="macro">panic!</span>(<span class="string">&quot;Called `EventBuilder::id` multiple times&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"Called `EventBuilder::id` multiple times"</span>);
         }
         <span class="self">self</span>.flags.insert(EventFlags::HAS_ID);
 
         <span class="kw">let </span>id = id.as_ref().as_bytes();
         <span class="macro">assert_eq!</span>(
-            memchr::memchr(<span class="string">b&#39;\0&#39;</span>, id),
+            memchr::memchr(<span class="string">b'\0'</span>, id),
             <span class="prelude-val">None</span>,
-            <span class="string">&quot;Event ID cannot contain null characters&quot;</span>,
+            <span class="string">"Event ID cannot contain null characters"</span>,
         );
 
-        <span class="self">self</span>.field(<span class="string">&quot;id&quot;</span>, id);
+        <span class="self">self</span>.field(<span class="string">"id"</span>, id);
         <span class="self">self
     </span>}
 
     <span class="kw">fn </span>field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, value: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) {
         <span class="kw">let </span>value = value.as_ref();
         <span class="macro">assert_eq!</span>(
-            memchr::memchr2(<span class="string">b&#39;\r&#39;</span>, <span class="string">b&#39;\n&#39;</span>, value),
+            memchr::memchr2(<span class="string">b'\r'</span>, <span class="string">b'\n'</span>, value),
             <span class="prelude-val">None</span>,
-            <span class="string">&quot;SSE field value cannot contain newlines or carriage returns&quot;</span>,
+            <span class="string">"SSE field value cannot contain newlines or carriage returns"</span>,
         );
         <span class="self">self</span>.buffer.extend_from_slice(name.as_bytes());
-        <span class="self">self</span>.buffer.put_u8(<span class="string">b&#39;:&#39;</span>);
-        <span class="self">self</span>.buffer.put_u8(<span class="string">b&#39; &#39;</span>);
+        <span class="self">self</span>.buffer.put_u8(<span class="string">b':'</span>);
+        <span class="self">self</span>.buffer.put_u8(<span class="string">b' '</span>);
         <span class="self">self</span>.buffer.extend_from_slice(value);
-        <span class="self">self</span>.buffer.put_u8(<span class="string">b&#39;\n&#39;</span>);
+        <span class="self">self</span>.buffer.put_u8(<span class="string">b'\n'</span>);
     }
 
     <span class="kw">fn </span>finalize(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; Bytes {
-        <span class="self">self</span>.buffer.put_u8(<span class="string">b&#39;\n&#39;</span>);
+        <span class="self">self</span>.buffer.put_u8(<span class="string">b'\n'</span>);
         <span class="self">self</span>.buffer.freeze()
     }
 }
@@ -1099,7 +1100,7 @@
     <span class="doccomment">/// Create a new `KeepAlive`.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            event: Bytes::from_static(<span class="string">b&quot;:\n\n&quot;</span>),
+            event: Bytes::from_static(<span class="string">b":\n\n"</span>),
             max_interval: Duration::from_secs(<span class="number">15</span>),
         }
     }
@@ -1170,7 +1171,7 @@
             .reset(tokio::time::Instant::now() + this.keep_alive.max_interval);
     }
 
-    <span class="kw">fn </span>poll_event(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;Bytes&gt; {
+    <span class="kw">fn </span>poll_event(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;Bytes&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.as_mut().project();
 
         <span class="macro">ready!</span>(this.alive_timer.poll(cx));
@@ -1183,20 +1184,20 @@
     }
 }
 
-<span class="kw">fn </span>memchr_split(needle: u8, haystack: <span class="kw-2">&amp;</span>[u8]) -&gt; MemchrSplit&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">fn </span>memchr_split(needle: u8, haystack: <span class="kw-2">&amp;</span>[u8]) -&gt; MemchrSplit&lt;<span class="lifetime">'_</span>&gt; {
     MemchrSplit {
         needle,
         haystack: <span class="prelude-val">Some</span>(haystack),
     }
 }
 
-<span class="kw">struct </span>MemchrSplit&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">struct </span>MemchrSplit&lt;<span class="lifetime">'a</span>&gt; {
     needle: u8,
-    haystack: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt;,
+    haystack: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>MemchrSplit&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8];
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Iterator <span class="kw">for </span>MemchrSplit&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8];
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="kw">let </span>haystack = <span class="self">self</span>.haystack<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(pos) = memchr::memchr(<span class="self">self</span>.needle, haystack) {
@@ -1219,27 +1220,27 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>leading_space_is_not_stripped() {
-        <span class="kw">let </span>no_leading_space = Event::default().data(<span class="string">&quot;\tfoobar&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;*</span>no_leading_space.finalize(), <span class="string">b&quot;data: \tfoobar\n\n&quot;</span>);
+        <span class="kw">let </span>no_leading_space = Event::default().data(<span class="string">"\tfoobar"</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;*</span>no_leading_space.finalize(), <span class="string">b"data: \tfoobar\n\n"</span>);
 
-        <span class="kw">let </span>leading_space = Event::default().data(<span class="string">&quot; foobar&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;*</span>leading_space.finalize(), <span class="string">b&quot;data:  foobar\n\n&quot;</span>);
+        <span class="kw">let </span>leading_space = Event::default().data(<span class="string">" foobar"</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;*</span>leading_space.finalize(), <span class="string">b"data:  foobar\n\n"</span>);
     }
 
     <span class="attr">#[<span class="kw">crate</span>::test]
     </span><span class="kw">async fn </span>basic() {
         <span class="kw">let </span>app = Router::new().route(
-            <span class="string">&quot;/&quot;</span>,
+            <span class="string">"/"</span>,
             get(|| <span class="kw">async </span>{
                 <span class="kw">let </span>stream = stream::iter(<span class="macro">vec!</span>[
-                    Event::default().data(<span class="string">&quot;one&quot;</span>).comment(<span class="string">&quot;this is a comment&quot;</span>),
+                    Event::default().data(<span class="string">"one"</span>).comment(<span class="string">"this is a comment"</span>),
                     Event::default()
-                        .json_data(<span class="macro">serde_json::json!</span>({ <span class="string">&quot;foo&quot;</span>: <span class="string">&quot;bar&quot; </span>}))
+                        .json_data(<span class="macro">serde_json::json!</span>({ <span class="string">"foo"</span>: <span class="string">"bar" </span>}))
                         .unwrap(),
                     Event::default()
-                        .event(<span class="string">&quot;three&quot;</span>)
+                        .event(<span class="string">"three"</span>)
                         .retry(Duration::from_secs(<span class="number">30</span>))
-                        .id(<span class="string">&quot;unique-id&quot;</span>),
+                        .id(<span class="string">"unique-id"</span>),
                 ])
                 .map(<span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, Infallible&gt;);
                 Sse::new(stream)
@@ -1247,24 +1248,24 @@
         );
 
         <span class="kw">let </span>client = TestClient::new(app);
-        <span class="kw">let </span><span class="kw-2">mut </span>stream = client.get(<span class="string">&quot;/&quot;</span>).<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>stream = client.get(<span class="string">"/"</span>).<span class="kw">await</span>;
 
-        <span class="macro">assert_eq!</span>(stream.headers()[<span class="string">&quot;content-type&quot;</span>], <span class="string">&quot;text/event-stream&quot;</span>);
-        <span class="macro">assert_eq!</span>(stream.headers()[<span class="string">&quot;cache-control&quot;</span>], <span class="string">&quot;no-cache&quot;</span>);
-
-        <span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;data&quot;</span>).unwrap(), <span class="string">&quot;one&quot;</span>);
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;comment&quot;</span>).unwrap(), <span class="string">&quot;this is a comment&quot;</span>);
+        <span class="macro">assert_eq!</span>(stream.headers()[<span class="string">"content-type"</span>], <span class="string">"text/event-stream"</span>);
+        <span class="macro">assert_eq!</span>(stream.headers()[<span class="string">"cache-control"</span>], <span class="string">"no-cache"</span>);
 
         <span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;data&quot;</span>).unwrap(), <span class="string">&quot;{\&quot;foo\&quot;:\&quot;bar\&quot;}&quot;</span>);
-        <span class="macro">assert!</span>(event_fields.get(<span class="string">&quot;comment&quot;</span>).is_none());
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"data"</span>).unwrap(), <span class="string">"one"</span>);
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"comment"</span>).unwrap(), <span class="string">"this is a comment"</span>);
 
         <span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;event&quot;</span>).unwrap(), <span class="string">&quot;three&quot;</span>);
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;retry&quot;</span>).unwrap(), <span class="string">&quot;30000&quot;</span>);
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;id&quot;</span>).unwrap(), <span class="string">&quot;unique-id&quot;</span>);
-        <span class="macro">assert!</span>(event_fields.get(<span class="string">&quot;comment&quot;</span>).is_none());
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"data"</span>).unwrap(), <span class="string">"{\"foo\":\"bar\"}"</span>);
+        <span class="macro">assert!</span>(event_fields.get(<span class="string">"comment"</span>).is_none());
+
+        <span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"event"</span>).unwrap(), <span class="string">"three"</span>);
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"retry"</span>).unwrap(), <span class="string">"30000"</span>);
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"id"</span>).unwrap(), <span class="string">"unique-id"</span>);
+        <span class="macro">assert!</span>(event_fields.get(<span class="string">"comment"</span>).is_none());
 
         <span class="macro">assert!</span>(stream.chunk_text().<span class="kw">await</span>.is_none());
     }
@@ -1274,33 +1275,33 @@
         <span class="kw">const </span>DELAY: Duration = Duration::from_secs(<span class="number">5</span>);
 
         <span class="kw">let </span>app = Router::new().route(
-            <span class="string">&quot;/&quot;</span>,
+            <span class="string">"/"</span>,
             get(|| <span class="kw">async </span>{
-                <span class="kw">let </span>stream = stream::repeat_with(|| Event::default().data(<span class="string">&quot;msg&quot;</span>))
+                <span class="kw">let </span>stream = stream::repeat_with(|| Event::default().data(<span class="string">"msg"</span>))
                     .map(<span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, Infallible&gt;)
                     .throttle(DELAY);
 
                 Sse::new(stream).keep_alive(
                     KeepAlive::new()
                         .interval(Duration::from_secs(<span class="number">1</span>))
-                        .text(<span class="string">&quot;keep-alive-text&quot;</span>),
+                        .text(<span class="string">"keep-alive-text"</span>),
                 )
             }),
         );
 
         <span class="kw">let </span>client = TestClient::new(app);
-        <span class="kw">let </span><span class="kw-2">mut </span>stream = client.get(<span class="string">&quot;/&quot;</span>).<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>stream = client.get(<span class="string">"/"</span>).<span class="kw">await</span>;
 
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">5 </span>{
             <span class="comment">// first message should be an event
             </span><span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-            <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;data&quot;</span>).unwrap(), <span class="string">&quot;msg&quot;</span>);
+            <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"data"</span>).unwrap(), <span class="string">"msg"</span>);
 
             <span class="comment">// then 4 seconds of keep-alive messages
             </span><span class="kw">for _ in </span><span class="number">0</span>..<span class="number">4 </span>{
                 tokio::time::sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
                 <span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-                <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;comment&quot;</span>).unwrap(), <span class="string">&quot;keep-alive-text&quot;</span>);
+                <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"comment"</span>).unwrap(), <span class="string">"keep-alive-text"</span>);
             }
         }
     }
@@ -1310,9 +1311,9 @@
         <span class="kw">const </span>DELAY: Duration = Duration::from_secs(<span class="number">5</span>);
 
         <span class="kw">let </span>app = Router::new().route(
-            <span class="string">&quot;/&quot;</span>,
+            <span class="string">"/"</span>,
             get(|| <span class="kw">async </span>{
-                <span class="kw">let </span>stream = stream::repeat_with(|| Event::default().data(<span class="string">&quot;msg&quot;</span>))
+                <span class="kw">let </span>stream = stream::repeat_with(|| Event::default().data(<span class="string">"msg"</span>))
                     .map(<span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, Infallible&gt;)
                     .throttle(DELAY)
                     .take(<span class="number">2</span>);
@@ -1320,28 +1321,28 @@
                 Sse::new(stream).keep_alive(
                     KeepAlive::new()
                         .interval(Duration::from_secs(<span class="number">1</span>))
-                        .text(<span class="string">&quot;keep-alive-text&quot;</span>),
+                        .text(<span class="string">"keep-alive-text"</span>),
                 )
             }),
         );
 
         <span class="kw">let </span>client = TestClient::new(app);
-        <span class="kw">let </span><span class="kw-2">mut </span>stream = client.get(<span class="string">&quot;/&quot;</span>).<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>stream = client.get(<span class="string">"/"</span>).<span class="kw">await</span>;
 
         <span class="comment">// first message should be an event
         </span><span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;data&quot;</span>).unwrap(), <span class="string">&quot;msg&quot;</span>);
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"data"</span>).unwrap(), <span class="string">"msg"</span>);
 
         <span class="comment">// then 4 seconds of keep-alive messages
         </span><span class="kw">for _ in </span><span class="number">0</span>..<span class="number">4 </span>{
             tokio::time::sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
             <span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-            <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;comment&quot;</span>).unwrap(), <span class="string">&quot;keep-alive-text&quot;</span>);
+            <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"comment"</span>).unwrap(), <span class="string">"keep-alive-text"</span>);
         }
 
         <span class="comment">// then the last event
         </span><span class="kw">let </span>event_fields = parse_event(<span class="kw-2">&amp;</span>stream.chunk_text().<span class="kw">await</span>.unwrap());
-        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">&quot;data&quot;</span>).unwrap(), <span class="string">&quot;msg&quot;</span>);
+        <span class="macro">assert_eq!</span>(event_fields.get(<span class="string">"data"</span>).unwrap(), <span class="string">"msg"</span>);
 
         <span class="comment">// then no more events or keep-alive messages
         </span><span class="macro">assert!</span>(stream.chunk_text().<span class="kw">await</span>.is_none());
@@ -1357,10 +1358,10 @@
                 <span class="kw">break</span>;
             }
 
-            <span class="kw">let </span>(<span class="kw-2">mut </span>key, value) = line.split_once(<span class="string">&#39;:&#39;</span>).unwrap();
+            <span class="kw">let </span>(<span class="kw-2">mut </span>key, value) = line.split_once(<span class="string">':'</span>).unwrap();
             <span class="kw">let </span>value = value.trim();
             <span class="kw">if </span>key.is_empty() {
-                key = <span class="string">&quot;comment&quot;</span>;
+                key = <span class="string">"comment"</span>;
             }
             fields.insert(key.to_owned(), value.to_owned());
         }

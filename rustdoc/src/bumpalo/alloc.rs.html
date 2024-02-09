@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/bumpalo-3.14.0/src/alloc.rs`."><title>alloc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="bumpalo" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/bumpalo-3.14.0/src/alloc.rs`."><title>alloc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="bumpalo" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -821,7 +822,7 @@
 }
 
 <span class="kw">pub fn </span>handle_alloc_error(layout: Layout) -&gt; ! {
-    <span class="macro">panic!</span>(<span class="string">&quot;encountered allocation error: {:?}&quot;</span>, layout)
+    <span class="macro">panic!</span>(<span class="string">"encountered allocation error: {:?}"</span>, layout)
 }
 
 <span class="kw">pub trait </span>UnstableLayoutMethods {
@@ -884,7 +885,7 @@
 
 <span class="doccomment">/// Represents the combination of a starting address and
 /// a total capacity of the returned block.
-</span><span class="comment">// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+</span><span class="comment">// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Excess(<span class="kw">pub </span>NonNull&lt;u8&gt;, <span class="kw">pub </span>usize);
 
@@ -896,37 +897,37 @@
 /// that may be due to resource exhaustion or to
 /// something wrong when combining the given input arguments with this
 /// allocator.
-</span><span class="comment">// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+</span><span class="comment">// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="attr">#[derive(Clone, PartialEq, Eq, Debug)]
 </span><span class="kw">pub struct </span>AllocErr;
 
 <span class="comment">// (we need this for downstream impl of trait Error)
-// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>AllocErr {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-        f.write_str(<span class="string">&quot;memory allocation failed&quot;</span>)
+        f.write_str(<span class="string">"memory allocation failed"</span>)
     }
 }
 
 <span class="doccomment">/// The `CannotReallocInPlace` error is used when `grow_in_place` or
 /// `shrink_in_place` were unable to reuse the given memory block for
 /// a requested layout.
-</span><span class="comment">// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+</span><span class="comment">// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="attr">#[derive(Clone, PartialEq, Eq, Debug)]
 </span><span class="kw">pub struct </span>CannotReallocInPlace;
 
-<span class="comment">// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+<span class="comment">// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="kw">impl </span>CannotReallocInPlace {
     <span class="kw">pub fn </span>description(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
-        <span class="string">&quot;cannot reallocate allocator&#39;s memory in place&quot;
+        <span class="string">"cannot reallocate allocator's memory in place"
     </span>}
 }
 
 <span class="comment">// (we need this for downstream impl of trait Error)
-// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>CannotReallocInPlace {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.description())
+        <span class="macro">write!</span>(f, <span class="string">"{}"</span>, <span class="self">self</span>.description())
     }
 }
 
@@ -958,8 +959,8 @@
 ///
 /// * If an `Alloc` implementation chooses to return `Ok` in this
 ///   case (i.e. the pointer denotes a zero-sized inaccessible block)
-///   then that returned pointer must be considered &quot;currently
-///   allocated&quot;. On such an allocator, *all* methods that take
+///   then that returned pointer must be considered "currently
+///   allocated". On such an allocator, *all* methods that take
 ///   currently-allocated pointers as inputs must accept these
 ///   zero-sized pointers, *without* causing undefined behavior.
 ///
@@ -968,13 +969,13 @@
 ///   flowing back into its deallocation and reallocation methods.
 ///
 /// Some of the methods require that a layout *fit* a memory block.
-/// What it means for a layout to &quot;fit&quot; a memory block means (or
-/// equivalently, for a memory block to &quot;fit&quot; a layout) is that the
+/// What it means for a layout to "fit" a memory block means (or
+/// equivalently, for a memory block to "fit" a layout) is that the
 /// following two conditions must hold:
 ///
-/// 1. The block&#39;s starting address must be aligned to `layout.align()`.
+/// 1. The block's starting address must be aligned to `layout.align()`.
 ///
-/// 2. The block&#39;s size must fall in the range `[use_min, use_max]`, where:
+/// 2. The block's size must fall in the range `[use_min, use_max]`, where:
 ///
 ///    * `use_min` is `self.usable_size(layout).0`, and
 ///
@@ -1009,7 +1010,7 @@
 ///
 /// Note that this list may get tweaked over time as clarifications are made in
 /// the future.
-</span><span class="comment">// #[unstable(feature = &quot;allocator_api&quot;, issue = &quot;32838&quot;)]
+</span><span class="comment">// #[unstable(feature = "allocator_api", issue = "32838")]
 </span><span class="kw">pub unsafe trait </span>Alloc {
     <span class="comment">// (Note: some existing allocators have unspecified but well-defined
     // behavior in response to a zero size allocation request ;
@@ -1043,7 +1044,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `layout` does not meet allocator&#39;s size or alignment
+    /// `layout` does not meet allocator's size or alignment
     /// constraints.
     ///
     /// Implementations are encouraged to return `Err` on memory
@@ -1152,7 +1153,7 @@
     /// # Errors
     ///
     /// Returns `Err` only if the new layout
-    /// does not meet the allocator&#39;s size
+    /// does not meet the allocator's size
     /// and alignment constraints of the allocator, or if reallocation
     /// otherwise fails.
     ///
@@ -1205,7 +1206,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `layout` does not meet allocator&#39;s size or alignment
+    /// `layout` does not meet allocator's size or alignment
     /// constraints, just as in `alloc`.
     ///
     /// Clients wishing to abort computation in response to an
@@ -1233,7 +1234,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `layout` does not meet allocator&#39;s size or alignment
+    /// `layout` does not meet allocator's size or alignment
     /// constraints, just as in `alloc`.
     ///
     /// Clients wishing to abort computation in response to an
@@ -1257,7 +1258,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `layout` does not meet allocator&#39;s size or alignment
+    /// `layout` does not meet allocator's size or alignment
     /// constraints, just as in `realloc`.
     ///
     /// Clients wishing to abort computation in response to a
@@ -1318,7 +1319,7 @@
         layout: Layout,
         new_size: usize,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CannotReallocInPlace&gt; {
-        <span class="kw">let _ </span>= ptr; <span class="comment">// this default implementation doesn&#39;t care about the actual address.
+        <span class="kw">let _ </span>= ptr; <span class="comment">// this default implementation doesn't care about the actual address.
         </span><span class="macro">debug_assert!</span>(new_size &gt;= layout.size());
         <span class="kw">let </span>(_l, u) = <span class="self">self</span>.usable_size(<span class="kw-2">&amp;</span>layout);
         <span class="comment">// _l &lt;= layout.size()                       [guaranteed by usable_size()]
@@ -1375,7 +1376,7 @@
         layout: Layout,
         new_size: usize,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CannotReallocInPlace&gt; {
-        <span class="kw">let _ </span>= ptr; <span class="comment">// this default implementation doesn&#39;t care about the actual address.
+        <span class="kw">let _ </span>= ptr; <span class="comment">// this default implementation doesn't care about the actual address.
         </span><span class="macro">debug_assert!</span>(new_size &lt;= layout.size());
         <span class="kw">let </span>(l, _u) = <span class="self">self</span>.usable_size(<span class="kw-2">&amp;</span>layout);
         <span class="comment">//                      layout.size() &lt;= _u  [guaranteed by usable_size()]
@@ -1398,7 +1399,7 @@
     /// `alloc`/`realloc` methods of this allocator.
     ///
     /// Note to implementors: If this returns `Ok(ptr)`, then `ptr`
-    /// must be considered &quot;currently allocated&quot; and must be
+    /// must be considered "currently allocated" and must be
     /// acceptable input to methods such as `realloc` or `dealloc`,
     /// *even if* `T` is a zero-sized type. In other words, if your
     /// `Alloc` implementation overrides this method in a manner
@@ -1409,7 +1410,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `T` does not meet allocator&#39;s size or alignment constraints.
+    /// `T` does not meet allocator's size or alignment constraints.
     ///
     /// For zero-sized `T`, may return either of `Ok` or `Err`, but
     /// will *not* yield undefined behavior.
@@ -1466,7 +1467,7 @@
     /// `alloc`/`realloc` methods of this allocator.
     ///
     /// Note to implementors: If this returns `Ok(ptr)`, then `ptr`
-    /// must be considered &quot;currently allocated&quot; and must be
+    /// must be considered "currently allocated" and must be
     /// acceptable input to methods such as `realloc` or `dealloc`,
     /// *even if* `T` is a zero-sized type. In other words, if your
     /// `Alloc` implementation overrides this method in a manner
@@ -1477,7 +1478,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `[T; n]` does not meet allocator&#39;s size or alignment
+    /// `[T; n]` does not meet allocator's size or alignment
     /// constraints.
     ///
     /// For zero-sized `T` or `n == 0`, may return either of `Ok` or
@@ -1521,7 +1522,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either memory is exhausted or
-    /// `[T; n_new]` does not meet allocator&#39;s size or alignment
+    /// `[T; n_new]` does not meet allocator's size or alignment
     /// constraints.
     ///
     /// For zero-sized `T` or `n_new == 0`, may return either of `Ok` or
@@ -1569,7 +1570,7 @@
     /// # Errors
     ///
     /// Returning `Err` indicates that either `[T; n]` or the given
-    /// memory block does not meet allocator&#39;s size or alignment
+    /// memory block does not meet allocator's size or alignment
     /// constraints.
     ///
     /// Always returns `Err` on arithmetic overflow.

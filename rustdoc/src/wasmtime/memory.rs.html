@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/memory.rs`."><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/memory.rs`."><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -976,8 +977,8 @@
 }
 
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>MemoryAccessError {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;out of bounds memory access&quot;</span>)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">"out of bounds memory access"</span>)
     }
 }
 
@@ -1007,19 +1008,19 @@
 ///
 /// Note that all of these consider the entire store context as borrowed for the
 /// duration of the call or the duration of the returned slice. This largely
-/// means that while the function is running you&#39;ll be unable to borrow anything
+/// means that while the function is running you'll be unable to borrow anything
 /// else from the store. This includes getting access to the `T` on
-/// [`Store&lt;T&gt;`](crate::Store), but it also means that you can&#39;t recursively
+/// [`Store&lt;T&gt;`](crate::Store), but it also means that you can't recursively
 /// call into WebAssembly for instance.
 ///
-/// If you&#39;d like to dip your toes into handling [`Memory`] in a more raw
-/// fashion (e.g. by using raw pointers or raw slices), then there&#39;s a few
+/// If you'd like to dip your toes into handling [`Memory`] in a more raw
+/// fashion (e.g. by using raw pointers or raw slices), then there's a few
 /// important points to consider when doing so:
 ///
 /// * Any recursive calls into WebAssembly can possibly modify any byte of the
-///   entire memory. This means that whenever wasm is called Rust can&#39;t have any
+///   entire memory. This means that whenever wasm is called Rust can't have any
 ///   long-lived borrows live across the wasm function call. Slices like `&amp;mut
-///   [u8]` will be violated because they&#39;re not actually exclusive at that
+///   [u8]` will be violated because they're not actually exclusive at that
 ///   point, and slices like `&amp;[u8]` are also violated because their contents
 ///   may be mutated.
 ///
@@ -1029,8 +1030,8 @@
 ///   memory may change. Note that growth can also be requested from the
 ///   embedding API as well.
 ///
-/// As a general rule of thumb it&#39;s recommended to stick to the safe methods of
-/// [`Memory`] if you can. It&#39;s not advised to use raw pointers or `unsafe`
+/// As a general rule of thumb it's recommended to stick to the safe methods of
+/// [`Memory`] if you can. It's not advised to use raw pointers or `unsafe`
 /// operations because of how easy it is to accidentally get things wrong.
 ///
 /// Some examples of safely interacting with memory are:
@@ -1043,21 +1044,21 @@
 /// // An error is returned if the copy did not succeed.
 /// fn safe_examples(mem: Memory, store: &amp;mut Store&lt;()&gt;) -&gt; Result&lt;(), MemoryAccessError&gt; {
 ///     let offset = 5;
-///     mem.write(&amp;mut *store, offset, b&quot;hello&quot;)?;
+///     mem.write(&amp;mut *store, offset, b"hello")?;
 ///     let mut buffer = [0u8; 5];
 ///     mem.read(&amp;store, offset, &amp;mut buffer)?;
-///     assert_eq!(b&quot;hello&quot;, &amp;buffer);
+///     assert_eq!(b"hello", &amp;buffer);
 ///
 ///     // Note that while this is safe care must be taken because the indexing
-///     // here may panic if the memory isn&#39;t large enough.
-///     assert_eq!(&amp;mem.data(&amp;store)[offset..offset + 5], b&quot;hello&quot;);
-///     mem.data_mut(&amp;mut *store)[offset..offset + 5].copy_from_slice(b&quot;bye!!&quot;);
+///     // here may panic if the memory isn't large enough.
+///     assert_eq!(&amp;mem.data(&amp;store)[offset..offset + 5], b"hello");
+///     mem.data_mut(&amp;mut *store)[offset..offset + 5].copy_from_slice(b"bye!!");
 ///
 ///     Ok(())
 /// }
 /// ```
 ///
-/// It&#39;s worth also, however, covering some examples of **incorrect**,
+/// It's worth also, however, covering some examples of **incorrect**,
 /// **unsafe** usages of `Memory`. Do not do these things!
 ///
 /// ```rust
@@ -1073,9 +1074,9 @@
 ///     // previous pointer to be possibly invalid now.
 ///     let pointer: &amp;u8 = &amp;*mem.data_ptr(&amp;store);
 ///     mem.grow(&amp;mut *store, 1)?; // invalidates `pointer`!
-///     // println!(&quot;{}&quot;, *pointer); // FATAL: use-after-free
+///     // println!("{}", *pointer); // FATAL: use-after-free
 ///
-///     // Note that the use-after-free also applies to slices, whether they&#39;re
+///     // Note that the use-after-free also applies to slices, whether they're
 ///     // slices of bytes or strings.
 ///     let mem_slice = std::slice::from_raw_parts(
 ///         mem.data_ptr(&amp;store),
@@ -1083,44 +1084,44 @@
 ///     );
 ///     let slice: &amp;[u8] = &amp;mem_slice[0x100..0x102];
 ///     mem.grow(&amp;mut *store, 1)?; // invalidates `slice`!
-///     // println!(&quot;{:?}&quot;, slice); // FATAL: use-after-free
+///     // println!("{:?}", slice); // FATAL: use-after-free
 ///
 ///     // The `Memory` type may be stored in other locations, so if you hand
 ///     // off access to the `Store` then those locations may also call
-///     // `Memory::grow` or similar, so it&#39;s not enough to just audit code for
+///     // `Memory::grow` or similar, so it's not enough to just audit code for
 ///     // calls to `Memory::grow`.
 ///     let pointer: &amp;u8 = &amp;*mem.data_ptr(&amp;store);
 ///     some_other_function(store); // may invalidate `pointer` through use of `store`
-///     // println!(&quot;{:?}&quot;, pointer); // FATAL: maybe a use-after-free
+///     // println!("{:?}", pointer); // FATAL: maybe a use-after-free
 ///
-///     // An especially subtle aspect of accessing a wasm instance&#39;s memory is
+///     // An especially subtle aspect of accessing a wasm instance's memory is
 ///     // that you need to be extremely careful about aliasing. Anyone at any
 ///     // time can call `data_unchecked()` or `data_unchecked_mut()`, which
 ///     // means you can easily have aliasing mutable references:
 ///     let ref1: &amp;u8 = &amp;*mem.data_ptr(&amp;store).add(0x100);
 ///     let ref2: &amp;mut u8 = &amp;mut *mem.data_ptr(&amp;store).add(0x100);
-///     // *ref2 = *ref1; // FATAL: violates Rust&#39;s aliasing rules
+///     // *ref2 = *ref1; // FATAL: violates Rust's aliasing rules
 ///
 ///     Ok(())
 /// }
 /// # fn some_other_function(store: &amp;mut Store&lt;()&gt;) {}
 /// ```
 ///
-/// Overall there&#39;s some general rules of thumb when unsafely working with
+/// Overall there's some general rules of thumb when unsafely working with
 /// `Memory` and getting raw pointers inside of it:
 ///
-/// * If you never have a &quot;long lived&quot; pointer into memory, you&#39;re likely in the
+/// * If you never have a "long lived" pointer into memory, you're likely in the
 ///   clear. Care still needs to be taken in threaded scenarios or when/where
-///   data is read, but you&#39;ll be shielded from many classes of issues.
-/// * Long-lived pointers must always respect Rust&#39;a aliasing rules. It&#39;s ok for
+///   data is read, but you'll be shielded from many classes of issues.
+/// * Long-lived pointers must always respect Rust'a aliasing rules. It's ok for
 ///   shared borrows to overlap with each other, but mutable borrows must
 ///   overlap with nothing.
-/// * Long-lived pointers are only valid if they&#39;re not invalidated for their
-///   lifetime. This means that [`Store`](crate::Store) isn&#39;t used to reenter
+/// * Long-lived pointers are only valid if they're not invalidated for their
+///   lifetime. This means that [`Store`](crate::Store) isn't used to reenter
 ///   wasm or the memory itself is never grown or otherwise modified/aliased.
 ///
-/// At this point it&#39;s worth reiterating again that unsafely working with
-/// `Memory` is pretty tricky and not recommended! It&#39;s highly recommended to
+/// At this point it's worth reiterating again that unsafely working with
+/// `Memory` is pretty tricky and not recommended! It's highly recommended to
 /// use the safe methods to interact with [`Memory`] whenever possible.
 ///
 /// ## `Memory` Safety and Threads
@@ -1130,16 +1131,16 @@
 /// affects memory safety and what was previously just discussed as well.
 ///
 /// Once threads are added into the mix, all of the above rules still apply.
-/// There&#39;s an additional consideration that all reads and writes can happen
+/// There's an additional consideration that all reads and writes can happen
 /// concurrently, though. This effectively means that any borrow into wasm
 /// memory are virtually never safe to have.
 ///
 /// Mutable pointers are fundamentally unsafe to have in a concurrent scenario
 /// in the face of arbitrary wasm code. Only if you dynamically know for sure
-/// that wasm won&#39;t access a region would it be safe to construct a mutable
+/// that wasm won't access a region would it be safe to construct a mutable
 /// pointer. Additionally even shared pointers are largely unsafe because their
 /// underlying contents may change, so unless `UnsafeCell` in one form or
-/// another is used everywhere there&#39;s no safety.
+/// another is used everywhere there's no safety.
 ///
 /// One important point about concurrency is that while [`Memory::grow`] can
 /// happen concurrently it will never relocate the base pointer. Shared
@@ -1150,8 +1151,8 @@
 /// Overall the general rule of thumb for shared memories is that you must
 /// atomically read and write everything. Nothing can be borrowed and everything
 /// must be eagerly copied out. This means that [`Memory::data`] and
-/// [`Memory::data_mut`] won&#39;t work in the future (they&#39;ll probably return an
-/// error) for shared memories when they&#39;re implemented. When possible it&#39;s
+/// [`Memory::data_mut`] won't work in the future (they'll probably return an
+/// error) for shared memories when they're implemented. When possible it's
 /// recommended to use [`Memory::read`] and [`Memory::write`] which will still
 /// be provided.
 </span><span class="attr">#[derive(Copy, Clone, Debug)]
@@ -1182,7 +1183,7 @@
     /// let memory_ty = MemoryType::new(1, None);
     /// let memory = Memory::new(&amp;mut store, memory_ty)?;
     ///
-    /// let module = Module::new(&amp;engine, &quot;(module (memory (import \&quot;\&quot; \&quot;\&quot;) 1))&quot;)?;
+    /// let module = Module::new(&amp;engine, "(module (memory (import \"\" \"\") 1))")?;
     /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[memory.into()])?;
     /// // ...
     /// # Ok(())
@@ -1192,7 +1193,7 @@
         <span class="self">Self</span>::_new(store.as_context_mut().<span class="number">0</span>, ty)
     }
 
-    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="doccomment">/// Async variant of [`Memory::new`]. You must use this variant with
     /// [`Store`](`crate::Store`)s which have a
     /// [`ResourceLimiterAsync`](`crate::ResourceLimiterAsync`).
@@ -1201,7 +1202,7 @@
     ///
     /// This function will panic when used with a non-async
     /// [`Store`](`crate::Store`).
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">pub async fn </span>new_async&lt;T&gt;(
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
         ty: MemoryType,
@@ -1212,12 +1213,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>store = store.as_context_mut();
         <span class="macro">assert!</span>(
             store.<span class="number">0</span>.async_support(),
-            <span class="string">&quot;cannot use `new_async` without enabling async support on the config&quot;
+            <span class="string">"cannot use `new_async` without enabling async support on the config"
         </span>);
         store.on_fiber(|store| <span class="self">Self</span>::_new(store.<span class="number">0</span>, ty)).<span class="kw">await</span><span class="question-mark">?
     </span>}
 
-    <span class="doccomment">/// Helper function for attaching the memory to a &quot;frankenstein&quot; instance
+    <span class="doccomment">/// Helper function for attaching the memory to a "frankenstein" instance
     </span><span class="kw">fn </span>_new(store: <span class="kw-2">&amp;mut </span>StoreOpaque, ty: MemoryType) -&gt; <span class="prelude-ty">Result</span>&lt;Memory&gt; {
         <span class="kw">unsafe </span>{
             <span class="kw">let </span>export = generate_memory_export(store, <span class="kw-2">&amp;</span>ty, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
@@ -1233,7 +1234,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     ///
     /// # Examples
     ///
@@ -1242,9 +1243,9 @@
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// let engine = Engine::default();
     /// let mut store = Store::new(&amp;engine, ());
-    /// let module = Module::new(&amp;engine, &quot;(module (memory (export \&quot;mem\&quot;) 1))&quot;)?;
+    /// let module = Module::new(&amp;engine, "(module (memory (export \"mem\") 1))")?;
     /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[])?;
-    /// let memory = instance.get_memory(&amp;mut store, &quot;mem&quot;).unwrap();
+    /// let memory = instance.get_memory(&amp;mut store, "mem").unwrap();
     /// let ty = memory.ty(&amp;store);
     /// assert_eq!(ty.minimum(), 1);
     /// # Ok(())
@@ -1265,7 +1266,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     </span><span class="kw">pub fn </span>read(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         store: <span class="kw">impl </span>AsContext,
@@ -1290,7 +1291,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     </span><span class="kw">pub fn </span>write(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut,
@@ -1313,8 +1314,8 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
-    </span><span class="kw">pub fn </span>data&lt;<span class="lifetime">&#39;a</span>, T: <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>Into&lt;StoreContext&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8] {
+    /// Panics if this memory doesn't belong to `store`.
+    </span><span class="kw">pub fn </span>data&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>Into&lt;StoreContext&lt;<span class="lifetime">'a</span>, T&gt;&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8] {
         <span class="kw">unsafe </span>{
             <span class="kw">let </span>store = store.into();
             <span class="kw">let </span>definition = <span class="kw-2">&amp;*</span>store[<span class="self">self</span>.<span class="number">0</span>].definition;
@@ -1330,8 +1331,8 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
-    </span><span class="kw">pub fn </span>data_mut&lt;<span class="lifetime">&#39;a</span>, T: <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>Into&lt;StoreContextMut&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[u8] {
+    /// Panics if this memory doesn't belong to `store`.
+    </span><span class="kw">pub fn </span>data_mut&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>Into&lt;StoreContextMut&lt;<span class="lifetime">'a</span>, T&gt;&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[u8] {
         <span class="kw">unsafe </span>{
             <span class="kw">let </span>store = store.into();
             <span class="kw">let </span>definition = <span class="kw-2">&amp;*</span>store[<span class="self">self</span>.<span class="number">0</span>].definition;
@@ -1351,19 +1352,19 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
-    </span><span class="kw">pub fn </span>data_and_store_mut&lt;<span class="lifetime">&#39;a</span>, T: <span class="lifetime">&#39;a</span>&gt;(
+    /// Panics if this memory doesn't belong to `store`.
+    </span><span class="kw">pub fn </span>data_and_store_mut&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        store: <span class="kw">impl </span>Into&lt;StoreContextMut&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt;,
-    ) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[u8], <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>T) {
+        store: <span class="kw">impl </span>Into&lt;StoreContextMut&lt;<span class="lifetime">'a</span>, T&gt;&gt;,
+    ) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[u8], <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>T) {
         <span class="comment">// Note the unsafety here. Our goal is to simultaneously borrow the
-        // memory and custom data from `store`, and the store it&#39;s connected
+        // memory and custom data from `store`, and the store it's connected
         // to. Rust will not let us do that, however, because we must call two
         // separate methods (both of which borrow the whole `store`) and one of
         // our borrows is mutable (the custom data).
         //
         // This operation, however, is safe because these borrows do not overlap
-        // and in the process of borrowing them mutability doesn&#39;t actually
+        // and in the process of borrowing them mutability doesn't actually
         // touch anything. This is akin to mutably borrowing two indices in an
         // array, which is safe so long as the indices are separate.
         </span><span class="kw">unsafe </span>{
@@ -1373,7 +1374,7 @@
         }
     }
 
-    <span class="doccomment">/// Returns the base pointer, in the host&#39;s address space, that the memory
+    <span class="doccomment">/// Returns the base pointer, in the host's address space, that the memory
     /// is located at.
     ///
     /// For more information and examples see the documentation on the
@@ -1381,7 +1382,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     </span><span class="kw">pub fn </span>data_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>AsContext) -&gt; <span class="kw-2">*mut </span>u8 {
         <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>store.as_context()[<span class="self">self</span>.<span class="number">0</span>].definition).base }
     }
@@ -1395,7 +1396,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     </span><span class="kw">pub fn </span>data_size(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>AsContext) -&gt; usize {
         <span class="self">self</span>.internal_data_size(store.as_context().<span class="number">0</span>)
     }
@@ -1408,7 +1409,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     </span><span class="kw">pub fn </span>size(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>AsContext) -&gt; u64 {
         <span class="self">self</span>.internal_size(store.as_context().<span class="number">0</span>)
     }
@@ -1436,7 +1437,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if this memory doesn&#39;t belong to `store`.
+    /// Panics if this memory doesn't belong to `store`.
     ///
     /// This function will panic if the [`Store`](`crate::Store`) has a
     /// [`ResourceLimiterAsync`](`crate::ResourceLimiterAsync`) (see also:
@@ -1450,9 +1451,9 @@
     /// # fn main() -&gt; anyhow::Result&lt;()&gt; {
     /// let engine = Engine::default();
     /// let mut store = Store::new(&amp;engine, ());
-    /// let module = Module::new(&amp;engine, &quot;(module (memory (export \&quot;mem\&quot;) 1 2))&quot;)?;
+    /// let module = Module::new(&amp;engine, "(module (memory (export \"mem\") 1 2))")?;
     /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[])?;
-    /// let memory = instance.get_memory(&amp;mut store, &quot;mem&quot;).unwrap();
+    /// let memory = instance.get_memory(&amp;mut store, "mem").unwrap();
     ///
     /// assert_eq!(memory.size(&amp;store), 1);
     /// assert_eq!(memory.grow(&amp;mut store, 1)?, 1);
@@ -1473,12 +1474,12 @@
                     <span class="kw-2">*</span>store[<span class="self">self</span>.<span class="number">0</span>].definition = vm;
                     <span class="prelude-val">Ok</span>(u64::try_from(size).unwrap() / u64::from(wasmtime_environ::WASM_PAGE_SIZE))
                 }
-                <span class="prelude-val">None </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;failed to grow memory by `{}`&quot;</span>, delta),
+                <span class="prelude-val">None </span>=&gt; <span class="macro">bail!</span>(<span class="string">"failed to grow memory by `{}`"</span>, delta),
             }
         }
     }
 
-    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="doccomment">/// Async variant of [`Memory::grow`]. Required when using a
     /// [`ResourceLimiterAsync`](`crate::ResourceLimiterAsync`).
     ///
@@ -1486,7 +1487,7 @@
     ///
     /// This function will panic when used with a non-async
     /// [`Store`](`crate::Store`).
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">pub async fn </span>grow_async&lt;T&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
@@ -1498,7 +1499,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>store = store.as_context_mut();
         <span class="macro">assert!</span>(
             store.<span class="number">0</span>.async_support(),
-            <span class="string">&quot;cannot use `grow_async` without enabling async support on the config&quot;
+            <span class="string">"cannot use `grow_async` without enabling async support on the config"
         </span>);
         store.on_fiber(|store| <span class="self">self</span>.grow(store, delta)).<span class="kw">await</span><span class="question-mark">?
     </span>}
@@ -1519,7 +1520,7 @@
         Memory(store.store_data_mut().insert(wasmtime_export))
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>wasmtime_ty&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>StoreData) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>wasmtime_environ::Memory {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>wasmtime_ty&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>StoreData) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>wasmtime_environ::Memory {
         <span class="kw-2">&amp;</span>store[<span class="self">self</span>.<span class="number">0</span>].memory.memory
     }
 
@@ -1538,7 +1539,7 @@
 }
 
 <span class="doccomment">/// A linear memory. This trait provides an interface for raw memory buffers
-/// which are used by wasmtime, e.g. inside [&#39;Memory&#39;]. Such buffers are in
+/// which are used by wasmtime, e.g. inside ['Memory']. Such buffers are in
 /// principle not thread safe. By implementing this trait together with
 /// MemoryCreator, one can supply wasmtime with custom allocated host managed
 /// memory.
@@ -1547,12 +1548,12 @@
 ///
 /// The memory should be page aligned and a multiple of page size.
 /// To prevent possible silent overflows, the memory should be protected by a
-/// guard page.  Additionally the safety concerns explained in [&#39;Memory&#39;], for
+/// guard page.  Additionally the safety concerns explained in ['Memory'], for
 /// accessing the memory apply here as well.
 ///
 /// Note that this is a relatively new and experimental feature and it is
 /// recommended to be familiar with wasmtime runtime code to use it.
-</span><span class="kw">pub unsafe trait </span>LinearMemory: Send + Sync + <span class="lifetime">&#39;static </span>{
+</span><span class="kw">pub unsafe trait </span>LinearMemory: Send + Sync + <span class="lifetime">'static </span>{
     <span class="doccomment">/// Returns the number of allocated bytes which are accessible at this time.
     </span><span class="kw">fn </span>byte_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
 
@@ -1564,7 +1565,7 @@
 
     <span class="doccomment">/// Grows this memory to have the `new_size`, in bytes, specified.
     ///
-    /// Returns `Err` if memory can&#39;t be grown by the specified amount
+    /// Returns `Err` if memory can't be grown by the specified amount
     /// of bytes. The error may be downcastable to `std::io::Error`.
     /// Returns `Ok` if memory was grown successfully.
     </span><span class="kw">fn </span>grow_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new_size: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
@@ -1601,7 +1602,7 @@
     /// reservation that is to be made for this memory. If this value is `None`
     /// than the implementation is free to allocate memory as it sees fit. If
     /// the value is `Some`, however, then the implementation is expected to
-    /// reserve that many bytes for the memory&#39;s allocation, plus the guard
+    /// reserve that many bytes for the memory's allocation, plus the guard
     /// size at the end. Note that this reservation need only be a virtual
     /// memory reservation, physical memory does not need to be allocated
     /// immediately. In this case `grow` should never move the base pointer and
@@ -1631,18 +1632,18 @@
 
 <span class="doccomment">/// A constructor for externally-created shared memory.
 ///
-/// The [threads proposal] adds the concept of &quot;shared memory&quot; to WebAssembly.
+/// The [threads proposal] adds the concept of "shared memory" to WebAssembly.
 /// This is much the same as a Wasm linear memory (i.e., [`Memory`]), but can be
 /// used concurrently by multiple agents. Because these agents may execute in
 /// different threads, [`SharedMemory`] must be thread-safe.
 ///
 /// When the threads proposal is enabled, there are multiple ways to construct
 /// shared memory:
-///  1. for imported shared memory, e.g., `(import &quot;env&quot; &quot;memory&quot; (memory 1 1
+///  1. for imported shared memory, e.g., `(import "env" "memory" (memory 1 1
 ///     shared))`, the user must supply a [`SharedMemory`] with the
 ///     externally-created memory as an import to the instance--e.g.,
 ///     `shared_memory.into()`.
-///  2. for private or exported shared memory, e.g., `(export &quot;env&quot; &quot;memory&quot;
+///  2. for private or exported shared memory, e.g., `(export "env" "memory"
 ///     (memory 1 1 shared))`, Wasmtime will create the memory internally during
 ///     instantiation--access using `Instance::get_shared_memory()`.
 ///
@@ -1660,7 +1661,7 @@
 /// let mut store = Store::new(&amp;engine, ());
 ///
 /// let shared_memory = SharedMemory::new(&amp;engine, MemoryType::shared(1, 2))?;
-/// let module = Module::new(&amp;engine, r#&quot;(module (memory (import &quot;&quot; &quot;&quot;) 1 2 shared))&quot;#)?;
+/// let module = Module::new(&amp;engine, r#"(module (memory (import "" "") 1 2 shared))"#)?;
 /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[shared_memory.into()])?;
 /// // ...
 /// # Ok(())
@@ -1675,7 +1676,7 @@
     /// pages on the system.
     </span><span class="kw">pub fn </span>new(engine: <span class="kw-2">&amp;</span>Engine, ty: MemoryType) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">if </span>!ty.is_shared() {
-            <span class="macro">bail!</span>(<span class="string">&quot;shared memory must have the `shared` flag enabled on its memory type&quot;</span>)
+            <span class="macro">bail!</span>(<span class="string">"shared memory must have the `shared` flag enabled on its memory type"</span>)
         }
         <span class="macro">debug_assert!</span>(ty.maximum().is_some());
 
@@ -1755,7 +1756,7 @@
                 // the locked region.
                 </span><span class="prelude-val">Ok</span>(u64::try_from(old_size).unwrap() / u64::from(wasmtime_environ::WASM_PAGE_SIZE))
             }
-            <span class="prelude-val">None </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;failed to grow memory by `{}`&quot;</span>, delta),
+            <span class="prelude-val">None </span>=&gt; <span class="macro">bail!</span>(<span class="string">"failed to grow memory by `{}`"</span>, delta),
         }
     }
 
@@ -1871,7 +1872,7 @@
                 .unwrap();
             <span class="kw">let </span>shared_memory = memory
                 .as_shared_memory()
-                .expect(<span class="string">&quot;unable to convert from a shared memory&quot;</span>)
+                .expect(<span class="string">"unable to convert from a shared memory"</span>)
                 .clone();
             <span class="self">Self</span>(shared_memory, store.engine().clone())
         })
@@ -1879,8 +1880,8 @@
 }
 
 <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>SharedMemory {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        f.debug_struct(<span class="string">&quot;SharedMemory&quot;</span>).finish_non_exhaustive()
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">"SharedMemory"</span>).finish_non_exhaustive()
     }
 }
 
@@ -1902,7 +1903,7 @@
         <span class="macro">assert_eq!</span>(store[mem.<span class="number">0</span>].memory.offset_guard_size, <span class="number">0</span>);
         <span class="kw">match </span><span class="kw-2">&amp;</span>store[mem.<span class="number">0</span>].memory.style {
             wasmtime_environ::MemoryStyle::Dynamic { .. } =&gt; {}
-            other =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected style {:?}&quot;</span>, other),
+            other =&gt; <span class="macro">panic!</span>(<span class="string">"unexpected style {:?}"</span>, other),
         }
     }
 }

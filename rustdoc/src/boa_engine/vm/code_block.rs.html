@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/boa_engine-0.17.3/src/vm/code_block.rs`."><title>code_block.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="boa_engine" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="icon" href="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../boa_engine/index.html"><img src="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg" alt="boa_engine"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/boa_engine-0.17.3/src/vm/code_block.rs`."><title>code_block.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="boa_engine" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="icon" href="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><a class="sub-logo-container" href="../../../boa_engine/index.html"><img src="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg" alt="boa_engine"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1566,16 +1567,16 @@
 };
 <span class="kw">use </span>thin_vec::ThinVec;
 
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;trace&quot;</span>, feature = <span class="string">&quot;flowgraph&quot;</span>))]
+<span class="attr">#[cfg(any(feature = <span class="string">"trace"</span>, feature = <span class="string">"flowgraph"</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::vm::Opcode;
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;trace&quot;</span>, feature = <span class="string">&quot;flowgraph&quot;</span>))]
+<span class="attr">#[cfg(any(feature = <span class="string">"trace"</span>, feature = <span class="string">"flowgraph"</span>))]
 </span><span class="kw">use </span>boa_interner::{Interner, ToInternedString};
 
 <span class="doccomment">/// This represents whether a value can be read from [`CodeBlock`] code.
 ///
 /// # Safety
 ///
-/// This trait is safe to implement as long as the type doesn&#39;t implement `Drop`.
+/// This trait is safe to implement as long as the type doesn't implement `Drop`.
 /// At some point, if [negative impls][negative_impls] are stabilized, we might be able to remove
 /// the unsafe bound.
 ///
@@ -1609,16 +1610,16 @@
         <span class="doccomment">/// Does this function have a parameters environment.
         </span><span class="kw">const </span>PARAMETERS_ENV_BINDINGS = <span class="number">0b0000_1000</span>;
 
-        <span class="doccomment">/// Does this function need a `&quot;arguments&quot;` object.
+        <span class="doccomment">/// Does this function need a `"arguments"` object.
         ///
-        /// The `&quot;arguments&quot;` binding is the first binding.
+        /// The `"arguments"` binding is the first binding.
         </span><span class="kw">const </span>NEEDS_ARGUMENTS_OBJECT = <span class="number">0b0001_0000</span>;
 
         <span class="doccomment">/// The `[[ClassFieldInitializerName]]` internal slot.
         </span><span class="kw">const </span>IN_CLASS_FIELD_INITIALIZER = <span class="number">0b0010_0000</span>;
 
         <span class="doccomment">/// Trace instruction execution to `stdout`.
-        </span><span class="attr">#[cfg(feature = <span class="string">&quot;trace&quot;</span>)]
+        </span><span class="attr">#[cfg(feature = <span class="string">"trace"</span>)]
         </span><span class="kw">const </span>TRACEABLE = <span class="number">0b1000_0000</span>;
     }
 }
@@ -1706,12 +1707,12 @@
     }
 
     <span class="doccomment">/// Check if the function is traced.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;trace&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"trace"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>traceable(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.flags.get().contains(CodeBlockFlags::TRACEABLE)
     }
     <span class="doccomment">/// Enable or disable instruction tracing to `stdout`.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;trace&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"trace"</span>)]
     #[inline]
     </span><span class="kw">pub fn </span>set_traceable(<span class="kw-2">&amp;</span><span class="self">self</span>, value: bool) {
         <span class="kw">let </span><span class="kw-2">mut </span>flags = <span class="self">self</span>.flags.get();
@@ -1745,7 +1746,7 @@
             .contains(CodeBlockFlags::PARAMETERS_ENV_BINDINGS)
     }
 
-    <span class="doccomment">/// Does this function need a `&quot;arguments&quot;` object.
+    <span class="doccomment">/// Does this function need a `"arguments"` object.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>needs_arguments_object(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.flags
             .get()
@@ -1774,7 +1775,7 @@
         <span class="comment">// Safety:
         // The function caller must ensure that the read is in bounds.
         //
-        // This has to be an unaligned read because we can&#39;t guarantee that
+        // This has to be an unaligned read because we can't guarantee that
         // the types are aligned.
         </span><span class="kw">unsafe </span>{
             <span class="self">self</span>.bytecode
@@ -1802,7 +1803,7 @@
     /// Modifies the `pc` to point to the next instruction.
     ///
     /// Returns an empty `String` if no operands are present.
-    </span><span class="attr">#[cfg(any(feature = <span class="string">&quot;trace&quot;</span>, feature = <span class="string">&quot;flowgraph&quot;</span>))]
+    </span><span class="attr">#[cfg(any(feature = <span class="string">"trace"</span>, feature = <span class="string">"flowgraph"</span>))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>instruction_operands(<span class="kw-2">&amp;</span><span class="self">self</span>, pc: <span class="kw-2">&amp;mut </span>usize, interner: <span class="kw-2">&amp;</span>Interner) -&gt; String {
         <span class="kw">let </span>opcode: Opcode = <span class="self">self</span>.bytecode[<span class="kw-2">*</span>pc].into();
         <span class="kw-2">*</span>pc += size_of::&lt;Opcode&gt;();
@@ -1811,9 +1812,9 @@
                 <span class="kw">let </span>operand = <span class="self">self</span>.read::&lt;u8&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u8&gt;();
                 <span class="kw">match </span>operand {
-                    <span class="number">0 </span>=&gt; <span class="string">&quot;prefix: none&quot;</span>,
-                    <span class="number">1 </span>=&gt; <span class="string">&quot;prefix: get&quot;</span>,
-                    <span class="number">2 </span>=&gt; <span class="string">&quot;prefix: set&quot;</span>,
+                    <span class="number">0 </span>=&gt; <span class="string">"prefix: none"</span>,
+                    <span class="number">1 </span>=&gt; <span class="string">"prefix: get"</span>,
+                    <span class="number">2 </span>=&gt; <span class="string">"prefix: set"</span>,
                     <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
                 }
                 .to_owned()
@@ -1869,7 +1870,7 @@
             Opcode::PushDeclarativeEnvironment | Opcode::PushFunctionEnvironment =&gt; {
                 <span class="kw">let </span>operand = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
-                <span class="macro">format!</span>(<span class="string">&quot;{operand}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"{operand}"</span>)
             }
             Opcode::CopyDataProperties
             | Opcode::Break
@@ -1883,14 +1884,14 @@
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
                 <span class="kw">let </span>operand2 = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
-                <span class="macro">format!</span>(<span class="string">&quot;{operand1}, {operand2}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"{operand1}, {operand2}"</span>)
             }
             Opcode::TemplateLookup | Opcode::TemplateCreate =&gt; {
                 <span class="kw">let </span>operand1 = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
                 <span class="kw">let </span>operand2 = <span class="self">self</span>.read::&lt;u64&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u64&gt;();
-                <span class="macro">format!</span>(<span class="string">&quot;{operand1}, {operand2}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"{operand1}, {operand2}"</span>)
             }
             Opcode::GetArrowFunction
             | Opcode::GetAsyncArrowFunction
@@ -1899,7 +1900,7 @@
                 <span class="kw">let </span>operand = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;() + size_of::&lt;u8&gt;();
                 <span class="macro">format!</span>(
-                    <span class="string">&quot;{operand:04}: &#39;{}&#39; (length: {})&quot;</span>,
+                    <span class="string">"{operand:04}: '{}' (length: {})"</span>,
                     interner.resolve_expect(<span class="self">self</span>.functions[operand <span class="kw">as </span>usize].name),
                     <span class="self">self</span>.functions[operand <span class="kw">as </span>usize].length
                 )
@@ -1908,7 +1909,7 @@
                 <span class="kw">let </span>operand = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
                 <span class="macro">format!</span>(
-                    <span class="string">&quot;{operand:04}: &#39;{}&#39; (length: {})&quot;</span>,
+                    <span class="string">"{operand:04}: '{}' (length: {})"</span>,
                     interner.resolve_expect(<span class="self">self</span>.functions[operand <span class="kw">as </span>usize].name),
                     <span class="self">self</span>.functions[operand <span class="kw">as </span>usize].length
                 )
@@ -1925,7 +1926,7 @@
                 <span class="kw">let </span>operand = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
                 <span class="macro">format!</span>(
-                    <span class="string">&quot;{:04}: &#39;{}&#39;&quot;</span>,
+                    <span class="string">"{:04}: '{}'"</span>,
                     operand,
                     interner.resolve_expect(<span class="self">self</span>.bindings[operand <span class="kw">as </span>usize].name().sym()),
                 )
@@ -1958,7 +1959,7 @@
                 <span class="kw">let </span>operand = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
                 <span class="macro">format!</span>(
-                    <span class="string">&quot;{operand:04}: &#39;{}&#39;&quot;</span>,
+                    <span class="string">"{operand:04}: '{}'"</span>,
                     <span class="self">self</span>.names[operand <span class="kw">as </span>usize].to_std_string_escaped(),
                 )
             }
@@ -1974,12 +1975,12 @@
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
                 <span class="kw">let </span>r#return = <span class="self">self</span>.read::&lt;u32&gt;(<span class="kw-2">*</span>pc);
                 <span class="kw-2">*</span>pc += size_of::&lt;u32&gt;();
-                <span class="macro">format!</span>(<span class="string">&quot;n: {normal}, t: {throw}, r: {return}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"n: {normal}, t: {throw}, r: {return}"</span>)
             }
             Opcode::CreateIteratorResult =&gt; {
                 <span class="kw">let </span>done = <span class="self">self</span>.read::&lt;u8&gt;(<span class="kw-2">*</span>pc) != <span class="number">0</span>;
                 <span class="kw-2">*</span>pc += size_of::&lt;u8&gt;();
-                <span class="macro">format!</span>(<span class="string">&quot;done: {done}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"done: {done}"</span>)
             }
             Opcode::Pop
             | Opcode::Dup
@@ -2155,24 +2156,24 @@
             | Opcode::Reserved53
             | Opcode::Reserved54
             | Opcode::Reserved55
-            | Opcode::Reserved56 =&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;Reserved opcodes are unrechable&quot;</span>),
+            | Opcode::Reserved56 =&gt; <span class="macro">unreachable!</span>(<span class="string">"Reserved opcodes are unrechable"</span>),
         }
     }
 }
 
-<span class="attr">#[cfg(any(feature = <span class="string">&quot;trace&quot;</span>, feature = <span class="string">&quot;flowgraph&quot;</span>))]
+<span class="attr">#[cfg(any(feature = <span class="string">"trace"</span>, feature = <span class="string">"flowgraph"</span>))]
 </span><span class="kw">impl </span>ToInternedString <span class="kw">for </span>CodeBlock {
     <span class="kw">fn </span>to_interned_string(<span class="kw-2">&amp;</span><span class="self">self</span>, interner: <span class="kw-2">&amp;</span>Interner) -&gt; String {
         <span class="kw">let </span>name = interner.resolve_expect(<span class="self">self</span>.name);
         <span class="kw">let </span><span class="kw-2">mut </span>f = <span class="kw">if </span><span class="self">self</span>.name == Sym::MAIN {
             String::new()
         } <span class="kw">else </span>{
-            <span class="string">&quot;\n&quot;</span>.to_owned()
+            <span class="string">"\n"</span>.to_owned()
         };
 
         f.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-            <span class="string">&quot;{:-^70}\nLocation  Count   Opcode                     Operands\n\n&quot;</span>,
-            <span class="macro">format!</span>(<span class="string">&quot;Compiled Output: &#39;{name}&#39;&quot;</span>),
+            <span class="string">"{:-^70}\nLocation  Count   Opcode                     Operands\n\n"</span>,
+            <span class="macro">format!</span>(<span class="string">"Compiled Output: '{name}'"</span>),
         ));
 
         <span class="kw">let </span><span class="kw-2">mut </span>pc = <span class="number">0</span>;
@@ -2183,44 +2184,44 @@
             <span class="kw">let </span>previous_pc = pc;
             <span class="kw">let </span>operands = <span class="self">self</span>.instruction_operands(<span class="kw-2">&amp;mut </span>pc, interner);
             f.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                <span class="string">&quot;{previous_pc:06}    {count:04}    {opcode:&lt;27}{operands}\n&quot;</span>,
+                <span class="string">"{previous_pc:06}    {count:04}    {opcode:&lt;27}{operands}\n"</span>,
             ));
             count += <span class="number">1</span>;
         }
 
-        f.push_str(<span class="string">&quot;\nLiterals:\n&quot;</span>);
+        f.push_str(<span class="string">"\nLiterals:\n"</span>);
 
         <span class="kw">if </span><span class="self">self</span>.literals.is_empty() {
-            f.push_str(<span class="string">&quot;    &lt;empty&gt;\n&quot;</span>);
+            f.push_str(<span class="string">"    &lt;empty&gt;\n"</span>);
         } <span class="kw">else </span>{
             <span class="kw">for </span>(i, value) <span class="kw">in </span><span class="self">self</span>.literals.iter().enumerate() {
                 f.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;    {i:04}: &lt;{}&gt; {}\n&quot;</span>,
+                    <span class="string">"    {i:04}: &lt;{}&gt; {}\n"</span>,
                     value.type_of(),
                     value.display()
                 ));
             }
         }
 
-        f.push_str(<span class="string">&quot;\nBindings:\n&quot;</span>);
+        f.push_str(<span class="string">"\nBindings:\n"</span>);
         <span class="kw">if </span><span class="self">self</span>.bindings.is_empty() {
-            f.push_str(<span class="string">&quot;    &lt;empty&gt;\n&quot;</span>);
+            f.push_str(<span class="string">"    &lt;empty&gt;\n"</span>);
         } <span class="kw">else </span>{
             <span class="kw">for </span>(i, binding_locator) <span class="kw">in </span><span class="self">self</span>.bindings.iter().enumerate() {
                 f.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;    {i:04}: {}\n&quot;</span>,
+                    <span class="string">"    {i:04}: {}\n"</span>,
                     interner.resolve_expect(binding_locator.name().sym())
                 ));
             }
         }
 
-        f.push_str(<span class="string">&quot;\nFunctions:\n&quot;</span>);
+        f.push_str(<span class="string">"\nFunctions:\n"</span>);
         <span class="kw">if </span><span class="self">self</span>.functions.is_empty() {
-            f.push_str(<span class="string">&quot;    &lt;empty&gt;\n&quot;</span>);
+            f.push_str(<span class="string">"    &lt;empty&gt;\n"</span>);
         } <span class="kw">else </span>{
             <span class="kw">for </span>(i, code) <span class="kw">in </span><span class="self">self</span>.functions.iter().enumerate() {
                 f.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;    {i:04}: name: &#39;{}&#39; (length: {})\n&quot;</span>,
+                    <span class="string">"    {i:04}: name: '{}' (length: {})\n"</span>,
                     interner.resolve_expect(code.name),
                     code.length
                 ));
@@ -2233,7 +2234,7 @@
 
 <span class="doccomment">/// Creates a new function object.
 ///
-/// This is used in cases that the prototype is not known if it&#39;s [`None`] or [`Some`].
+/// This is used in cases that the prototype is not known if it's [`None`] or [`Some`].
 ///
 /// If the prototype given is [`None`] it will use [`create_function_object_fast`]. Otherwise
 /// it will construct the function from template objects that have all the fields except the
@@ -2244,9 +2245,9 @@
     code: Gc&lt;CodeBlock&gt;,
     r#async: bool,
     prototype: JsObject,
-    context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
 ) -&gt; JsObject {
-    <span class="kw">let </span>_timer = Profiler::global().start_event(<span class="string">&quot;create_function_object&quot;</span>, <span class="string">&quot;vm&quot;</span>);
+    <span class="kw">let </span>_timer = Profiler::global().start_event(<span class="string">"create_function_object"</span>, <span class="string">"vm"</span>);
 
     <span class="kw">let </span>name: JsValue = context
         .interner()
@@ -2329,9 +2330,9 @@
     r#async: bool,
     arrow: bool,
     method: bool,
-    context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
 ) -&gt; JsObject {
-    <span class="kw">let </span>_timer = Profiler::global().start_event(<span class="string">&quot;create_function_object_fast&quot;</span>, <span class="string">&quot;vm&quot;</span>);
+    <span class="kw">let </span>_timer = Profiler::global().start_event(<span class="string">"create_function_object_fast"</span>, <span class="string">"vm"</span>);
 
     <span class="kw">let </span>name: JsValue = context
         .interner()
@@ -2404,7 +2405,7 @@
     code: Gc&lt;CodeBlock&gt;,
     r#async: bool,
     prototype: <span class="prelude-ty">Option</span>&lt;JsObject&gt;,
-    context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
 ) -&gt; JsObject {
     <span class="kw">let </span>function_prototype = <span class="kw">if let </span><span class="prelude-val">Some</span>(prototype) = prototype {
         prototype
@@ -2496,13 +2497,13 @@
 
     constructor
         .define_property_or_throw(PROTOTYPE, prototype_property, context)
-        .expect(<span class="string">&quot;failed to define the prototype property of the generator function&quot;</span>);
+        .expect(<span class="string">"failed to define the prototype property of the generator function"</span>);
     constructor
-        .define_property_or_throw(<span class="macro">utf16!</span>(<span class="string">&quot;name&quot;</span>), name_property, context)
-        .expect(<span class="string">&quot;failed to define the name property of the generator function&quot;</span>);
+        .define_property_or_throw(<span class="macro">utf16!</span>(<span class="string">"name"</span>), name_property, context)
+        .expect(<span class="string">"failed to define the name property of the generator function"</span>);
     constructor
-        .define_property_or_throw(<span class="macro">utf16!</span>(<span class="string">&quot;length&quot;</span>), length_property, context)
-        .expect(<span class="string">&quot;failed to define the length property of the generator function&quot;</span>);
+        .define_property_or_throw(<span class="macro">utf16!</span>(<span class="string">"length"</span>), length_property, context)
+        .expect(<span class="string">"failed to define the length property of the generator function"</span>);
 
     constructor
 }
@@ -2512,7 +2513,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         this: <span class="kw-2">&amp;</span>JsValue,
         args: <span class="kw-2">&amp;</span>[JsValue],
-        context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; JsResult&lt;JsValue&gt; {
         <span class="kw">let </span>old_realm = context.realm().clone();
         <span class="kw">let </span>old_active_fn = context.vm.active_function.clone();
@@ -2525,7 +2526,7 @@
         <span class="kw">let </span>this_function_object = <span class="self">self</span>.clone();
         <span class="kw">let </span>active_function = <span class="self">self</span>.clone();
         <span class="kw">let </span>object = <span class="self">self</span>.borrow();
-        <span class="kw">let </span>function_object = object.as_function().expect(<span class="string">&quot;not a function&quot;</span>);
+        <span class="kw">let </span>function_object = object.as_function().expect(<span class="string">"not a function"</span>);
         <span class="kw">let </span>realm = function_object.realm().clone();
 
         context.enter_realm(realm);
@@ -2558,7 +2559,7 @@
                     <span class="kw">let </span>code = code.clone();
                     <span class="kw">if </span>code.is_class_constructor() {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(JsNativeError::typ()
-                            .with_message(<span class="string">&quot;class constructor cannot be invoked without &#39;new&#39;&quot;</span>)
+                            .with_message(<span class="string">"class constructor cannot be invoked without 'new'"</span>)
                             .with_realm(context.realm().clone())
                             .into());
                     }
@@ -2624,7 +2625,7 @@
                 <span class="kw-2">&amp;</span>context.intrinsics().constructors().promise().constructor(),
                 context,
             )
-            .expect(<span class="string">&quot;cannot  fail per spec&quot;</span>)
+            .expect(<span class="string">"cannot  fail per spec"</span>)
         });
 
         std::mem::swap(<span class="kw-2">&amp;mut </span>environments, <span class="kw-2">&amp;mut </span>context.vm.environments);
@@ -2640,7 +2641,7 @@
         } <span class="kw">else </span>{
             ThisBindingStatus::Initialized(
                 this.to_object(context)
-                    .expect(<span class="string">&quot;conversion cannot fail&quot;</span>)
+                    .expect(<span class="string">"conversion cannot fail"</span>)
                     .into(),
             )
         };
@@ -2694,7 +2695,7 @@
             //     i. Let ao be CreateUnmappedArgumentsObject(argumentsList).
             // b. Else,
             //     i. NOTE: A mapped argument object is only provided for non-strict functions
-            //              that don&#39;t have a rest parameter, any parameter
+            //              that don't have a rest parameter, any parameter
             //              default value initializers, or any destructured parameters.
             //     ii. Let ao be CreateMappedArgumentsObject(func, formals, argumentsList, env).
             </span><span class="kw">let </span>arguments_obj = <span class="kw">if </span>code.strict() || !code.params.is_simple() {
@@ -2746,7 +2747,7 @@
             .consume()
             .map_err(|err| err.inject_realm(context.realm().clone()));
 
-        <span class="kw">let </span>call_frame = context.vm.pop_frame().expect(<span class="string">&quot;frame must exist&quot;</span>);
+        <span class="kw">let </span>call_frame = context.vm.pop_frame().expect(<span class="string">"frame must exist"</span>);
         std::mem::swap(<span class="kw-2">&amp;mut </span>environments, <span class="kw-2">&amp;mut </span>context.vm.environments);
         std::mem::swap(<span class="kw-2">&amp;mut </span>context.vm.stack, <span class="kw-2">&amp;mut </span>stack);
         std::mem::swap(<span class="kw-2">&amp;mut </span>context.vm.active_runnable, <span class="kw-2">&amp;mut </span>script_or_module);
@@ -2757,7 +2758,7 @@
             result<span class="question-mark">?</span>;
             <span class="kw">let </span>proto = this_function_object
                 .get(PROTOTYPE, context)
-                .expect(<span class="string">&quot;generator must have a prototype property&quot;</span>)
+                .expect(<span class="string">"generator must have a prototype property"</span>)
                 .as_object()
                 .map_or_else(
                     || {
@@ -2804,13 +2805,13 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>generator_mut = generator.borrow_mut();
                 <span class="kw">let </span>gen = generator_mut
                     .as_async_generator_mut()
-                    .expect(<span class="string">&quot;must be object here&quot;</span>);
-                <span class="kw">let </span>gen_context = gen.context.as_mut().expect(<span class="string">&quot;must exist&quot;</span>);
+                    .expect(<span class="string">"must be object here"</span>);
+                <span class="kw">let </span>gen_context = gen.context.as_mut().expect(<span class="string">"must exist"</span>);
                 <span class="comment">// TODO: try to move this to the context itself.
                 </span>gen_context
                     .call_frame
                     .as_mut()
-                    .expect(<span class="string">&quot;should have a call frame initialized&quot;</span>)
+                    .expect(<span class="string">"should have a call frame initialized"</span>)
                     .async_generator = <span class="prelude-val">Some</span>(gen_clone);
             }
 
@@ -2824,7 +2825,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         args: <span class="kw-2">&amp;</span>[JsValue],
         this_target: <span class="kw-2">&amp;</span>JsValue,
-        context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; JsResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>old_realm = context.realm().clone();
         <span class="kw">let </span>old_active_fn = context.vm.active_function.clone();
@@ -2836,7 +2837,7 @@
         <span class="kw">let </span>this_function_object = <span class="self">self</span>.clone();
         <span class="kw">let </span>active_function = <span class="self">self</span>.clone();
         <span class="kw">let </span>object = <span class="self">self</span>.borrow();
-        <span class="kw">let </span>function_object = object.as_function().expect(<span class="string">&quot;not a function&quot;</span>);
+        <span class="kw">let </span>function_object = object.as_function().expect(<span class="string">"not a function"</span>);
         <span class="kw">let </span>realm = function_object.realm().clone();
 
         context.enter_realm(realm);
@@ -2858,7 +2859,7 @@
                     .and_then(|v| <span class="kw">match </span>v {
                         JsValue::Object(<span class="kw-2">ref </span>o) =&gt; <span class="prelude-val">Ok</span>(o.clone()),
                         val =&gt; {
-                            <span class="kw">if </span>constructor.expect(<span class="string">&quot;must be a constructor&quot;</span>).is_base()
+                            <span class="kw">if </span>constructor.expect(<span class="string">"must be a constructor"</span>).is_base()
                                 || val.is_undefined()
                             {
                                 <span class="kw">let </span>prototype = get_prototype_from_constructor(
@@ -2874,7 +2875,7 @@
                             } <span class="kw">else </span>{
                                 <span class="prelude-val">Err</span>(JsNativeError::typ()
                                 .with_message(
-                                    <span class="string">&quot;derived constructor can only return an Object or undefined&quot;</span>,
+                                    <span class="string">"derived constructor can only return an Object or undefined"</span>,
                                 )
                                 .into())
                             }
@@ -2920,7 +2921,7 @@
                 <span class="kw">let </span>environments_len = environments.len();
                 std::mem::swap(<span class="kw-2">&amp;mut </span>environments, <span class="kw-2">&amp;mut </span>context.vm.environments);
 
-                <span class="kw">let </span>new_target = this_target.as_object().expect(<span class="string">&quot;must be object&quot;</span>);
+                <span class="kw">let </span>new_target = this_target.as_object().expect(<span class="string">"must be object"</span>);
 
                 <span class="kw">let </span><span class="kw-2">mut </span>last_env = code.compile_environments.len() - <span class="number">1</span>;
 
@@ -2965,7 +2966,7 @@
                     //     i. Let ao be CreateUnmappedArgumentsObject(argumentsList).
                     // b. Else,
                     //     i. NOTE: A mapped argument object is only provided for non-strict functions
-                    //              that don&#39;t have a rest parameter, any parameter
+                    //              that don't have a rest parameter, any parameter
                     //              default value initializers, or any destructured parameters.
                     //     ii. Let ao be CreateMappedArgumentsObject(func, formals, argumentsList, env).
                     </span><span class="kw">let </span>arguments_obj = <span class="kw">if </span>code.strict() || !code.params.is_simple() {
@@ -3041,20 +3042,20 @@
                     <span class="prelude-val">Ok</span>(this)
                 } <span class="kw">else if </span>!result.is_undefined() {
                     <span class="prelude-val">Err</span>(JsNativeError::typ()
-                        .with_message(<span class="string">&quot;derived constructor can only return an Object or undefined&quot;</span>)
+                        .with_message(<span class="string">"derived constructor can only return an Object or undefined"</span>)
                         .into())
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>function_env = environment
                         .declarative_expect()
                         .kind()
                         .as_function()
-                        .expect(<span class="string">&quot;must be function environment&quot;</span>);
+                        .expect(<span class="string">"must be function environment"</span>);
                     function_env
                         .get_this_binding()
                         .map(|v| {
-                            v.expect(<span class="string">&quot;constructors cannot be arrow functions&quot;</span>)
+                            v.expect(<span class="string">"constructors cannot be arrow functions"</span>)
                                 .as_object()
-                                .expect(<span class="string">&quot;this binding must be object&quot;</span>)
+                                .expect(<span class="string">"this binding must be object"</span>)
                                 .clone()
                         })
                         .map_err(JsError::from)
@@ -3063,7 +3064,7 @@
             FunctionKind::Generator { .. }
             | FunctionKind::Async { .. }
             | FunctionKind::AsyncGenerator { .. } =&gt; {
-                <span class="macro">unreachable!</span>(<span class="string">&quot;not a constructor&quot;</span>)
+                <span class="macro">unreachable!</span>(<span class="string">"not a constructor"</span>)
             }
         }
     }

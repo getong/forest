@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/regress-0.6.0/src/optimizer.rs`."><title>optimizer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="regress" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/regress-0.6.0/src/optimizer.rs`."><title>optimizer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="regress" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -449,7 +450,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::types::BracketContents;
 <span class="kw">use </span><span class="kw">crate</span>::unicode;
-<span class="attr">#[cfg(not(feature = <span class="string">&quot;std&quot;</span>))]
+<span class="attr">#[cfg(not(feature = <span class="string">"std"</span>))]
 </span><span class="kw">use </span>alloc::{boxed::Box, vec::Vec};
 
 <span class="doccomment">/// When unrolling a loop, the largest minimum count we will unroll.
@@ -471,22 +472,22 @@
 }
 
 <span class="attr">#[derive(Debug)]
-</span><span class="kw">struct </span>Pass&lt;<span class="lifetime">&#39;a</span>, F&gt;
+</span><span class="kw">struct </span>Pass&lt;<span class="lifetime">'a</span>, F&gt;
 <span class="kw">where
     </span>F: FnMut(<span class="kw-2">&amp;mut </span>Node, <span class="kw-2">&amp;</span>Walk) -&gt; PassAction,
 {
     <span class="comment">// The function.
-    </span>func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>F,
+    </span>func: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>F,
 
     <span class="comment">// Whether this pass has changed anything.
     </span>changed: bool,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, F&gt; Pass&lt;<span class="lifetime">&#39;a</span>, F&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, F&gt; Pass&lt;<span class="lifetime">'a</span>, F&gt;
 <span class="kw">where
     </span>F: FnMut(<span class="kw-2">&amp;mut </span>Node, <span class="kw-2">&amp;</span>Walk) -&gt; PassAction,
 {
-    <span class="kw">fn </span>new(func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>F) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>new(func: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>F) -&gt; <span class="self">Self </span>{
         Pass {
             func,
             changed: <span class="bool-val">false</span>,
@@ -515,7 +516,7 @@
     }
 
     <span class="kw">fn </span>run_to_fixpoint(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: <span class="kw-2">&amp;mut </span>Node) {
-        <span class="macro">debug_assert!</span>(!<span class="self">self</span>.changed, <span class="string">&quot;Pass has already been run&quot;</span>);
+        <span class="macro">debug_assert!</span>(!<span class="self">self</span>.changed, <span class="string">"Pass has already been run"</span>);
         <span class="kw">loop </span>{
             <span class="self">self</span>.changed = <span class="bool-val">false</span>;
             <span class="self">self</span>.run_postorder(n);
@@ -526,7 +527,7 @@
     }
 }
 
-<span class="doccomment">/// Run a &quot;pass&quot; on a regex, which is a function that takes a Node and maybe
+<span class="doccomment">/// Run a "pass" on a regex, which is a function that takes a Node and maybe
 /// returns a new node. \return true if something changed, false if nothing did.
 </span><span class="kw">fn </span>run_pass&lt;F&gt;(r: <span class="kw-2">&amp;mut </span>Regex, func: <span class="kw-2">&amp;mut </span>F) -&gt; bool
 <span class="kw">where
@@ -625,7 +626,7 @@
                 PassAction::Replace(nodes.pop().unwrap())
             } <span class="kw">else if </span>nodes.iter().any(|nn| nn.is_cat()) {
                 <span class="comment">// Flatmap child cats.
-                // Unfortunately we can&#39;t use flatmap() because there&#39;s no single iterator type
+                // Unfortunately we can't use flatmap() because there's no single iterator type
                 // we can return.
                 // Avoid copying nodes by switching them into owned vec.
                 </span><span class="kw">let </span><span class="kw-2">mut </span>catted = Vec::new();
@@ -660,10 +661,10 @@
             <span class="kw">let </span>unfolded = unicode::unfold_char(c);
             <span class="macro">debug_assert!</span>(
                 unfolded.contains(<span class="kw-2">&amp;</span>c),
-                <span class="string">&quot;Char should always unfold to at least itself&quot;
+                <span class="string">"Char should always unfold to at least itself"
             </span>);
             <span class="kw">match </span>unfolded.len() {
-                <span class="number">0 </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Char should always unfold to at least itself&quot;</span>),
+                <span class="number">0 </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Char should always unfold to at least itself"</span>),
                 <span class="number">1 </span>=&gt; {
                     <span class="comment">// Character does not fold or unfold at all.
                     </span>PassAction::Replace(Node::Char { c, icase: <span class="bool-val">false </span>})
@@ -672,7 +673,7 @@
                     <span class="comment">// We unfolded to 2+ characters.
                     </span>PassAction::Replace(Node::CharSet(unfolded))
                 }
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unfolded to more characters than we believed possible&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unfolded to more characters than we believed possible"</span>),
             }
         }
         <span class="kw">_ </span>=&gt; PassAction::Keep,
@@ -704,7 +705,7 @@
                 unrolled.push(loopee.as_mut().duplicate());
             }
 
-            <span class="comment">// We unrolled &#39;min&#39; elements.
+            <span class="comment">// We unrolled 'min' elements.
             // Maybe our loop is now empty.
             </span>quant.max -= quant.min;
             quant.min = <span class="number">0</span>;
@@ -737,7 +738,7 @@
             <span class="comment">// The above check should be sufficient to ensure we have no enclosed groups.
             </span><span class="macro">assert!</span>(
                 enclosed_groups.start &gt;= enclosed_groups.end,
-                <span class="string">&quot;Should have no enclosed groups&quot;
+                <span class="string">"Should have no enclosed groups"
             </span>);
 
             <span class="comment">// This feels hackish?
@@ -796,7 +797,7 @@
                             <span class="comment">// Our characters were already reversed; we need to reverse them again
                             // as literal bytes are always forwards. For
                             // example, if we have (&lt;=ab), then we will get Cat(b, a) but we want
-                            // literal bytes &quot;ab&quot;.
+                            // literal bytes "ab".
                             </span>curr_bytes.append(prev_bytes);
                         } <span class="kw">else </span>{
                             prev_bytes.append(curr_bytes);
@@ -843,7 +844,7 @@
             res.push(cp);
         }
     }
-    <span class="macro">debug_assert!</span>(res.len() &lt;= MAX_CHAR_SET_LENGTH, <span class="string">&quot;Unexpectedly many chars&quot;</span>);
+    <span class="macro">debug_assert!</span>(res.len() &lt;= MAX_CHAR_SET_LENGTH, <span class="string">"Unexpectedly many chars"</span>);
     <span class="prelude-val">Some</span>(Node::CharSet(res))
 }
 

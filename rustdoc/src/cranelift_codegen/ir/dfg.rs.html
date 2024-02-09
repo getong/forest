@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/ir/dfg.rs`."><title>dfg.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/ir/dfg.rs`."><title>dfg.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1705,13 +1706,13 @@
 <span class="kw">use </span>core::u16;
 
 <span class="kw">use </span>alloc::collections::BTreeMap;
-<span class="attr">#[cfg(feature = <span class="string">&quot;enable-serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
 </span><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>smallvec::SmallVec;
 
 <span class="doccomment">/// Storage for instructions within the DFG.
 </span><span class="attr">#[derive(Clone, PartialEq, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>Insts(PrimaryMap&lt;Inst, InstructionData&gt;);
 
 <span class="doccomment">/// Allow immutable access to instructions via indexing.
@@ -1732,7 +1733,7 @@
 
 <span class="doccomment">/// Storage for basic blocks within the DFG.
 </span><span class="attr">#[derive(Clone, PartialEq, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>Blocks(PrimaryMap&lt;Block, BlockData&gt;);
 
 <span class="kw">impl </span>Blocks {
@@ -1777,7 +1778,7 @@
 /// `Layout` data structure which forms the other half of the function representation.
 ///
 </span><span class="attr">#[derive(Clone, PartialEq, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>DataFlowGraph {
     <span class="doccomment">/// Data about all of the instructions in the function, including opcodes and operands.
     /// The instructions in this map are not in program order. That is tracked by `Layout`, along
@@ -1803,7 +1804,7 @@
     ///
     /// The `ValueList` references into this pool appear in many places:
     ///
-    /// - Instructions in `insts` that don&#39;t have room for their entire argument list inline.
+    /// - Instructions in `insts` that don't have room for their entire argument list inline.
     /// - Instruction result values in `results`.
     /// - block parameters in `blocks`.
     </span><span class="kw">pub </span>value_lists: ValueListPool,
@@ -1908,7 +1909,7 @@
     }
 
     <span class="doccomment">/// Get an iterator over all values and their definitions.
-    </span><span class="kw">pub fn </span>values_and_defs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (Value, ValueDef)&gt; + <span class="lifetime">&#39;_ </span>{
+    </span><span class="kw">pub fn </span>values_and_defs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (Value, ValueDef)&gt; + <span class="lifetime">'_ </span>{
         <span class="self">self</span>.values().map(|value| (value, <span class="self">self</span>.value_def(value)))
     }
 
@@ -1957,13 +1958,13 @@
     <span class="kw">if let </span><span class="prelude-val">Some</span>(v) = maybe_resolve_aliases(values, value) {
         v
     } <span class="kw">else </span>{
-        <span class="macro">panic!</span>(<span class="string">&quot;Value alias loop detected for {}&quot;</span>, value);
+        <span class="macro">panic!</span>(<span class="string">"Value alias loop detected for {}"</span>, value);
     }
 }
 
 <span class="doccomment">/// Iterator over all Values in a DFG.
-</span><span class="kw">pub struct </span>Values&lt;<span class="lifetime">&#39;a</span>&gt; {
-    inner: entity::Iter&lt;<span class="lifetime">&#39;a</span>, Value, ValueDataPacked&gt;,
+</span><span class="kw">pub struct </span>Values&lt;<span class="lifetime">'a</span>&gt; {
+    inner: entity::Iter&lt;<span class="lifetime">'a</span>, Value, ValueDataPacked&gt;,
 }
 
 <span class="doccomment">/// Check for non-values.
@@ -1981,7 +1982,7 @@
     <span class="bool-val">true
 </span>}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>Values&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Iterator <span class="kw">for </span>Values&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">type </span>Item = Value;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
@@ -2002,7 +2003,7 @@
     }
 
     <span class="doccomment">/// Get an iterator over all values.
-    </span><span class="kw">pub fn </span>values&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; Values {
+    </span><span class="kw">pub fn </span>values&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; Values {
         Values {
             inner: <span class="self">self</span>.values.iter(),
         }
@@ -2037,7 +2038,7 @@
 
     <span class="doccomment">/// Determine if `v` is an attached instruction result / block parameter.
     ///
-    /// An attached value can&#39;t be attached to something else without first being detached.
+    /// An attached value can't be attached to something else without first being detached.
     ///
     /// Value aliases are not considered to be attached to anything. Use `resolve_aliases()` to
     /// determine if the original aliased value is attached.
@@ -2058,7 +2059,7 @@
         resolve_aliases(<span class="kw-2">&amp;</span><span class="self">self</span>.values, value)
     }
 
-    <span class="doccomment">/// Resolve all aliases among inst&#39;s arguments.
+    <span class="doccomment">/// Resolve all aliases among inst's arguments.
     ///
     /// For each argument of inst which is defined by an alias, replace the
     /// alias with the aliased value.
@@ -2071,7 +2072,7 @@
     /// Change the `dest` value to behave as an alias of `src`. This means that all uses of `dest`
     /// will behave as if they used that value `src`.
     ///
-    /// The `dest` value can&#39;t be attached to an instruction or block.
+    /// The `dest` value can't be attached to an instruction or block.
     </span><span class="kw">pub fn </span>change_to_alias(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dest: Value, src: Value) {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.value_is_attached(dest));
         <span class="comment">// Try to create short alias chains by finding the original source value.
@@ -2079,14 +2080,14 @@
         </span><span class="kw">let </span>original = <span class="self">self</span>.resolve_aliases(src);
         <span class="macro">debug_assert_ne!</span>(
             dest, original,
-            <span class="string">&quot;Aliasing {} to {} would create a loop&quot;</span>,
+            <span class="string">"Aliasing {} to {} would create a loop"</span>,
             dest, src
         );
         <span class="kw">let </span>ty = <span class="self">self</span>.value_type(original);
         <span class="macro">debug_assert_eq!</span>(
             <span class="self">self</span>.value_type(dest),
             ty,
-            <span class="string">&quot;Aliasing {} to {} would change its type {} to {}&quot;</span>,
+            <span class="string">"Aliasing {} to {} would change its type {} to {}"</span>,
             dest,
             src,
             <span class="self">self</span>.value_type(dest),
@@ -2109,13 +2110,13 @@
     </span><span class="kw">pub fn </span>replace_with_aliases(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dest_inst: Inst, src_inst: Inst) {
         <span class="macro">debug_assert_ne!</span>(
             dest_inst, src_inst,
-            <span class="string">&quot;Replacing {} with itself would create a loop&quot;</span>,
+            <span class="string">"Replacing {} with itself would create a loop"</span>,
             dest_inst
         );
         <span class="macro">debug_assert_eq!</span>(
             <span class="self">self</span>.results[dest_inst].len(<span class="kw-2">&amp;</span><span class="self">self</span>.value_lists),
             <span class="self">self</span>.results[src_inst].len(<span class="kw-2">&amp;</span><span class="self">self</span>.value_lists),
-            <span class="string">&quot;Replacing {} with {} would produce a different number of results.&quot;</span>,
+            <span class="string">"Replacing {} with {} would produce a different number of results."</span>,
             dest_inst,
             src_inst
         );
@@ -2130,7 +2131,7 @@
             <span class="macro">debug_assert_eq!</span>(
                 <span class="self">self</span>.value_type(dest),
                 ty,
-                <span class="string">&quot;Aliasing {} to {} would change its type {} to {}&quot;</span>,
+                <span class="string">"Aliasing {} to {} would change its type {} to {}"</span>,
                 dest,
                 src,
                 <span class="self">self</span>.value_type(dest),
@@ -2148,9 +2149,9 @@
 <span class="doccomment">/// Where did a value come from?
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>ValueDef {
-    <span class="doccomment">/// Value is the n&#39;th result of an instruction.
+    <span class="doccomment">/// Value is the n'th result of an instruction.
     </span><span class="prelude-ty">Result</span>(Inst, usize),
-    <span class="doccomment">/// Value is the n&#39;th parameter to a block.
+    <span class="doccomment">/// Value is the n'th parameter to a block.
     </span>Param(Block, usize),
     <span class="doccomment">/// Value is a union of two other values.
     </span>Union(Value, Value),
@@ -2159,7 +2160,7 @@
 <span class="kw">impl </span>ValueDef {
     <span class="doccomment">/// Unwrap the instruction where the value was defined, or panic.
     </span><span class="kw">pub fn </span>unwrap_inst(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Inst {
-        <span class="self">self</span>.inst().expect(<span class="string">&quot;Value is not an instruction result&quot;</span>)
+        <span class="self">self</span>.inst().expect(<span class="string">"Value is not an instruction result"</span>)
     }
 
     <span class="doccomment">/// Get the instruction where the value was defined, if any.
@@ -2174,7 +2175,7 @@
     </span><span class="kw">pub fn </span>unwrap_block(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Block {
         <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
             <span class="self">Self</span>::Param(block, <span class="kw">_</span>) =&gt; block,
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Value is not a block parameter&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Value is not a block parameter"</span>),
         }
     }
 
@@ -2192,7 +2193,7 @@
 
 <span class="doccomment">/// Internal table storage for extended values.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">enum </span>ValueData {
     <span class="doccomment">/// Value is defined by an instruction.
     </span>Inst { ty: Type, num: u16, inst: Inst },
@@ -2201,11 +2202,11 @@
     </span>Param { ty: Type, num: u16, block: Block },
 
     <span class="doccomment">/// Value is an alias of another value.
-    /// An alias value can&#39;t be linked as an instruction result or block parameter. It is used as a
+    /// An alias value can't be linked as an instruction result or block parameter. It is used as a
     /// placeholder when the original instruction or block has been rewritten or modified.
     </span>Alias { ty: Type, original: Value },
 
-    <span class="doccomment">/// Union is a &quot;fork&quot; in representation: the value can be
+    <span class="doccomment">/// Union is a "fork" in representation: the value can be
     /// represented as either of the values named here. This is used
     /// for aegraph (acyclic egraph) representation in the DFG.
     </span>Union { ty: Type, x: Value, y: Value },
@@ -2224,12 +2225,12 @@
 /// Union      11     ty               first value     second value
 /// ```
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">struct </span>ValueDataPacked(u64);
 
 <span class="doccomment">/// Encodes a value in 0..2^32 into 0..2^n, where n is less than 32
 /// (and is implied by `mask`), by translating 2^32-1 (0xffffffff)
-/// into 2^n-1 and panic&#39;ing on 2^n..2^32-1.
+/// into 2^n-1 and panic'ing on 2^n..2^32-1.
 </span><span class="kw">fn </span>encode_narrow_field(x: u32, bits: u8) -&gt; u32 {
     <span class="kw">if </span>x == <span class="number">0xffff_ffff </span>{
         (<span class="number">1 </span>&lt;&lt; bits) - <span class="number">1
@@ -2320,22 +2321,22 @@
     <span class="kw">fn </span>from(data: ValueDataPacked) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>tag = data.field(ValueDataPacked::TAG_SHIFT, ValueDataPacked::TAG_BITS);
         <span class="kw">let </span>ty = u16::try_from(data.field(ValueDataPacked::TYPE_SHIFT, ValueDataPacked::TYPE_BITS))
-            .expect(<span class="string">&quot;Mask should ensure result fits in a u16&quot;</span>);
+            .expect(<span class="string">"Mask should ensure result fits in a u16"</span>);
         <span class="kw">let </span>x = u32::try_from(data.field(ValueDataPacked::X_SHIFT, ValueDataPacked::X_BITS))
-            .expect(<span class="string">&quot;Mask should ensure result fits in a u32&quot;</span>);
+            .expect(<span class="string">"Mask should ensure result fits in a u32"</span>);
         <span class="kw">let </span>y = u32::try_from(data.field(ValueDataPacked::Y_SHIFT, ValueDataPacked::Y_BITS))
-            .expect(<span class="string">&quot;Mask should ensure result fits in a u32&quot;</span>);
+            .expect(<span class="string">"Mask should ensure result fits in a u32"</span>);
 
         <span class="kw">let </span>ty = Type::from_repr(ty);
         <span class="kw">match </span>tag {
             ValueDataPacked::TAG_INST =&gt; ValueData::Inst {
                 ty,
-                num: u16::try_from(x).expect(<span class="string">&quot;Inst result num should fit in u16&quot;</span>),
+                num: u16::try_from(x).expect(<span class="string">"Inst result num should fit in u16"</span>),
                 inst: Inst::from_bits(decode_narrow_field(y, ValueDataPacked::Y_BITS)),
             },
             ValueDataPacked::TAG_PARAM =&gt; ValueData::Param {
                 ty,
-                num: u16::try_from(x).expect(<span class="string">&quot;Blockparam index should fit in u16&quot;</span>),
+                num: u16::try_from(x).expect(<span class="string">"Blockparam index should fit in u16"</span>),
                 block: Block::from_bits(decode_narrow_field(y, ValueDataPacked::Y_BITS)),
             },
             ValueDataPacked::TAG_ALIAS =&gt; ValueData::Alias {
@@ -2347,7 +2348,7 @@
                 x: Value::from_bits(decode_narrow_field(x, ValueDataPacked::X_BITS)),
                 y: Value::from_bits(decode_narrow_field(y, ValueDataPacked::Y_BITS)),
             },
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Invalid tag {} in ValueDataPacked 0x{:x}&quot;</span>, tag, data.<span class="number">0</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Invalid tag {} in ValueDataPacked 0x{:x}"</span>, tag, data.<span class="number">0</span>),
         }
     }
 }
@@ -2374,27 +2375,27 @@
     }
 
     <span class="doccomment">/// Returns an object that displays `inst`.
-    </span><span class="kw">pub fn </span>display_inst&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, inst: Inst) -&gt; DisplayInst&lt;<span class="lifetime">&#39;a</span>&gt; {
+    </span><span class="kw">pub fn </span>display_inst&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, inst: Inst) -&gt; DisplayInst&lt;<span class="lifetime">'a</span>&gt; {
         DisplayInst(<span class="self">self</span>, inst)
     }
 
-    <span class="doccomment">/// Returns an object that displays the given `value`&#39;s defining instruction.
+    <span class="doccomment">/// Returns an object that displays the given `value`'s defining instruction.
     ///
     /// Panics if the value is not defined by an instruction (i.e. it is a basic
     /// block argument).
-    </span><span class="kw">pub fn </span>display_value_inst(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Value) -&gt; DisplayInst&lt;<span class="lifetime">&#39;_</span>&gt; {
+    </span><span class="kw">pub fn </span>display_value_inst(<span class="kw-2">&amp;</span><span class="self">self</span>, value: Value) -&gt; DisplayInst&lt;<span class="lifetime">'_</span>&gt; {
         <span class="kw">match </span><span class="self">self</span>.value_def(value) {
             ir::ValueDef::Result(inst, <span class="kw">_</span>) =&gt; <span class="self">self</span>.display_inst(inst),
-            ir::ValueDef::Param(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;value is not defined by an instruction&quot;</span>),
-            ir::ValueDef::Union(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;value is a union of two other values&quot;</span>),
+            ir::ValueDef::Param(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"value is not defined by an instruction"</span>),
+            ir::ValueDef::Union(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"value is a union of two other values"</span>),
         }
     }
 
     <span class="doccomment">/// Construct a read-only visitor context for the values of this instruction.
-    </span><span class="kw">pub fn </span>inst_values&lt;<span class="lifetime">&#39;dfg</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;dfg </span><span class="self">self</span>,
+    </span><span class="kw">pub fn </span>inst_values&lt;<span class="lifetime">'dfg</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'dfg </span><span class="self">self</span>,
         inst: Inst,
-    ) -&gt; <span class="kw">impl </span>DoubleEndedIterator&lt;Item = Value&gt; + <span class="lifetime">&#39;dfg </span>{
+    ) -&gt; <span class="kw">impl </span>DoubleEndedIterator&lt;Item = Value&gt; + <span class="lifetime">'dfg </span>{
         <span class="self">self</span>.inst_args(inst)
             .iter()
             .chain(
@@ -2417,7 +2418,7 @@
         }
 
         <span class="kw">for </span>block_ix <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.insts[inst].branch_destination(<span class="kw-2">&amp;</span><span class="self">self</span>.jump_tables).len() {
-            <span class="comment">// We aren&#39;t changing the size of the args list, so we won&#39;t need to write the branch
+            <span class="comment">// We aren't changing the size of the args list, so we won't need to write the branch
             // back to the instruction.
             </span><span class="kw">let </span><span class="kw-2">mut </span>block = <span class="self">self</span>.insts[inst].branch_destination(<span class="kw-2">&amp;</span><span class="self">self</span>.jump_tables)[block_ix];
             <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..block.args_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.value_lists).len() {
@@ -2427,7 +2428,7 @@
         }
     }
 
-    <span class="doccomment">/// Overwrite the instruction&#39;s value references with values from the iterator.
+    <span class="doccomment">/// Overwrite the instruction's value references with values from the iterator.
     /// NOTE: the iterator provided is expected to yield at least as many values as the instruction
     /// currently has.
     </span><span class="kw">pub fn </span>overwrite_inst_values&lt;I&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inst: Inst, <span class="kw-2">mut </span>values: I)
@@ -2497,7 +2498,7 @@
     /// Instructions that produce no result values only need to be created with `make_inst`,
     /// otherwise call `make_inst_results` to allocate value table entries for the results.
     ///
-    /// The result value types are determined from the instruction&#39;s value type constraints and the
+    /// The result value types are determined from the instruction's value type constraints and the
     /// provided `ctrl_typevar` type for polymorphic instructions. For non-polymorphic
     /// instructions, `ctrl_typevar` is ignored, and `INVALID` can be used.
     ///
@@ -2530,7 +2531,7 @@
 
         <span class="kw">for </span>ty <span class="kw">in </span>result_tys {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Some</span>(v)) = reuse.next() {
-                <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.value_type(v), ty, <span class="string">&quot;Reused {} is wrong type&quot;</span>, ty);
+                <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.value_type(v), ty, <span class="string">"Reused {} is wrong type"</span>, ty);
                 <span class="self">self</span>.attach_result(inst, v);
             } <span class="kw">else </span>{
                 <span class="self">self</span>.append_result(inst, ty);
@@ -2570,7 +2571,7 @@
     </span><span class="kw">pub fn </span>attach_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inst: Inst, res: Value) {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.value_is_attached(res));
         <span class="kw">let </span>num = <span class="self">self</span>.results[inst].push(res, <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists);
-        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">&quot;Too many result values&quot;</span>);
+        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">"Too many result values"</span>);
         <span class="kw">let </span>ty = <span class="self">self</span>.value_type(res);
         <span class="self">self</span>.values[res] = ValueData::Inst {
             ty,
@@ -2590,7 +2591,7 @@
     </span><span class="kw">pub fn </span>replace_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, old_value: Value, new_type: Type) -&gt; Value {
         <span class="kw">let </span>(num, inst) = <span class="kw">match </span>ValueData::from(<span class="self">self</span>.values[old_value]) {
             ValueData::Inst { num, inst, .. } =&gt; (num, inst),
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;{} is not an instruction result value&quot;</span>, old_value),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"{} is not an instruction result value"</span>, old_value),
         };
         <span class="kw">let </span>new_value = <span class="self">self</span>.make_value(ValueData::Inst {
             ty: new_type,
@@ -2601,13 +2602,13 @@
         <span class="kw">let </span>attached = mem::replace(
             <span class="self">self</span>.results[inst]
                 .get_mut(num, <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists)
-                .expect(<span class="string">&quot;Replacing detached result&quot;</span>),
+                .expect(<span class="string">"Replacing detached result"</span>),
             new_value,
         );
         <span class="macro">debug_assert_eq!</span>(
             attached,
             old_value,
-            <span class="string">&quot;{} wasn&#39;t detached from {}&quot;</span>,
+            <span class="string">"{} wasn't detached from {}"</span>,
             old_value,
             <span class="self">self</span>.display_inst(inst)
         );
@@ -2618,7 +2619,7 @@
     </span><span class="kw">pub fn </span>append_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inst: Inst, ty: Type) -&gt; Value {
         <span class="kw">let </span>res = <span class="self">self</span>.values.next_key();
         <span class="kw">let </span>num = <span class="self">self</span>.results[inst].push(res, <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists);
-        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">&quot;Too many result values&quot;</span>);
+        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">"Too many result values"</span>);
         <span class="self">self</span>.make_value(ValueData::Inst {
             ty,
             inst,
@@ -2632,7 +2633,7 @@
         <span class="comment">// First, add a clone of the InstructionData.
         </span><span class="kw">let </span>inst_data = <span class="self">self</span>.insts[inst].clone();
         <span class="comment">// If the `inst_data` has a reference to a ValueList, clone it
-        // as well, because we can&#39;t share these (otherwise mutating
+        // as well, because we can't share these (otherwise mutating
         // one would affect the other).
         </span><span class="kw">let </span>inst_data = inst_data.deep_clone(<span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists);
         <span class="kw">let </span>new_inst = <span class="self">self</span>.make_inst(inst_data);
@@ -2645,11 +2646,11 @@
 
     <span class="doccomment">/// Get the first result of an instruction.
     ///
-    /// This function panics if the instruction doesn&#39;t have any result.
+    /// This function panics if the instruction doesn't have any result.
     </span><span class="kw">pub fn </span>first_result(<span class="kw-2">&amp;</span><span class="self">self</span>, inst: Inst) -&gt; Value {
         <span class="self">self</span>.results[inst]
             .first(<span class="kw-2">&amp;</span><span class="self">self</span>.value_lists)
-            .expect(<span class="string">&quot;Instruction has no results&quot;</span>)
+            .expect(<span class="string">"Instruction has no results"</span>)
     }
 
     <span class="doccomment">/// Test if `inst` has any result values currently.
@@ -2707,11 +2708,11 @@
     }
 
     <span class="doccomment">/// Get the result types of the given instruction.
-    </span><span class="kw">pub fn </span>inst_result_types&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    </span><span class="kw">pub fn </span>inst_result_types&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         inst: Inst,
         ctrl_typevar: Type,
-    ) -&gt; <span class="kw">impl </span>iter::ExactSizeIterator&lt;Item = Type&gt; + <span class="lifetime">&#39;a </span>{
+    ) -&gt; <span class="kw">impl </span>iter::ExactSizeIterator&lt;Item = Type&gt; + <span class="lifetime">'a </span>{
         <span class="kw">return match </span><span class="self">self</span>.non_tail_call_signature(inst) {
             <span class="prelude-val">Some</span>(sig) =&gt; InstResultTypes::Signature(<span class="self">self</span>, sig, <span class="number">0</span>),
             <span class="prelude-val">None </span>=&gt; {
@@ -2720,12 +2721,12 @@
             }
         };
 
-        <span class="kw">enum </span>InstResultTypes&lt;<span class="lifetime">&#39;a</span>&gt; {
-            Signature(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DataFlowGraph, SigRef, usize),
+        <span class="kw">enum </span>InstResultTypes&lt;<span class="lifetime">'a</span>&gt; {
+            Signature(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>DataFlowGraph, SigRef, usize),
             Constraints(ir::instructions::OpcodeConstraints, Type, usize),
         }
 
-        <span class="kw">impl </span>Iterator <span class="kw">for </span>InstResultTypes&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="kw">impl </span>Iterator <span class="kw">for </span>InstResultTypes&lt;<span class="lifetime">'_</span>&gt; {
             <span class="kw">type </span>Item = Type;
 
             <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Type&gt; {
@@ -2760,7 +2761,7 @@
             }
         }
 
-        <span class="kw">impl </span>ExactSizeIterator <span class="kw">for </span>InstResultTypes&lt;<span class="lifetime">&#39;_</span>&gt; {}
+        <span class="kw">impl </span>ExactSizeIterator <span class="kw">for </span>InstResultTypes&lt;<span class="lifetime">'_</span>&gt; {}
     }
 
     <span class="doccomment">/// Compute the type of an instruction result from opcode constraints and call signatures.
@@ -2779,7 +2780,7 @@
         <span class="self">self</span>.inst_result_types(inst, ctrl_typevar).nth(result_idx)
     }
 
-    <span class="doccomment">/// Get the controlling type variable, or `INVALID` if `inst` isn&#39;t polymorphic.
+    <span class="doccomment">/// Get the controlling type variable, or `INVALID` if `inst` isn't polymorphic.
     </span><span class="kw">pub fn </span>ctrl_typevar(<span class="kw-2">&amp;</span><span class="self">self</span>, inst: Inst) -&gt; Type {
         <span class="kw">let </span>constraints = <span class="self">self</span>.insts[inst].opcode().constraints();
 
@@ -2793,7 +2794,7 @@
                     .typevar_operand(<span class="kw-2">&amp;</span><span class="self">self</span>.value_lists)
                     .unwrap_or_else(|| {
                         <span class="macro">panic!</span>(
-                            <span class="string">&quot;Instruction format for {:?} doesn&#39;t have a designated operand&quot;</span>,
+                            <span class="string">"Instruction format for {:?} doesn't have a designated operand"</span>,
                             <span class="self">self</span>.insts[inst]
                         )
                     }),
@@ -2822,7 +2823,7 @@
     }
 
     <span class="doccomment">/// Get the types of the parameters on `block`.
-    </span><span class="kw">pub fn </span>block_param_types(<span class="kw-2">&amp;</span><span class="self">self</span>, block: Block) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Type&gt; + <span class="lifetime">&#39;_ </span>{
+    </span><span class="kw">pub fn </span>block_param_types(<span class="kw-2">&amp;</span><span class="self">self</span>, block: Block) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Type&gt; + <span class="lifetime">'_ </span>{
         <span class="self">self</span>.block_params(block).iter().map(|<span class="kw-2">&amp;</span>v| <span class="self">self</span>.value_type(v))
     }
 
@@ -2830,7 +2831,7 @@
     </span><span class="kw">pub fn </span>append_block_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block, ty: Type) -&gt; Value {
         <span class="kw">let </span>param = <span class="self">self</span>.values.next_key();
         <span class="kw">let </span>num = <span class="self">self</span>.blocks[block].params.push(param, <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists);
-        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">&quot;Too many parameters on block&quot;</span>);
+        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">"Too many parameters on block"</span>);
         <span class="self">self</span>.make_value(ValueData::Param {
             ty,
             num: num <span class="kw">as </span>u16,
@@ -2838,7 +2839,7 @@
         })
     }
 
-    <span class="doccomment">/// Removes `val` from `block`&#39;s parameters by swapping it with the last parameter on `block`.
+    <span class="doccomment">/// Removes `val` from `block`'s parameters by swapping it with the last parameter on `block`.
     /// Returns the position of `val` before removal.
     ///
     /// *Important*: to ensure O(1) deletion, this method swaps the removed parameter with the
@@ -2851,7 +2852,7 @@
             <span class="kw">if let </span>ValueData::Param { num, block, .. } = ValueData::from(<span class="self">self</span>.values[val]) {
                 (block, num)
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;{} must be a block parameter&quot;</span>, val);
+                <span class="macro">panic!</span>(<span class="string">"{} must be a block parameter"</span>, val);
             };
         <span class="self">self</span>.blocks[block]
             .params
@@ -2870,20 +2871,20 @@
                 <span class="kw-2">*</span>old_num = num;
                 <span class="self">self</span>.values[last_arg_val] = last_arg_data.into();
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;{} should be a Block parameter&quot;</span>, last_arg_val);
+                <span class="macro">panic!</span>(<span class="string">"{} should be a Block parameter"</span>, last_arg_val);
             }
         }
         num <span class="kw">as </span>usize
     }
 
-    <span class="doccomment">/// Removes `val` from `block`&#39;s parameters by a standard linear time list removal which
-    /// preserves ordering. Also updates the values&#39; data.
+    <span class="doccomment">/// Removes `val` from `block`'s parameters by a standard linear time list removal which
+    /// preserves ordering. Also updates the values' data.
     </span><span class="kw">pub fn </span>remove_block_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: Value) {
         <span class="kw">let </span>(block, num) =
             <span class="kw">if let </span>ValueData::Param { num, block, .. } = ValueData::from(<span class="self">self</span>.values[val]) {
                 (block, num)
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;{} must be a block parameter&quot;</span>, val);
+                <span class="macro">panic!</span>(<span class="string">"{} must be a block parameter"</span>, val);
             };
         <span class="self">self</span>.blocks[block]
             .params
@@ -2900,7 +2901,7 @@
                     <span class="kw-2">*</span>packed = data.into();
                 }
                 <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(
-                    <span class="string">&quot;{} must be a block parameter&quot;</span>,
+                    <span class="string">"{} must be a block parameter"</span>,
                     <span class="self">self</span>.blocks[block]
                         .params
                         .get(index <span class="kw">as </span>usize, <span class="kw-2">&amp;</span><span class="self">self</span>.value_lists)
@@ -2910,15 +2911,15 @@
         }
     }
 
-    <span class="doccomment">/// Append an existing value to `block`&#39;s parameters.
+    <span class="doccomment">/// Append an existing value to `block`'s parameters.
     ///
-    /// The appended value can&#39;t already be attached to something else.
+    /// The appended value can't already be attached to something else.
     ///
     /// In almost all cases, you should be using `append_block_param()` instead of this method.
     </span><span class="kw">pub fn </span>attach_block_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block, param: Value) {
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.value_is_attached(param));
         <span class="kw">let </span>num = <span class="self">self</span>.blocks[block].params.push(param, <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists);
-        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">&quot;Too many parameters on block&quot;</span>);
+        <span class="macro">debug_assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">"Too many parameters on block"</span>);
         <span class="kw">let </span>ty = <span class="self">self</span>.value_type(param);
         <span class="self">self</span>.values[param] = ValueData::Param {
             ty,
@@ -2943,7 +2944,7 @@
             <span class="kw">if let </span>ValueData::Param { num, block, .. } = ValueData::from(<span class="self">self</span>.values[old_value]) {
                 (block, num)
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;{} must be a block parameter&quot;</span>, old_value);
+                <span class="macro">panic!</span>(<span class="string">"{} must be a block parameter"</span>, old_value);
             };
         <span class="kw">let </span>new_arg = <span class="self">self</span>.make_value(ValueData::Param {
             ty: new_type,
@@ -2973,7 +2974,7 @@
 /// branches to this block must provide matching arguments, and the arguments to the entry block must
 /// match the function arguments.
 </span><span class="attr">#[derive(Clone, PartialEq, Hash)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub struct </span>BlockData {
     <span class="doccomment">/// List of parameters to this block.
     </span>params: ValueList,
@@ -2987,32 +2988,32 @@
     }
 
     <span class="doccomment">/// Get the parameters on `block`.
-    </span><span class="kw">pub fn </span>params&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pool: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ValueListPool) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Value] {
+    </span><span class="kw">pub fn </span>params&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pool: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ValueListPool) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[Value] {
         <span class="self">self</span>.params.as_slice(pool)
     }
 }
 
 <span class="doccomment">/// Object that can display an instruction.
-</span><span class="kw">pub struct </span>DisplayInst&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DataFlowGraph, Inst);
+</span><span class="kw">pub struct </span>DisplayInst&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>DataFlowGraph, Inst);
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; fmt::Display <span class="kw">for </span>DisplayInst&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; fmt::Display <span class="kw">for </span>DisplayInst&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
         <span class="kw">let </span>dfg = <span class="self">self</span>.<span class="number">0</span>;
         <span class="kw">let </span>inst = <span class="self">self</span>.<span class="number">1</span>;
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>((first, rest)) = dfg.inst_results(inst).split_first() {
-            <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, first)<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(f, <span class="string">"{}"</span>, first)<span class="question-mark">?</span>;
             <span class="kw">for </span>v <span class="kw">in </span>rest {
-                <span class="macro">write!</span>(f, <span class="string">&quot;, {}&quot;</span>, v)<span class="question-mark">?</span>;
+                <span class="macro">write!</span>(f, <span class="string">", {}"</span>, v)<span class="question-mark">?</span>;
             }
-            <span class="macro">write!</span>(f, <span class="string">&quot; = &quot;</span>)<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(f, <span class="string">" = "</span>)<span class="question-mark">?</span>;
         }
 
         <span class="kw">let </span>typevar = dfg.ctrl_typevar(inst);
         <span class="kw">if </span>typevar.is_invalid() {
-            <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, dfg.insts[inst].opcode())<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(f, <span class="string">"{}"</span>, dfg.insts[inst].opcode())<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
-            <span class="macro">write!</span>(f, <span class="string">&quot;{}.{}&quot;</span>, dfg.insts[inst].opcode(), typevar)<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(f, <span class="string">"{}.{}"</span>, dfg.insts[inst].opcode(), typevar)<span class="question-mark">?</span>;
         }
         write_operands(f, dfg, inst)
     }
@@ -3027,7 +3028,7 @@
         <span class="macro">assert_eq!</span>(
             <span class="self">self</span>.value_type(v),
             types::INVALID,
-            <span class="string">&quot;this function is only for assigning types to previously invalid values&quot;
+            <span class="string">"this function is only for assigning types to previously invalid values"
         </span>);
         <span class="self">self</span>.values[v].set_type(t);
     }
@@ -3047,7 +3048,7 @@
     }
 
     <span class="doccomment">/// Create result values for `inst`, reusing the provided detached values.
-    /// This is similar to `make_inst_results_reusing` except it&#39;s only for use
+    /// This is similar to `make_inst_results_reusing` except it's only for use
     /// in the parser, which needs to reuse previously invalid values.
     </span><span class="attr">#[cold]
     </span><span class="kw">pub fn </span>make_inst_results_for_parser(
@@ -3061,7 +3062,7 @@
         <span class="kw">for </span>ty <span class="kw">in </span>result_tys {
             <span class="kw">if </span>ty.is_dynamic_vector() {
                 <span class="self">self</span>.check_dynamic_type(ty)
-                    .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;Use of undeclared dynamic type: {}&quot;</span>, ty));
+                    .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"Use of undeclared dynamic type: {}"</span>, ty));
             }
             <span class="kw">if let </span><span class="prelude-val">Some</span>(v) = reuse_iter.next() {
                 <span class="self">self</span>.set_value_type_for_parser(v, ty);
@@ -3077,7 +3078,7 @@
     </span><span class="attr">#[cold]
     </span><span class="kw">pub fn </span>append_block_param_for_parser(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block, ty: Type, val: Value) {
         <span class="kw">let </span>num = <span class="self">self</span>.blocks[block].params.push(val, <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_lists);
-        <span class="macro">assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">&quot;Too many parameters on block&quot;</span>);
+        <span class="macro">assert!</span>(num &lt;= u16::MAX <span class="kw">as </span>usize, <span class="string">"Too many parameters on block"</span>);
         <span class="self">self</span>.values[val] = ValueData::Param {
             ty,
             num: num <span class="kw">as </span>u16,
@@ -3096,7 +3097,7 @@
         <span class="kw">let </span>ty = <span class="kw">if </span><span class="self">self</span>.values.is_valid(src) {
             <span class="self">self</span>.value_type(src)
         } <span class="kw">else </span>{
-            <span class="comment">// As a special case, if we can&#39;t resolve the aliasee yet, use INVALID
+            <span class="comment">// As a special case, if we can't resolve the aliasee yet, use INVALID
             // temporarily. It will be resolved later in parsing.
             </span>types::INVALID
         };
@@ -3106,7 +3107,7 @@
 
     <span class="doccomment">/// If `v` is already defined as an alias, return its destination value.
     /// Otherwise return None. This allows the parser to coalesce identical
-    /// alias definitions, and the printer to identify an alias&#39;s immediate target.
+    /// alias definitions, and the printer to identify an alias's immediate target.
     </span><span class="attr">#[cold]
     </span><span class="kw">pub fn </span>value_alias_dest_for_serialization(<span class="kw-2">&amp;</span><span class="self">self</span>, v: Value) -&gt; <span class="prelude-ty">Option</span>&lt;Value&gt; {
         <span class="kw">if let </span>ValueData::Alias { original, .. } = ValueData::from(<span class="self">self</span>.values[v]) {
@@ -3179,8 +3180,8 @@
         <span class="kw">let </span>inst = dfg.make_inst(idata);
 
         dfg.make_inst_results(inst, types::I32);
-        <span class="macro">assert_eq!</span>(inst.to_string(), <span class="string">&quot;inst0&quot;</span>);
-        <span class="macro">assert_eq!</span>(dfg.display_inst(inst).to_string(), <span class="string">&quot;v0 = iconst.i32 0&quot;</span>);
+        <span class="macro">assert_eq!</span>(inst.to_string(), <span class="string">"inst0"</span>);
+        <span class="macro">assert_eq!</span>(dfg.display_inst(inst).to_string(), <span class="string">"v0 = iconst.i32 0"</span>);
 
         <span class="comment">// Immutable reference resolution.
         </span>{
@@ -3215,7 +3216,7 @@
             code: TrapCode::User(<span class="number">0</span>),
         };
         <span class="kw">let </span>inst = dfg.make_inst(idata);
-        <span class="macro">assert_eq!</span>(dfg.display_inst(inst).to_string(), <span class="string">&quot;trap user0&quot;</span>);
+        <span class="macro">assert_eq!</span>(dfg.display_inst(inst).to_string(), <span class="string">"trap user0"</span>);
 
         <span class="comment">// Result slice should be empty.
         </span><span class="macro">assert_eq!</span>(dfg.inst_results(inst), <span class="kw-2">&amp;</span>[]);
@@ -3226,7 +3227,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>dfg = DataFlowGraph::new();
 
         <span class="kw">let </span>block = dfg.make_block();
-        <span class="macro">assert_eq!</span>(block.to_string(), <span class="string">&quot;block0&quot;</span>);
+        <span class="macro">assert_eq!</span>(block.to_string(), <span class="string">"block0"</span>);
         <span class="macro">assert_eq!</span>(dfg.num_block_params(block), <span class="number">0</span>);
         <span class="macro">assert_eq!</span>(dfg.block_params(block), <span class="kw-2">&amp;</span>[]);
         <span class="macro">assert!</span>(dfg.detach_block_params(block).is_empty());
@@ -3234,12 +3235,12 @@
         <span class="macro">assert_eq!</span>(dfg.block_params(block), <span class="kw-2">&amp;</span>[]);
 
         <span class="kw">let </span>arg1 = dfg.append_block_param(block, types::F32);
-        <span class="macro">assert_eq!</span>(arg1.to_string(), <span class="string">&quot;v0&quot;</span>);
+        <span class="macro">assert_eq!</span>(arg1.to_string(), <span class="string">"v0"</span>);
         <span class="macro">assert_eq!</span>(dfg.num_block_params(block), <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(dfg.block_params(block), <span class="kw-2">&amp;</span>[arg1]);
 
         <span class="kw">let </span>arg2 = dfg.append_block_param(block, types::I16);
-        <span class="macro">assert_eq!</span>(arg2.to_string(), <span class="string">&quot;v1&quot;</span>);
+        <span class="macro">assert_eq!</span>(arg2.to_string(), <span class="string">"v1"</span>);
         <span class="macro">assert_eq!</span>(dfg.num_block_params(block), <span class="number">2</span>);
         <span class="macro">assert_eq!</span>(dfg.block_params(block), <span class="kw-2">&amp;</span>[arg1, arg2]);
 

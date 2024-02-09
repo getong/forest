@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-proto-0.24.0/src/udp/udp_client_stream.rs`."><title>udp_client_stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_proto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-proto-0.24.0/src/udp/udp_client_stream.rs`."><title>udp_client_stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_proto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -435,7 +436,7 @@
 ///
 /// This stream will create a new UDP socket for every request. This is to avoid potential cache
 ///   poisoning during use by UDP based attacks.
-</span><span class="attr">#[must_use = <span class="string">&quot;futures do nothing unless polled&quot;</span>]
+</span><span class="attr">#[must_use = <span class="string">"futures do nothing unless polled"</span>]
 </span><span class="kw">pub struct </span>UdpClientStream&lt;S, MF = NoopMessageFinalizer&gt;
 <span class="kw">where
     </span>S: Send,
@@ -449,7 +450,7 @@
     marker: PhantomData&lt;S&gt;,
 }
 
-<span class="kw">impl</span>&lt;S: UdpSocket + Send + <span class="lifetime">&#39;static</span>&gt; UdpClientStream&lt;S, NoopMessageFinalizer&gt; {
+<span class="kw">impl</span>&lt;S: UdpSocket + Send + <span class="lifetime">'static</span>&gt; UdpClientStream&lt;S, NoopMessageFinalizer&gt; {
     <span class="doccomment">/// it is expected that the resolver wrapper will be responsible for creating and managing
     ///  new UdpClients such that each new client would have a random port (reduce chance of cache
     ///  poisoning)
@@ -492,7 +493,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;S: UdpSocket + Send + <span class="lifetime">&#39;static</span>, MF: MessageFinalizer&gt; UdpClientStream&lt;S, MF&gt; {
+<span class="kw">impl</span>&lt;S: UdpSocket + Send + <span class="lifetime">'static</span>, MF: MessageFinalizer&gt; UdpClientStream&lt;S, MF&gt; {
     <span class="doccomment">/// Constructs a new UdpStream for a client to the specified SocketAddr.
     ///
     /// # Arguments
@@ -572,8 +573,8 @@
 }
 
 <span class="kw">impl</span>&lt;S: Send, MF: MessageFinalizer&gt; Display <span class="kw">for </span>UdpClientStream&lt;S, MF&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(formatter, <span class="string">&quot;UDP({})&quot;</span>, <span class="self">self</span>.name_server)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(formatter, <span class="string">"UDP({})"</span>, <span class="self">self</span>.name_server)
     }
 }
 
@@ -585,12 +586,12 @@
     Standard.sample(<span class="kw-2">&amp;mut </span>rand)
 }
 
-<span class="kw">impl</span>&lt;S: DnsUdpSocket + Send + <span class="lifetime">&#39;static</span>, MF: MessageFinalizer&gt; DnsRequestSender
+<span class="kw">impl</span>&lt;S: DnsUdpSocket + Send + <span class="lifetime">'static</span>, MF: MessageFinalizer&gt; DnsRequestSender
     <span class="kw">for </span>UdpClientStream&lt;S, MF&gt;
 {
     <span class="kw">fn </span>send_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>message: DnsRequest) -&gt; DnsResponseStream {
         <span class="kw">if </span><span class="self">self</span>.is_shutdown {
-            <span class="macro">panic!</span>(<span class="string">&quot;can not send messages after stream is shutdown&quot;</span>)
+            <span class="macro">panic!</span>(<span class="string">"can not send messages after stream is shutdown"</span>)
         }
 
         <span class="comment">// associated the ID for this request, b/c this connection is unique to socket port, the ID
@@ -599,7 +600,7 @@
 
         <span class="kw">let </span>now = <span class="kw">match </span>SystemTime::now().duration_since(UNIX_EPOCH) {
             <span class="prelude-val">Ok</span>(now) =&gt; now.as_secs(),
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span>ProtoError::from(<span class="string">&quot;Current time is before the Unix epoch.&quot;</span>).into(),
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span>ProtoError::from(<span class="string">"Current time is before the Unix epoch."</span>).into(),
         };
 
         <span class="comment">// TODO: truncates u64 to u32, error on overflow?
@@ -611,7 +612,7 @@
                 <span class="kw">match </span>message.finalize::&lt;MF&gt;(signer.borrow(), now) {
                     <span class="prelude-val">Ok</span>(answer_verifier) =&gt; verifier = answer_verifier,
                     <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;could not sign message: {}&quot;</span>, e);
+                        <span class="macro">debug!</span>(<span class="string">"could not sign message: {}"</span>, e);
                         <span class="kw">return </span>e.into();
                     }
                 }
@@ -632,10 +633,10 @@
         <span class="kw">let </span>message = SerialMessage::new(bytes, <span class="self">self</span>.name_server);
 
         <span class="macro">debug!</span>(
-            <span class="string">&quot;final message: {}&quot;</span>,
+            <span class="string">"final message: {}"</span>,
             message
                 .to_message()
-                .expect(<span class="string">&quot;bizarre we just made this message&quot;</span>)
+                .expect(<span class="string">"bizarre we just made this message"</span>)
         );
         <span class="kw">let </span>creator = <span class="self">self</span>.creator.clone();
         <span class="kw">let </span>addr = message.addr();
@@ -660,12 +661,12 @@
     }
 }
 
-<span class="comment">// TODO: is this impl necessary? there&#39;s nothing being driven here...
+<span class="comment">// TODO: is this impl necessary? there's nothing being driven here...
 </span><span class="kw">impl</span>&lt;S: Send, MF: MessageFinalizer&gt; Stream <span class="kw">for </span>UdpClientStream&lt;S, MF&gt; {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;(), ProtoError&gt;;
 
-    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
-        <span class="comment">// Technically the Stream doesn&#39;t actually do anything.
+    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+        <span class="comment">// Technically the Stream doesn't actually do anything.
         </span><span class="kw">if </span><span class="self">self</span>.is_shutdown {
             Poll::Ready(<span class="prelude-val">None</span>)
         } <span class="kw">else </span>{
@@ -690,8 +691,8 @@
 <span class="kw">impl</span>&lt;S: Send + Unpin, MF: MessageFinalizer&gt; Future <span class="kw">for </span>UdpClientConnect&lt;S, MF&gt; {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;UdpClientStream&lt;S, MF&gt;, ProtoError&gt;;
 
-    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-        <span class="comment">// TODO: this doesn&#39;t need to be a future?
+    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="comment">// TODO: this doesn't need to be a future?
         </span>Poll::Ready(<span class="prelude-val">Ok</span>(UdpClientStream::&lt;S, MF&gt; {
             name_server: <span class="self">self</span>.name_server,
             is_shutdown: <span class="bool-val">false</span>,
@@ -716,14 +717,14 @@
 
     <span class="kw">if </span>bytes.len() != len_sent {
         <span class="kw">return </span><span class="prelude-val">Err</span>(ProtoError::from(<span class="macro">format!</span>(
-            <span class="string">&quot;Not all bytes of message sent, {} of {}&quot;</span>,
+            <span class="string">"Not all bytes of message sent, {} of {}"</span>,
             len_sent,
             bytes.len()
         )));
     }
 
     <span class="comment">// Create the receive buffer.
-    </span><span class="macro">trace!</span>(<span class="string">&quot;creating UDP receive buffer with size {recv_buf_size}&quot;</span>);
+    </span><span class="macro">trace!</span>(<span class="string">"creating UDP receive buffer with size {recv_buf_size}"</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>recv_buf = <span class="macro">vec!</span>[<span class="number">0</span>; recv_buf_size];
 
     <span class="comment">// TODO: limit the max number of attempted messages? this relies on a timeout to die...
@@ -738,7 +739,7 @@
 
         <span class="kw">if </span>src != request_target {
             <span class="macro">warn!</span>(
-                <span class="string">&quot;ignoring response from {} because it does not match name_server: {}.&quot;</span>,
+                <span class="string">"ignoring response from {} because it does not match name_server: {}."</span>,
                 src, request_target,
             );
 
@@ -751,7 +752,7 @@
         </span><span class="kw">match </span>Message::from_vec(<span class="kw-2">&amp;</span>buffer) {
             <span class="prelude-val">Ok</span>(message) =&gt; {
                 <span class="kw">if </span>msg_id == message.id() {
-                    <span class="macro">debug!</span>(<span class="string">&quot;received message id: {}&quot;</span>, message.id());
+                    <span class="macro">debug!</span>(<span class="string">"received message id: {}"</span>, message.id());
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>verifier) = verifier {
                         <span class="kw">return </span>verifier(<span class="kw-2">&amp;</span>buffer);
                     } <span class="kw">else </span>{
@@ -760,7 +761,7 @@
                 } <span class="kw">else </span>{
                     <span class="comment">// on wrong id, attempted poison?
                     </span><span class="macro">warn!</span>(
-                        <span class="string">&quot;expected message id: {} got: {}, dropped&quot;</span>,
+                        <span class="string">"expected message id: {} got: {}, dropped"</span>,
                         msg_id,
                         message.id()
                     );
@@ -771,7 +772,7 @@
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="comment">// on errors deserializing, continue
                 </span><span class="macro">warn!</span>(
-                    <span class="string">&quot;dropped malformed message waiting for id: {} err: {}&quot;</span>,
+                    <span class="string">"dropped malformed message waiting for id: {} err: {}"</span>,
                     msg_id, e
                 );
 
@@ -782,18 +783,18 @@
 }
 
 <span class="attr">#[cfg(test)]
-#[cfg(feature = <span class="string">&quot;tokio-runtime&quot;</span>)]
+#[cfg(feature = <span class="string">"tokio-runtime"</span>)]
 </span><span class="kw">mod </span>tests {
     <span class="attr">#![allow(clippy::dbg_macro, clippy::print_stdout)]
     </span><span class="kw">use </span><span class="kw">crate</span>::tests::udp_client_stream_test;
-    <span class="attr">#[cfg(not(target_os = <span class="string">&quot;linux&quot;</span>))]
+    <span class="attr">#[cfg(not(target_os = <span class="string">"linux"</span>))]
     </span><span class="kw">use </span>std::net::Ipv6Addr;
     <span class="kw">use </span>std::net::{IpAddr, Ipv4Addr};
     <span class="kw">use </span>tokio::{net::UdpSocket <span class="kw">as </span>TokioUdpSocket, runtime::Runtime};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_udp_client_stream_ipv4() {
-        <span class="kw">let </span>io_loop = Runtime::new().expect(<span class="string">&quot;failed to create tokio runtime&quot;</span>);
+        <span class="kw">let </span>io_loop = Runtime::new().expect(<span class="string">"failed to create tokio runtime"</span>);
         udp_client_stream_test::&lt;TokioUdpSocket, Runtime&gt;(
             IpAddr::V4(Ipv4Addr::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             io_loop,
@@ -801,9 +802,9 @@
     }
 
     <span class="attr">#[test]
-    #[cfg(not(target_os = <span class="string">&quot;linux&quot;</span>))] </span><span class="comment">// ignored until Travis-CI fixes IPv6
+    #[cfg(not(target_os = <span class="string">"linux"</span>))] </span><span class="comment">// ignored until Travis-CI fixes IPv6
     </span><span class="kw">fn </span>test_udp_client_stream_ipv6() {
-        <span class="kw">let </span>io_loop = Runtime::new().expect(<span class="string">&quot;failed to create tokio runtime&quot;</span>);
+        <span class="kw">let </span>io_loop = Runtime::new().expect(<span class="string">"failed to create tokio runtime"</span>);
         udp_client_stream_test::&lt;TokioUdpSocket, Runtime&gt;(
             IpAddr::V6(Ipv6Addr::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             io_loop,

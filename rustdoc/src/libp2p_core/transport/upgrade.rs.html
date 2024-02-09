@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-core-0.41.2/src/transport/upgrade.rs`."><title>upgrade.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="libp2p_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-core-0.41.2/src/transport/upgrade.rs`."><title>upgrade.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="libp2p_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -619,7 +620,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2017-2019 Parity Technologies (UK) Ltd.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the &quot;Software&quot;),
+// copy of this software and associated documentation files (the "Software"),
 // to deal in the Software without restriction, including without limitation
 // the rights to use, copy, modify, merge, publish, distribute, sublicense,
 // and/or sell copies of the Software, and to permit persons to whom the
@@ -628,7 +629,7 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -692,7 +693,7 @@
 <span class="kw">impl</span>&lt;T&gt; Builder&lt;T&gt;
 <span class="kw">where
     </span>T: Transport,
-    T::Error: <span class="lifetime">&#39;static</span>,
+    T::Error: <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Creates a `Builder` over the given (base) `Transport`.
     </span><span class="kw">pub fn </span>new(inner: T, version: upgrade::Version) -&gt; Builder&lt;T&gt; {
@@ -721,7 +722,7 @@
         D: AsyncRead + AsyncWrite + Unpin,
         U: InboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = (PeerId, D), Error = E&gt;,
         U: OutboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = (PeerId, D), Error = E&gt; + Clone,
-        E: Error + <span class="lifetime">&#39;static</span>,
+        E: Error + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>version = <span class="self">self</span>.version;
         Authenticated(Builder::new(
@@ -759,7 +760,7 @@
 {
     <span class="kw">type </span>Output = &lt;EitherUpgrade&lt;C, U&gt; <span class="kw">as </span>Future&gt;::Output;
 
-    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.project();
         Future::poll(this.inner, cx)
     }
@@ -788,7 +789,7 @@
 {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;(PeerId, M), UpgradeError&lt;E&gt;&gt;;
 
-    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.project();
         <span class="kw">let </span>m = <span class="kw">match </span><span class="macro">ready!</span>(Future::poll(this.upgrade, cx)) {
             <span class="prelude-val">Ok</span>(m) =&gt; m,
@@ -797,7 +798,7 @@
         <span class="kw">let </span>i = this
             .peer_id
             .take()
-            .expect(<span class="string">&quot;Multiplex future polled after completion.&quot;</span>);
+            .expect(<span class="string">"Multiplex future polled after completion."</span>);
         Poll::Ready(<span class="prelude-val">Ok</span>((i, m)))
     }
 }
@@ -809,7 +810,7 @@
 <span class="kw">impl</span>&lt;T&gt; Authenticated&lt;T&gt;
 <span class="kw">where
     </span>T: Transport,
-    T::Error: <span class="lifetime">&#39;static</span>,
+    T::Error: <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Applies an arbitrary upgrade.
     ///
@@ -828,7 +829,7 @@
         D: AsyncRead + AsyncWrite + Unpin,
         U: InboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = D, Error = E&gt;,
         U: OutboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = D, Error = E&gt; + Clone,
-        E: Error + <span class="lifetime">&#39;static</span>,
+        E: Error + <span class="lifetime">'static</span>,
     {
         Authenticated(Builder::new(
             Upgrade::new(<span class="self">self</span>.<span class="number">0</span>.inner, upgrade),
@@ -856,7 +857,7 @@
         M: StreamMuxer,
         U: InboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = M, Error = E&gt;,
         U: OutboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = M, Error = E&gt; + Clone,
-        E: Error + <span class="lifetime">&#39;static</span>,
+        E: Error + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>version = <span class="self">self</span>.<span class="number">0</span>.version;
         Multiplexed(<span class="self">self</span>.<span class="number">0</span>.inner.and_then(<span class="kw">move </span>|(i, c), endpoint| {
@@ -889,8 +890,8 @@
         M: StreamMuxer,
         U: InboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = M, Error = E&gt;,
         U: OutboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = M, Error = E&gt; + Clone,
-        E: Error + <span class="lifetime">&#39;static</span>,
-        F: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; FnOnce(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>PeerId, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ConnectedPoint) -&gt; U + Clone,
+        E: Error + <span class="lifetime">'static</span>,
+        F: <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; FnOnce(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>PeerId, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ConnectedPoint) -&gt; U + Clone,
     {
         <span class="kw">let </span>version = <span class="self">self</span>.<span class="number">0</span>.version;
         Multiplexed(<span class="self">self</span>.<span class="number">0</span>.inner.and_then(<span class="kw">move </span>|(peer_id, c), endpoint| {
@@ -914,13 +915,13 @@
     /// the [`StreamMuxer`] and custom transport errors.
     </span><span class="kw">pub fn </span>boxed&lt;M&gt;(<span class="self">self</span>) -&gt; <span class="kw">super</span>::Boxed&lt;(PeerId, StreamMuxerBox)&gt;
     <span class="kw">where
-        </span>T: Transport&lt;Output = (PeerId, M)&gt; + Sized + Send + Unpin + <span class="lifetime">&#39;static</span>,
-        T::Dial: Send + <span class="lifetime">&#39;static</span>,
-        T::ListenerUpgrade: Send + <span class="lifetime">&#39;static</span>,
+        </span>T: Transport&lt;Output = (PeerId, M)&gt; + Sized + Send + Unpin + <span class="lifetime">'static</span>,
+        T::Dial: Send + <span class="lifetime">'static</span>,
+        T::ListenerUpgrade: Send + <span class="lifetime">'static</span>,
         T::Error: Send + Sync,
-        M: StreamMuxer + Send + <span class="lifetime">&#39;static</span>,
-        M::Substream: Send + <span class="lifetime">&#39;static</span>,
-        M::Error: Send + Sync + <span class="lifetime">&#39;static</span>,
+        M: StreamMuxer + Send + <span class="lifetime">'static</span>,
+        M::Substream: Send + <span class="lifetime">'static</span>,
+        M::Error: Send + Sync + <span class="lifetime">'static</span>,
     {
         boxed(<span class="self">self</span>.map(|(i, m), <span class="kw">_</span>| (i, StreamMuxerBox::new(m))))
     }
@@ -982,7 +983,7 @@
 
     <span class="kw">fn </span>poll(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;TransportEvent&lt;<span class="self">Self</span>::ListenerUpgrade, <span class="self">Self</span>::Error&gt;&gt; {
         <span class="self">self</span>.project().<span class="number">0</span>.poll(cx)
     }
@@ -1011,11 +1012,11 @@
 <span class="kw">impl</span>&lt;T, C, D, U, E&gt; Transport <span class="kw">for </span>Upgrade&lt;T, U&gt;
 <span class="kw">where
     </span>T: Transport&lt;Output = (PeerId, C)&gt;,
-    T::Error: <span class="lifetime">&#39;static</span>,
+    T::Error: <span class="lifetime">'static</span>,
     C: AsyncRead + AsyncWrite + Unpin,
     U: InboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = D, Error = E&gt;,
     U: OutboundConnectionUpgrade&lt;Negotiated&lt;C&gt;, Output = D, Error = E&gt; + Clone,
-    E: Error + <span class="lifetime">&#39;static</span>,
+    E: Error + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Output = (PeerId, D);
     <span class="kw">type </span>Error = TransportUpgradeError&lt;T::Error, E&gt;;
@@ -1067,7 +1068,7 @@
 
     <span class="kw">fn </span>poll(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;TransportEvent&lt;<span class="self">Self</span>::ListenerUpgrade, <span class="self">Self</span>::Error&gt;&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.project();
         <span class="kw">let </span>upgrade = this.upgrade.clone();
@@ -1096,20 +1097,20 @@
     </span>T: fmt::Display,
     U: fmt::Display,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
-            TransportUpgradeError::Transport(e) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Transport error: {e}&quot;</span>),
-            TransportUpgradeError::Upgrade(e) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Upgrade error: {e}&quot;</span>),
+            TransportUpgradeError::Transport(e) =&gt; <span class="macro">write!</span>(f, <span class="string">"Transport error: {e}"</span>),
+            TransportUpgradeError::Upgrade(e) =&gt; <span class="macro">write!</span>(f, <span class="string">"Upgrade error: {e}"</span>),
         }
     }
 }
 
 <span class="kw">impl</span>&lt;T, U&gt; Error <span class="kw">for </span>TransportUpgradeError&lt;T, U&gt;
 <span class="kw">where
-    </span>T: Error + <span class="lifetime">&#39;static</span>,
-    U: Error + <span class="lifetime">&#39;static</span>,
+    </span>T: Error + <span class="lifetime">'static</span>,
+    U: Error + <span class="lifetime">'static</span>,
 {
-    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Error + <span class="lifetime">&#39;static</span>)&gt; {
+    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Error + <span class="lifetime">'static</span>)&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             TransportUpgradeError::Transport(e) =&gt; <span class="prelude-val">Some</span>(e),
             TransportUpgradeError::Upgrade(e) =&gt; <span class="prelude-val">Some</span>(e),
@@ -1136,8 +1137,8 @@
 {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;(PeerId, D), TransportUpgradeError&lt;F::Error, U::Error&gt;&gt;;
 
-    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-        <span class="comment">// We use a `this` variable because the compiler can&#39;t mutably borrow multiple times
+    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="comment">// We use a `this` variable because the compiler can't mutably borrow multiple times
         // accross a `Deref`.
         </span><span class="kw">let </span>this = <span class="kw-2">&amp;mut *</span><span class="self">self</span>;
 
@@ -1152,7 +1153,7 @@
                     };
                     <span class="kw">let </span>u = up
                         .take()
-                        .expect(<span class="string">&quot;DialUpgradeFuture is constructed with Either::Left(Some).&quot;</span>);
+                        .expect(<span class="string">"DialUpgradeFuture is constructed with Either::Left(Some)."</span>);
                     future::Either::Right((i, apply_outbound(c, u, upgrade::Version::V1)))
                 }
                 future::Either::Right((i, <span class="kw-2">ref mut </span>up)) =&gt; {
@@ -1195,8 +1196,8 @@
 {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;(PeerId, D), TransportUpgradeError&lt;F::Error, U::Error&gt;&gt;;
 
-    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-        <span class="comment">// We use a `this` variable because the compiler can&#39;t mutably borrow multiple times
+    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="comment">// We use a `this` variable because the compiler can't mutably borrow multiple times
         // accross a `Deref`.
         </span><span class="kw">let </span>this = <span class="kw-2">&amp;mut *</span><span class="self">self</span>;
 
@@ -1211,7 +1212,7 @@
                     };
                     <span class="kw">let </span>u = up
                         .take()
-                        .expect(<span class="string">&quot;ListenerUpgradeFuture is constructed with Either::Left(Some).&quot;</span>);
+                        .expect(<span class="string">"ListenerUpgradeFuture is constructed with Either::Left(Some)."</span>);
                     future::Either::Right((i, apply_inbound(c, u)))
                 }
                 future::Either::Right((i, <span class="kw-2">ref mut </span>up)) =&gt; {

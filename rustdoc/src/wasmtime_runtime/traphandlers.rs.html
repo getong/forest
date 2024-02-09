@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/traphandlers.rs`."><title>traphandlers.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/traphandlers.rs`."><title>traphandlers.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -809,9 +810,9 @@
         </span><span class="kw">struct </span>WasmtimeLongjmp;
 
         <span class="attr">#[wasmtime_versioned_export_macros::versioned_export]
-        </span><span class="kw">unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>wasmtime_setjmp(
+        </span><span class="kw">unsafe extern </span><span class="string">"C" </span><span class="kw">fn </span>wasmtime_setjmp(
             _jmp_buf: <span class="kw-2">*mut *const </span>u8,
-            callback: <span class="kw">extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>u8, <span class="kw-2">*mut </span>VMContext),
+            callback: <span class="kw">extern </span><span class="string">"C" </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>u8, <span class="kw-2">*mut </span>VMContext),
             payload: <span class="kw-2">*mut </span>u8,
             callee: <span class="kw-2">*mut </span>VMContext,
         ) -&gt; i32 {
@@ -832,17 +833,17 @@
         }
 
         <span class="attr">#[wasmtime_versioned_export_macros::versioned_export]
-        </span><span class="kw">unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>wasmtime_longjmp(_jmp_buf: <span class="kw-2">*const </span>u8) -&gt; ! {
+        </span><span class="kw">unsafe extern </span><span class="string">"C" </span><span class="kw">fn </span>wasmtime_longjmp(_jmp_buf: <span class="kw-2">*const </span>u8) -&gt; ! {
             std::panic::panic_any(WasmtimeLongjmp)
         }
     } <span class="kw">else </span>{
-        <span class="attr">#[link(name = <span class="string">&quot;wasmtime-helpers&quot;</span>)]
-        </span><span class="kw">extern </span><span class="string">&quot;C&quot; </span>{
+        <span class="attr">#[link(name = <span class="string">"wasmtime-helpers"</span>)]
+        </span><span class="kw">extern </span><span class="string">"C" </span>{
             <span class="attr">#[wasmtime_versioned_export_macros::versioned_link]
             #[allow(improper_ctypes)]
             </span><span class="kw">fn </span>wasmtime_setjmp(
                 jmp_buf: <span class="kw-2">*mut *const </span>u8,
-                callback: <span class="kw">extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>u8, <span class="kw-2">*mut </span>VMContext),
+                callback: <span class="kw">extern </span><span class="string">"C" </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>u8, <span class="kw-2">*mut </span>VMContext),
                 payload: <span class="kw-2">*mut </span>u8,
                 callee: <span class="kw-2">*mut </span>VMContext,
             ) -&gt; i32;
@@ -853,13 +854,13 @@
 }
 
 <span class="macro">cfg_if::cfg_if! </span>{
-    <span class="kw">if </span><span class="attr">#[cfg(all(target_os = <span class="string">&quot;macos&quot;</span>, not(feature = <span class="string">&quot;posix-signals-on-macos&quot;</span>)))] </span>{
+    <span class="kw">if </span><span class="attr">#[cfg(all(target_os = <span class="string">"macos"</span>, not(feature = <span class="string">"posix-signals-on-macos"</span>)))] </span>{
         <span class="kw">mod </span>macos;
         <span class="kw">use </span>macos <span class="kw">as </span>sys;
     } <span class="kw">else if </span><span class="attr">#[cfg(unix)] </span>{
         <span class="kw">mod </span>unix;
         <span class="kw">use </span>unix <span class="kw">as </span>sys;
-    } <span class="kw">else if </span><span class="attr">#[cfg(target_os = <span class="string">&quot;windows&quot;</span>)] </span>{
+    } <span class="kw">else if </span><span class="attr">#[cfg(target_os = <span class="string">"windows"</span>)] </span>{
         <span class="kw">mod </span>windows;
         <span class="kw">use </span>windows <span class="kw">as </span>sys;
     }
@@ -880,7 +881,7 @@
 ///
 /// This function must not only be called globally once before entering
 /// WebAssembly but it must also be called once-per-thread that enters
-/// WebAssembly. Currently in wasmtime&#39;s integration this function is called on
+/// WebAssembly. Currently in wasmtime's integration this function is called on
 /// creation of a `Engine`.
 ///
 /// The `is_wasm_pc` argument is used when a trap happens to determine if a
@@ -1037,9 +1038,9 @@
 <span class="doccomment">/// Catches any wasm traps that happen within the execution of `closure`,
 /// returning them as a `Result`.
 ///
-/// Highly unsafe since `closure` won&#39;t have any dtors run.
-</span><span class="kw">pub unsafe fn </span>catch_traps&lt;<span class="lifetime">&#39;a</span>, F&gt;(
-    signal_handler: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
+/// Highly unsafe since `closure` won't have any dtors run.
+</span><span class="kw">pub unsafe fn </span>catch_traps&lt;<span class="lifetime">'a</span>, F&gt;(
+    signal_handler: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">'static</span>&gt;&gt;,
     capture_backtrace: bool,
     capture_coredump: bool,
     caller: <span class="kw-2">*mut </span>VMContext,
@@ -1070,7 +1071,7 @@
         <span class="prelude-val">Err</span>((UnwindReason::Panic(panic), <span class="kw">_</span>, <span class="kw">_</span>)) =&gt; std::panic::resume_unwind(panic),
     };
 
-    <span class="kw">extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>call_closure&lt;F&gt;(payload: <span class="kw-2">*mut </span>u8, caller: <span class="kw-2">*mut </span>VMContext)
+    <span class="kw">extern </span><span class="string">"C" </span><span class="kw">fn </span>call_closure&lt;F&gt;(payload: <span class="kw-2">*mut </span>u8, caller: <span class="kw-2">*mut </span>VMContext)
     <span class="kw">where
         </span>F: FnMut(<span class="kw-2">*mut </span>VMContext),
     {
@@ -1089,7 +1090,7 @@
         <span class="kw">pub</span>(<span class="kw">super</span>) unwind:
             UnsafeCell&lt;MaybeUninit&lt;(UnwindReason, <span class="prelude-ty">Option</span>&lt;Backtrace&gt;, <span class="prelude-ty">Option</span>&lt;CoreDumpStack&gt;)&gt;&gt;,
         <span class="kw">pub</span>(<span class="kw">super</span>) jmp_buf: Cell&lt;<span class="kw-2">*const </span>u8&gt;,
-        <span class="kw">pub</span>(<span class="kw">super</span>) signal_handler: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
+        <span class="kw">pub</span>(<span class="kw">super</span>) signal_handler: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">'static</span>&gt;&gt;,
         <span class="kw">pub</span>(<span class="kw">super</span>) capture_backtrace: bool,
         <span class="kw">pub</span>(<span class="kw">super</span>) capture_coredump: bool,
 
@@ -1101,7 +1102,7 @@
         // for the *previous* `CallThreadState` for this same store/limits. Our
         // *current* last wasm PC/FP/SP are saved in `self.limits`. We save a
         // copy of the old registers here because the `VMRuntimeLimits`
-        // typically doesn&#39;t change across nested calls into Wasm (i.e. they are
+        // typically doesn't change across nested calls into Wasm (i.e. they are
         // typically calls back into the same store and `self.limits ==
         // self.prev.limits`) and we must to maintain the list of
         // contiguous-Wasm-frames stack regions for backtracing purposes.
@@ -1123,7 +1124,7 @@
     <span class="kw">impl </span>CallThreadState {
         <span class="attr">#[inline]
         </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(
-            signal_handler: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
+            signal_handler: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">'static</span>&gt;&gt;,
             capture_backtrace: bool,
             capture_coredump: bool,
             limits: <span class="kw-2">*const </span>VMRuntimeLimits,
@@ -1201,8 +1202,8 @@
 
     <span class="kw">fn </span>unwind_with(<span class="kw-2">&amp;</span><span class="self">self</span>, reason: UnwindReason) -&gt; ! {
         <span class="kw">let </span>(backtrace, coredump) = <span class="kw">match </span>reason {
-            <span class="comment">// Panics don&#39;t need backtraces. There is nowhere to attach the
-            // hypothetical backtrace to and it doesn&#39;t really make sense to try
+            <span class="comment">// Panics don't need backtraces. There is nowhere to attach the
+            // hypothetical backtrace to and it doesn't really make sense to try
             // in the first place since this is a Rust problem rather than a
             // Wasm problem.
             </span>UnwindReason::Panic(<span class="kw">_</span>)
@@ -1229,22 +1230,22 @@
     /// * `call_handler` - a closure used to invoke the platform-specific
     ///   signal handler for each instance, if available.
     ///
-    /// Attempts to handle the trap if it&#39;s a wasm trap. Returns a few
+    /// Attempts to handle the trap if it's a wasm trap. Returns a few
     /// different things:
     ///
-    /// * null - the trap didn&#39;t look like a wasm trap and should continue as a
+    /// * null - the trap didn't look like a wasm trap and should continue as a
     ///   trap
     /// * 1 as a pointer - the trap was handled by a custom trap handler on an
     ///   instance, and the trap handler should quickly return.
     /// * a different pointer - a jmp_buf buffer to longjmp to, meaning that
     ///   the wasm trap was succesfully handled.
-    </span><span class="attr">#[cfg_attr(target_os = <span class="string">&quot;macos&quot;</span>, allow(dead_code))] </span><span class="comment">// macOS is more raw and doesn&#39;t use this
+    </span><span class="attr">#[cfg_attr(target_os = <span class="string">"macos"</span>, allow(dead_code))] </span><span class="comment">// macOS is more raw and doesn't use this
     </span><span class="kw">fn </span>take_jmp_buf_if_trap(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         pc: <span class="kw-2">*const </span>u8,
         call_handler: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;</span>SignalHandler) -&gt; bool,
     ) -&gt; <span class="kw-2">*const </span>u8 {
-        <span class="comment">// If we haven&#39;t even started to handle traps yet, bail out.
+        <span class="comment">// If we haven't even started to handle traps yet, bail out.
         </span><span class="kw">if </span><span class="self">self</span>.jmp_buf.get().is_null() {
             <span class="kw">return </span>ptr::null();
         }
@@ -1258,7 +1259,7 @@
             }
         }
 
-        <span class="comment">// If this fault wasn&#39;t in wasm code, then it&#39;s not our problem
+        <span class="comment">// If this fault wasn't in wasm code, then it's not our problem
         </span><span class="kw">if unsafe </span>{ !IS_WASM_PC(pc <span class="kw">as </span>usize) } {
             <span class="kw">return </span>ptr::null();
         }
@@ -1306,7 +1307,7 @@
         <span class="prelude-val">Some</span>(CoreDumpStack::new(<span class="kw-2">&amp;</span><span class="self">self</span>, limits, trap_pc_and_fp))
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>iter&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="self">Self</span>&gt; + <span class="lifetime">&#39;a </span>{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>iter&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="self">Self</span>&gt; + <span class="lifetime">'a </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="prelude-val">Some</span>(<span class="self">self</span>);
         std::iter::from_fn(<span class="kw">move </span>|| {
             <span class="kw">let </span>this = state<span class="question-mark">?</span>;
@@ -1316,9 +1317,9 @@
     }
 }
 
-<span class="kw">struct </span>ResetCell&lt;<span class="lifetime">&#39;a</span>, T: Copy&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Cell&lt;T&gt;, T);
+<span class="kw">struct </span>ResetCell&lt;<span class="lifetime">'a</span>, T: Copy&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Cell&lt;T&gt;, T);
 
-<span class="kw">impl</span>&lt;T: Copy&gt; Drop <span class="kw">for </span>ResetCell&lt;<span class="lifetime">&#39;_</span>, T&gt; {
+<span class="kw">impl</span>&lt;T: Copy&gt; Drop <span class="kw">for </span>ResetCell&lt;<span class="lifetime">'_</span>, T&gt; {
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.<span class="number">0</span>.set(<span class="self">self</span>.<span class="number">1</span>);
@@ -1341,7 +1342,7 @@
     // thread local variable and has functions to access the variable.
     //
     // Note that this is specially done to fully encapsulate that the accessors
-    // for tls may or may not be inlined. Wasmtime&#39;s async support employs stack
+    // for tls may or may not be inlined. Wasmtime's async support employs stack
     // switching which can resume execution on different OS threads. This means
     // that borrows of our TLS pointer must never live across accesses because
     // otherwise the access may be split across two threads and cause unsafety.
@@ -1358,15 +1359,15 @@
 
         <span class="kw">pub type </span>Ptr = <span class="kw-2">*const </span>CallThreadState;
 
-        <span class="comment">// The first entry here is the `Ptr` which is what&#39;s used as part of the
+        <span class="comment">// The first entry here is the `Ptr` which is what's used as part of the
         // public interface of this module. The second entry is a boolean which
         // allows the runtime to perform per-thread initialization if necessary
         // for handling traps (e.g. setting up ports on macOS and sigaltstack on
         // Unix).
         </span><span class="macro">thread_local!</span>(<span class="kw">static </span>PTR: Cell&lt;(Ptr, bool)&gt; = <span class="kw">const </span>{ Cell::new((ptr::null(), <span class="bool-val">false</span>)) });
 
-        <span class="attr">#[cfg_attr(feature = <span class="string">&quot;async&quot;</span>, inline(never))] </span><span class="comment">// see module docs
-        </span><span class="attr">#[cfg_attr(not(feature = <span class="string">&quot;async&quot;</span>), inline)]
+        <span class="attr">#[cfg_attr(feature = <span class="string">"async"</span>, inline(never))] </span><span class="comment">// see module docs
+        </span><span class="attr">#[cfg_attr(not(feature = <span class="string">"async"</span>), inline)]
         </span><span class="kw">pub fn </span>replace(val: Ptr) -&gt; Ptr {
             PTR.with(|p| {
                 <span class="comment">// When a new value is configured that means that we may be
@@ -1383,8 +1384,8 @@
 
         <span class="doccomment">/// Eagerly initialize thread-local runtime functionality. This will be performed
         /// lazily by the runtime if users do not perform it eagerly.
-        </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;async&quot;</span>, inline(never))] </span><span class="comment">// see module docs
-        </span><span class="attr">#[cfg_attr(not(feature = <span class="string">&quot;async&quot;</span>), inline)]
+        </span><span class="attr">#[cfg_attr(feature = <span class="string">"async"</span>, inline(never))] </span><span class="comment">// see module docs
+        </span><span class="attr">#[cfg_attr(not(feature = <span class="string">"async"</span>), inline)]
         </span><span class="kw">pub fn </span>initialize() {
             PTR.with(|p| {
                 <span class="kw">let </span>(state, initialized) = p.get();
@@ -1396,8 +1397,8 @@
             })
         }
 
-        <span class="attr">#[cfg_attr(feature = <span class="string">&quot;async&quot;</span>, inline(never))] </span><span class="comment">// see module docs
-        </span><span class="attr">#[cfg_attr(not(feature = <span class="string">&quot;async&quot;</span>), inline)]
+        <span class="attr">#[cfg_attr(feature = <span class="string">"async"</span>, inline(never))] </span><span class="comment">// see module docs
+        </span><span class="attr">#[cfg_attr(not(feature = <span class="string">"async"</span>), inline)]
         </span><span class="kw">pub fn </span>get() -&gt; Ptr {
             PTR.with(|p| p.get().<span class="number">0</span>)
         }
@@ -1406,11 +1407,11 @@
     <span class="kw">pub use </span>raw::initialize <span class="kw">as </span>tls_eager_initialize;
 
     <span class="doccomment">/// Opaque state used to persist the state of the `CallThreadState`
-    /// activations associated with a fiber stack that&#39;s used as part of an
+    /// activations associated with a fiber stack that's used as part of an
     /// async wasm call.
     </span><span class="kw">pub struct </span>AsyncWasmCallState {
         <span class="comment">// The head of a linked list of activations that are currently present
-        // on an async call&#39;s fiber stack. This pointer points to the oldest
+        // on an async call's fiber stack. This pointer points to the oldest
         // activation frame where the `prev` links internally link to younger
         // activation frames.
         //
@@ -1427,11 +1428,11 @@
             }
         }
 
-        <span class="doccomment">/// Pushes the saved state of this wasm&#39;s call onto the current thread&#39;s
+        <span class="doccomment">/// Pushes the saved state of this wasm's call onto the current thread's
         /// state.
         ///
         /// This will iterate over the linked list of states stored within
-        /// `self` and push them sequentially onto the current thread&#39;s
+        /// `self` and push them sequentially onto the current thread's
         /// activation list.
         ///
         /// The returned `PreviousAsyncWasmCallState` captures the state of this
@@ -1443,7 +1444,7 @@
         ///
         /// Must be carefully coordinated with
         /// `PreviousAsyncWasmCallState::restore` and fiber switches to ensure
-        /// that this doesn&#39;t push stale data and the data is popped
+        /// that this doesn't push stale data and the data is popped
         /// appropriately.
         </span><span class="kw">pub unsafe fn </span>push(<span class="self">self</span>) -&gt; PreviousAsyncWasmCallState {
             <span class="comment">// Our `state` pointer is a linked list of oldest-to-youngest so by
@@ -1468,7 +1469,7 @@
         ///
         /// This is used when exiting a future in Wasmtime to assert that the
         /// current CallThreadState pointer does not point within the stack
-        /// we&#39;re leaving (e.g.  allocated for a fiber).
+        /// we're leaving (e.g.  allocated for a fiber).
         </span><span class="kw">pub fn </span>assert_current_state_not_in_range(range: Range&lt;usize&gt;) {
             <span class="kw">let </span>p = raw::get() <span class="kw">as </span>usize;
             <span class="macro">assert!</span>(p &lt; range.start || range.end &lt; p);
@@ -1488,7 +1489,7 @@
     }
 
     <span class="kw">impl </span>PreviousAsyncWasmCallState {
-        <span class="doccomment">/// Pops a fiber&#39;s linked list of activations and stores them in
+        <span class="doccomment">/// Pops a fiber's linked list of activations and stores them in
         /// `AsyncWasmCallState`.
         ///
         /// This will pop the top activation of this current thread continuously
@@ -1511,7 +1512,7 @@
                     <span class="kw">break </span>ret;
                 }
 
-                <span class="comment">// Pop this activation from the current thread&#39;s TLS state, and
+                <span class="comment">// Pop this activation from the current thread's TLS state, and
                 // then afterwards push it onto our own linked list within this
                 // `AsyncWasmCallState`. Note that the linked list in `AsyncWasmCallState` is stored
                 // in reverse order so a subsequent `push` later on pushes
@@ -1527,7 +1528,7 @@
 
     <span class="kw">impl </span>Drop <span class="kw">for </span>PreviousAsyncWasmCallState {
         <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-            <span class="macro">panic!</span>(<span class="string">&quot;must be consumed with `restore`&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"must be consumed with `restore`"</span>);
         }
     }
 
@@ -1536,11 +1537,11 @@
     /// this is recursively called again.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>set&lt;R&gt;(state: <span class="kw-2">&amp;mut </span>CallThreadState, closure: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span>CallThreadState) -&gt; R) -&gt; R {
-        <span class="kw">struct </span>Reset&lt;<span class="lifetime">&#39;a</span>&gt; {
-            state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>CallThreadState,
+        <span class="kw">struct </span>Reset&lt;<span class="lifetime">'a</span>&gt; {
+            state: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>CallThreadState,
         }
 
-        <span class="kw">impl </span>Drop <span class="kw">for </span>Reset&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="kw">impl </span>Drop <span class="kw">for </span>Reset&lt;<span class="lifetime">'_</span>&gt; {
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
                 <span class="kw">unsafe </span>{

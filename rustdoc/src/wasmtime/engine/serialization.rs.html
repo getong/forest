@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/engine/serialization.rs`."><title>serialization.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/engine/serialization.rs`."><title>serialization.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -631,11 +632,11 @@
 //! configuration data which is embedded into compiled artifacts of Wasmtime.
 //!
 //! The data serialized here is used to double-check that when a module is
-//! loaded from one host onto another that it&#39;s compatible with the target host.
+//! loaded from one host onto another that it's compatible with the target host.
 //! Additionally though this data is the first data read from a precompiled
-//! artifact so it&#39;s &quot;extra hardened&quot; to provide reasonable-ish error messages
+//! artifact so it's "extra hardened" to provide reasonable-ish error messages
 //! for mismatching wasmtime versions. Once something successfully deserializes
-//! here it&#39;s assumed it&#39;s meant for this wasmtime so error messages are in
+//! here it's assumed it's meant for this wasmtime so error messages are in
 //! general much worse afterwards.
 //!
 //! Wasmtime AOT artifacts are ELF files so the data for the engine here is
@@ -663,14 +664,14 @@
 
 <span class="kw">const </span>VERSION: u8 = <span class="number">0</span>;
 
-<span class="doccomment">/// Produces a blob of bytes by serializing the `engine`&#39;s configuration data to
+<span class="doccomment">/// Produces a blob of bytes by serializing the `engine`'s configuration data to
 /// be checked, perhaps in a different process, with the `check_compatible`
 /// method below.
 ///
 /// The blob of bytes is inserted into the object file specified to become part
 /// of the final compiled artifact.
-</span><span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
-</span><span class="kw">pub fn </span>append_compiler_info(engine: <span class="kw-2">&amp;</span>Engine, obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">&#39;_</span>&gt;) {
+</span><span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
+</span><span class="kw">pub fn </span>append_compiler_info(engine: <span class="kw-2">&amp;</span>Engine, obj: <span class="kw-2">&amp;mut </span>Object&lt;<span class="lifetime">'_</span>&gt;) {
     <span class="kw">let </span>section = obj.add_section(
         obj.segment_name(StandardSegment::Data).to_vec(),
         obj::ELF_WASM_ENGINE.as_bytes().to_vec(),
@@ -679,14 +680,14 @@
     <span class="kw">let </span><span class="kw-2">mut </span>data = Vec::new();
     data.push(VERSION);
     <span class="kw">let </span>version = <span class="kw">match </span><span class="kw-2">&amp;</span>engine.config().module_version {
-        ModuleVersionStrategy::WasmtimeVersion =&gt; <span class="macro">env!</span>(<span class="string">&quot;CARGO_PKG_VERSION&quot;</span>),
+        ModuleVersionStrategy::WasmtimeVersion =&gt; <span class="macro">env!</span>(<span class="string">"CARGO_PKG_VERSION"</span>),
         ModuleVersionStrategy::Custom(c) =&gt; c,
-        ModuleVersionStrategy::None =&gt; <span class="string">&quot;&quot;</span>,
+        ModuleVersionStrategy::None =&gt; <span class="string">""</span>,
     };
     <span class="comment">// This precondition is checked in Config::module_version:
     </span><span class="macro">assert!</span>(
         version.len() &lt; <span class="number">256</span>,
-        <span class="string">&quot;package version must be less than 256 bytes&quot;
+        <span class="string">"package version must be less than 256 bytes"
     </span>);
     data.push(version.len() <span class="kw">as </span>u8);
     data.extend_from_slice(version.as_bytes());
@@ -708,15 +709,15 @@
     // the `e_flags` field should indicate whether `expected` matches or not.
     //
     // Note that errors generated here could mean that a precompiled module was
-    // loaded as a component, or vice versa, both of which aren&#39;t supposed to
+    // loaded as a component, or vice versa, both of which aren't supposed to
     // work.
     //
-    // Ideally we&#39;d only `File::parse` once and avoid the linear
-    // `section_by_name` search here but the general serialization code isn&#39;t
-    // structured well enough to make this easy and additionally it&#39;s not really
-    // a perf issue right now so doing that is left for another day&#39;s
+    // Ideally we'd only `File::parse` once and avoid the linear
+    // `section_by_name` search here but the general serialization code isn't
+    // structured well enough to make this easy and additionally it's not really
+    // a perf issue right now so doing that is left for another day's
     // refactoring.
-    </span><span class="kw">let </span>obj = File::parse(<span class="kw-2">&amp;</span>mmap[..]).context(<span class="string">&quot;failed to parse precompiled artifact as an ELF&quot;</span>)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>obj = File::parse(<span class="kw-2">&amp;</span>mmap[..]).context(<span class="string">"failed to parse precompiled artifact as an ELF"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>expected_e_flags = <span class="kw">match </span>expected {
         ObjectKind::Module =&gt; obj::EF_WASMTIME_MODULE,
         ObjectKind::Component =&gt; obj::EF_WASMTIME_COMPONENT,
@@ -727,25 +728,25 @@
             abi_version: <span class="number">0</span>,
             e_flags,
         } <span class="kw">if </span>e_flags == expected_e_flags =&gt; {}
-        <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;incompatible object file format&quot;</span>),
+        <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"incompatible object file format"</span>),
     }
 
     <span class="kw">let </span>data = obj
         .section_by_name(obj::ELF_WASM_ENGINE)
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;failed to find section `{}`&quot;</span>, obj::ELF_WASM_ENGINE))<span class="question-mark">?
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"failed to find section `{}`"</span>, obj::ELF_WASM_ENGINE))<span class="question-mark">?
         </span>.data()<span class="question-mark">?</span>;
     <span class="kw">let </span>(first, data) = data
         .split_first()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;invalid engine section&quot;</span>))<span class="question-mark">?</span>;
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"invalid engine section"</span>))<span class="question-mark">?</span>;
     <span class="kw">if </span><span class="kw-2">*</span>first != VERSION {
-        <span class="macro">bail!</span>(<span class="string">&quot;mismatched version in engine section&quot;</span>);
+        <span class="macro">bail!</span>(<span class="string">"mismatched version in engine section"</span>);
     }
     <span class="kw">let </span>(len, data) = data
         .split_first()
-        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;invalid engine section&quot;</span>))<span class="question-mark">?</span>;
+        .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"invalid engine section"</span>))<span class="question-mark">?</span>;
     <span class="kw">let </span>len = usize::from(<span class="kw-2">*</span>len);
     <span class="kw">let </span>(version, data) = <span class="kw">if </span>data.len() &lt; len + <span class="number">1 </span>{
-        <span class="macro">bail!</span>(<span class="string">&quot;engine section too small&quot;</span>)
+        <span class="macro">bail!</span>(<span class="string">"engine section too small"</span>)
     } <span class="kw">else </span>{
         data.split_at(len)
     };
@@ -753,9 +754,9 @@
     <span class="kw">match </span><span class="kw-2">&amp;</span>engine.config().module_version {
         ModuleVersionStrategy::WasmtimeVersion =&gt; {
             <span class="kw">let </span>version = std::str::from_utf8(version)<span class="question-mark">?</span>;
-            <span class="kw">if </span>version != <span class="macro">env!</span>(<span class="string">&quot;CARGO_PKG_VERSION&quot;</span>) {
+            <span class="kw">if </span>version != <span class="macro">env!</span>(<span class="string">"CARGO_PKG_VERSION"</span>) {
                 <span class="macro">bail!</span>(
-                    <span class="string">&quot;Module was compiled with incompatible Wasmtime version &#39;{}&#39;&quot;</span>,
+                    <span class="string">"Module was compiled with incompatible Wasmtime version '{}'"</span>,
                     version
                 );
             }
@@ -764,7 +765,7 @@
             <span class="kw">let </span>version = std::str::from_utf8(<span class="kw-2">&amp;</span>version)<span class="question-mark">?</span>;
             <span class="kw">if </span>version != v {
                 <span class="macro">bail!</span>(
-                    <span class="string">&quot;Module was compiled with incompatible version &#39;{}&#39;&quot;</span>,
+                    <span class="string">"Module was compiled with incompatible version '{}'"</span>,
                     version
                 );
             }
@@ -783,7 +784,7 @@
     features: WasmFeatures,
 }
 
-<span class="comment">// This exists because `wasmparser::WasmFeatures` isn&#39;t serializable
+<span class="comment">// This exists because `wasmparser::WasmFeatures` isn't serializable
 </span><span class="attr">#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 </span><span class="kw">struct </span>WasmFeatures {
     reference_types: bool,
@@ -802,7 +803,7 @@
 }
 
 <span class="kw">impl </span>Metadata {
-    <span class="attr">#[cfg(any(feature = <span class="string">&quot;cranelift&quot;</span>, feature = <span class="string">&quot;winch&quot;</span>))]
+    <span class="attr">#[cfg(any(feature = <span class="string">"cranelift"</span>, feature = <span class="string">"winch"</span>))]
     </span><span class="kw">fn </span>new(engine: <span class="kw-2">&amp;</span>Engine) -&gt; Metadata {
         <span class="kw">let </span>wasmparser::WasmFeatures {
             reference_types,
@@ -822,7 +823,7 @@
             gc,
             component_model_values,
 
-            <span class="comment">// Always on; we don&#39;t currently have knobs for these.
+            <span class="comment">// Always on; we don't currently have knobs for these.
             </span>mutable_global: <span class="kw">_</span>,
             saturating_float_to_int: <span class="kw">_</span>,
             sign_extension: <span class="kw">_</span>,
@@ -872,14 +873,14 @@
 
         <span class="kw">if </span>module_target.architecture != engine_target.architecture {
             <span class="macro">bail!</span>(
-                <span class="string">&quot;Module was compiled for architecture &#39;{}&#39;&quot;</span>,
+                <span class="string">"Module was compiled for architecture '{}'"</span>,
                 module_target.architecture
             );
         }
 
         <span class="kw">if </span>module_target.operating_system != engine_target.operating_system {
             <span class="macro">bail!</span>(
-                <span class="string">&quot;Module was compiled for operating system &#39;{}&#39;&quot;</span>,
+                <span class="string">"Module was compiled for operating system '{}'"</span>,
                 module_target.operating_system
             );
         }
@@ -892,7 +893,7 @@
             engine
                 .check_compatible_with_shared_flag(name, val)
                 .map_err(|s| anyhow::Error::msg(s))
-                .context(<span class="string">&quot;compilation settings of module incompatible with native host&quot;</span>)<span class="question-mark">?</span>;
+                .context(<span class="string">"compilation settings of module incompatible with native host"</span>)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -902,7 +903,7 @@
             engine
                 .check_compatible_with_isa_flag(name, val)
                 .map_err(|s| anyhow::Error::msg(s))
-                .context(<span class="string">&quot;compilation settings of module incompatible with native host&quot;</span>)<span class="question-mark">?</span>;
+                .context(<span class="string">"compilation settings of module incompatible with native host"</span>)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -913,7 +914,7 @@
         }
 
         <span class="macro">bail!</span>(
-            <span class="string">&quot;Module was compiled with a {} of &#39;{}&#39; but &#39;{}&#39; is expected for the host&quot;</span>,
+            <span class="string">"Module was compiled with a {} of '{}' but '{}' is expected for the host"</span>,
             feature,
             found,
             expected
@@ -926,10 +927,10 @@
         }
 
         <span class="macro">bail!</span>(
-            <span class="string">&quot;Module was compiled {} {} but it {} enabled for the host&quot;</span>,
-            <span class="kw">if </span>found { <span class="string">&quot;with&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;without&quot; </span>},
+            <span class="string">"Module was compiled {} {} but it {} enabled for the host"</span>,
+            <span class="kw">if </span>found { <span class="string">"with" </span>} <span class="kw">else </span>{ <span class="string">"without" </span>},
             feature,
-            <span class="kw">if </span>expected { <span class="string">&quot;is&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;is not&quot; </span>}
+            <span class="kw">if </span>expected { <span class="string">"is" </span>} <span class="kw">else </span>{ <span class="string">"is not" </span>}
         );
     }
 
@@ -947,66 +948,66 @@
             relaxed_simd_deterministic,
             tail_callable,
 
-            <span class="comment">// This doesn&#39;t affect compilation, it&#39;s just a runtime setting.
+            <span class="comment">// This doesn't affect compilation, it's just a runtime setting.
             </span>dynamic_memory_growth_reserve: <span class="kw">_</span>,
 
             <span class="comment">// This does technically affect compilation but modules with/without
             // trap information can be loaded into engines with the opposite
-            // setting just fine (it&#39;s just a section in the compiled file and
-            // whether it&#39;s present or not)
+            // setting just fine (it's just a section in the compiled file and
+            // whether it's present or not)
             </span>generate_address_map: <span class="kw">_</span>,
 
-            <span class="comment">// Just a debugging aid, doesn&#39;t affect functionality at all.
+            <span class="comment">// Just a debugging aid, doesn't affect functionality at all.
             </span>debug_adapter_modules: <span class="kw">_</span>,
         } = <span class="self">self</span>.tunables;
 
         <span class="self">Self</span>::check_int(
             static_memory_bound,
             other.static_memory_bound,
-            <span class="string">&quot;static memory bound&quot;</span>,
+            <span class="string">"static memory bound"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_int(
             static_memory_offset_guard_size,
             other.static_memory_offset_guard_size,
-            <span class="string">&quot;static memory guard size&quot;</span>,
+            <span class="string">"static memory guard size"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_int(
             dynamic_memory_offset_guard_size,
             other.dynamic_memory_offset_guard_size,
-            <span class="string">&quot;dynamic memory guard size&quot;</span>,
+            <span class="string">"dynamic memory guard size"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             generate_native_debuginfo,
             other.generate_native_debuginfo,
-            <span class="string">&quot;debug information support&quot;</span>,
+            <span class="string">"debug information support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             parse_wasm_debuginfo,
             other.parse_wasm_debuginfo,
-            <span class="string">&quot;WebAssembly backtrace support&quot;</span>,
+            <span class="string">"WebAssembly backtrace support"</span>,
         )<span class="question-mark">?</span>;
-        <span class="self">Self</span>::check_bool(consume_fuel, other.consume_fuel, <span class="string">&quot;fuel support&quot;</span>)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::check_bool(consume_fuel, other.consume_fuel, <span class="string">"fuel support"</span>)<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             epoch_interruption,
             other.epoch_interruption,
-            <span class="string">&quot;epoch interruption&quot;</span>,
+            <span class="string">"epoch interruption"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             static_memory_bound_is_maximum,
             other.static_memory_bound_is_maximum,
-            <span class="string">&quot;pooling allocation support&quot;</span>,
+            <span class="string">"pooling allocation support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             guard_before_linear_memory,
             other.guard_before_linear_memory,
-            <span class="string">&quot;guard before linear memory&quot;</span>,
+            <span class="string">"guard before linear memory"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             relaxed_simd_deterministic,
             other.relaxed_simd_deterministic,
-            <span class="string">&quot;relaxed simd deterministic semantics&quot;</span>,
+            <span class="string">"relaxed simd deterministic semantics"</span>,
         )<span class="question-mark">?</span>;
-        <span class="self">Self</span>::check_bool(tail_callable, other.tail_callable, <span class="string">&quot;WebAssembly tail calls&quot;</span>)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::check_bool(tail_callable, other.tail_callable, <span class="string">"WebAssembly tail calls"</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -1031,55 +1032,55 @@
         <span class="self">Self</span>::check_bool(
             reference_types,
             other.reference_types,
-            <span class="string">&quot;WebAssembly reference types support&quot;</span>,
+            <span class="string">"WebAssembly reference types support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             multi_value,
             other.multi_value,
-            <span class="string">&quot;WebAssembly multi-value support&quot;</span>,
+            <span class="string">"WebAssembly multi-value support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             bulk_memory,
             other.bulk_memory,
-            <span class="string">&quot;WebAssembly bulk memory support&quot;</span>,
+            <span class="string">"WebAssembly bulk memory support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             component_model,
             other.component_model,
-            <span class="string">&quot;WebAssembly component model support&quot;</span>,
+            <span class="string">"WebAssembly component model support"</span>,
         )<span class="question-mark">?</span>;
-        <span class="self">Self</span>::check_bool(simd, other.simd, <span class="string">&quot;WebAssembly SIMD support&quot;</span>)<span class="question-mark">?</span>;
-        <span class="self">Self</span>::check_bool(tail_call, other.tail_call, <span class="string">&quot;WebAssembly tail calls support&quot;</span>)<span class="question-mark">?</span>;
-        <span class="self">Self</span>::check_bool(threads, other.threads, <span class="string">&quot;WebAssembly threads support&quot;</span>)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::check_bool(simd, other.simd, <span class="string">"WebAssembly SIMD support"</span>)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::check_bool(tail_call, other.tail_call, <span class="string">"WebAssembly tail calls support"</span>)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::check_bool(threads, other.threads, <span class="string">"WebAssembly threads support"</span>)<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             multi_memory,
             other.multi_memory,
-            <span class="string">&quot;WebAssembly multi-memory support&quot;</span>,
+            <span class="string">"WebAssembly multi-memory support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             exceptions,
             other.exceptions,
-            <span class="string">&quot;WebAssembly exceptions support&quot;</span>,
+            <span class="string">"WebAssembly exceptions support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             memory64,
             other.memory64,
-            <span class="string">&quot;WebAssembly 64-bit memory support&quot;</span>,
+            <span class="string">"WebAssembly 64-bit memory support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             extended_const,
             other.extended_const,
-            <span class="string">&quot;WebAssembly extended-const support&quot;</span>,
+            <span class="string">"WebAssembly extended-const support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             relaxed_simd,
             other.relaxed_simd,
-            <span class="string">&quot;WebAssembly relaxed-simd support&quot;</span>,
+            <span class="string">"WebAssembly relaxed-simd support"</span>,
         )<span class="question-mark">?</span>;
         <span class="self">Self</span>::check_bool(
             function_references,
             other.function_references,
-            <span class="string">&quot;WebAssembly function-references support&quot;</span>,
+            <span class="string">"WebAssembly function-references support"</span>,
         )<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
@@ -1095,13 +1096,13 @@
     </span><span class="kw">fn </span>test_architecture_mismatch() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>engine = Engine::default();
         <span class="kw">let </span><span class="kw-2">mut </span>metadata = Metadata::new(<span class="kw-2">&amp;</span>engine);
-        metadata.target = <span class="string">&quot;unknown-generic-linux&quot;</span>.to_string();
+        metadata.target = <span class="string">"unknown-generic-linux"</span>.to_string();
 
         <span class="kw">match </span>metadata.check_compatible(<span class="kw-2">&amp;</span>engine) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(
                 e.to_string(),
-                <span class="string">&quot;Module was compiled for architecture &#39;unknown&#39;&quot;</span>,
+                <span class="string">"Module was compiled for architecture 'unknown'"</span>,
             ),
         }
 
@@ -1114,7 +1115,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>metadata = Metadata::new(<span class="kw-2">&amp;</span>engine);
 
         metadata.target = <span class="macro">format!</span>(
-            <span class="string">&quot;{}-generic-unknown&quot;</span>,
+            <span class="string">"{}-generic-unknown"</span>,
             target_lexicon::Triple::host().architecture
         );
 
@@ -1122,7 +1123,7 @@
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(
                 e.to_string(),
-                <span class="string">&quot;Module was compiled for operating system &#39;unknown&#39;&quot;</span>,
+                <span class="string">"Module was compiled for operating system 'unknown'"</span>,
             ),
         }
 
@@ -1135,18 +1136,18 @@
         <span class="kw">let </span><span class="kw-2">mut </span>metadata = Metadata::new(<span class="kw-2">&amp;</span>engine);
 
         metadata.shared_flags.insert(
-            <span class="string">&quot;preserve_frame_pointers&quot;</span>.to_string(),
+            <span class="string">"preserve_frame_pointers"</span>.to_string(),
             FlagValue::Bool(<span class="bool-val">false</span>),
         );
 
         <span class="kw">match </span>metadata.check_compatible(<span class="kw-2">&amp;</span>engine) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, e).starts_with(
-                <span class="string">&quot;\
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert!</span>(<span class="macro">format!</span>(<span class="string">"{:?}"</span>, e).starts_with(
+                <span class="string">"\
 compilation settings of module incompatible with native host
 
 Caused by:
-    setting \&quot;preserve_frame_pointers\&quot; is configured to Bool(false) which is not supported&quot;
+    setting \"preserve_frame_pointers\" is configured to Bool(false) which is not supported"
             </span>)),
         }
 
@@ -1160,16 +1161,16 @@ Caused by:
 
         metadata
             .isa_flags
-            .insert(<span class="string">&quot;not_a_flag&quot;</span>.to_string(), FlagValue::Bool(<span class="bool-val">true</span>));
+            .insert(<span class="string">"not_a_flag"</span>.to_string(), FlagValue::Bool(<span class="bool-val">true</span>));
 
         <span class="kw">match </span>metadata.check_compatible(<span class="kw-2">&amp;</span>engine) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert!</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, e).starts_with(
-                <span class="string">&quot;\
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert!</span>(<span class="macro">format!</span>(<span class="string">"{:?}"</span>, e).starts_with(
+                <span class="string">"\
 compilation settings of module incompatible with native host
 
 Caused by:
-    cannot test if target-specific flag \&quot;not_a_flag\&quot; is available at runtime&quot;</span>,
+    cannot test if target-specific flag \"not_a_flag\" is available at runtime"</span>,
             )),
         }
 
@@ -1186,7 +1187,7 @@ Caused by:
 
         <span class="kw">match </span>metadata.check_compatible(<span class="kw-2">&amp;</span>engine) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(e.to_string(), <span class="string">&quot;Module was compiled with a static memory guard size of &#39;0&#39; but &#39;2147483648&#39; is expected for the host&quot;</span>),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(e.to_string(), <span class="string">"Module was compiled with a static memory guard size of '0' but '2147483648' is expected for the host"</span>),
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -1205,7 +1206,7 @@ Caused by:
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(
                 e.to_string(),
-                <span class="string">&quot;Module was compiled without epoch interruption but it is enabled for the host&quot;
+                <span class="string">"Module was compiled without epoch interruption but it is enabled for the host"
             </span>),
         }
 
@@ -1220,7 +1221,7 @@ Caused by:
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(
                 e.to_string(),
-                <span class="string">&quot;Module was compiled with epoch interruption but it is not enabled for the host&quot;
+                <span class="string">"Module was compiled with epoch interruption but it is not enabled for the host"
             </span>),
         }
 
@@ -1238,7 +1239,7 @@ Caused by:
 
         <span class="kw">match </span>metadata.check_compatible(<span class="kw-2">&amp;</span>engine) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(e.to_string(), <span class="string">&quot;Module was compiled without WebAssembly SIMD support but it is enabled for the host&quot;</span>),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(e.to_string(), <span class="string">"Module was compiled without WebAssembly SIMD support but it is enabled for the host"</span>),
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>config = Config::new();
@@ -1250,7 +1251,7 @@ Caused by:
 
         <span class="kw">match </span>metadata.check_compatible(<span class="kw-2">&amp;</span>engine) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(e.to_string(), <span class="string">&quot;Module was compiled with WebAssembly SIMD support but it is not enabled for the host&quot;</span>),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">assert_eq!</span>(e.to_string(), <span class="string">"Module was compiled with WebAssembly SIMD support but it is not enabled for the host"</span>),
         }
 
         <span class="prelude-val">Ok</span>(())

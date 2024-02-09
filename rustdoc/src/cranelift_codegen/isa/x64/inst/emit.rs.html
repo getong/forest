@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/inst/emit.rs`."><title>emit.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/inst/emit.rs`."><title>emit.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -4323,7 +4324,7 @@
     dst: Writable&lt;Reg&gt;,
     to_f64: bool,
 ) {
-    <span class="comment">// Handle an unsigned int, which is the &quot;easy&quot; case: a signed conversion will do the
+    <span class="comment">// Handle an unsigned int, which is the "easy" case: a signed conversion will do the
     // right thing.
     </span><span class="kw">let </span>op = <span class="kw">if </span>to_f64 {
         SseOpcode::Cvtsi2sd
@@ -4376,16 +4377,16 @@
 ///     instructions that require a 32-bit immediate have a short-form encoding
 ///     when the imm is in simm8 range.
 ///
-/// Rules (1), (2) and (3) don&#39;t apply for registers within address expressions
+/// Rules (1), (2) and (3) don't apply for registers within address expressions
 /// (`Addr`s).  Those are already pretty well tested, and the registers in them
-/// don&#39;t have any effect on the containing instruction (apart from possibly
+/// don't have any effect on the containing instruction (apart from possibly
 /// require REX prefix bits).
 ///
 /// When choosing registers for a test, avoid using registers with the same
-/// offset within a given group.  For example, don&#39;t use rax and r8, since they
-/// both have the lowest 3 bits as 000, and so the test won&#39;t detect errors
+/// offset within a given group.  For example, don't use rax and r8, since they
+/// both have the lowest 3 bits as 000, and so the test won't detect errors
 /// where those 3-bit register sub-fields are confused by the emitter.  Instead
-/// use (eg) rax (lo3 = 000) and r9 (lo3 = 001).  Similarly, don&#39;t use (eg) cl
+/// use (eg) rax (lo3 = 000) and r9 (lo3 = 001).  Similarly, don't use (eg) cl
 /// and bpl since they have the same offset in their group; use instead (eg) cl
 /// and sil.
 ///
@@ -4394,16 +4395,16 @@
 /// prefixes are correctly omitted.  This low-half restriction must apply to
 /// _all_ registers in the insn, even those in address expressions.
 ///
-/// Following these rules creates large numbers of test cases, but it&#39;s the
+/// Following these rules creates large numbers of test cases, but it's the
 /// only way to make the emitter reliable.
 ///
 /// Known possible improvements:
 ///
-/// * there&#39;s a shorter encoding for shl/shr/sar by a 1-bit immediate.  (Do we
+/// * there's a shorter encoding for shl/shr/sar by a 1-bit immediate.  (Do we
 ///   care?)
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>emit(
     inst: <span class="kw-2">&amp;</span>Inst,
-    allocs: <span class="kw-2">&amp;mut </span>AllocationConsumer&lt;<span class="lifetime">&#39;_</span>&gt;,
+    allocs: <span class="kw-2">&amp;mut </span>AllocationConsumer&lt;<span class="lifetime">'_</span>&gt;,
     sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;,
     info: <span class="kw-2">&amp;</span>EmitInfo,
     state: <span class="kw-2">&amp;mut </span>EmitState,
@@ -4435,7 +4436,7 @@
     </span><span class="kw">let </span>isa_requirements = inst.available_in_any_isa();
     <span class="kw">if </span>!isa_requirements.is_empty() &amp;&amp; !isa_requirements.iter().all(matches_isa_flags) {
         <span class="macro">panic!</span>(
-            <span class="string">&quot;Cannot emit inst &#39;{:?}&#39; for target; failed to match ISA requirements: {:?}&quot;</span>,
+            <span class="string">"Cannot emit inst '{:?}' for target; failed to match ISA requirements: {:?}"</span>,
             inst, isa_requirements
         )
     }
@@ -4461,7 +4462,7 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>rex = RexFlags::from(<span class="kw-2">*</span>size);
             <span class="kw">if </span><span class="kw-2">*</span>op == AluRmiROpcode::Mul {
-                <span class="comment">// We kinda freeloaded Mul into RMI_R_Op, but it doesn&#39;t fit the usual pattern, so
+                <span class="comment">// We kinda freeloaded Mul into RMI_R_Op, but it doesn't fit the usual pattern, so
                 // we have to special-case it.
                 </span><span class="kw">if </span><span class="kw-2">*</span>size == OperandSize::Size8 {
                     <span class="kw">match </span>src2 {
@@ -4487,7 +4488,7 @@
                         }
 
                         RegMemImm::Imm { .. } =&gt; {
-                            <span class="macro">panic!</span>(<span class="string">&quot;Cannot emit 8bit imul with 8bit immediate&quot;</span>);
+                            <span class="macro">panic!</span>(<span class="string">"Cannot emit 8bit imul with 8bit immediate"</span>);
                         }
                     }
                 } <span class="kw">else </span>{
@@ -4527,7 +4528,7 @@
                     AluRmiROpcode::And =&gt; (<span class="number">0x21</span>, <span class="number">0x23</span>, <span class="number">4</span>),
                     AluRmiROpcode::Or =&gt; (<span class="number">0x09</span>, <span class="number">0x0B</span>, <span class="number">1</span>),
                     AluRmiROpcode::Xor =&gt; (<span class="number">0x31</span>, <span class="number">0x33</span>, <span class="number">6</span>),
-                    AluRmiROpcode::Mul =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unreachable&quot;</span>),
+                    AluRmiROpcode::Mul =&gt; <span class="macro">panic!</span>(<span class="string">"unreachable"</span>),
                 };
 
                 <span class="kw">let </span>(opcode_r, opcode_m) = <span class="kw">if </span><span class="kw-2">*</span>size == OperandSize::Size8 {
@@ -4556,7 +4557,7 @@
 
                     RegMemImm::Mem { addr } =&gt; {
                         <span class="kw">let </span>amode = addr.finalize(state, sink);
-                        <span class="comment">// Here we revert to the &quot;normal&quot; G-E ordering.
+                        <span class="comment">// Here we revert to the "normal" G-E ordering.
                         </span>emit_std_reg_mem(sink, prefix, opcode_m, <span class="number">1</span>, reg_g, <span class="kw-2">&amp;</span>amode, rex, <span class="number">0</span>);
                     }
 
@@ -4583,7 +4584,7 @@
                             <span class="number">0x81
                         </span>};
 
-                        <span class="comment">// And also here we use the &quot;normal&quot; G-E ordering.
+                        <span class="comment">// And also here we use the "normal" G-E ordering.
                         </span><span class="kw">let </span>enc_g = int_reg_enc(reg_g);
                         emit_std_enc_enc(sink, prefix, opcode, <span class="number">1</span>, subopcode_i, enc_g, rex);
                         emit_simm(sink, imm_size, simm32);
@@ -4624,7 +4625,7 @@
                 AluRmiROpcode::And =&gt; <span class="number">0x21</span>,
                 AluRmiROpcode::Or =&gt; <span class="number">0x09</span>,
                 AluRmiROpcode::Xor =&gt; <span class="number">0x31</span>,
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unsupported read-modify-write ALU opcode&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unsupported read-modify-write ALU opcode"</span>),
             };
 
             <span class="kw">let </span>prefix = <span class="kw">if </span><span class="kw-2">*</span>size == OperandSize::Size16 {
@@ -5014,7 +5015,7 @@
             </span><span class="kw">let </span>do_op = sink.get_label();
             <span class="kw">let </span>done_label = sink.get_label();
 
-            <span class="comment">// Check if the divisor is -1, and if it isn&#39;t then immediately
+            <span class="comment">// Check if the divisor is -1, and if it isn't then immediately
             // go to the `idiv`.
             </span><span class="kw">let </span>inst = Inst::cmp_rmi_r(size, RegMemImm::imm(<span class="number">0xffffffff</span>), divisor);
             inst.emit(<span class="kw-2">&amp;</span>[], sink, info, state);
@@ -5025,7 +5026,7 @@
             // 8-bit srem and %rdx otherwise.
             //
             // Note that for 16-to-64-bit srem operations this leaves the
-            // second destination, %rax, unchanged. This isn&#39;t semantically
+            // second destination, %rax, unchanged. This isn't semantically
             // correct if a lowering actually tries to use the `dst_quotient`
             // output but for srem only the `dst_remainder` output is used for
             // now.
@@ -5103,14 +5104,14 @@
             <span class="kw">let </span>prefix = LegacyPrefixes::None;
 
             <span class="kw">let </span>(opcode, rex, size, prefix) = <span class="kw">match </span><span class="kw-2">*</span>size {
-                <span class="comment">// In the 8-bit case, we don&#39;t need to enforce REX flags via
+                <span class="comment">// In the 8-bit case, we don't need to enforce REX flags via
                 // `always_emit_if_8bit_needed()` since the destination
                 // operand is a memory operand, not a possibly 8-bit register.
                 </span>OperandSize::Size8 =&gt; (<span class="number">0xC6</span>, default_rex, bytes, prefix),
                 OperandSize::Size16 =&gt; (<span class="number">0xC7</span>, default_rex, bytes, LegacyPrefixes::_66),
                 OperandSize::Size64 =&gt; {
                     <span class="kw">if </span>!low32_will_sign_extend_to_64(<span class="kw-2">*</span>simm64) {
-                        <span class="macro">panic!</span>(<span class="string">&quot;Immediate-to-memory moves require immediate operand to sign-extend to 64 bits.&quot;</span>);
+                        <span class="macro">panic!</span>(<span class="string">"Immediate-to-memory moves require immediate operand to sign-extend to 64 bits."</span>);
                     }
 
                     (default_opcode, RexFlags::from(<span class="kw-2">*</span>size), bytes, prefix)
@@ -5172,7 +5173,7 @@
                 }
                 ExtMode::BQ =&gt; {
                     <span class="comment">// MOVZBQ is (REX.W==1) 0F B6 /r
-                    // I&#39;m not sure why the Intel manual offers different
+                    // I'm not sure why the Intel manual offers different
                     // encodings for MOVZBQ than for MOVZBL.  AIUI they should
                     // achieve the same, since MOVZBL is just going to zero out
                     // the upper half of the destination anyway.
@@ -5190,7 +5191,7 @@
                     <span class="comment">// This is just a standard 32 bit load, and we rely on the
                     // default zero-extension rule to perform the extension.
                     // Note that in reg/reg mode, gcc seems to use the swapped form R/RM, which we
-                    // don&#39;t do here, since it&#39;s the same encoding size.
+                    // don't do here, since it's the same encoding size.
                     // MOV r/m32, r32 is (REX.W==0) 8B /r
                     </span>(<span class="number">0x8B</span>, <span class="number">1</span>, RexFlags::clear_w())
                 }
@@ -5263,14 +5264,14 @@
             // saturated while leaving the ALU idle.
             //
             // To help make use of more parts of a cpu, this attempts to use
-            // `add` when it&#39;s semantically equivalent to `lea`, or otherwise
+            // `add` when it's semantically equivalent to `lea`, or otherwise
             // when the `dst` register is the same as the `base` or `index`
             // register.
             //
             // FIXME: ideally regalloc is informed of this constraint. Register
-            // allocation of `lea` should &quot;attempt&quot; to put the `base` in the
+            // allocation of `lea` should "attempt" to put the `base` in the
             // same register as `dst` but not at the expense of generating a
-            // `mov` instruction. Currently that&#39;s not possible but perhaps one
+            // `mov` instruction. Currently that's not possible but perhaps one
             // day it may be worth it.
             </span><span class="kw">match </span>amode {
                 <span class="comment">// If `base == dst` then this is `add $imm, %dst`, so encode
@@ -5316,8 +5317,8 @@
                     inst.emit(<span class="kw-2">&amp;</span>[], sink, info, state);
                 }
 
-                <span class="comment">// If `lea`&#39;s 3-operand mode is leveraged by regalloc, or if
-                // it&#39;s fancy like imm-plus-shift-plus-base, then `lea` is
+                <span class="comment">// If `lea`'s 3-operand mode is leveraged by regalloc, or if
+                // it's fancy like imm-plus-shift-plus-base, then `lea` is
                 // actually emitted.
                 </span><span class="kw">_ </span>=&gt; {
                     <span class="kw">let </span>flags = <span class="kw">match </span>size {
@@ -5468,7 +5469,7 @@
                     // SHL/SHR/SAR $ib, reg16 is 66 (REX.W==0) C1 /subopcode
                     // SHL/SHR/SAR $ib, reg32 is (REX.W==0) C1 /subopcode ib
                     // SHL/SHR/SAR $ib, reg64 is (REX.W==1) C1 /subopcode ib
-                    // When the shift amount is 1, there&#39;s an even shorter encoding, but we don&#39;t
+                    // When the shift amount is 1, there's an even shorter encoding, but we don't
                     // bother with that nicety here.
                     </span>emit_std_enc_enc(sink, prefix, opcode, <span class="number">1</span>, subopcode, enc_dst, rex_flags);
                     sink.put1(num_bits);
@@ -5498,13 +5499,13 @@
                     SseOpcode::Psrlw =&gt; (<span class="number">0x0F71</span>, <span class="number">2</span>),
                     SseOpcode::Psrld =&gt; (<span class="number">0x0F72</span>, <span class="number">2</span>),
                     SseOpcode::Psrlq =&gt; (<span class="number">0x0F73</span>, <span class="number">2</span>),
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid opcode: {}&quot;</span>, opcode),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"invalid opcode: {}"</span>, opcode),
                 };
                 <span class="kw">let </span>dst_enc = reg_enc(dst);
                 emit_std_enc_enc(sink, prefix, opcode_bytes, <span class="number">2</span>, reg_digit, dst_enc, rex);
                 <span class="kw">let </span>imm = (simm32)
                     .try_into()
-                    .expect(<span class="string">&quot;the immediate must be convertible to a u8&quot;</span>);
+                    .expect(<span class="string">"the immediate must be convertible to a u8"</span>);
                 sink.put1(imm);
             } <span class="kw">else </span>{
                 <span class="kw">let </span>opcode_bytes = <span class="kw">match </span>opcode {
@@ -5516,7 +5517,7 @@
                     SseOpcode::Psrlw =&gt; <span class="number">0x0FD1</span>,
                     SseOpcode::Psrld =&gt; <span class="number">0x0FD2</span>,
                     SseOpcode::Psrlq =&gt; <span class="number">0x0FD3</span>,
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;invalid opcode: {}&quot;</span>, opcode),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"invalid opcode: {}"</span>, opcode),
                 };
 
                 <span class="kw">match </span>src2 {
@@ -5574,7 +5575,7 @@
 
                 RegMemImm::Mem { addr } =&gt; {
                     <span class="kw">let </span>addr = <span class="kw-2">&amp;</span>addr.finalize(state, sink).with_allocs(allocs);
-                    <span class="comment">// Whereas here we revert to the &quot;normal&quot; G-E ordering for CMP.
+                    <span class="comment">// Whereas here we revert to the "normal" G-E ordering for CMP.
                     </span><span class="kw">let </span>opcode = <span class="kw">match </span>(<span class="kw-2">*</span>size, is_cmp) {
                         (OperandSize::Size8, <span class="bool-val">true</span>) =&gt; <span class="number">0x3A</span>,
                         (<span class="kw">_</span>, <span class="bool-val">true</span>) =&gt; <span class="number">0x3B</span>,
@@ -5589,7 +5590,7 @@
                     // cmp $imm, rax/eax/ax/al.
                     </span><span class="kw">let </span>use_imm8 = is_cmp &amp;&amp; low8_will_sign_extend_to_32(simm32);
 
-                    <span class="comment">// And also here we use the &quot;normal&quot; G-E ordering.
+                    <span class="comment">// And also here we use the "normal" G-E ordering.
                     </span><span class="kw">let </span>opcode = <span class="kw">if </span>is_cmp {
                         <span class="kw">if </span><span class="kw-2">*</span>size == OperandSize::Size8 {
                             <span class="number">0x80
@@ -5660,7 +5661,7 @@
                 OperandSize::Size16 =&gt; LegacyPrefixes::_66,
                 OperandSize::Size32 =&gt; LegacyPrefixes::None,
                 OperandSize::Size64 =&gt; LegacyPrefixes::None,
-                <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">&quot;invalid size spec for cmove&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">"invalid size spec for cmove"</span>),
             };
             <span class="kw">let </span>opcode = <span class="number">0x0F40 </span>+ cc.get_enc() <span class="kw">as </span>u32;
             <span class="kw">match </span>consequent.clone().to_reg_mem() {
@@ -5688,7 +5689,7 @@
             <span class="kw">let </span>consequent = consequent.clone().to_reg_mem().with_allocs(allocs);
 
             <span class="comment">// Lowering of the Select IR opcode when the input is an fcmp relies on the fact that
-            // this doesn&#39;t clobber flags. Make sure to not do so here.
+            // this doesn't clobber flags. Make sure to not do so here.
             </span><span class="kw">let </span>next = sink.get_label();
 
             <span class="comment">// Jump if cc is *not* set.
@@ -5774,13 +5775,13 @@
 
             <span class="comment">// The inline stack probe loop has 3 phases:
             //
-            // We generate the &quot;guard area&quot; register which is essentially the frame_size aligned to
+            // We generate the "guard area" register which is essentially the frame_size aligned to
             // guard_size. We copy the stack pointer and subtract the guard area from it. This
             // gets us a register that we can use to compare when looping.
             //
-            // After that we emit the loop. Essentially we just adjust the stack pointer one guard_size&#39;d
+            // After that we emit the loop. Essentially we just adjust the stack pointer one guard_size'd
             // distance at a time and then touch the stack by writing anything to it. We use the previously
-            // created &quot;guard area&quot; register to know when to stop looping.
+            // created "guard area" register to know when to stop looping.
             //
             // When we have touched all the pages that we need, we have to restore the stack pointer
             // to where it was before.
@@ -5822,8 +5823,8 @@
             );
             inst.emit(<span class="kw-2">&amp;</span>[], sink, info, state);
 
-            <span class="comment">// TODO: `mov [rsp], 0` would be better, but we don&#39;t have that instruction
-            // Probe the stack! We don&#39;t use Inst::gen_store_stack here because we need a predictable
+            <span class="comment">// TODO: `mov [rsp], 0` would be better, but we don't have that instruction
+            // Probe the stack! We don't use Inst::gen_store_stack here because we need a predictable
             // instruction size.
             // mov  [rsp], rsp
             </span><span class="kw">let </span>inst = Inst::mov_r_m(
@@ -5903,7 +5904,7 @@
             <span class="comment">// Finally, jump to the callee!
             //
             // Note: this is not `Inst::Jmp { .. }.emit(..)` because we have
-            // different metadata in this case: we don&#39;t have a label for the
+            // different metadata in this case: we don't have a label for the
             // target, but rather a function relocation.
             </span>sink.put1(<span class="number">0xE9</span>);
             <span class="comment">// The addend adjusts for the difference between the end of the instruction and the
@@ -6015,7 +6016,7 @@
             <span class="kw">let </span>cond_disp_off = cond_start + <span class="number">2</span>;
 
             sink.use_label_at_offset(cond_disp_off, <span class="kw-2">*</span>taken, LabelUse::JmpRel32);
-            <span class="comment">// Since this is not a terminator, don&#39;t enroll in the branch inversion mechanism.
+            <span class="comment">// Since this is not a terminator, don't enroll in the branch inversion mechanism.
 
             </span>sink.put1(<span class="number">0x0F</span>);
             sink.put1(<span class="number">0x80 </span>+ cc.get_enc());
@@ -6104,7 +6105,7 @@
             // emission time, because we cannot allow the regalloc to insert spills/reloads in
             // the middle; we depend on hardcoded PC-rel addressing below.
             //
-            // We don&#39;t have to worry about emitting islands, because the only label-use type has a
+            // We don't have to worry about emitting islands, because the only label-use type has a
             // maximum range of 2 GB. If we later consider using shorter-range label references,
             // this will need to be revisited.
 
@@ -6123,7 +6124,7 @@
             <span class="kw">let </span>inst = Inst::lea(Amode::rip_relative(start_of_jumptable), tmp1);
             inst.emit(<span class="kw-2">&amp;</span>[], sink, info, state);
 
-            <span class="comment">// Load value out of the jump table. It&#39;s a relative offset to the target block, so it
+            <span class="comment">// Load value out of the jump table. It's a relative offset to the target block, so it
             // might be negative; use a sign-extension.
             </span><span class="kw">let </span>inst = Inst::movsx_rm_r(
                 ExtMode::LQ,
@@ -6157,7 +6158,7 @@
                 <span class="kw">let </span>word_off = sink.cur_offset();
                 <span class="comment">// off_into_table is an addend here embedded in the label to be later patched at
                 // the end of codegen. The offset is initially relative to this jump table entry;
-                // with the extra addend, it&#39;ll be relative to the jump table&#39;s start, after
+                // with the extra addend, it'll be relative to the jump table's start, after
                 // patching.
                 </span><span class="kw">let </span>off_into_table = word_off - jt_off;
                 sink.use_label_at_offset(word_off, target, LabelUse::PCRel32);
@@ -6178,7 +6179,7 @@
             <span class="kw">let </span>trap_label = sink.defer_trap(<span class="kw-2">*</span>trap_code, state.take_stack_map());
             <span class="kw">let </span>else_label = sink.get_label();
 
-            <span class="comment">// Jump to the end if the first condition isn&#39;t true, and then if
+            <span class="comment">// Jump to the end if the first condition isn't true, and then if
             // the second condition is true go to the trap.
             </span>one_way_jmp(sink, cc1.invert(), else_label);
             one_way_jmp(sink, <span class="kw-2">*</span>cc2, trap_label);
@@ -6259,7 +6260,7 @@
                 SseOpcode::Sqrtss =&gt; (LegacyPrefixes::_F3, <span class="number">0x0F51</span>, <span class="number">2</span>),
                 SseOpcode::Sqrtsd =&gt; (LegacyPrefixes::_F2, <span class="number">0x0F51</span>, <span class="number">2</span>),
                 SseOpcode::Movddup =&gt; (LegacyPrefixes::_F2, <span class="number">0x0F12</span>, <span class="number">2</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
 
             <span class="kw">match </span>src_e {
@@ -6286,7 +6287,7 @@
                 SseOpcode::Pshufd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F70</span>, <span class="number">2</span>),
                 SseOpcode::Pshuflw =&gt; (LegacyPrefixes::_F2, <span class="number">0x0F70</span>, <span class="number">2</span>),
                 SseOpcode::Pshufhw =&gt; (LegacyPrefixes::_F3, <span class="number">0x0F70</span>, <span class="number">2</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             <span class="kw">match </span>src {
                 RegMem::Reg { reg } =&gt; {
@@ -6314,7 +6315,7 @@
                 Avx512Opcode::Vcvtudq2ps =&gt; (LegacyPrefixes::_F2, OpcodeMap::_0F, <span class="bool-val">false</span>, <span class="number">0x7a</span>),
                 Avx512Opcode::Vpabsq =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F38, <span class="bool-val">true</span>, <span class="number">0x1f</span>),
                 Avx512Opcode::Vpopcntb =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F38, <span class="bool-val">false</span>, <span class="number">0x54</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             EvexInstruction::new()
                 .length(EvexVectorLength::V128)
@@ -6339,7 +6340,7 @@
 
             <span class="kw">let </span>(opcode, opcode_ext, w) = <span class="kw">match </span>op {
                 Avx512Opcode::VpsraqImm =&gt; (<span class="number">0x72</span>, <span class="number">4</span>, <span class="bool-val">true</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             EvexInstruction::new()
                 .length(EvexVectorLength::V128)
@@ -6489,7 +6490,7 @@
                 SseOpcode::Phaddw =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3801</span>, <span class="number">3</span>),
                 SseOpcode::Phaddd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3802</span>, <span class="number">3</span>),
                 SseOpcode::Movss =&gt; (LegacyPrefixes::_F3, <span class="number">0x0F10</span>, <span class="number">2</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
 
             <span class="kw">match </span>src_e {
@@ -6522,7 +6523,7 @@
                 SseOpcode::Blendvps =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3814</span>, <span class="number">3</span>),
                 SseOpcode::Blendvpd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3815</span>, <span class="number">3</span>),
                 SseOpcode::Pblendvb =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3810</span>, <span class="number">3</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
 
             <span class="kw">match </span>src_e {
@@ -6563,7 +6564,7 @@
                         AvxOpcode::Vpsllq =&gt; (<span class="number">0x73</span>, <span class="number">6</span>, LegacyPrefixes::_66),
                         AvxOpcode::Vpsraw =&gt; (<span class="number">0x71</span>, <span class="number">4</span>, LegacyPrefixes::_66),
                         AvxOpcode::Vpsrad =&gt; (<span class="number">0x72</span>, <span class="number">4</span>, LegacyPrefixes::_66),
-                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected rmi_r_vex opcode with immediate {op:?}&quot;</span>),
+                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected rmi_r_vex opcode with immediate {op:?}"</span>),
                     };
                     VexInstruction::new()
                         .length(VexVectorLength::V128)
@@ -6695,7 +6696,7 @@
                 AvxOpcode::Vpunpckhqdq =&gt; (LP::_66, OM::_0F, <span class="number">0x6D</span>),
                 AvxOpcode::Vmovsd =&gt; (LP::_F2, OM::_0F, <span class="number">0x10</span>),
                 AvxOpcode::Vmovss =&gt; (LP::_F3, OM::_0F, <span class="number">0x10</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected rmir vex opcode {op:?}&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected rmir vex opcode {op:?}"</span>),
             };
             VexInstruction::new()
                 .length(VexVectorLength::V128)
@@ -6731,7 +6732,7 @@
                 AvxOpcode::Vinsertps =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x21</span>),
                 AvxOpcode::Vshufps =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::None, OpcodeMap::_0F, <span class="number">0xC6</span>),
                 AvxOpcode::Vpblendw =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x0E</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected rmr_imm_vex opcode {op:?}&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected rmr_imm_vex opcode {op:?}"</span>),
             };
 
             VexInstruction::new()
@@ -6768,7 +6769,7 @@
                 AvxOpcode::Vpinsrw =&gt; (<span class="bool-val">false</span>, OpcodeMap::_0F, <span class="number">0xC4</span>),
                 AvxOpcode::Vpinsrd =&gt; (<span class="bool-val">false</span>, OpcodeMap::_0F3A, <span class="number">0x22</span>),
                 AvxOpcode::Vpinsrq =&gt; (<span class="bool-val">true</span>, OpcodeMap::_0F3A, <span class="number">0x22</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected vex_pinsr opcode {op:?}&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected vex_pinsr opcode {op:?}"</span>),
             };
 
             VexInstruction::new()
@@ -6929,7 +6930,7 @@
                 AvxOpcode::Vsqrtss =&gt; (LegacyPrefixes::_F3, OpcodeMap::_0F, <span class="number">0x51</span>),
                 AvxOpcode::Vsqrtsd =&gt; (LegacyPrefixes::_F2, OpcodeMap::_0F, <span class="number">0x51</span>),
 
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected rmr_imm_vex opcode {op:?}&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected rmr_imm_vex opcode {op:?}"</span>),
             };
 
             <span class="kw">let </span>vex = VexInstruction::new()
@@ -6941,9 +6942,9 @@
                 .rm(src);
 
             <span class="comment">// These opcodes take a second operand through `vvvv` which copies
-            // the upper bits into the destination register. That&#39;s not
+            // the upper bits into the destination register. That's not
             // reflected in the CLIF instruction, however, since the SSE version
-            // doesn&#39;t have this functionality. Instead just copy whatever
+            // doesn't have this functionality. Instead just copy whatever
             // happens to already be in the destination, which at least is what
             // LLVM seems to do.
             </span><span class="kw">let </span>vex = <span class="kw">match </span>op {
@@ -6973,7 +6974,7 @@
                 AvxOpcode::Vpshufd =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F, <span class="number">0x70</span>),
                 AvxOpcode::Vroundss =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x0A</span>),
                 AvxOpcode::Vroundsd =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x0B</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected rmr_imm_vex opcode {op:?}&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected rmr_imm_vex opcode {op:?}"</span>),
             };
 
             <span class="kw">let </span>vex = VexInstruction::new()
@@ -7006,7 +7007,7 @@
                 AvxOpcode::Vmovsd =&gt; (LegacyPrefixes::_F2, OpcodeMap::_0F, <span class="number">0x11</span>),
                 AvxOpcode::Vmovups =&gt; (LegacyPrefixes::None, OpcodeMap::_0F, <span class="number">0x11</span>),
                 AvxOpcode::Vmovupd =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F, <span class="number">0x11</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             VexInstruction::new()
                 .length(VexVectorLength::V128)
@@ -7027,7 +7028,7 @@
                 AvxOpcode::Vpextrw =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x15</span>),
                 AvxOpcode::Vpextrd =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x16</span>),
                 AvxOpcode::Vpextrq =&gt; (<span class="bool-val">true</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x16</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             VexInstruction::new()
                 .length(VexVectorLength::V128)
@@ -7050,7 +7051,7 @@
                 AvxOpcode::Vpextrw =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x15</span>),
                 AvxOpcode::Vpextrd =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x16</span>),
                 AvxOpcode::Vpextrq =&gt; (<span class="bool-val">true</span>, LegacyPrefixes::_66, OpcodeMap::_0F3A, <span class="number">0x16</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             VexInstruction::new()
                 .length(VexVectorLength::V128)
@@ -7079,7 +7080,7 @@
                 AvxOpcode::Vmovmskps =&gt; (LegacyPrefixes::None, OpcodeMap::_0F, <span class="number">0x50</span>),
                 AvxOpcode::Vmovmskpd =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F, <span class="number">0x50</span>),
                 AvxOpcode::Vpmovmskb =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F, <span class="number">0xD7</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             <span class="kw">let </span>w = <span class="kw">match </span>dst_size {
                 OperandSize::Size64 =&gt; <span class="bool-val">true</span>,
@@ -7123,7 +7124,7 @@
                 </span>AvxOpcode::Vmovd | AvxOpcode::Vmovq =&gt; (LegacyPrefixes::_66, OpcodeMap::_0F, <span class="number">0x6E</span>),
                 AvxOpcode::Vcvtsi2ss =&gt; (LegacyPrefixes::_F3, OpcodeMap::_0F, <span class="number">0x2A</span>),
                 AvxOpcode::Vcvtsi2sd =&gt; (LegacyPrefixes::_F2, OpcodeMap::_0F, <span class="number">0x2A</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             <span class="kw">let </span>w = <span class="kw">match </span>src_size {
                 OperandSize::Size64 =&gt; <span class="bool-val">true</span>,
@@ -7138,7 +7139,7 @@
                 .rm(src)
                 .reg(dst.to_real_reg().unwrap().hw_enc());
             <span class="comment">// These opcodes technically take a second operand which is the
-            // upper bits to preserve during the float conversion. We don&#39;t
+            // upper bits to preserve during the float conversion. We don't
             // actually use this in this backend right now so reuse the
             // destination register. This at least matches what LLVM does.
             </span><span class="kw">if let </span>AvxOpcode::Vcvtsi2ss | AvxOpcode::Vcvtsi2sd = op {
@@ -7180,7 +7181,7 @@
                 Avx512Opcode::Vpermi2b =&gt; (<span class="bool-val">false</span>, <span class="number">0x75</span>, OpcodeMap::_0F38),
                 Avx512Opcode::Vpmullq =&gt; (<span class="bool-val">true</span>, <span class="number">0x40</span>, OpcodeMap::_0F38),
                 Avx512Opcode::Vpsraq =&gt; (<span class="bool-val">true</span>, <span class="number">0xE2</span>, OpcodeMap::_0F),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             EvexInstruction::new()
                 .length(EvexVectorLength::V128)
@@ -7272,7 +7273,7 @@
             <span class="kw">let </span>inst = Inst::jmp_known(done);
             inst.emit(<span class="kw-2">&amp;</span>[], sink, info, state);
 
-            <span class="comment">// x86&#39;s min/max are not symmetric; if either operand is a NaN, they return the
+            <span class="comment">// x86's min/max are not symmetric; if either operand is a NaN, they return the
             // read-only operand: perform an addition between the two operands, which has the
             // desired NaN propagation effects.
             </span>sink.bind_label(propagate_nan, state.ctrl_plane_mut());
@@ -7314,15 +7315,15 @@
                 SseOpcode::Pinsrd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3A22</span>, <span class="number">3</span>),
                 SseOpcode::Shufps =&gt; (LegacyPrefixes::None, <span class="number">0x0FC6</span>, <span class="number">2</span>),
                 SseOpcode::Pblendw =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3A0E</span>, <span class="number">3</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             <span class="kw">let </span>rex = RexFlags::from(<span class="kw-2">*</span>size);
             <span class="kw">let </span>regs_swapped = <span class="kw">match </span><span class="kw-2">*</span>op {
                 <span class="comment">// These opcodes (and not the SSE2 version of PEXTRW) flip the operand
-                // encoding: `dst` in ModRM&#39;s r/m, `src` in ModRM&#39;s reg field.
+                // encoding: `dst` in ModRM's r/m, `src` in ModRM's reg field.
                 </span>SseOpcode::Pextrb | SseOpcode::Pextrd =&gt; <span class="bool-val">true</span>,
-                <span class="comment">// The rest of the opcodes have the customary encoding: `dst` in ModRM&#39;s reg,
-                // `src` in ModRM&#39;s r/m field.
+                <span class="comment">// The rest of the opcodes have the customary encoding: `dst` in ModRM's reg,
+                // `src` in ModRM's r/m field.
                 </span><span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
             };
             <span class="kw">match </span>src2 {
@@ -7337,7 +7338,7 @@
                     <span class="kw">let </span>addr = <span class="kw-2">&amp;</span>addr.finalize(state, sink);
                     <span class="macro">assert!</span>(
                         !regs_swapped,
-                        <span class="string">&quot;No existing way to encode a mem argument in the ModRM r/m field.&quot;
+                        <span class="string">"No existing way to encode a mem argument in the ModRM r/m field."
                     </span>);
                     <span class="comment">// N.B.: bytes_at_end == 1, because of the `imm` byte below.
                     </span>emit_std_reg_mem(sink, prefix, opcode, len, dst, addr, rex, <span class="number">1</span>);
@@ -7363,7 +7364,7 @@
                 SseOpcode::Movsd =&gt; (LegacyPrefixes::_F2, <span class="number">0x0F11</span>),
                 SseOpcode::Movups =&gt; (LegacyPrefixes::None, <span class="number">0x0F11</span>),
                 SseOpcode::Movupd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F11</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             <span class="kw">let </span>dst = <span class="kw-2">&amp;</span>dst.finalize(state, sink);
             emit_std_reg_mem(sink, prefix, opcode, <span class="number">2</span>, src, dst, RexFlags::clear_w(), <span class="number">0</span>);
@@ -7378,7 +7379,7 @@
                 SseOpcode::Pextrw =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, <span class="number">0x0F3A15</span>),
                 SseOpcode::Pextrd =&gt; (<span class="bool-val">false</span>, LegacyPrefixes::_66, <span class="number">0x0F3A16</span>),
                 SseOpcode::Pextrq =&gt; (<span class="bool-val">true</span>, LegacyPrefixes::_66, <span class="number">0x0F3A16</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Opcode {:?} not implemented&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Opcode {:?} not implemented"</span>, op),
             };
             <span class="kw">let </span>rex = <span class="kw">if </span>w {
                 RexFlags::set_w()
@@ -7408,7 +7409,7 @@
                 SseOpcode::Movmskps =&gt; (LegacyPrefixes::None, <span class="number">0x0F50</span>, <span class="bool-val">true</span>),
                 SseOpcode::Movmskpd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F50</span>, <span class="bool-val">true</span>),
                 SseOpcode::Pmovmskb =&gt; (LegacyPrefixes::_66, <span class="number">0x0FD7</span>, <span class="bool-val">true</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected opcode {:?}&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected opcode {:?}"</span>, op),
             };
             <span class="kw">let </span>rex = RexFlags::from(<span class="kw-2">*</span>dst_size);
             <span class="kw">let </span>(src, dst) = <span class="kw">if </span>dst_first { (dst, src) } <span class="kw">else </span>{ (src, dst) };
@@ -7427,7 +7428,7 @@
                 SseOpcode::Pextrw =&gt; (LegacyPrefixes::_66, <span class="number">0x0FC5</span>, <span class="number">2</span>, OS::Size32, <span class="bool-val">true</span>),
                 SseOpcode::Pextrd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3A16</span>, <span class="number">3</span>, OS::Size32, <span class="bool-val">false</span>),
                 SseOpcode::Pextrq =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3A16</span>, <span class="number">3</span>, OS::Size64, <span class="bool-val">false</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected opcode {:?}&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected opcode {:?}"</span>, op),
             };
             <span class="kw">let </span>rex = RexFlags::from(dst_size);
             <span class="kw">let </span>(src, dst) = <span class="kw">if </span>dst_first { (dst, src) } <span class="kw">else </span>{ (src, dst) };
@@ -7451,7 +7452,7 @@
                 </span>SseOpcode::Movd | SseOpcode::Movq =&gt; (LegacyPrefixes::_66, <span class="number">0x0F6E</span>),
                 SseOpcode::Cvtsi2ss =&gt; (LegacyPrefixes::_F3, <span class="number">0x0F2A</span>),
                 SseOpcode::Cvtsi2sd =&gt; (LegacyPrefixes::_F2, <span class="number">0x0F2A</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected opcode {:?}&quot;</span>, op),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected opcode {:?}"</span>, op),
             };
             <span class="kw">let </span>rex = RexFlags::from(<span class="kw-2">*</span>src_size);
             <span class="kw">match </span>src_e {
@@ -7474,7 +7475,7 @@
                 SseOpcode::Ptest =&gt; (LegacyPrefixes::_66, <span class="number">0x0F3817</span>, <span class="number">3</span>),
                 SseOpcode::Ucomisd =&gt; (LegacyPrefixes::_66, <span class="number">0x0F2E</span>, <span class="number">2</span>),
                 SseOpcode::Ucomiss =&gt; (LegacyPrefixes::None, <span class="number">0x0F2E</span>, <span class="number">2</span>),
-                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Emit xmm cmp rm r&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Emit xmm cmp rm r"</span>),
             };
 
             <span class="kw">match </span>src {
@@ -7508,11 +7509,11 @@
             //  cmp 0, %src
             //  jl handle_negative
             //
-            //  ;; handle positive, which can&#39;t overflow
+            //  ;; handle positive, which can't overflow
             //  cvtsi2sd/cvtsi2ss %src, %dst
             //  j done
             //
-            //  ;; handle negative: see below for an explanation of what it&#39;s doing.
+            //  ;; handle negative: see below for an explanation of what it's doing.
             //  handle_negative:
             //  mov %src, %tmp_gpr1
             //  shr $1, %tmp_gpr1
@@ -7539,7 +7540,7 @@
 
             one_way_jmp(sink, CC::L, handle_negative);
 
-            <span class="comment">// Handle a positive int64, which is the &quot;easy&quot; case: a signed conversion will do the
+            <span class="comment">// Handle a positive int64, which is the "easy" case: a signed conversion will do the
             // right thing.
             </span>emit_signed_cvt(
                 sink,
@@ -7859,7 +7860,7 @@
             //
             // done:
 
-            </span><span class="macro">assert_ne!</span>(tmp_xmm, src, <span class="string">&quot;tmp_xmm clobbers src!&quot;</span>);
+            </span><span class="macro">assert_ne!</span>(tmp_xmm, src, <span class="string">"tmp_xmm clobbers src!"</span>);
 
             <span class="kw">let </span>(sub_op, cast_op, cmp_op, trunc_op) = <span class="kw">match </span>src_size {
                 OperandSize::Size32 =&gt; (
@@ -7935,7 +7936,7 @@
             one_way_jmp(sink, CC::NL, done); <span class="comment">// if dst &gt;= 0, jump to done
 
             </span><span class="kw">if </span><span class="kw-2">*</span>is_saturating {
-                <span class="comment">// The input was &quot;small&quot; (&lt; 2**(width -1)), so the only way to get an integer
+                <span class="comment">// The input was "small" (&lt; 2**(width -1)), so the only way to get an integer
                 // overflow is because the input was too small: saturate to the min value, i.e. 0.
                 </span><span class="kw">let </span>inst = Inst::alu_rmi_r(
                     <span class="kw-2">*</span>dst_size,
@@ -7973,7 +7974,7 @@
                 <span class="kw">let </span>next_is_large = sink.get_label();
                 one_way_jmp(sink, CC::NL, next_is_large); <span class="comment">// if dst &gt;= 0, jump to next_is_large
 
-                // The input was &quot;large&quot; (&gt;= 2**(width -1)), so the only way to get an integer
+                // The input was "large" (&gt;= 2**(width -1)), so the only way to get an integer
                 // overflow is because the input was too large: saturate to the max value.
                 </span><span class="kw">let </span>inst = Inst::imm(
                     OperandSize::Size64,
@@ -8119,15 +8120,15 @@
             //    movq                   %rax, %r_temp         // rax = old value, r_temp = old value
             //    `op`q                  %r_operand, %r_temp   // rax = old value, r_temp = new value
             //    lock cmpxchg{b,w,l,q}  %r_temp, (%r_address) // try to store new value
-            //    jnz again // If this is taken, rax will have a &quot;revised&quot; old value
+            //    jnz again // If this is taken, rax will have a "revised" old value
             //
             // Operand conventions: IN:  %r_address, %r_operand OUT: %rax (old
             //    value), %r_temp (trashed), %rflags (trashed)
             //
-            // In the case where the operation is &#39;xchg&#39;, the &quot;`op`q&quot;
+            // In the case where the operation is 'xchg', the "`op`q"
             // instruction is instead: movq                    %r_operand,
-            //   %r_temp so that we simply write in the destination, the &quot;2nd
-            // arg for `op`&quot;.
+            //   %r_temp so that we simply write in the destination, the "2nd
+            // arg for `op`".
             //
             // TODO: this sequence can be significantly improved (e.g., to `lock
             // &lt;op&gt;`) when it is known that `dst_old` is not used later, see
@@ -8246,7 +8247,7 @@
         }
 
         Inst::Nop { len } =&gt; {
-            <span class="comment">// These encodings can all be found in Intel&#39;s architecture manual, at the NOP
+            <span class="comment">// These encodings can all be found in Intel's architecture manual, at the NOP
             // instruction description.
             </span><span class="kw">let </span><span class="kw-2">mut </span>len = <span class="kw-2">*</span>len;
             <span class="kw">while </span>len != <span class="number">0 </span>{
@@ -8444,17 +8445,17 @@
 
 <span class="doccomment">/// Emit the common sequence used for both direct and indirect tail calls:
 ///
-/// * Copy the new frame&#39;s stack arguments over the top of our current frame.
+/// * Copy the new frame's stack arguments over the top of our current frame.
 ///
 /// * Restore the old frame pointer.
 ///
-/// * Initialize the tail callee&#39;s stack pointer (simultaneously deallocating
-///   the temporary stack space we allocated when creating the new frame&#39;s stack
+/// * Initialize the tail callee's stack pointer (simultaneously deallocating
+///   the temporary stack space we allocated when creating the new frame's stack
 ///   arguments).
 ///
 /// * Move the return address into its stack slot.
 </span><span class="kw">fn </span>emit_return_call_common_sequence(
-    allocs: <span class="kw-2">&amp;mut </span>AllocationConsumer&lt;<span class="lifetime">&#39;_</span>&gt;,
+    allocs: <span class="kw-2">&amp;mut </span>AllocationConsumer&lt;<span class="lifetime">'_</span>&gt;,
     sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;,
     info: <span class="kw-2">&amp;</span>EmitInfo,
     state: <span class="kw-2">&amp;mut </span>EmitState,
@@ -8467,8 +8468,8 @@
 ) {
     <span class="macro">assert!</span>(
         info.flags.preserve_frame_pointers(),
-        <span class="string">&quot;frame pointers aren&#39;t fundamentally required for tail calls, \
-                 but the current implementation relies on them being present&quot;
+        <span class="string">"frame pointers aren't fundamentally required for tail calls, \
+                 but the current implementation relies on them being present"
     </span>);
 
     <span class="kw">for </span>u <span class="kw">in </span>uses {
@@ -8532,12 +8533,12 @@
     // Note that we have to do this from stack slots with the highest
     // address to lowest address because in the case of when the tail
     // callee has more stack arguments than we do, we might otherwise
-    // overwrite some of our stack arguments before they&#39;ve been copied
+    // overwrite some of our stack arguments before they've been copied
     // into place.
     </span><span class="macro">assert_eq!</span>(
         new_stack_arg_size % <span class="number">8</span>,
         <span class="number">0</span>,
-        <span class="string">&quot;stack argument space sizes should always be 8-byte aligned&quot;
+        <span class="string">"stack argument space sizes should always be 8-byte aligned"
     </span>);
     <span class="kw">for </span>i <span class="kw">in </span>(<span class="number">0</span>..new_stack_arg_size / <span class="number">8</span>).rev() {
         Inst::Mov64MR {

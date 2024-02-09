@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/libp2p/peer_manager.rs`."><title>peer_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/libp2p/peer_manager.rs`."><title>peer_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -353,7 +354,7 @@
 </span><span class="kw">const </span>GLOBAL_INV_ALPHA: u32 = <span class="number">20</span>;
 
 <span class="attr">#[derive(Debug, Default)]
-</span><span class="doccomment">/// Contains info about the peer&#39;s head [Tipset], as well as the request stats.
+</span><span class="doccomment">/// Contains info about the peer's head [Tipset], as well as the request stats.
 </span><span class="kw">struct </span>PeerInfo {
     <span class="doccomment">/// Head tipset received from hello message.
     </span>head: <span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;,
@@ -416,11 +417,11 @@
 }
 
 <span class="kw">impl </span>PeerManager {
-    <span class="doccomment">/// Updates peer&#39;s heaviest tipset. If the peer does not exist in the set, a
+    <span class="doccomment">/// Updates peer's heaviest tipset. If the peer does not exist in the set, a
     /// new `PeerInfo` will be generated.
     </span><span class="kw">pub fn </span>update_peer_head(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId, ts: Arc&lt;Tipset&gt;) {
         <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
-        <span class="macro">trace!</span>(<span class="string">&quot;Updating head for PeerId {}&quot;</span>, <span class="kw-2">&amp;</span>peer_id);
+        <span class="macro">trace!</span>(<span class="string">"Updating head for PeerId {}"</span>, <span class="kw-2">&amp;</span>peer_id);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(pi) = peers.full_peers.get_mut(<span class="kw-2">&amp;</span>peer_id) {
             pi.head = <span class="prelude-val">Some</span>(ts);
         } <span class="kw">else </span>{
@@ -465,7 +466,7 @@
             })
             .collect();
 
-        <span class="comment">// Unstable sort because hashmap iter order doesn&#39;t need to be preserved.
+        <span class="comment">// Unstable sort because hashmap iter order doesn't need to be preserved.
         </span>peers.sort_unstable_by(|(<span class="kw">_</span>, v1), (<span class="kw">_</span>, v2)| v1.partial_cmp(v2).unwrap_or(Ordering::Equal));
         peers.into_iter().map(|(p, <span class="kw">_</span>)| p).cloned().collect()
     }
@@ -488,7 +489,7 @@
     <span class="doccomment">/// Logs a global request success. This just updates the average for the
     /// peer manager.
     </span><span class="kw">pub fn </span>log_global_success(<span class="kw-2">&amp;</span><span class="self">self</span>, dur: Duration) {
-        <span class="macro">debug!</span>(<span class="string">&quot;logging global success&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"logging global success"</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>avg_global = <span class="self">self</span>.avg_global_time.write();
         <span class="kw">if </span><span class="kw-2">*</span>avg_global == Duration::default() {
             <span class="kw-2">*</span>avg_global = dur;
@@ -504,7 +505,7 @@
     <span class="doccomment">/// Logs a success for the given peer, and updates the average request
     /// duration.
     </span><span class="kw">pub fn </span>log_success(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, dur: Duration) {
-        <span class="macro">debug!</span>(<span class="string">&quot;logging success for {:?}&quot;</span>, peer);
+        <span class="macro">debug!</span>(<span class="string">"logging success for {:?}"</span>, peer);
         <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="comment">// Attempt to remove the peer and decrement bad peer count
         </span><span class="kw">if </span>peers.bad_peers.remove(<span class="kw-2">&amp;</span>peer) {
@@ -522,7 +523,7 @@
     <span class="doccomment">/// Logs a failure for the given peer, and updates the average request
     /// duration.
     </span><span class="kw">pub fn </span>log_failure(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, dur: Duration) {
-        <span class="macro">debug!</span>(<span class="string">&quot;logging failure for {:?}&quot;</span>, peer);
+        <span class="macro">debug!</span>(<span class="string">"logging failure for {:?}"</span>, peer);
         <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="kw">if </span>!peers.bad_peers.contains(<span class="kw-2">&amp;</span>peer) {
             metrics::PEER_FAILURE_TOTAL.inc();
@@ -545,7 +546,7 @@
         }
 
         <span class="comment">// Add peer to bad peer set
-        </span><span class="macro">debug!</span>(<span class="string">&quot;marked peer {} bad&quot;</span>, peer_id);
+        </span><span class="macro">debug!</span>(<span class="string">"marked peer {} bad"</span>, peer_id);
         <span class="kw">if </span>peers.bad_peers.insert(peer_id) {
             metrics::BAD_PEERS.inc();
         }
@@ -556,7 +557,7 @@
     <span class="doccomment">/// Remove peer from managed set, does not mark as bad
     </span><span class="kw">pub fn </span>remove_peer(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
-        <span class="macro">debug!</span>(<span class="string">&quot;removed peer {}&quot;</span>, peer_id);
+        <span class="macro">debug!</span>(<span class="string">"removed peer {}"</span>, peer_id);
         <span class="kw">let </span>removed = remove_peer(<span class="kw-2">&amp;mut </span>peers, peer_id);
         <span class="kw">if </span>removed {
             metrics::FULL_PEERS.dec();
@@ -583,7 +584,7 @@
             .send_async(PeerOperation::Ban(peer, reason.into()))
             .<span class="kw">await
         </span>{
-            <span class="macro">warn!</span>(<span class="string">&quot;ban_peer err: {e}&quot;</span>);
+            <span class="macro">warn!</span>(<span class="string">"ban_peer err: {e}"</span>);
         }
     }
 
@@ -613,7 +614,7 @@
                         .send_async(PeerOperation::Unban(peer))
                         .<span class="kw">await
                     </span>{
-                        <span class="macro">warn!</span>(<span class="string">&quot;unban_peer err: {e}&quot;</span>);
+                        <span class="macro">warn!</span>(<span class="string">"unban_peer err: {e}"</span>);
                     }
                 }
             }
@@ -624,7 +625,7 @@
 
 <span class="kw">fn </span>remove_peer(peers: <span class="kw-2">&amp;mut </span>PeerSets, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; bool {
     <span class="macro">debug!</span>(
-        <span class="string">&quot;removing peer {:?}, remaining chain exchange peers: {}&quot;</span>,
+        <span class="string">"removing peer {:?}, remaining chain exchange peers: {}"</span>,
         peer_id,
         peers.full_peers.len()
     );

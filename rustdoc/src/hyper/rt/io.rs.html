@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.1.0/src/rt/io.rs`."><title>io.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.1.0/src/rt/io.rs`."><title>io.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -401,20 +402,20 @@
 
 <span class="comment">// New IO traits? What?! Why, are you bonkers?
 //
-// I mean, yes, probably. But, here&#39;s the goals:
+// I mean, yes, probably. But, here's the goals:
 //
 // 1. Supports poll-based IO operations.
 // 2. Opt-in vectored IO.
 // 3. Can use an optional buffer pool.
 // 4. Able to add completion-based (uring) IO eventually.
 //
-// Frankly, the last point is the entire reason we&#39;re doing this. We want to
+// Frankly, the last point is the entire reason we're doing this. We want to
 // have forwards-compatibility with an eventually stable io-uring runtime. We
-// don&#39;t need that to work right away. But it must be possible to add in here
+// don't need that to work right away. But it must be possible to add in here
 // without breaking hyper 1.0.
 //
-// While in here, if there&#39;s small tweaks to poll_read or poll_write that would
-// allow even the &quot;slow&quot; path to be faster, such as if someone didn&#39;t remember
+// While in here, if there's small tweaks to poll_read or poll_write that would
+// allow even the "slow" path to be faster, such as if someone didn't remember
 // to forward along an `is_completion` call.
 
 </span><span class="doccomment">/// Reads bytes from a source.
@@ -432,8 +433,8 @@
     /// notification when the object becomes readable or is closed.
     </span><span class="kw">fn </span>poll_read(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-        buf: ReadBufCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+        buf: ReadBufCursor&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), std::io::Error&gt;&gt;;
 }
 
@@ -453,7 +454,7 @@
     /// receive a notification when the object becomes writable or is closed.
     </span><span class="kw">fn </span>poll_write(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         buf: <span class="kw-2">&amp;</span>[u8],
     ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;usize, std::io::Error&gt;&gt;;
 
@@ -464,12 +465,12 @@
     /// If flushing cannot immediately complete, this method returns
     /// `Poll::Pending` and arranges for the current task (via `cx.waker()`) to
     /// receive a notification when the object can make progress.
-    </span><span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), std::io::Error&gt;&gt;;
+    </span><span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), std::io::Error&gt;&gt;;
 
     <span class="doccomment">/// Attempts to shut down this writer.
     </span><span class="kw">fn </span>poll_shutdown(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), std::io::Error&gt;&gt;;
 
     <span class="doccomment">/// Returns whether this writer has an efficient `poll_write_vectored`
@@ -483,8 +484,8 @@
     <span class="doccomment">/// Like `poll_write`, except that it writes from a slice of buffers.
     </span><span class="kw">fn </span>poll_write_vectored(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-        bufs: <span class="kw-2">&amp;</span>[std::io::IoSlice&lt;<span class="lifetime">&#39;_</span>&gt;],
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+        bufs: <span class="kw-2">&amp;</span>[std::io::IoSlice&lt;<span class="lifetime">'_</span>&gt;],
     ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;usize, std::io::Error&gt;&gt; {
         <span class="kw">let </span>buf = bufs
             .iter()
@@ -496,7 +497,7 @@
 
 <span class="doccomment">/// A wrapper around a byte buffer that is incrementally filled and initialized.
 ///
-/// This type is a sort of &quot;double cursor&quot;. It tracks three regions in the
+/// This type is a sort of "double cursor". It tracks three regions in the
 /// buffer: a region at the beginning of the buffer that has been logically
 /// filled with data, a region that has been initialized at some point but not
 /// yet logically filled, and a region at the end that may be uninitialized.
@@ -513,8 +514,8 @@
 /// It is undefined behavior to de-initialize any bytes from the uninitialized
 /// region, since it is merely unknown whether this region is uninitialized or
 /// not, and if part of it turns out to be initialized, it must stay initialized.
-</span><span class="kw">pub struct </span>ReadBuf&lt;<span class="lifetime">&#39;a</span>&gt; {
-    raw: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[MaybeUninit&lt;u8&gt;],
+</span><span class="kw">pub struct </span>ReadBuf&lt;<span class="lifetime">'a</span>&gt; {
+    raw: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[MaybeUninit&lt;u8&gt;],
     filled: usize,
     init: usize,
 }
@@ -523,14 +524,14 @@
 ///
 /// This is created by calling `ReadBuf::unfilled()`.
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>ReadBufCursor&lt;<span class="lifetime">&#39;a</span>&gt; {
-    buf: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>ReadBuf&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">pub struct </span>ReadBufCursor&lt;<span class="lifetime">'a</span>&gt; {
+    buf: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>ReadBuf&lt;<span class="lifetime">'a</span>&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;data</span>&gt; ReadBuf&lt;<span class="lifetime">&#39;data</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'data</span>&gt; ReadBuf&lt;<span class="lifetime">'data</span>&gt; {
     <span class="doccomment">/// Create a new `ReadBuf` with a slice of initialized bytes.
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>new(raw: <span class="kw-2">&amp;</span><span class="lifetime">&#39;data </span><span class="kw-2">mut </span>[u8]) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(raw: <span class="kw-2">&amp;</span><span class="lifetime">'data </span><span class="kw-2">mut </span>[u8]) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>len = raw.len();
         <span class="self">Self </span>{
             <span class="comment">// SAFETY: We never de-init the bytes ourselves.
@@ -542,7 +543,7 @@
 
     <span class="doccomment">/// Create a new `ReadBuf` with a slice of uninitialized bytes.
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>uninit(raw: <span class="kw-2">&amp;</span><span class="lifetime">&#39;data </span><span class="kw-2">mut </span>[MaybeUninit&lt;u8&gt;]) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>uninit(raw: <span class="kw-2">&amp;</span><span class="lifetime">'data </span><span class="kw-2">mut </span>[MaybeUninit&lt;u8&gt;]) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             raw,
             filled: <span class="number">0</span>,
@@ -559,12 +560,12 @@
 
     <span class="doccomment">/// Get a cursor to the unfilled portion of the buffer.
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>unfilled&lt;<span class="lifetime">&#39;cursor</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;cursor </span><span class="kw-2">mut </span><span class="self">self</span>) -&gt; ReadBufCursor&lt;<span class="lifetime">&#39;cursor</span>&gt; {
+    </span><span class="kw">pub fn </span>unfilled&lt;<span class="lifetime">'cursor</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'cursor </span><span class="kw-2">mut </span><span class="self">self</span>) -&gt; ReadBufCursor&lt;<span class="lifetime">'cursor</span>&gt; {
         ReadBufCursor {
             <span class="comment">// SAFETY: self.buf is never re-assigned, so its safe to narrow
             // the lifetime.
             </span>buf: <span class="kw">unsafe </span>{
-                std::mem::transmute::&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;cursor </span><span class="kw-2">mut </span>ReadBuf&lt;<span class="lifetime">&#39;data</span>&gt;, <span class="kw-2">&amp;</span><span class="lifetime">&#39;cursor </span><span class="kw-2">mut </span>ReadBuf&lt;<span class="lifetime">&#39;cursor</span>&gt;&gt;(
+                std::mem::transmute::&lt;<span class="kw-2">&amp;</span><span class="lifetime">'cursor </span><span class="kw-2">mut </span>ReadBuf&lt;<span class="lifetime">'data</span>&gt;, <span class="kw-2">&amp;</span><span class="lifetime">'cursor </span><span class="kw-2">mut </span>ReadBuf&lt;<span class="lifetime">'cursor</span>&gt;&gt;(
                     <span class="self">self</span>,
                 )
             },
@@ -572,25 +573,25 @@
     }
 
     <span class="attr">#[inline]
-    #[cfg(all(any(feature = <span class="string">&quot;client&quot;</span>, feature = <span class="string">&quot;server&quot;</span>), feature = <span class="string">&quot;http2&quot;</span>))]
+    #[cfg(all(any(feature = <span class="string">"client"</span>, feature = <span class="string">"server"</span>), feature = <span class="string">"http2"</span>))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>set_init(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) {
         <span class="self">self</span>.init = <span class="self">self</span>.init.max(n);
     }
 
     <span class="attr">#[inline]
-    #[cfg(all(any(feature = <span class="string">&quot;client&quot;</span>, feature = <span class="string">&quot;server&quot;</span>), feature = <span class="string">&quot;http2&quot;</span>))]
+    #[cfg(all(any(feature = <span class="string">"client"</span>, feature = <span class="string">"server"</span>), feature = <span class="string">"http2"</span>))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>set_filled(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) {
         <span class="self">self</span>.filled = <span class="self">self</span>.filled.max(n);
     }
 
     <span class="attr">#[inline]
-    #[cfg(all(any(feature = <span class="string">&quot;client&quot;</span>, feature = <span class="string">&quot;server&quot;</span>), feature = <span class="string">&quot;http2&quot;</span>))]
+    #[cfg(all(any(feature = <span class="string">"client"</span>, feature = <span class="string">"server"</span>), feature = <span class="string">"http2"</span>))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.filled
     }
 
     <span class="attr">#[inline]
-    #[cfg(all(any(feature = <span class="string">&quot;client&quot;</span>, feature = <span class="string">&quot;server&quot;</span>), feature = <span class="string">&quot;http2&quot;</span>))]
+    #[cfg(all(any(feature = <span class="string">"client"</span>, feature = <span class="string">"server"</span>), feature = <span class="string">"http2"</span>))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>init_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.init
     }
@@ -606,17 +607,17 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;data</span>&gt; fmt::Debug <span class="kw">for </span>ReadBuf&lt;<span class="lifetime">&#39;data</span>&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;ReadBuf&quot;</span>)
-            .field(<span class="string">&quot;filled&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.filled)
-            .field(<span class="string">&quot;init&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.init)
-            .field(<span class="string">&quot;capacity&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.capacity())
+<span class="kw">impl</span>&lt;<span class="lifetime">'data</span>&gt; fmt::Debug <span class="kw">for </span>ReadBuf&lt;<span class="lifetime">'data</span>&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"ReadBuf"</span>)
+            .field(<span class="string">"filled"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.filled)
+            .field(<span class="string">"init"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.init)
+            .field(<span class="string">"capacity"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.capacity())
             .finish()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;data</span>&gt; ReadBufCursor&lt;<span class="lifetime">&#39;data</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'data</span>&gt; ReadBufCursor&lt;<span class="lifetime">'data</span>&gt; {
     <span class="doccomment">/// Access the unfilled part of the buffer.
     ///
     /// # Safety
@@ -635,7 +636,7 @@
     /// The caller must take care that `n` more bytes have been initialized.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub unsafe fn </span>advance(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) {
-        <span class="self">self</span>.buf.filled = <span class="self">self</span>.buf.filled.checked_add(n).expect(<span class="string">&quot;overflow&quot;</span>);
+        <span class="self">self</span>.buf.filled = <span class="self">self</span>.buf.filled.checked_add(n).expect(<span class="string">"overflow"</span>);
         <span class="self">self</span>.buf.init = <span class="self">self</span>.buf.filled.max(<span class="self">self</span>.buf.init);
     }
 
@@ -648,7 +649,7 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>put_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.buf.remaining() &gt;= buf.len(),
-            <span class="string">&quot;buf.len() must fit in remaining()&quot;
+            <span class="string">"buf.len() must fit in remaining()"
         </span>);
 
         <span class="kw">let </span>amt = buf.len();
@@ -674,8 +675,8 @@
     () =&gt; {
         <span class="kw">fn </span>poll_read(
             <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-            buf: ReadBufCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+            buf: ReadBufCursor&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
             Pin::new(<span class="kw-2">&amp;mut **</span><span class="self">self</span>).poll_read(cx, buf)
         }
@@ -697,8 +698,8 @@
 {
     <span class="kw">fn </span>poll_read(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-        buf: ReadBufCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+        buf: ReadBufCursor&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
         pin_as_deref_mut(<span class="self">self</span>).poll_read(cx, buf)
     }
@@ -708,7 +709,7 @@
     () =&gt; {
         <span class="kw">fn </span>poll_write(
             <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
             buf: <span class="kw-2">&amp;</span>[u8],
         ) -&gt; Poll&lt;std::io::Result&lt;usize&gt;&gt; {
             Pin::new(<span class="kw-2">&amp;mut **</span><span class="self">self</span>).poll_write(cx, buf)
@@ -716,8 +717,8 @@
 
         <span class="kw">fn </span>poll_write_vectored(
             <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-            bufs: <span class="kw-2">&amp;</span>[std::io::IoSlice&lt;<span class="lifetime">&#39;_</span>&gt;],
+            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+            bufs: <span class="kw-2">&amp;</span>[std::io::IoSlice&lt;<span class="lifetime">'_</span>&gt;],
         ) -&gt; Poll&lt;std::io::Result&lt;usize&gt;&gt; {
             Pin::new(<span class="kw-2">&amp;mut **</span><span class="self">self</span>).poll_write_vectored(cx, bufs)
         }
@@ -726,13 +727,13 @@
             (<span class="kw-2">**</span><span class="self">self</span>).is_write_vectored()
         }
 
-        <span class="kw">fn </span>poll_flush(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
+        <span class="kw">fn </span>poll_flush(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
             Pin::new(<span class="kw-2">&amp;mut **</span><span class="self">self</span>).poll_flush(cx)
         }
 
         <span class="kw">fn </span>poll_shutdown(
             <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
             Pin::new(<span class="kw-2">&amp;mut **</span><span class="self">self</span>).poll_shutdown(cx)
         }
@@ -754,7 +755,7 @@
 {
     <span class="kw">fn </span>poll_write(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         buf: <span class="kw-2">&amp;</span>[u8],
     ) -&gt; Poll&lt;std::io::Result&lt;usize&gt;&gt; {
         pin_as_deref_mut(<span class="self">self</span>).poll_write(cx, buf)
@@ -762,8 +763,8 @@
 
     <span class="kw">fn </span>poll_write_vectored(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-        bufs: <span class="kw-2">&amp;</span>[std::io::IoSlice&lt;<span class="lifetime">&#39;_</span>&gt;],
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+        bufs: <span class="kw-2">&amp;</span>[std::io::IoSlice&lt;<span class="lifetime">'_</span>&gt;],
     ) -&gt; Poll&lt;std::io::Result&lt;usize&gt;&gt; {
         pin_as_deref_mut(<span class="self">self</span>).poll_write_vectored(cx, bufs)
     }
@@ -772,11 +773,11 @@
         (<span class="kw-2">**</span><span class="self">self</span>).is_write_vectored()
     }
 
-    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
+    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
         pin_as_deref_mut(<span class="self">self</span>).poll_flush(cx)
     }
 
-    <span class="kw">fn </span>poll_shutdown(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
+    <span class="kw">fn </span>poll_shutdown(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
         pin_as_deref_mut(<span class="self">self</span>).poll_shutdown(cx)
     }
 }

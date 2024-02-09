@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fvm-4.1.2/src/blockstore/buffered.rs`."><title>buffered.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="fvm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fvm-4.1.2/src/blockstore/buffered.rs`."><title>buffered.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="fvm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -403,7 +404,7 @@
         <span class="number">25 </span>=&gt; u16::from_be_bytes(read_fixed(br)<span class="question-mark">?</span>).into(),
         <span class="number">26 </span>=&gt; u32::from_be_bytes(read_fixed(br)<span class="question-mark">?</span>).into(),
         <span class="number">27 </span>=&gt; u64::from_be_bytes(read_fixed(br)<span class="question-mark">?</span>),
-        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid header cbor_read_header_buf&quot;</span>)),
+        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"invalid header cbor_read_header_buf"</span>)),
     };
     <span class="prelude-val">Ok</span>((maj, val))
 }
@@ -421,7 +422,7 @@
             <span class="comment">// MajByteString, MajTextString
             </span><span class="number">2 </span>| <span class="number">3 </span>=&gt; {
                 <span class="kw">if </span>extra &gt; buf.len() <span class="kw">as </span>u64 {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;unexpected end of cbor stream&quot;</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"unexpected end of cbor stream"</span>));
                 }
                 buf = <span class="kw-2">&amp;</span>buf[extra <span class="kw">as </span>usize..];
             }
@@ -432,13 +433,13 @@
                     <span class="kw">let </span>(maj, extra) = cbor_read_header_buf(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
                     <span class="comment">// The actual CID is expected to be a byte string
                     </span><span class="kw">if </span>maj != <span class="number">2 </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;expected cbor type byte string in input&quot;</span>));
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"expected cbor type byte string in input"</span>));
                     }
                     <span class="kw">if </span>extra &gt; buf.len() <span class="kw">as </span>u64 {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;unexpected end of cbor stream&quot;</span>));
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"unexpected end of cbor stream"</span>));
                     }
                     <span class="kw">if </span>buf.first() != <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="number">0u8</span>) {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;DagCBOR CID does not start with a 0x byte&quot;</span>));
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"DagCBOR CID does not start with a 0x byte"</span>));
                     }
                     <span class="kw">let </span>cid_buf;
                     (cid_buf, buf) = buf.split_at(extra <span class="kw">as </span>usize);
@@ -457,7 +458,7 @@
             }
             <span class="number">8</span>.. =&gt; {
                 <span class="comment">// This case is statically impossible unless `cbor_read_header_buf` makes a mistake.
-                </span><span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;invalid cbor tag exceeds 3 bits: {}&quot;</span>, maj));
+                </span><span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"invalid cbor tag exceeds 3 bits: {}"</span>, maj));
             }
         }
         remaining -= <span class="number">1</span>;
@@ -472,9 +473,9 @@
     <span class="kw">const </span>IDENTITY: u64 = <span class="number">0x0</span>;
 
     <span class="comment">// Differences from lotus (vm.Copy):
-    // 1. We assume that if we don&#39;t have a block in our buffer, it must already be in the client
-    //    and don&#39;t check. This should only happen if the client is missing state.
-    // 2. We always write-back new blocks, even if the client already has them. We haven&#39;t noticed a
+    // 1. We assume that if we don't have a block in our buffer, it must already be in the client
+    //    and don't check. This should only happen if the client is missing state.
+    // 2. We always write-back new blocks, even if the client already has them. We haven't noticed a
     //    perf impact.
 
     </span><span class="kw">let </span><span class="kw-2">mut </span>stack = <span class="macro">vec!</span>[<span class="kw-2">*</span>root];
@@ -488,7 +489,7 @@
             <span class="comment">// We allow raw, cbor, and dag cbor.
             </span>IPLD_RAW | DAG_CBOR | CBOR =&gt; (),
             <span class="comment">// Everything else is rejected.
-            </span>codec =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;cid {k} has unexpected codec ({codec})&quot;</span>)),
+            </span>codec =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"cid {k} has unexpected codec ({codec})"</span>)),
         }
         <span class="comment">// Check the hash construction.
         </span><span class="kw">match </span>(k.hash().code(), k.hash().size()) {
@@ -497,7 +498,7 @@
             <span class="comment">// Reject everything else.
             </span>(hash, length) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                    <span class="string">&quot;cid {k} has unexpected multihash (code={hash}, len={length})&quot;
+                    <span class="string">"cid {k} has unexpected multihash (code={hash}, len={length})"
                 </span>))
             }
         }
@@ -506,11 +507,11 @@
                 scan_for_links(k.hash().digest(), <span class="kw-2">&amp;mut </span>stack)<span class="question-mark">?</span>;
             }
         } <span class="kw">else </span>{
-            <span class="comment">// If we don&#39;t have the block, we assume it and it&#39;s children are already in the
+            <span class="comment">// If we don't have the block, we assume it and it's children are already in the
             // datastore.
             //
-            // The alternative would be to check if it&#39;s in the datastore, but that&#39;s likely even more
-            // expensive. And there wouldn&#39;t be much we could do at that point but abort the block.
+            // The alternative would be to check if it's in the datastore, but that's likely even more
+            // expensive. And there wouldn't be much we could do at that point but abort the block.
             </span><span class="kw">let </span><span class="prelude-val">Some</span>(block) = cache.remove(<span class="kw-2">&amp;</span>k) <span class="kw">else </span>{ <span class="kw">continue </span>};
 
             <span class="comment">// At the moment, only DAG_CBOR can link to other blocks.
@@ -592,7 +593,7 @@
     </span><span class="kw">fn </span>buffered_store_with_links() {
         <span class="kw">let </span>mem = MemoryBlockstore::default();
         <span class="kw">let </span>buf_store = BufferedBlockstore::new(<span class="kw-2">&amp;</span>mem);
-        <span class="kw">let </span>str_val = String::from(<span class="string">&quot;value&quot;</span>);
+        <span class="kw">let </span>str_val = String::from(<span class="string">"value"</span>);
         <span class="kw">let </span>value = <span class="number">8u8</span>;
         <span class="kw">let </span>arr_cid = buf_store
             .put_cbor(<span class="kw-2">&amp;</span>(str_val.clone(), value), Code::Blake2b256)

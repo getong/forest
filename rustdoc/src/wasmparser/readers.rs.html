@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/readers.rs`."><title>readers.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/readers.rs`."><title>readers.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -316,14 +317,14 @@
 <a href="#316" id="316">316</a>
 </pre></div><pre class="rust"><code><span class="comment">/* Copyright 2018 Mozilla Foundation
  *
- * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -345,30 +346,30 @@
 /// format.
 ///
 /// Note that this is also accessible as a [`BinaryReader::read`] method.
-</span><span class="kw">pub trait </span>FromReader&lt;<span class="lifetime">&#39;a</span>&gt;: Sized {
+</span><span class="kw">pub trait </span>FromReader&lt;<span class="lifetime">'a</span>&gt;: Sized {
     <span class="doccomment">/// Attempts to read `Self` from the provided binary reader, returning an
     /// error if it is unable to do so.
-    </span><span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
+    </span><span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; FromReader&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>u32 {
-    <span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FromReader&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>u32 {
+    <span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         reader.read_var_u32()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; FromReader&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str {
-    <span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FromReader&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>str {
+    <span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         reader.read_string()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, U&gt; FromReader&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>(T, U)
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, U&gt; FromReader&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>(T, U)
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
-    U: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
+    U: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
-    <span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>from_reader(reader: <span class="kw-2">&amp;mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>((reader.read()<span class="question-mark">?</span>, reader.read()<span class="question-mark">?</span>))
     }
 }
@@ -382,13 +383,13 @@
 ///
 /// Note that this always implements the [`Clone`] trait to represent the
 /// ability to parse the section multiple times.
-</span><span class="kw">pub struct </span>SectionLimited&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    reader: BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">pub struct </span>SectionLimited&lt;<span class="lifetime">'a</span>, T&gt; {
+    reader: BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     count: u32,
     _marker: marker::PhantomData&lt;T&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; SectionLimited&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; SectionLimited&lt;<span class="lifetime">'a</span>, T&gt; {
     <span class="doccomment">/// Creates a new section reader from the provided contents.
     ///
     /// The `data` provided here is the data of the section itself that will be
@@ -398,8 +399,8 @@
     ///
     /// # Errors
     ///
-    /// Returns an error if a 32-bit count couldn&#39;t be read from the `data`.
-    </span><span class="kw">pub fn </span>new(data: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], offset: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+    /// Returns an error if a 32-bit count couldn't be read from the `data`.
+    </span><span class="kw">pub fn </span>new(data: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8], offset: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>reader = BinaryReader::new_with_offset(data, offset);
         <span class="kw">let </span>count = reader.read_var_u32()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(SectionLimited {
@@ -427,9 +428,9 @@
 
     <span class="doccomment">/// Returns an iterator which yields not only each item in this section but
     /// additionally the offset of each item within the section.
-    </span><span class="kw">pub fn </span>into_iter_with_offsets(<span class="self">self</span>) -&gt; SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">&#39;a</span>, T&gt;
+    </span><span class="kw">pub fn </span>into_iter_with_offsets(<span class="self">self</span>) -&gt; SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">'a</span>, T&gt;
     <span class="kw">where
-        </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
     {
         SectionLimitedIntoIterWithOffsets {
             iter: <span class="self">self</span>.into_iter(),
@@ -437,7 +438,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>SectionLimited&lt;<span class="lifetime">&#39;_</span>, T&gt; {
+<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>SectionLimited&lt;<span class="lifetime">'_</span>, T&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         SectionLimited {
             reader: <span class="self">self</span>.reader.clone(),
@@ -447,21 +448,21 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>SectionLimited&lt;<span class="lifetime">&#39;_</span>, T&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;SectionLimited&quot;</span>)
-            .field(<span class="string">&quot;count&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.count)
-            .field(<span class="string">&quot;range&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.range())
+<span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>SectionLimited&lt;<span class="lifetime">'_</span>, T&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"SectionLimited"</span>)
+            .field(<span class="string">"count"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.count)
+            .field(<span class="string">"range"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.range())
             .finish()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; IntoIterator <span class="kw">for </span>SectionLimited&lt;<span class="lifetime">&#39;a</span>, T&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; IntoIterator <span class="kw">for </span>SectionLimited&lt;<span class="lifetime">'a</span>, T&gt;
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;T&gt;;
-    <span class="kw">type </span>IntoIter = SectionLimitedIntoIter&lt;<span class="lifetime">&#39;a</span>, T&gt;;
+    <span class="kw">type </span>IntoIter = SectionLimitedIntoIter&lt;<span class="lifetime">'a</span>, T&gt;;
 
     <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
         SectionLimitedIntoIter {
@@ -476,22 +477,22 @@
 ///
 /// This is created via the [`IntoIterator`] `impl` for the [`SectionLimited`]
 /// type.
-</span><span class="kw">pub struct </span>SectionLimitedIntoIter&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    section: SectionLimited&lt;<span class="lifetime">&#39;a</span>, T&gt;,
+</span><span class="kw">pub struct </span>SectionLimitedIntoIter&lt;<span class="lifetime">'a</span>, T&gt; {
+    section: SectionLimited&lt;<span class="lifetime">'a</span>, T&gt;,
     remaining: u32,
     end: bool,
 }
 
-<span class="kw">impl</span>&lt;T&gt; SectionLimitedIntoIter&lt;<span class="lifetime">&#39;_</span>, T&gt; {
+<span class="kw">impl</span>&lt;T&gt; SectionLimitedIntoIter&lt;<span class="lifetime">'_</span>, T&gt; {
     <span class="doccomment">/// Returns the current byte offset of the section within this iterator.
     </span><span class="kw">pub fn </span>original_position(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.section.reader.original_position()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Iterator <span class="kw">for </span>SectionLimitedIntoIter&lt;<span class="lifetime">&#39;a</span>, T&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>SectionLimitedIntoIter&lt;<span class="lifetime">'a</span>, T&gt;
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;T&gt;;
 
@@ -505,7 +506,7 @@
                 <span class="kw">return </span><span class="prelude-val">None</span>;
             }
             <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;section size mismatch: unexpected data at the end of the section&quot;</span>,
+                <span class="string">"section size mismatch: unexpected data at the end of the section"</span>,
                 <span class="self">self</span>.section.reader.original_position(),
             )));
         }
@@ -521,16 +522,16 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; ExactSizeIterator <span class="kw">for </span>SectionLimitedIntoIter&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">where </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt; {}
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; ExactSizeIterator <span class="kw">for </span>SectionLimitedIntoIter&lt;<span class="lifetime">'a</span>, T&gt; <span class="kw">where </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt; {}
 
 <span class="doccomment">/// An iterator over a limited section iterator.
-</span><span class="kw">pub struct </span>SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    iter: SectionLimitedIntoIter&lt;<span class="lifetime">&#39;a</span>, T&gt;,
+</span><span class="kw">pub struct </span>SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">'a</span>, T&gt; {
+    iter: SectionLimitedIntoIter&lt;<span class="lifetime">'a</span>, T&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Iterator <span class="kw">for </span>SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">&#39;a</span>, T&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">'a</span>, T&gt;
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;(usize, T)&gt;;
 
@@ -544,7 +545,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; ExactSizeIterator <span class="kw">for </span>SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">&#39;a</span>, T&gt; <span class="kw">where </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt; {}
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; ExactSizeIterator <span class="kw">for </span>SectionLimitedIntoIterWithOffsets&lt;<span class="lifetime">'a</span>, T&gt; <span class="kw">where </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt; {}
 
 <span class="doccomment">/// A trait implemented for subsections of another outer section.
 ///
@@ -552,10 +553,10 @@
 /// the `name` section of core wasm.
 ///
 /// This is used in conjunction with [`Subsections`].
-</span><span class="kw">pub trait </span>Subsection&lt;<span class="lifetime">&#39;a</span>&gt;: Sized {
+</span><span class="kw">pub trait </span>Subsection&lt;<span class="lifetime">'a</span>&gt;: Sized {
     <span class="doccomment">/// Converts the section identifier provided with the section contents into
     /// a typed section
-    </span><span class="kw">fn </span>from_reader(id: u8, reader: BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
+    </span><span class="kw">fn </span>from_reader(id: u8, reader: BinaryReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
 }
 
 <span class="doccomment">/// Iterator/reader over the contents of a section which is composed of
@@ -563,15 +564,15 @@
 ///
 /// This reader is used for the core `name` section, for example. This type
 /// primarily implements [`Iterator`] for advancing through the sections.
-</span><span class="kw">pub struct </span>Subsections&lt;<span class="lifetime">&#39;a</span>, T&gt; {
-    reader: BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">pub struct </span>Subsections&lt;<span class="lifetime">'a</span>, T&gt; {
+    reader: BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     _marker: marker::PhantomData&lt;T&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Subsections&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Subsections&lt;<span class="lifetime">'a</span>, T&gt; {
     <span class="doccomment">/// Creates a new reader for the specified section contents starting at
     /// `offset` within the original wasm file.
-    </span><span class="kw">pub fn </span>new(data: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8], offset: usize) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(data: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8], offset: usize) -&gt; <span class="self">Self </span>{
         Subsections {
             reader: BinaryReader::new_with_offset(data, offset),
             _marker: marker::PhantomData,
@@ -591,15 +592,15 @@
 
     <span class="kw">fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
     <span class="kw">where
-        </span>T: Subsection&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: Subsection&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>subsection_id = <span class="self">self</span>.reader.read_u7()<span class="question-mark">?</span>;
-        <span class="kw">let </span>reader = <span class="self">self</span>.reader.read_reader(<span class="string">&quot;unexpected end of section&quot;</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>reader = <span class="self">self</span>.reader.read_reader(<span class="string">"unexpected end of section"</span>)<span class="question-mark">?</span>;
         T::from_reader(subsection_id, reader)
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>Subsections&lt;<span class="lifetime">&#39;_</span>, T&gt; {
+<span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>Subsections&lt;<span class="lifetime">'_</span>, T&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         Subsections {
             reader: <span class="self">self</span>.reader.clone(),
@@ -608,17 +609,17 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>Subsections&lt;<span class="lifetime">&#39;_</span>, T&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;Subsections&quot;</span>)
-            .field(<span class="string">&quot;range&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.range())
+<span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>Subsections&lt;<span class="lifetime">'_</span>, T&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"Subsections"</span>)
+            .field(<span class="string">"range"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.range())
             .finish()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Iterator <span class="kw">for </span>Subsections&lt;<span class="lifetime">&#39;a</span>, T&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>Subsections&lt;<span class="lifetime">'a</span>, T&gt;
 <span class="kw">where
-    </span>T: Subsection&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: Subsection&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;T&gt;;
 

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fil_actor_miner_state-9.4.0/src/v12/expiration_queue.rs`."><title>expiration_queue.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="fil_actor_miner_state" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fil_actor_miner_state-9.4.0/src/v12/expiration_queue.rs`."><title>expiration_queue.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="fil_actor_miner_state" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1012,16 +1013,16 @@
 </span><span class="kw">const </span>ENTRY_SECTORS_MAX: u64 = <span class="number">10_000</span>;
 
 <span class="doccomment">/// ExpirationSet is a collection of sector numbers that are expiring, either due to
-/// expected &quot;on-time&quot; expiration at the end of their life, or unexpected &quot;early&quot; termination
+/// expected "on-time" expiration at the end of their life, or unexpected "early" termination
 /// due to being faulty for too long consecutively.
 /// Note that there is not a direct correspondence between on-time sectors and active power;
 /// a sector may be faulty but expiring on-time if it faults just prior to expected termination.
 /// Early sectors are always faulty, and active power always represents on-time sectors.
 </span><span class="attr">#[derive(Serialize_tuple, Deserialize_tuple, Clone, Debug, Default)]
 </span><span class="kw">pub struct </span>ExpirationSet {
-    <span class="doccomment">/// Sectors expiring &quot;on time&quot; at the end of their committed life
+    <span class="doccomment">/// Sectors expiring "on time" at the end of their committed life
     </span><span class="kw">pub </span>on_time_sectors: BitField,
-    <span class="doccomment">/// Sectors expiring &quot;early&quot; due to being faulty for too long
+    <span class="doccomment">/// Sectors expiring "early" due to being faulty for too long
     </span><span class="kw">pub </span>early_sectors: BitField,
     <span class="doccomment">/// Pledge total for the on-time sectors
     </span><span class="kw">pub </span>on_time_pledge: TokenAmount,
@@ -1067,14 +1068,14 @@
         <span class="comment">// Check for sector intersection. This could be cheaper with a combined intersection/difference method used below.
         </span><span class="kw">if </span>!<span class="self">self</span>.on_time_sectors.contains_all(on_time_sectors) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                <span class="string">&quot;removing on-time sectors {:?} not contained in {:?}&quot;</span>,
+                <span class="string">"removing on-time sectors {:?} not contained in {:?}"</span>,
                 on_time_sectors,
                 <span class="self">self</span>.on_time_sectors
             ));
         }
         <span class="kw">if </span>!<span class="self">self</span>.early_sectors.contains_all(early_sectors) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                <span class="string">&quot;removing early sectors {:?} not contained in {:?}&quot;</span>,
+                <span class="string">"removing early sectors {:?} not contained in {:?}"</span>,
                 early_sectors,
                 <span class="self">self</span>.early_sectors
             ));
@@ -1088,10 +1089,10 @@
 
         <span class="comment">// Check underflow.
         </span><span class="kw">if </span><span class="self">self</span>.on_time_pledge.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;expiration set pledge underflow: {:?}&quot;</span>, <span class="self">self</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"expiration set pledge underflow: {:?}"</span>, <span class="self">self</span>));
         }
         <span class="kw">if </span><span class="self">self</span>.active_power.qa.is_negative() || <span class="self">self</span>.faulty_power.qa.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;expiration set power underflow: {:?}&quot;</span>, <span class="self">self</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"expiration set power underflow: {:?}"</span>, <span class="self">self</span>));
         }
         <span class="self">self</span>.validate_state()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
@@ -1111,23 +1112,23 @@
     <span class="doccomment">/// validates a set of assertions that must hold for expiration sets
     </span><span class="kw">pub fn </span>validate_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.on_time_pledge.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;ExpirationSet left with negative pledge&quot;</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"ExpirationSet left with negative pledge"</span>));
         }
 
         <span class="kw">if </span><span class="self">self</span>.active_power.raw.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;ExpirationSet left with negative raw active power&quot;</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"ExpirationSet left with negative raw active power"</span>));
         }
 
         <span class="kw">if </span><span class="self">self</span>.active_power.qa.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;ExpirationSet left with negative qa active power&quot;</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"ExpirationSet left with negative qa active power"</span>));
         }
 
         <span class="kw">if </span><span class="self">self</span>.faulty_power.raw.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;ExpirationSet left with negative raw faulty power&quot;</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"ExpirationSet left with negative raw faulty power"</span>));
         }
 
         <span class="kw">if </span><span class="self">self</span>.faulty_power.qa.is_negative() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;ExpirationSet left with negative qa faulty power&quot;</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"ExpirationSet left with negative qa faulty power"</span>));
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -1137,17 +1138,17 @@
 <span class="doccomment">/// A queue of expiration sets by epoch, representing the on-time or early termination epoch for a collection of sectors.
 /// Wraps an AMT[ChainEpoch]*ExpirationSet.
 /// Keys in the queue are quantized (upwards), modulo some offset, to reduce the cardinality of keys.
-</span><span class="kw">pub struct </span>ExpirationQueue&lt;<span class="lifetime">&#39;db</span>, BS&gt; {
-    <span class="kw">pub </span>amt: Array&lt;<span class="lifetime">&#39;db</span>, ExpirationSet, BS&gt;,
+</span><span class="kw">pub struct </span>ExpirationQueue&lt;<span class="lifetime">'db</span>, BS&gt; {
+    <span class="kw">pub </span>amt: Array&lt;<span class="lifetime">'db</span>, ExpirationSet, BS&gt;,
     <span class="kw">pub </span>quant: QuantSpec,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;db</span>, BS: Blockstore&gt; ExpirationQueue&lt;<span class="lifetime">&#39;db</span>, BS&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'db</span>, BS: Blockstore&gt; ExpirationQueue&lt;<span class="lifetime">'db</span>, BS&gt; {
     <span class="doccomment">/// Loads a queue root.
     ///
     /// Epochs provided to subsequent method calls will be quantized upwards to quanta mod offsetSeed before being
     /// written to/read from queue entries.
-    </span><span class="kw">pub fn </span>new(store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;db </span>BS, root: <span class="kw-2">&amp;</span>Cid, quant: QuantSpec) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, AmtError&gt; {
+    </span><span class="kw">pub fn </span>new(store: <span class="kw-2">&amp;</span><span class="lifetime">'db </span>BS, root: <span class="kw-2">&amp;</span>Cid, quant: QuantSpec) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, AmtError&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             amt: Array::load(root, store)<span class="question-mark">?</span>,
             quant,
@@ -1157,9 +1158,9 @@
     <span class="doccomment">/// Adds a collection of sectors to their on-time target expiration entries (quantized).
     /// The sectors are assumed to be active (non-faulty).
     /// Returns the sector numbers, power, and pledge added.
-    </span><span class="kw">pub fn </span>add_active_sectors&lt;<span class="lifetime">&#39;a</span>&gt;(
+    </span><span class="kw">pub fn </span>add_active_sectors&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        sectors: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SectorOnChainInfo&gt;,
+        sectors: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>SectorOnChainInfo&gt;,
         sector_size: SectorSize,
     ) -&gt; anyhow::Result&lt;(BitField, PowerPair, TokenAmount)&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>total_power = PowerPair::zero();
@@ -1177,7 +1178,7 @@
                 <span class="kw-2">&amp;</span>PowerPair::zero(),
                 <span class="kw-2">&amp;</span>group.pledge,
             )
-            .map_err(|e| e.downcast_wrap(<span class="string">&quot;failed to record new sector expirations&quot;</span>))<span class="question-mark">?</span>;
+            .map_err(|e| e.downcast_wrap(<span class="string">"failed to record new sector expirations"</span>))<span class="question-mark">?</span>;
 
             total_sectors.push(sector_numbers);
             total_power += <span class="kw-2">&amp;</span>group.power;
@@ -1191,7 +1192,7 @@
     <span class="doccomment">/// Reschedules some sectors to a new (quantized) expiration epoch.
     /// The sectors being rescheduled are assumed to be not faulty, and hence are removed from and re-scheduled for on-time
     /// rather than early expiration.
-    /// The sectors&#39; power and pledge are assumed not to change, despite the new expiration.
+    /// The sectors' power and pledge are assumed not to change, despite the new expiration.
     </span><span class="kw">pub fn </span>reschedule_expirations(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         new_expiration: ChainEpoch,
@@ -1204,7 +1205,7 @@
 
         <span class="kw">let </span>(sector_numbers, power, pledge) = <span class="self">self
             </span>.remove_active_sectors(sectors, sector_size)
-            .map_err(|e| e.downcast_wrap(<span class="string">&quot;failed to remove sector expirations&quot;</span>))<span class="question-mark">?</span>;
+            .map_err(|e| e.downcast_wrap(<span class="string">"failed to remove sector expirations"</span>))<span class="question-mark">?</span>;
 
         <span class="self">self</span>.add(
             new_expiration,
@@ -1214,12 +1215,12 @@
             <span class="kw-2">&amp;</span>PowerPair::zero(),
             <span class="kw-2">&amp;</span>pledge,
         )
-        .map_err(|e| e.downcast_wrap(<span class="string">&quot;failed to record new sector expirations&quot;</span>))<span class="question-mark">?</span>;
+        .map_err(|e| e.downcast_wrap(<span class="string">"failed to record new sector expirations"</span>))<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Re-schedules sectors to expire at an early expiration epoch (quantized), if they wouldn&#39;t expire before then anyway.
+    <span class="doccomment">/// Re-schedules sectors to expire at an early expiration epoch (quantized), if they wouldn't expire before then anyway.
     /// The sectors must not be currently faulty, so must be registered as expiring on-time rather than early.
     /// The pledge for the now-early sectors is removed from the queue.
     /// Returns the total power represented by the sectors.
@@ -1239,9 +1240,9 @@
         </span><span class="kw">let </span>new_quantized_expiration = <span class="self">self</span>.quant.quantize_up(new_expiration);
         <span class="kw">for </span><span class="kw-2">mut </span>group <span class="kw">in </span>groups {
             <span class="kw">if </span>group.sector_epoch_set.epoch &lt;= new_quantized_expiration {
-                <span class="comment">// Don&#39;t reschedule sectors that are already due to expire on-time before the fault-driven expiration,
+                <span class="comment">// Don't reschedule sectors that are already due to expire on-time before the fault-driven expiration,
                 // but do represent their power as now faulty.
-                // Their pledge remains as &quot;on-time&quot;.
+                // Their pledge remains as "on-time".
                 </span>group.expiration_set.active_power -= <span class="kw-2">&amp;</span>group.sector_epoch_set.power;
                 group.expiration_set.faulty_power += <span class="kw-2">&amp;</span>group.sector_epoch_set.power;
                 expiring_power += <span class="kw-2">&amp;</span>group.sector_epoch_set.power;
@@ -1279,7 +1280,7 @@
         <span class="prelude-val">Ok</span>(<span class="kw-2">&amp;</span>rescheduled_power + <span class="kw-2">&amp;</span>expiring_power)
     }
 
-    <span class="doccomment">/// Re-schedules *all* sectors to expire at an early expiration epoch, if they wouldn&#39;t expire before then anyway.
+    <span class="doccomment">/// Re-schedules *all* sectors to expire at an early expiration epoch, if they wouldn't expire before then anyway.
     </span><span class="kw">pub fn </span>reschedule_all_as_faults(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fault_expiration: ChainEpoch) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rescheduled_epochs = Vec::&lt;u64&gt;::new();
         <span class="kw">let </span><span class="kw-2">mut </span>rescheduled_sectors = BitField::new();
@@ -1301,10 +1302,10 @@
                 mutated_expiration_sets.push((epoch, expiration_set));
             } <span class="kw">else </span>{
                 rescheduled_epochs.push(e);
-                <span class="comment">// sanity check to make sure we&#39;re not trying to re-schedule already faulty sectors.
+                <span class="comment">// sanity check to make sure we're not trying to re-schedule already faulty sectors.
                 </span><span class="kw">if </span>!expiration_set.early_sectors.is_empty() {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                        <span class="string">&quot;attempted to re-schedule early expirations to an earlier epoch&quot;
+                        <span class="string">"attempted to re-schedule early expirations to an earlier epoch"
                     </span>));
                 }
                 rescheduled_sectors |= <span class="kw-2">&amp;</span>expiration_set.on_time_sectors;
@@ -1321,7 +1322,7 @@
             res<span class="question-mark">?</span>;
         }
 
-        <span class="comment">// If we didn&#39;t reschedule anything, we&#39;re done.
+        <span class="comment">// If we didn't reschedule anything, we're done.
         </span><span class="kw">if </span>rescheduled_epochs.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
@@ -1359,7 +1360,7 @@
 
         <span class="comment">// Traverse the expiration queue once to find each recovering sector and remove it from early/faulty there.
         // We expect this to find all recovering sectors within the first FaultMaxAge/WPoStProvingPeriod entries
-        // (i.e. 14 for 14-day faults), but if something has gone wrong it&#39;s safer not to fail if that&#39;s not met.
+        // (i.e. 14 for 14-day faults), but if something has gone wrong it's safer not to fail if that's not met.
         </span><span class="kw">let </span><span class="kw-2">mut </span>sectors_rescheduled = Vec::&lt;<span class="kw-2">&amp;</span>SectorOnChainInfo&gt;::new();
         <span class="kw">let </span><span class="kw-2">mut </span>recovered_power = PowerPair::zero();
 
@@ -1388,7 +1389,7 @@
                     <span class="prelude-val">None </span>=&gt; <span class="kw">continue</span>,
                 };
                 <span class="comment">// If the sector expires early at this epoch, remove it for re-scheduling.
-                // It&#39;s not part of the on-time pledge number here.
+                // It's not part of the on-time pledge number here.
                 </span>early_unset.push(sector_number);
                 <span class="kw">let </span>power = power_for_sector(sector_size, sector);
                 faulty_power_delta -= <span class="kw-2">&amp;</span>power;
@@ -1417,7 +1418,7 @@
 
         <span class="kw">if </span>!remaining.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                <span class="string">&quot;sectors not found in expiration queue: {:?}&quot;</span>,
+                <span class="string">"sectors not found in expiration queue: {:?}"</span>,
                 remaining
             ));
         }
@@ -1440,11 +1441,11 @@
     ) -&gt; anyhow::Result&lt;(BitField, BitField, PowerPair, TokenAmount)&gt; {
         <span class="kw">let </span>(old_sector_numbers, old_power, old_pledge) = <span class="self">self
             </span>.remove_active_sectors(old_sectors, sector_size)
-            .map_err(|e| e.downcast_wrap(<span class="string">&quot;failed to remove replaced sectors&quot;</span>))<span class="question-mark">?</span>;
+            .map_err(|e| e.downcast_wrap(<span class="string">"failed to remove replaced sectors"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(new_sector_numbers, new_power, new_pledge) = <span class="self">self
             </span>.add_active_sectors(new_sectors, sector_size)
-            .map_err(|e| e.downcast_wrap(<span class="string">&quot;failed to add replacement sectors&quot;</span>))<span class="question-mark">?</span>;
+            .map_err(|e| e.downcast_wrap(<span class="string">"failed to add replacement sectors"</span>))<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>((
             old_sector_numbers,
@@ -1472,13 +1473,13 @@
         <span class="comment">// ADDRESSED_SECTORS_MAX is defined as 25000, so this will not error.
         </span><span class="kw">let </span>faults_map: BTreeSet&lt;<span class="kw">_</span>&gt; = faults
             .bounded_iter(policy.addressed_sectors_max)
-            .context(<span class="string">&quot;too many faults to expand&quot;</span>)<span class="question-mark">?
+            .context(<span class="string">"too many faults to expand"</span>)<span class="question-mark">?
             </span>.map(|i| i <span class="kw">as </span>SectorNumber)
             .collect();
 
         <span class="kw">let </span>recovering_map: BTreeSet&lt;<span class="kw">_</span>&gt; = recovering
             .bounded_iter(policy.addressed_sectors_max)
-            .context(<span class="string">&quot;too many recoveries to expand&quot;</span>)<span class="question-mark">?
+            .context(<span class="string">"too many recoveries to expand"</span>)<span class="question-mark">?
             </span>.map(|i| i <span class="kw">as </span>SectorNumber)
             .collect();
 
@@ -1499,7 +1500,7 @@
             } <span class="kw">else </span>{
                 non_faulty_sectors.push(sector.clone());
 
-                <span class="comment">// remove them from &quot;remaining&quot;, we&#39;re going to process them below.
+                <span class="comment">// remove them from "remaining", we're going to process them below.
                 </span>remaining.remove(<span class="kw-2">&amp;</span>sector.sector_number);
             }
         }
@@ -1507,7 +1508,7 @@
         <span class="comment">// Remove non-faulty sectors.
         </span><span class="kw">let </span>(removed_sector_numbers, removed_power, removed_pledge) = <span class="self">self
             </span>.remove_active_sectors(<span class="kw-2">&amp;</span>non_faulty_sectors, sector_size)
-            .map_err(|e| e.downcast_wrap(<span class="string">&quot;failed to remove on-time recoveries&quot;</span>))<span class="question-mark">?</span>;
+            .map_err(|e| e.downcast_wrap(<span class="string">"failed to remove on-time recoveries"</span>))<span class="question-mark">?</span>;
         removed.on_time_sectors = removed_sector_numbers;
         removed.active_power = removed_power;
         removed.on_time_pledge = removed_pledge;
@@ -1520,18 +1521,18 @@
             <span class="kw">let </span>on_time_sectors: BTreeSet&lt;SectorNumber&gt; = expiration_set
                 .on_time_sectors
                 .bounded_iter(ENTRY_SECTORS_MAX)
-                .context(<span class="string">&quot;too many on-time sectors to expand&quot;</span>)<span class="question-mark">?
+                .context(<span class="string">"too many on-time sectors to expand"</span>)<span class="question-mark">?
                 </span>.map(|i| i <span class="kw">as </span>SectorNumber)
                 .collect();
 
             <span class="kw">let </span>early_sectors: BTreeSet&lt;SectorNumber&gt; = expiration_set
                 .early_sectors
                 .bounded_iter(ENTRY_SECTORS_MAX)
-                .context(<span class="string">&quot;too many early sectors to expand&quot;</span>)<span class="question-mark">?
+                .context(<span class="string">"too many early sectors to expand"</span>)<span class="question-mark">?
                 </span>.map(|i| i <span class="kw">as </span>SectorNumber)
                 .collect();
 
-            <span class="comment">// This loop could alternatively be done by constructing bitfields and intersecting them, but it&#39;s not
+            <span class="comment">// This loop could alternatively be done by constructing bitfields and intersecting them, but it's not
             // clear that would be much faster (O(max(N, M)) vs O(N+M)).
             // The length of sectors has a maximum of one partition size.
             </span><span class="kw">for </span>sector <span class="kw">in </span><span class="kw-2">&amp;</span>faulty_sectors {
@@ -1577,7 +1578,7 @@
 
         <span class="kw">if </span>!remaining.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                <span class="string">&quot;sectors not found in expiration queue: {:?}&quot;</span>,
+                <span class="string">"sectors not found in expiration queue: {:?}"</span>,
                 remaining
             ));
         }
@@ -1640,7 +1641,7 @@
                 active_power,
                 faulty_power,
             )
-            .map_err(|e| <span class="macro">anyhow!</span>(<span class="string">&quot;failed to add expiration values for epoch {}: {}&quot;</span>, epoch, e))<span class="question-mark">?</span>;
+            .map_err(|e| <span class="macro">anyhow!</span>(<span class="string">"failed to add expiration values for epoch {}: {}"</span>, epoch, e))<span class="question-mark">?</span>;
 
         <span class="self">self</span>.must_update(epoch, expiration_set)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
@@ -1659,8 +1660,8 @@
         <span class="kw">let </span><span class="kw-2">mut </span>expiration_set = <span class="self">self
             </span>.amt
             .get(epoch.try_into()<span class="question-mark">?</span>)
-            .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">&quot;failed to lookup queue epoch {}&quot;</span>, epoch)))<span class="question-mark">?
-            </span>.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;missing expected expiration set at epoch {}&quot;</span>, epoch))<span class="question-mark">?
+            .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">"failed to lookup queue epoch {}"</span>, epoch)))<span class="question-mark">?
+            </span>.ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"missing expected expiration set at epoch {}"</span>, epoch))<span class="question-mark">?
             </span>.clone();
         expiration_set
             .remove(
@@ -1672,7 +1673,7 @@
             )
             .map_err(|e| {
                 <span class="macro">anyhow!</span>(
-                    <span class="string">&quot;failed to remove expiration values for queue epoch {}: {}&quot;</span>,
+                    <span class="string">"failed to remove expiration values for queue epoch {}: {}"</span>,
                     epoch,
                     e
                 )
@@ -1725,7 +1726,7 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         <span class="kw-2">mut </span>f: <span class="kw">impl </span>FnMut(
             ChainEpoch,
-            <span class="kw-2">&amp;mut </span>ValueMut&lt;<span class="lifetime">&#39;_</span>, ExpirationSet&gt;,
+            <span class="kw-2">&amp;mut </span>ValueMut&lt;<span class="lifetime">'_</span>, ExpirationSet&gt;,
         ) -&gt; anyhow::Result&lt;<span class="comment">/* keep going */ </span>bool&gt;,
     ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>epochs_emptied = Vec::&lt;u64&gt;::new();
@@ -1749,7 +1750,7 @@
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.amt
             .get(key.try_into()<span class="question-mark">?</span>)
-            .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">&quot;failed to lookup queue epoch {}&quot;</span>, key)))<span class="question-mark">?
+            .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">"failed to lookup queue epoch {}"</span>, key)))<span class="question-mark">?
             </span>.cloned()
             .unwrap_or_default())
     }
@@ -1761,10 +1762,10 @@
     ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="self">self</span>.amt
             .set(epoch.try_into()<span class="question-mark">?</span>, expiration_set)
-            .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">&quot;failed to set queue epoch {}&quot;</span>, epoch)))
+            .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">"failed to set queue epoch {}"</span>, epoch)))
     }
 
-    <span class="doccomment">/// Since this might delete the node, it&#39;s not safe for use inside an iteration.
+    <span class="doccomment">/// Since this might delete the node, it's not safe for use inside an iteration.
     </span><span class="kw">fn </span>must_update_or_delete(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         epoch: ChainEpoch,
@@ -1773,11 +1774,11 @@
         <span class="kw">if </span>expiration_set.is_empty() {
             <span class="self">self</span>.amt
                 .delete(epoch.try_into()<span class="question-mark">?</span>)
-                .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">&quot;failed to delete queue epoch {}&quot;</span>, epoch)))<span class="question-mark">?</span>;
+                .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">"failed to delete queue epoch {}"</span>, epoch)))<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="self">self</span>.amt
                 .set(epoch.try_into()<span class="question-mark">?</span>, expiration_set)
-                .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">&quot;failed to set queue epoch {}&quot;</span>, epoch)))<span class="question-mark">?</span>;
+                .map_err(|e| e.downcast_wrap(<span class="macro">format!</span>(<span class="string">"failed to set queue epoch {}"</span>, epoch)))<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -1827,7 +1828,7 @@
         </span><span class="kw">if </span>!all_remaining.is_empty() {
             <span class="self">self</span>.amt.for_each_while(|epoch, es| {
                 <span class="kw">let </span>epoch = epoch <span class="kw">as </span>ChainEpoch;
-                <span class="comment">// If this set&#39;s epoch is one of our declared epochs, we&#39;ve already processed it
+                <span class="comment">// If this set's epoch is one of our declared epochs, we've already processed it
                 // in the loop above, so skip processing here. Sectors rescheduled to this epoch
                 // would have been included in the earlier processing.
                 </span><span class="kw">if </span>declared_expirations.contains_key(<span class="kw-2">&amp;</span>epoch) {
@@ -1856,13 +1857,13 @@
         }
 
         <span class="kw">if </span>!all_remaining.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;some sectors not found in expiration queue&quot;</span>));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"some sectors not found in expiration queue"</span>));
         }
 
         <span class="comment">// The built-in stable sort is timsort. It will find the two sorted runs and merge them.
         //
-        // We could also just assume they&#39;re sorted and use itertools.merge..., but this is safe and
-        // the perf shouldn&#39;t be much different.
+        // We could also just assume they're sorted and use itertools.merge..., but this is safe and
+        // the perf shouldn't be much different.
         </span>expiration_groups.sort_by_key(|g| g.sector_epoch_set.epoch);
 
         <span class="prelude-val">Ok</span>(expiration_groups)
@@ -1888,9 +1889,9 @@
 /// sorted by expiration epoch, quantized.
 ///
 /// Note: While the result is sorted by epoch, the order of per-epoch sectors is maintained.
-</span><span class="kw">fn </span>group_new_sectors_by_declared_expiration&lt;<span class="lifetime">&#39;a</span>&gt;(
+</span><span class="kw">fn </span>group_new_sectors_by_declared_expiration&lt;<span class="lifetime">'a</span>&gt;(
     sector_size: SectorSize,
-    sectors: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SectorOnChainInfo&gt;,
+    sectors: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>SectorOnChainInfo&gt;,
     quant: QuantSpec,
 ) -&gt; Vec&lt;SectorEpochSet&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>sectors_by_expiration = BTreeMap::&lt;ChainEpoch, Vec&lt;<span class="kw-2">&amp;</span>SectorOnChainInfo&gt;&gt;::new();
@@ -1940,7 +1941,7 @@
 
     <span class="kw">for </span>u <span class="kw">in </span>es.on_time_sectors.iter() {
         <span class="kw">if </span>include_set.remove(<span class="kw-2">&amp;</span>u) {
-            <span class="kw">let </span>sector = sectors.get(<span class="kw-2">&amp;</span>u).expect(<span class="string">&quot;index should exist in sector set&quot;</span>);
+            <span class="kw">let </span>sector = sectors.get(<span class="kw-2">&amp;</span>u).expect(<span class="string">"index should exist in sector set"</span>);
             sector_numbers.push(u);
             total_power += <span class="kw-2">&amp;</span>power_for_sector(sector_size, sector);
             total_pledge += <span class="kw-2">&amp;</span>sector.initial_pledge;
@@ -1958,12 +1959,12 @@
     }
 }
 
-<span class="doccomment">/// Checks for invalid overlap between bitfield and a set&#39;s early sectors.
+<span class="doccomment">/// Checks for invalid overlap between bitfield and a set's early sectors.
 </span><span class="kw">fn </span>check_no_early_sectors(set: <span class="kw-2">&amp;</span>BTreeSet&lt;u64&gt;, es: <span class="kw-2">&amp;</span>ExpirationSet) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">for </span>u <span class="kw">in </span>es.early_sectors.iter() {
         <span class="kw">if </span>set.contains(<span class="kw-2">&amp;</span>u) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                <span class="string">&quot;Invalid attempt to group sector {} with an early expiration&quot;</span>,
+                <span class="string">"Invalid attempt to group sector {} with an early expiration"</span>,
                 u
             ));
         }

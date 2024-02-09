@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/mmap.rs`."><title>mmap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/mmap.rs`."><title>mmap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -298,18 +299,18 @@
         } <span class="kw">else if </span>accessible_size == mapping_size {
             <span class="prelude-val">Ok</span>(Mmap {
                 sys: sys::Mmap::new(mapping_size)
-                    .context(<span class="macro">format!</span>(<span class="string">&quot;mmap failed to allocate {mapping_size:#x} bytes&quot;</span>))<span class="question-mark">?</span>,
+                    .context(<span class="macro">format!</span>(<span class="string">"mmap failed to allocate {mapping_size:#x} bytes"</span>))<span class="question-mark">?</span>,
                 file: <span class="prelude-val">None</span>,
             })
         } <span class="kw">else </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>result = Mmap {
                 sys: sys::Mmap::reserve(mapping_size)
-                    .context(<span class="macro">format!</span>(<span class="string">&quot;mmap failed to reserve {mapping_size:#x} bytes&quot;</span>))<span class="question-mark">?</span>,
+                    .context(<span class="macro">format!</span>(<span class="string">"mmap failed to reserve {mapping_size:#x} bytes"</span>))<span class="question-mark">?</span>,
                 file: <span class="prelude-val">None</span>,
             };
             <span class="kw">if </span>accessible_size &gt; <span class="number">0 </span>{
                 result.make_accessible(<span class="number">0</span>, accessible_size).context(<span class="macro">format!</span>(
-                    <span class="string">&quot;mmap failed to allocate {accessible_size:#x} bytes&quot;
+                    <span class="string">"mmap failed to allocate {accessible_size:#x} bytes"
                 </span>))<span class="question-mark">?</span>;
             }
             <span class="prelude-val">Ok</span>(result)
@@ -318,7 +319,7 @@
 
     <span class="doccomment">/// Make the memory starting at `start` and extending for `len` bytes
     /// accessible. `start` and `len` must be native page-size multiples and
-    /// describe a range within `self`&#39;s reserved memory.
+    /// describe a range within `self`'s reserved memory.
     ///
     /// # Panics
     ///
@@ -393,9 +394,9 @@
     ///
     /// # Unsafety
     ///
-    /// This method is unsafe as it&#39;s generally not valid to simply make memory
-    /// executable, so it&#39;s up to the caller to ensure that everything is in
-    /// order and this doesn&#39;t overlap with other memory that should only be
+    /// This method is unsafe as it's generally not valid to simply make memory
+    /// executable, so it's up to the caller to ensure that everything is in
+    /// order and this doesn't overlap with other memory that should only be
     /// read or only read/write.
     ///
     /// # Panics
@@ -411,11 +412,11 @@
         <span class="macro">assert!</span>(range.start &lt;= range.end);
         <span class="macro">assert!</span>(
             range.start % <span class="kw">crate</span>::page_size() == <span class="number">0</span>,
-            <span class="string">&quot;changing of protections isn&#39;t page-aligned&quot;</span>,
+            <span class="string">"changing of protections isn't page-aligned"</span>,
         );
         <span class="self">self</span>.sys
             .make_executable(range, enable_branch_protection)
-            .context(<span class="string">&quot;failed to make memory executable&quot;</span>)
+            .context(<span class="string">"failed to make memory executable"</span>)
     }
 
     <span class="doccomment">/// Makes the specified `range` within this `Mmap` to be readonly.
@@ -425,11 +426,11 @@
         <span class="macro">assert!</span>(range.start &lt;= range.end);
         <span class="macro">assert!</span>(
             range.start % <span class="kw">crate</span>::page_size() == <span class="number">0</span>,
-            <span class="string">&quot;changing of protections isn&#39;t page-aligned&quot;</span>,
+            <span class="string">"changing of protections isn't page-aligned"</span>,
         );
         <span class="self">self</span>.sys
             .make_readonly(range)
-            .context(<span class="string">&quot;failed to make memory readonly&quot;</span>)
+            .context(<span class="string">"failed to make memory readonly"</span>)
     }
 
     <span class="doccomment">/// Returns the underlying file that this mmap is mapping, if present.

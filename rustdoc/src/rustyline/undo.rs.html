@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rustyline-13.0.0/src/undo.rs`."><title>undo.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rustyline" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rustyline-13.0.0/src/undo.rs`."><title>undo.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rustyline" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -601,7 +602,7 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>begin(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::begin&quot;</span>);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::begin"</span>);
         <span class="self">self</span>.redos.clear();
         <span class="kw">let </span>mark = <span class="self">self</span>.undos.len();
         <span class="self">self</span>.undos.push(Change::Begin);
@@ -612,7 +613,7 @@
     <span class="doccomment">/// Returns `true` when changes happen between the last call to `begin` and
     /// this `end`.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::end&quot;</span>);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::end"</span>);
         <span class="self">self</span>.redos.clear();
         <span class="kw">let </span><span class="kw-2">mut </span>touched = <span class="bool-val">false</span>;
         <span class="kw">while </span><span class="self">self</span>.undo_group_level &gt; <span class="number">0 </span>{
@@ -635,7 +636,7 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: usize, c: char) {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::insert({}, {:?})&quot;</span>, idx, c);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::insert({}, {:?})"</span>, idx, c);
         <span class="self">self</span>.redos.clear();
         <span class="kw">if </span>!c.is_alphanumeric() || !<span class="self">self</span>.undos.last().map_or(<span class="bool-val">false</span>, |lc| lc.insert_seq(idx)) {
             <span class="self">self</span>.undos.push(<span class="self">Self</span>::insert_char(idx, c));
@@ -656,7 +657,7 @@
         idx: usize,
         string: S,
     ) {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::insert_str({}, {:?})&quot;</span>, idx, string);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::insert_str({}, {:?})"</span>, idx, string);
         <span class="self">self</span>.redos.clear();
         <span class="kw">if </span>string.as_ref().is_empty() {
             <span class="kw">return</span>;
@@ -668,7 +669,7 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>delete&lt;S: AsRef&lt;str&gt; + Into&lt;String&gt; + Debug&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, indx: usize, string: S) {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::delete({}, {:?})&quot;</span>, indx, string);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::delete({}, {:?})"</span>, indx, string);
         <span class="self">self</span>.redos.clear();
         <span class="kw">if </span>string.as_ref().is_empty() {
             <span class="kw">return</span>;
@@ -718,7 +719,7 @@
         old_: S,
         new_: S,
     ) {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::replace({}, {:?}, {:?})&quot;</span>, indx, old_, new_);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::replace({}, {:?}, {:?})"</span>, indx, old_, new_);
         <span class="self">self</span>.redos.clear();
 
         <span class="kw">if </span>!<span class="self">self</span>.undos.last().map_or(<span class="bool-val">false</span>, |lc| lc.replace_seq(indx)) {
@@ -747,7 +748,7 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>undo(<span class="kw-2">&amp;mut </span><span class="self">self</span>, line: <span class="kw-2">&amp;mut </span>LineBuffer, n: RepeatCount) -&gt; bool {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::undo&quot;</span>);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::undo"</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>waiting_for_begin = <span class="number">0</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>undone = <span class="bool-val">false</span>;
@@ -776,7 +777,7 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>truncate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, len: usize) {
-        <span class="macro">debug!</span>(target: <span class="string">&quot;rustyline&quot;</span>, <span class="string">&quot;Changeset::truncate({})&quot;</span>, len);
+        <span class="macro">debug!</span>(target: <span class="string">"rustyline"</span>, <span class="string">"Changeset::truncate({})"</span>, len);
         <span class="self">self</span>.undos.truncate(len);
     }
 
@@ -849,115 +850,115 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_insert_chars() {
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        cs.insert(<span class="number">0</span>, <span class="string">&#39;H&#39;</span>);
-        cs.insert(<span class="number">1</span>, <span class="string">&#39;i&#39;</span>);
+        cs.insert(<span class="number">0</span>, <span class="string">'H'</span>);
+        cs.insert(<span class="number">1</span>, <span class="string">'i'</span>);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, cs.undos.len());
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, cs.redos.len());
-        cs.insert(<span class="number">0</span>, <span class="string">&#39; &#39;</span>);
+        cs.insert(<span class="number">0</span>, <span class="string">' '</span>);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, cs.undos.len());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_insert_strings() {
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        cs.insert_str(<span class="number">0</span>, <span class="string">&quot;Hello&quot;</span>);
-        cs.insert_str(<span class="number">5</span>, <span class="string">&quot;, &quot;</span>);
+        cs.insert_str(<span class="number">0</span>, <span class="string">"Hello"</span>);
+        cs.insert_str(<span class="number">5</span>, <span class="string">", "</span>);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, cs.undos.len());
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, cs.redos.len());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_undo_insert() {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">&quot;&quot;</span>, <span class="number">0</span>);
-        buf.insert_str(<span class="number">0</span>, <span class="string">&quot;Hello&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
-        buf.insert_str(<span class="number">5</span>, <span class="string">&quot;, world!&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">""</span>, <span class="number">0</span>);
+        buf.insert_str(<span class="number">0</span>, <span class="string">"Hello"</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        buf.insert_str(<span class="number">5</span>, <span class="string">", world!"</span>, <span class="kw-2">&amp;mut </span>NoListener);
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello, world!&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello, world!"</span>);
 
-        cs.insert_str(<span class="number">5</span>, <span class="string">&quot;, world!&quot;</span>);
+        cs.insert_str(<span class="number">5</span>, <span class="string">", world!"</span>);
 
         cs.undo(<span class="kw-2">&amp;mut </span>buf, <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, cs.undos.len());
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, cs.redos.len());
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello"</span>);
 
         cs.redo(<span class="kw-2">&amp;mut </span>buf);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, cs.undos.len());
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, cs.redos.len());
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello, world!&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello, world!"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_undo_delete() {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">&quot;&quot;</span>, <span class="number">0</span>);
-        buf.insert_str(<span class="number">0</span>, <span class="string">&quot;Hello&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">""</span>, <span class="number">0</span>);
+        buf.insert_str(<span class="number">0</span>, <span class="string">"Hello"</span>, <span class="kw-2">&amp;mut </span>NoListener);
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello"</span>);
 
-        cs.delete(<span class="number">5</span>, <span class="string">&quot;, world!&quot;</span>);
+        cs.delete(<span class="number">5</span>, <span class="string">", world!"</span>);
 
         cs.undo(<span class="kw-2">&amp;mut </span>buf, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello, world!&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello, world!"</span>);
 
         cs.redo(<span class="kw-2">&amp;mut </span>buf);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_delete_chars() {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">&quot;&quot;</span>, <span class="number">0</span>);
-        buf.insert_str(<span class="number">0</span>, <span class="string">&quot;Hlo&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">""</span>, <span class="number">0</span>);
+        buf.insert_str(<span class="number">0</span>, <span class="string">"Hlo"</span>, <span class="kw-2">&amp;mut </span>NoListener);
 
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        cs.delete(<span class="number">1</span>, <span class="string">&quot;e&quot;</span>);
-        cs.delete(<span class="number">1</span>, <span class="string">&quot;l&quot;</span>);
+        cs.delete(<span class="number">1</span>, <span class="string">"e"</span>);
+        cs.delete(<span class="number">1</span>, <span class="string">"l"</span>);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, cs.undos.len());
 
         cs.undo(<span class="kw-2">&amp;mut </span>buf, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_backspace_chars() {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">&quot;&quot;</span>, <span class="number">0</span>);
-        buf.insert_str(<span class="number">0</span>, <span class="string">&quot;Hlo&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">""</span>, <span class="number">0</span>);
+        buf.insert_str(<span class="number">0</span>, <span class="string">"Hlo"</span>, <span class="kw-2">&amp;mut </span>NoListener);
 
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        cs.delete(<span class="number">2</span>, <span class="string">&quot;l&quot;</span>);
-        cs.delete(<span class="number">1</span>, <span class="string">&quot;e&quot;</span>);
+        cs.delete(<span class="number">2</span>, <span class="string">"l"</span>);
+        cs.delete(<span class="number">1</span>, <span class="string">"e"</span>);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, cs.undos.len());
 
         cs.undo(<span class="kw-2">&amp;mut </span>buf, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_undo_replace() {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">&quot;&quot;</span>, <span class="number">0</span>);
-        buf.insert_str(<span class="number">0</span>, <span class="string">&quot;Hello, world!&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = LineBuffer::init(<span class="string">""</span>, <span class="number">0</span>);
+        buf.insert_str(<span class="number">0</span>, <span class="string">"Hello, world!"</span>, <span class="kw-2">&amp;mut </span>NoListener);
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello, world!&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello, world!"</span>);
 
-        buf.replace(<span class="number">1</span>..<span class="number">5</span>, <span class="string">&quot;i&quot;</span>, <span class="kw-2">&amp;mut </span>NoListener);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hi, world!&quot;</span>);
-        cs.replace(<span class="number">1</span>, <span class="string">&quot;ello&quot;</span>, <span class="string">&quot;i&quot;</span>);
+        buf.replace(<span class="number">1</span>..<span class="number">5</span>, <span class="string">"i"</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hi, world!"</span>);
+        cs.replace(<span class="number">1</span>, <span class="string">"ello"</span>, <span class="string">"i"</span>);
 
         cs.undo(<span class="kw-2">&amp;mut </span>buf, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hello, world!&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hello, world!"</span>);
 
         cs.redo(<span class="kw-2">&amp;mut </span>buf);
-        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">&quot;Hi, world!&quot;</span>);
+        <span class="macro">assert_eq!</span>(buf.as_str(), <span class="string">"Hi, world!"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_last_insert() {
         <span class="kw">let </span><span class="kw-2">mut </span>cs = Changeset::new();
         cs.begin();
-        cs.delete(<span class="number">0</span>, <span class="string">&quot;Hello&quot;</span>);
-        cs.insert_str(<span class="number">0</span>, <span class="string">&quot;Bye&quot;</span>);
+        cs.delete(<span class="number">0</span>, <span class="string">"Hello"</span>);
+        cs.insert_str(<span class="number">0</span>, <span class="string">"Bye"</span>);
         cs.end();
         <span class="kw">let </span>insert = cs.last_insert();
-        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="string">&quot;Bye&quot;</span>.to_owned()), insert);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="string">"Bye"</span>.to_owned()), insert);
     }
 
     <span class="attr">#[test]
@@ -966,7 +967,7 @@
         cs.begin();
         <span class="macro">assert!</span>(!cs.end());
         cs.begin();
-        cs.insert_str(<span class="number">0</span>, <span class="string">&quot;Hi&quot;</span>);
+        cs.insert_str(<span class="number">0</span>, <span class="string">"Hi"</span>);
         <span class="macro">assert!</span>(cs.end());
     }
 }

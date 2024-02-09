@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/egraph.rs`."><title>egraph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/egraph.rs`."><title>egraph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -698,9 +699,9 @@
 ///   reachable from the skeleton, potentially creating new Union
 ///   nodes (i.e., an aegraph) so that some values have multiple
 ///   representations.
-/// - Does &quot;extraction&quot; on the aegraph: selects the best value out of
+/// - Does "extraction" on the aegraph: selects the best value out of
 ///   the tree-of-Union nodes for each used value.
-/// - Does &quot;scoped elaboration&quot; on the aegraph: chooses one or more
+/// - Does "scoped elaboration" on the aegraph: chooses one or more
 ///   locations for pure nodes to become instructions again in the
 ///   layout, as forced by the skeleton.
 ///
@@ -709,21 +710,21 @@
 /// nodes. During the pass, Union nodes may exist, and instructions in
 /// the layout may refer to results of instructions that are not
 /// placed in the layout.
-</span><span class="kw">pub struct </span>EgraphPass&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="doccomment">/// The function we&#39;re operating on.
-    </span>func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Function,
+</span><span class="kw">pub struct </span>EgraphPass&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="doccomment">/// The function we're operating on.
+    </span>func: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Function,
     <span class="doccomment">/// Dominator tree, used for elaboration pass.
-    </span>domtree: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTree,
+    </span>domtree: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTree,
     <span class="doccomment">/// Alias analysis, used during optimization.
-    </span>alias_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>AliasAnalysis&lt;<span class="lifetime">&#39;a</span>&gt;,
-    <span class="doccomment">/// &quot;Domtree with children&quot;: like `domtree`, but with an explicit
+    </span>alias_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>AliasAnalysis&lt;<span class="lifetime">'a</span>&gt;,
+    <span class="doccomment">/// "Domtree with children": like `domtree`, but with an explicit
     /// list of children, rather than just parent pointers.
     </span>domtree_children: DomTreeWithChildren,
     <span class="doccomment">/// Loop analysis results, used for built-in LICM during
     /// elaboration.
-    </span>loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>LoopAnalysis,
+    </span>loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>LoopAnalysis,
     <span class="doccomment">/// Which canonical Values do we want to rematerialize in each
-    /// block where they&#39;re used?
+    /// block where they're used?
     ///
     /// (A canonical Value is the *oldest* Value in an eclass,
     /// i.e. tree of union value-nodes).
@@ -736,27 +737,27 @@
 }
 
 <span class="doccomment">/// Context passed through node insertion and optimization.
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>OptimizeCtx&lt;<span class="lifetime">&#39;opt</span>, <span class="lifetime">&#39;analysis</span>&gt;
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>OptimizeCtx&lt;<span class="lifetime">'opt</span>, <span class="lifetime">'analysis</span>&gt;
 <span class="kw">where
-    </span><span class="lifetime">&#39;analysis</span>: <span class="lifetime">&#39;opt</span>,
+    </span><span class="lifetime">'analysis</span>: <span class="lifetime">'opt</span>,
 {
     <span class="comment">// Borrowed from EgraphPass:
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>Function,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) value_to_opt_value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>SecondaryMap&lt;Value, Value&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) gvn_map: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>CtxHashMap&lt;(Type, InstructionData), Value&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) effectful_gvn_map: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>ScopedHashMap&lt;(Type, InstructionData), Value&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) eclasses: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>UnionFind&lt;Value&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) remat_values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>FxHashSet&lt;Value&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) stats: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>Stats,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) alias_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>AliasAnalysis&lt;<span class="lifetime">&#39;analysis</span>&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) alias_analysis_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;opt </span><span class="kw-2">mut </span>LastStores,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) func: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>Function,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) value_to_opt_value: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>SecondaryMap&lt;Value, Value&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) gvn_map: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>CtxHashMap&lt;(Type, InstructionData), Value&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) effectful_gvn_map: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>ScopedHashMap&lt;(Type, InstructionData), Value&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) eclasses: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>UnionFind&lt;Value&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) remat_values: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>FxHashSet&lt;Value&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) stats: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>Stats,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) alias_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>AliasAnalysis&lt;<span class="lifetime">'analysis</span>&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) alias_analysis_state: <span class="kw-2">&amp;</span><span class="lifetime">'opt </span><span class="kw-2">mut </span>LastStores,
     <span class="comment">// Held locally during optimization of one node (recursively):
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) rewrite_depth: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) subsume_values: FxHashSet&lt;Value&gt;,
 }
 
 <span class="doccomment">/// For passing to `insert_pure_enode`. Sometimes the enode already
-/// exists as an Inst (from the original CLIF), and sometimes we&#39;re in
+/// exists as an Inst (from the original CLIF), and sometimes we're in
 /// the middle of creating it and want to avoid inserting it if
 /// possible until we know we need it.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>NewOrExistingInst {
@@ -765,7 +766,7 @@
 }
 
 <span class="kw">impl </span>NewOrExistingInst {
-    <span class="kw">fn </span>get_inst_key&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, dfg: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DataFlowGraph) -&gt; (Type, InstructionData) {
+    <span class="kw">fn </span>get_inst_key&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, dfg: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DataFlowGraph) -&gt; (Type, InstructionData) {
         <span class="kw">match </span><span class="self">self </span>{
             NewOrExistingInst::New(data, ty) =&gt; (<span class="kw-2">*</span>ty, <span class="kw-2">*</span>data),
             NewOrExistingInst::Existing(inst) =&gt; {
@@ -776,24 +777,24 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;opt</span>, <span class="lifetime">&#39;analysis</span>&gt; OptimizeCtx&lt;<span class="lifetime">&#39;opt</span>, <span class="lifetime">&#39;analysis</span>&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'opt</span>, <span class="lifetime">'analysis</span>&gt; OptimizeCtx&lt;<span class="lifetime">'opt</span>, <span class="lifetime">'analysis</span>&gt;
 <span class="kw">where
-    </span><span class="lifetime">&#39;analysis</span>: <span class="lifetime">&#39;opt</span>,
+    </span><span class="lifetime">'analysis</span>: <span class="lifetime">'opt</span>,
 {
     <span class="doccomment">/// Optimization of a single instruction.
     ///
     /// This does a few things:
     /// - Looks up the instruction in the GVN deduplication map. If we
     ///   already have the same instruction somewhere else, with the
-    ///   same args, then we can alias the original instruction&#39;s
+    ///   same args, then we can alias the original instruction's
     ///   results and omit this instruction entirely.
     ///   - Note that we do this canonicalization based on the
     ///     instruction with its arguments as *canonical* eclass IDs,
     ///     that is, the oldest (smallest index) `Value` reachable in
     ///     the tree-of-unions (whole eclass). This ensures that we
-    ///     properly canonicalize newer nodes that use newer &quot;versions&quot;
+    ///     properly canonicalize newer nodes that use newer "versions"
     ///     of a value that are still equal to the older versions.
-    /// - If the instruction is &quot;new&quot; (not deduplicated), then apply
+    /// - If the instruction is "new" (not deduplicated), then apply
     ///   optimization rules:
     ///   - All of the mid-end rules written in ISLE.
     ///   - Store-to-load forwarding.
@@ -885,7 +886,7 @@
         // optimized eagerly as soon as they are created. So we may
         // have more than one ISLE invocation on the stack. (This is
         // necessary so that as the toplevel builds the
-        // right-hand-side expression bottom-up, it uses the &quot;latest&quot;
+        // right-hand-side expression bottom-up, it uses the "latest"
         // optimized values for all the constituent parts.) To avoid
         // infinite or problematic recursion, we bound the rewrite
         // depth to a small constant here.
@@ -898,23 +899,23 @@
 
         <span class="comment">// Invoke the ISLE toplevel constructor, getting all new
         // values produced as equivalents to this value.
-        </span><span class="macro">trace!</span>(<span class="string">&quot;Calling into ISLE with original value {}&quot;</span>, orig_value);
+        </span><span class="macro">trace!</span>(<span class="string">"Calling into ISLE with original value {}"</span>, orig_value);
         isle_ctx.ctx.stats.rewrite_rule_invoked += <span class="number">1</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>optimized_values =
             <span class="kw">crate</span>::opts::generated_code::constructor_simplify(<span class="kw-2">&amp;mut </span>isle_ctx, orig_value);
 
         <span class="comment">// Create a union of all new values with the original (or
-        // maybe just one new value marked as &quot;subsuming&quot; the
+        // maybe just one new value marked as "subsuming" the
         // original, if present.)
         </span><span class="kw">let </span><span class="kw-2">mut </span>union_value = orig_value;
         <span class="kw">while let </span><span class="prelude-val">Some</span>(optimized_value) = optimized_values.next(<span class="kw-2">&amp;mut </span>isle_ctx) {
             <span class="macro">trace!</span>(
-                <span class="string">&quot;Returned from ISLE for {}, got {:?}&quot;</span>,
+                <span class="string">"Returned from ISLE for {}, got {:?}"</span>,
                 orig_value,
                 optimized_value
             );
             <span class="kw">if </span>optimized_value == orig_value {
-                <span class="macro">trace!</span>(<span class="string">&quot; -&gt; same as orig value; skipping&quot;</span>);
+                <span class="macro">trace!</span>(<span class="string">" -&gt; same as orig value; skipping"</span>);
                 <span class="kw">continue</span>;
             }
             <span class="kw">if </span>isle_ctx.ctx.subsume_values.contains(<span class="kw-2">&amp;</span>optimized_value) {
@@ -933,7 +934,7 @@
                 .dfg
                 .union(old_union_value, optimized_value);
             isle_ctx.ctx.stats.union += <span class="number">1</span>;
-            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; union: now {}&quot;</span>, union_value);
+            <span class="macro">trace!</span>(<span class="string">" -&gt; union: now {}"</span>, union_value);
             isle_ctx.ctx.eclasses.add(union_value);
             isle_ctx
                 .ctx
@@ -947,25 +948,25 @@
         union_value
     }
 
-    <span class="doccomment">/// Optimize a &quot;skeleton&quot; instruction, possibly removing
+    <span class="doccomment">/// Optimize a "skeleton" instruction, possibly removing
     /// it. Returns `true` if the instruction should be removed from
     /// the layout.
     </span><span class="kw">fn </span>optimize_skeleton_inst(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inst: Inst) -&gt; bool {
         <span class="self">self</span>.stats.skeleton_inst += <span class="number">1</span>;
 
         <span class="comment">// First, can we try to deduplicate? We need to keep some copy
-        // of the instruction around because it&#39;s side-effecting, but
+        // of the instruction around because it's side-effecting, but
         // we may be able to reuse an earlier instance of it.
         </span><span class="kw">if </span>is_mergeable_for_egraph(<span class="self">self</span>.func, inst) {
             <span class="kw">let </span>result = <span class="self">self</span>.func.dfg.inst_results(inst)[<span class="number">0</span>];
-            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; mergeable side-effecting op {}&quot;</span>, inst);
+            <span class="macro">trace!</span>(<span class="string">" -&gt; mergeable side-effecting op {}"</span>, inst);
 
             <span class="comment">// Does this instruction already exist? If so, add entries to
             // the value-map to rewrite uses of its results to the results
             // of the original (existing) instruction. If not, optimize
             // the new instruction.
             //
-            // Note that we use the &quot;effectful GVN map&quot;, which is
+            // Note that we use the "effectful GVN map", which is
             // scoped: because effectful ops are not removed from the
             // skeleton (`Layout`), we need to be mindful of whether
             // our current position is dominated by an instance of the
@@ -980,14 +981,14 @@
                     <span class="comment">// Hit in GVN map -- reuse value.
                     </span><span class="self">self</span>.value_to_opt_value[result] = orig_result;
                     <span class="self">self</span>.eclasses.union(orig_result, result);
-                    <span class="macro">trace!</span>(<span class="string">&quot; -&gt; merges result {} to {}&quot;</span>, result, orig_result);
+                    <span class="macro">trace!</span>(<span class="string">" -&gt; merges result {} to {}"</span>, result, orig_result);
                     <span class="bool-val">true
                 </span>}
                 ScopedEntry::Vacant(v) =&gt; {
                     <span class="comment">// Otherwise, insert it into the value-map.
                     </span><span class="self">self</span>.value_to_opt_value[result] = result;
                     v.insert(result);
-                    <span class="macro">trace!</span>(<span class="string">&quot; -&gt; inserts as new (no GVN)&quot;</span>);
+                    <span class="macro">trace!</span>(<span class="string">" -&gt; inserts as new (no GVN)"</span>);
                     <span class="bool-val">false
                 </span>}
             }
@@ -1002,7 +1003,7 @@
             <span class="self">self</span>.stats.alias_analysis_removed += <span class="number">1</span>;
             <span class="kw">let </span>result = <span class="self">self</span>.func.dfg.first_result(inst);
             <span class="macro">trace!</span>(
-                <span class="string">&quot; -&gt; inst {} has result {} replaced with {}&quot;</span>,
+                <span class="string">" -&gt; inst {} has result {} replaced with {}"</span>,
                 inst,
                 result,
                 new_result
@@ -1024,13 +1025,13 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; EgraphPass&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; EgraphPass&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Create a new EgraphPass.
     </span><span class="kw">pub fn </span>new(
-        func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Function,
-        domtree: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTree,
-        loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>LoopAnalysis,
-        alias_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>AliasAnalysis&lt;<span class="lifetime">&#39;a</span>&gt;,
+        func: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Function,
+        domtree: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTree,
+        loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>LoopAnalysis,
+        alias_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>AliasAnalysis&lt;<span class="lifetime">'a</span>&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>num_values = func.dfg.num_values();
         <span class="kw">let </span>domtree_children = DomTreeWithChildren::new(func, domtree);
@@ -1050,37 +1051,37 @@
     </span><span class="kw">pub fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.remove_pure_and_optimize();
 
-        <span class="macro">trace!</span>(<span class="string">&quot;egraph built:\n{}\n&quot;</span>, <span class="self">self</span>.func.display());
-        <span class="kw">if </span><span class="macro">cfg!</span>(feature = <span class="string">&quot;trace-log&quot;</span>) {
+        <span class="macro">trace!</span>(<span class="string">"egraph built:\n{}\n"</span>, <span class="self">self</span>.func.display());
+        <span class="kw">if </span><span class="macro">cfg!</span>(feature = <span class="string">"trace-log"</span>) {
             <span class="kw">for </span>(value, def) <span class="kw">in </span><span class="self">self</span>.func.dfg.values_and_defs() {
-                <span class="macro">trace!</span>(<span class="string">&quot; -&gt; {} = {:?}&quot;</span>, value, def);
+                <span class="macro">trace!</span>(<span class="string">" -&gt; {} = {:?}"</span>, value, def);
                 <span class="kw">match </span>def {
                     ValueDef::Result(i, <span class="number">0</span>) =&gt; {
-                        <span class="macro">trace!</span>(<span class="string">&quot;  -&gt; {} = {:?}&quot;</span>, i, <span class="self">self</span>.func.dfg.insts[i]);
+                        <span class="macro">trace!</span>(<span class="string">"  -&gt; {} = {:?}"</span>, i, <span class="self">self</span>.func.dfg.insts[i]);
                     }
                     <span class="kw">_ </span>=&gt; {}
                 }
             }
         }
-        <span class="macro">trace!</span>(<span class="string">&quot;stats: {:?}&quot;</span>, <span class="self">self</span>.stats);
+        <span class="macro">trace!</span>(<span class="string">"stats: {:?}"</span>, <span class="self">self</span>.stats);
         <span class="self">self</span>.elaborate();
     }
 
     <span class="doccomment">/// Remove pure nodes from the `Layout` of the function, ensuring
-    /// that only the &quot;side-effect skeleton&quot; remains, and also
+    /// that only the "side-effect skeleton" remains, and also
     /// optimize the pure nodes. This is the first step of
     /// egraph-based processing and turns the pure CFG-based CLIF into
     /// a CFG skeleton with a sea of (optimized) nodes tying it
     /// together.
     ///
     /// As we walk through the code, we eagerly apply optimization
-    /// rules; at any given point we have a &quot;latest version&quot; of an
+    /// rules; at any given point we have a "latest version" of an
     /// eclass of possible representations for a `Value` in the
     /// original program, which is itself a `Value` at the root of a
     /// union-tree. We keep a map from the original values to these
     /// optimized values. When we encounter any instruction (pure or
     /// side-effecting skeleton) we rewrite its arguments to capture
-    /// the &quot;latest&quot; optimized forms of these values. (We need to do
+    /// the "latest" optimized forms of these values. (We need to do
     /// this as part of this pass, and not later using a finished map,
     /// because the eclass can continue to be updated and we need to
     /// only refer to its subset that exists at this stage, to
@@ -1092,21 +1093,21 @@
         <span class="comment">// Map from instruction to value for hash-consing of pure ops
         // into the egraph. This can be a standard (non-scoped)
         // hashmap because pure ops have no location: they are
-        // &quot;outside of&quot; control flow.
+        // "outside of" control flow.
         //
         // Note also that we keep the controlling typevar (the `Type`
         // in the tuple below) because it may disambiguate
         // instructions that are identical except for type.
         </span><span class="kw">let </span><span class="kw-2">mut </span>gvn_map: CtxHashMap&lt;(Type, InstructionData), Value&gt; =
             CtxHashMap::with_capacity(cursor.func.dfg.num_values());
-        <span class="comment">// Map from instruction to value for GVN&#39;ing of effectful but
+        <span class="comment">// Map from instruction to value for GVN'ing of effectful but
         // idempotent ops, which remain in the side-effecting
         // skeleton. This needs to be scoped because we cannot
         // deduplicate one instruction to another that is in a
         // non-dominating block.
         //
         // Note that we can use a ScopedHashMap here without the
-        // &quot;context&quot; (as needed by CtxHashMap) because in practice the
+        // "context" (as needed by CtxHashMap) because in practice the
         // ops we want to GVN have all their args inline. Equality on
         // the InstructionData itself is conservative: two insts whose
         // struct contents compare shallowly equal are definitely
@@ -1139,25 +1140,25 @@
                         .extend(<span class="self">self</span>.domtree_children.children(block).map(StackEntry::Visit));
                     effectful_gvn_map.increment_depth();
 
-                    <span class="macro">trace!</span>(<span class="string">&quot;Processing block {}&quot;</span>, block);
+                    <span class="macro">trace!</span>(<span class="string">"Processing block {}"</span>, block);
                     cursor.set_position(CursorPosition::Before(block));
 
                     <span class="kw">let </span><span class="kw-2">mut </span>alias_analysis_state = <span class="self">self</span>.alias_analysis.block_starting_state(block);
 
                     <span class="kw">for </span><span class="kw-2">&amp;</span>param <span class="kw">in </span>cursor.func.dfg.block_params(block) {
-                        <span class="macro">trace!</span>(<span class="string">&quot;creating initial singleton eclass for blockparam {}&quot;</span>, param);
+                        <span class="macro">trace!</span>(<span class="string">"creating initial singleton eclass for blockparam {}"</span>, param);
                         <span class="self">self</span>.eclasses.add(param);
                         value_to_opt_value[param] = param;
                     }
                     <span class="kw">while let </span><span class="prelude-val">Some</span>(inst) = cursor.next_inst() {
-                        <span class="macro">trace!</span>(<span class="string">&quot;Processing inst {}&quot;</span>, inst);
+                        <span class="macro">trace!</span>(<span class="string">"Processing inst {}"</span>, inst);
 
-                        <span class="comment">// While we&#39;re passing over all insts, create initial
+                        <span class="comment">// While we're passing over all insts, create initial
                         // singleton eclasses for all result and blockparam
                         // values.  Also do initial analysis of all inst
                         // results.
                         </span><span class="kw">for </span><span class="kw-2">&amp;</span>result <span class="kw">in </span>cursor.func.dfg.inst_results(inst) {
-                            <span class="macro">trace!</span>(<span class="string">&quot;creating initial singleton eclass for {}&quot;</span>, result);
+                            <span class="macro">trace!</span>(<span class="string">"creating initial singleton eclass for {}"</span>, result);
                             <span class="self">self</span>.eclasses.add(result);
                         }
 
@@ -1166,14 +1167,14 @@
                         </span>cursor.func.dfg.resolve_aliases_in_arguments(inst);
                         cursor.func.dfg.map_inst_values(inst, |<span class="kw">_</span>, arg| {
                             <span class="kw">let </span>new_value = value_to_opt_value[arg];
-                            <span class="macro">trace!</span>(<span class="string">&quot;rewriting arg {} of inst {} to {}&quot;</span>, arg, inst, new_value);
+                            <span class="macro">trace!</span>(<span class="string">"rewriting arg {} of inst {} to {}"</span>, arg, inst, new_value);
                             <span class="macro">debug_assert_ne!</span>(new_value, Value::reserved_value());
                             new_value
                         });
 
                         <span class="comment">// Build a context for optimization, with borrows of
-                        // state. We can&#39;t invoke a method on `self` because
-                        // we&#39;ve borrowed `self.func` mutably (as
+                        // state. We can't invoke a method on `self` because
+                        // we've borrowed `self.func` mutably (as
                         // `cursor.func`) so we pull apart the pieces instead
                         // here.
                         </span><span class="kw">let </span><span class="kw-2">mut </span>ctx = OptimizeCtx {
@@ -1196,7 +1197,7 @@
                             // any nodes the optimization rules produce).
                             </span><span class="kw">let </span>inst = NewOrExistingInst::Existing(inst);
                             ctx.insert_pure_enode(inst);
-                            <span class="comment">// We&#39;ve now rewritten all uses, or will when we
+                            <span class="comment">// We've now rewritten all uses, or will when we
                             // see them, and the instruction exists as a pure
                             // enode in the eclass, so we can remove it.
                             </span>cursor.remove_inst_and_step_back();
@@ -1223,7 +1224,7 @@
     ///
     /// This works in concert with the domtree. We do a preorder
     /// traversal of the domtree, tracking a scoped map from Id to
-    /// (new) Value. The map&#39;s scopes correspond to levels in the
+    /// (new) Value. The map's scopes correspond to levels in the
     /// domtree.
     ///
     /// At each block, we iterate forward over the side-effecting
@@ -1234,7 +1235,7 @@
     /// scoped map, and get the Value if already present. If not, we
     /// need to generate it. We emit the extracted enode for this
     /// eclass after recursively generating its args. Eclasses are
-    /// thus computed &quot;as late as possible&quot;, but then memoized into
+    /// thus computed "as late as possible", but then memoized into
     /// the Id-to-Value map and available to all dominated blocks and
     /// for the rest of this block. (This subsumes GVN.)
     </span><span class="kw">fn </span>elaborate(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
@@ -1255,7 +1256,7 @@
     <span class="attr">#[cfg(debug_assertions)]
     </span><span class="kw">fn </span>check_post_egraph(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="comment">// Verify that no union nodes are reachable from inst args,
-        // and that all inst args&#39; defining instructions are in the
+        // and that all inst args' defining instructions are in the
         // layout.
         </span><span class="kw">for </span>block <span class="kw">in </span><span class="self">self</span>.func.layout.blocks() {
             <span class="kw">for </span>inst <span class="kw">in </span><span class="self">self</span>.func.layout.block_insts(block) {
@@ -1267,7 +1268,7 @@
                             <span class="macro">debug_assert!</span>(<span class="self">self</span>.func.layout.inst_block(i).is_some());
                         }
                         ValueDef::Union(..) =&gt; {
-                            <span class="macro">panic!</span>(<span class="string">&quot;egraph union node {} still reachable at {}!&quot;</span>, arg, inst);
+                            <span class="macro">panic!</span>(<span class="string">"egraph union node {} still reachable at {}!"</span>, arg, inst);
                         }
                         <span class="kw">_ </span>=&gt; {}
                     })
@@ -1282,13 +1283,13 @@
 <span class="doccomment">/// Implementation of external-context equality and hashing on
 /// InstructionData. This allows us to deduplicate instructions given
 /// some context that lets us see its value lists and the mapping from
-/// any value to &quot;canonical value&quot; (in an eclass).
-</span><span class="kw">struct </span>GVNContext&lt;<span class="lifetime">&#39;a</span>&gt; {
-    value_lists: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ValueListPool,
-    union_find: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnionFind&lt;Value&gt;,
+/// any value to "canonical value" (in an eclass).
+</span><span class="kw">struct </span>GVNContext&lt;<span class="lifetime">'a</span>&gt; {
+    value_lists: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ValueListPool,
+    union_find: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnionFind&lt;Value&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; CtxEq&lt;(Type, InstructionData), (Type, InstructionData)&gt; <span class="kw">for </span>GVNContext&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; CtxEq&lt;(Type, InstructionData), (Type, InstructionData)&gt; <span class="kw">for </span>GVNContext&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>ctx_eq(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         (a_ty, a_inst): <span class="kw-2">&amp;</span>(Type, InstructionData),
@@ -1301,7 +1302,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; CtxHash&lt;(Type, InstructionData)&gt; <span class="kw">for </span>GVNContext&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; CtxHash&lt;(Type, InstructionData)&gt; <span class="kw">for </span>GVNContext&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>ctx_hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H, (ty, inst): <span class="kw-2">&amp;</span>(Type, InstructionData)) {
         std::hash::Hash::hash(<span class="kw-2">&amp;</span>ty, state);
         inst.hash(state, <span class="self">self</span>.value_lists, |value| <span class="self">self</span>.union_find.find(value));

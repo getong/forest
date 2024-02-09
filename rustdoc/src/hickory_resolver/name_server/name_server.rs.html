@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-resolver-0.24.0/src/name_server/name_server.rs`."><title>name_server.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-resolver-0.24.0/src/name_server/name_server.rs`."><title>name_server.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -350,7 +351,7 @@
 <span class="kw">use </span>futures_util::lock::Mutex;
 <span class="kw">use </span>futures_util::stream::{once, Stream};
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;mdns&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"mdns"</span>)]
 </span><span class="kw">use </span>proto::multicast::MDNS_IPV4;
 <span class="kw">use </span>proto::xfer::{DnsHandle, DnsRequest, DnsResponse, FirstAnswer};
 <span class="kw">use </span>tracing::debug;
@@ -359,7 +360,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::error::ResolveError;
 <span class="kw">use </span><span class="kw">crate</span>::name_server::connection_provider::{ConnectionProvider, GenericConnector};
 <span class="kw">use </span><span class="kw">crate</span>::name_server::{NameServerState, NameServerStats};
-<span class="attr">#[cfg(feature = <span class="string">&quot;mdns&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"mdns"</span>)]
 </span><span class="kw">use </span>proto::multicast::{MdnsClientConnect, MdnsClientStream, MdnsQueryType};
 
 <span class="doccomment">/// This struct is used to create `DnsHandle` with the help of `P`.
@@ -380,8 +381,8 @@
 <span class="kw">where
     </span>P: ConnectionProvider + Send,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;config: {:?}, options: {:?}&quot;</span>, <span class="self">self</span>.config, <span class="self">self</span>.options)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">"config: {:?}, options: {:?}"</span>, <span class="self">self</span>.config, <span class="self">self</span>.options)
     }
 }
 
@@ -438,7 +439,7 @@
 
         <span class="comment">// if this is in a failure state
         </span><span class="kw">if </span><span class="self">self</span>.state.is_failed() || client.is_none() {
-            <span class="macro">debug!</span>(<span class="string">&quot;reconnecting: {:?}&quot;</span>, <span class="self">self</span>.config);
+            <span class="macro">debug!</span>(<span class="string">"reconnecting: {:?}"</span>, <span class="self">self</span>.config);
 
             <span class="comment">// TODO: we need the local EDNS options
             </span><span class="self">self</span>.state.reinit(<span class="prelude-val">None</span>);
@@ -452,15 +453,15 @@
             <span class="comment">// establish a new connection
             </span><span class="kw-2">*</span>client = <span class="prelude-val">Some</span>(new_client);
         } <span class="kw">else </span>{
-            <span class="macro">debug!</span>(<span class="string">&quot;existing connection: {:?}&quot;</span>, <span class="self">self</span>.config);
+            <span class="macro">debug!</span>(<span class="string">"existing connection: {:?}"</span>, <span class="self">self</span>.config);
         }
 
         <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>client)
             .clone()
-            .expect(<span class="string">&quot;bad state, client should be connected&quot;</span>))
+            .expect(<span class="string">"bad state, client should be connected"</span>))
     }
 
-    <span class="kw">async fn </span>inner_send&lt;R: Into&lt;DnsRequest&gt; + Unpin + Send + <span class="lifetime">&#39;static</span>&gt;(
+    <span class="kw">async fn </span>inner_send&lt;R: Into&lt;DnsRequest&gt; + Unpin + Send + <span class="lifetime">'static</span>&gt;(
         <span class="kw-2">mut </span><span class="self">self</span>,
         request: R,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;DnsResponse, ResolveError&gt; {
@@ -487,7 +488,7 @@
                 <span class="prelude-val">Ok</span>(response)
             }
             <span class="prelude-val">Err</span>(error) =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;name_server connection failure: {}&quot;</span>, error);
+                <span class="macro">debug!</span>(<span class="string">"name_server connection failure: {}"</span>, error);
 
                 <span class="comment">// this transitions the state to failure
                 </span><span class="self">self</span>.state.fail(Instant::now());
@@ -519,7 +520,7 @@
     }
 
     <span class="comment">// TODO: there needs to be some way of customizing the connection based on EDNS options from the server side...
-    </span><span class="kw">fn </span>send&lt;R: Into&lt;DnsRequest&gt; + Unpin + Send + <span class="lifetime">&#39;static</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, request: R) -&gt; <span class="self">Self</span>::Response {
+    </span><span class="kw">fn </span>send&lt;R: Into&lt;DnsRequest&gt; + Unpin + Send + <span class="lifetime">'static</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, request: R) -&gt; <span class="self">Self</span>::Response {
         <span class="kw">let </span>this = <span class="self">self</span>.clone();
         <span class="comment">// if state is failed, return future::err(), unless retry delay expired..
         </span>Box::pin(once(this.inner_send(request)))
@@ -530,7 +531,7 @@
 <span class="kw">where
     </span>P: ConnectionProvider + Send,
 {
-    <span class="doccomment">/// Custom implementation of Ord for NameServer which incorporates the performance of the connection into it&#39;s ranking
+    <span class="doccomment">/// Custom implementation of Ord for NameServer which incorporates the performance of the connection into it's ranking
     </span><span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; Ordering {
         <span class="comment">// if they are literally equal, just return
         </span><span class="kw">if </span><span class="self">self </span>== other {
@@ -563,7 +564,7 @@
 <span class="kw">impl</span>&lt;P&gt; Eq <span class="kw">for </span>NameServer&lt;P&gt; <span class="kw">where </span>P: ConnectionProvider + Send {}
 
 <span class="comment">// TODO: once IPv6 is better understood, also make this a binary keep.
-</span><span class="attr">#[cfg(feature = <span class="string">&quot;mdns&quot;</span>)]
+</span><span class="attr">#[cfg(feature = <span class="string">"mdns"</span>)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>mdns_nameserver&lt;P&gt;(
     options: ResolverOpts,
     conn_provider: P,
@@ -577,7 +578,7 @@
         protocol: Protocol::Mdns,
         tls_dns_name: <span class="prelude-val">None</span>,
         trust_negative_responses,
-        <span class="attr">#[cfg(feature = <span class="string">&quot;dns-over-rustls&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">"dns-over-rustls"</span>)]
         </span>tls_config: <span class="prelude-val">None</span>,
         bind_addr: <span class="prelude-val">None</span>,
     };
@@ -585,7 +586,7 @@
 }
 
 <span class="attr">#[cfg(test)]
-#[cfg(feature = <span class="string">&quot;tokio-runtime&quot;</span>)]
+#[cfg(feature = <span class="string">"tokio-runtime"</span>)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::net::{IpAddr, Ipv4Addr, SocketAddr};
     <span class="kw">use </span>std::time::Duration;
@@ -610,7 +611,7 @@
             protocol: Protocol::Udp,
             tls_dns_name: <span class="prelude-val">None</span>,
             trust_negative_responses: <span class="bool-val">false</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;dns-over-rustls&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"dns-over-rustls"</span>)]
             </span>tls_config: <span class="prelude-val">None</span>,
             bind_addr: <span class="prelude-val">None</span>,
         };
@@ -623,7 +624,7 @@
             )
         });
 
-        <span class="kw">let </span>name = Name::parse(<span class="string">&quot;www.example.com.&quot;</span>, <span class="prelude-val">None</span>).unwrap();
+        <span class="kw">let </span>name = Name::parse(<span class="string">"www.example.com."</span>, <span class="prelude-val">None</span>).unwrap();
         <span class="kw">let </span>response = io_loop
             .block_on(name_server.then(|name_server| {
                 name_server
@@ -633,7 +634,7 @@
                     )
                     .first_answer()
             }))
-            .expect(<span class="string">&quot;query failed&quot;</span>);
+            .expect(<span class="string">"query failed"</span>);
         <span class="macro">assert_eq!</span>(response.response_code(), ResponseCode::NoError);
     }
 
@@ -648,7 +649,7 @@
             protocol: Protocol::Udp,
             tls_dns_name: <span class="prelude-val">None</span>,
             trust_negative_responses: <span class="bool-val">false</span>,
-            <span class="attr">#[cfg(feature = <span class="string">&quot;dns-over-rustls&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"dns-over-rustls"</span>)]
             </span>tls_config: <span class="prelude-val">None</span>,
             bind_addr: <span class="prelude-val">None</span>,
         };
@@ -657,7 +658,7 @@
             GenericNameServer::new(config, options, TokioConnectionProvider::default())
         });
 
-        <span class="kw">let </span>name = Name::parse(<span class="string">&quot;www.example.com.&quot;</span>, <span class="prelude-val">None</span>).unwrap();
+        <span class="kw">let </span>name = Name::parse(<span class="string">"www.example.com."</span>, <span class="prelude-val">None</span>).unwrap();
         <span class="macro">assert!</span>(io_loop
             .block_on(name_server.then(|name_server| {
                 name_server

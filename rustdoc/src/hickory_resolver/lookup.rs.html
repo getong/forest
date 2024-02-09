@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-resolver-0.24.0/src/lookup.rs`."><title>lookup.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hickory_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-resolver-0.24.0/src/lookup.rs`."><title>lookup.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hickory_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -747,7 +748,7 @@
     },
 };
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;dnssec&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"dnssec"</span>)]
 </span><span class="kw">use </span>proto::DnssecDnsHandle;
 
 <span class="doccomment">/// Result of a DNS query when querying for any record type supported by the Hickory DNS Proto library.
@@ -792,12 +793,12 @@
     }
 
     <span class="doccomment">/// Returns a borrowed iterator of the returned IPs
-    </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LookupIter&lt;<span class="lifetime">&#39;_</span>&gt; {
+    </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LookupIter&lt;<span class="lifetime">'_</span>&gt; {
         LookupIter(<span class="self">self</span>.records.iter())
     }
 
     <span class="doccomment">/// Returns a borrowed iterator of the returned IPs
-    </span><span class="kw">pub fn </span>record_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LookupRecordIter&lt;<span class="lifetime">&#39;_</span>&gt; {
+    </span><span class="kw">pub fn </span>record_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LookupRecordIter&lt;<span class="lifetime">'_</span>&gt; {
         LookupRecordIter(<span class="self">self</span>.records.iter())
     }
 
@@ -833,10 +834,10 @@
 }
 
 <span class="doccomment">/// Borrowed view of set of [`RData`]s returned from a Lookup
-</span><span class="kw">pub struct </span>LookupIter&lt;<span class="lifetime">&#39;a</span>&gt;(Iter&lt;<span class="lifetime">&#39;a</span>, Record&gt;);
+</span><span class="kw">pub struct </span>LookupIter&lt;<span class="lifetime">'a</span>&gt;(Iter&lt;<span class="lifetime">'a</span>, Record&gt;);
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>LookupIter&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RData;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Iterator <span class="kw">for </span>LookupIter&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RData;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="self">self</span>.<span class="number">0</span>.next().and_then(Record::data)
@@ -844,17 +845,17 @@
 }
 
 <span class="doccomment">/// Borrowed view of set of [`Record`]s returned from a Lookup
-</span><span class="kw">pub struct </span>LookupRecordIter&lt;<span class="lifetime">&#39;a</span>&gt;(Iter&lt;<span class="lifetime">&#39;a</span>, Record&gt;);
+</span><span class="kw">pub struct </span>LookupRecordIter&lt;<span class="lifetime">'a</span>&gt;(Iter&lt;<span class="lifetime">'a</span>, Record&gt;);
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>LookupRecordIter&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Record;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Iterator <span class="kw">for </span>LookupRecordIter&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Record;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="self">self</span>.<span class="number">0</span>.next()
     }
 }
 
-<span class="comment">// TODO: consider removing this as it&#39;s not a zero-cost abstraction
+<span class="comment">// TODO: consider removing this as it's not a zero-cost abstraction
 </span><span class="kw">impl </span>IntoIterator <span class="kw">for </span>Lookup {
     <span class="kw">type </span>Item = RData;
     <span class="kw">type </span>IntoIter = LookupIntoIter;
@@ -893,8 +894,8 @@
 #[doc(hidden)]
 </span><span class="kw">pub enum </span>LookupEither&lt;P: ConnectionProvider + Send&gt; {
     Retry(RetryDnsHandle&lt;NameServerPool&lt;P&gt;&gt;),
-    <span class="attr">#[cfg(feature = <span class="string">&quot;dnssec&quot;</span>)]
-    #[cfg_attr(docsrs, doc(cfg(feature = <span class="string">&quot;dnssec&quot;</span>)))]
+    <span class="attr">#[cfg(feature = <span class="string">"dnssec"</span>)]
+    #[cfg_attr(docsrs, doc(cfg(feature = <span class="string">"dnssec"</span>)))]
     </span>Secure(DnssecDnsHandle&lt;RetryDnsHandle&lt;NameServerPool&lt;P&gt;&gt;&gt;),
 }
 
@@ -905,15 +906,15 @@
     <span class="kw">fn </span>is_verifying_dnssec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
             <span class="self">Self</span>::Retry(<span class="kw-2">ref </span>c) =&gt; c.is_verifying_dnssec(),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;dnssec&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"dnssec"</span>)]
             </span><span class="self">Self</span>::Secure(<span class="kw-2">ref </span>c) =&gt; c.is_verifying_dnssec(),
         }
     }
 
-    <span class="kw">fn </span>send&lt;R: Into&lt;DnsRequest&gt; + Unpin + Send + <span class="lifetime">&#39;static</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, request: R) -&gt; <span class="self">Self</span>::Response {
+    <span class="kw">fn </span>send&lt;R: Into&lt;DnsRequest&gt; + Unpin + Send + <span class="lifetime">'static</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, request: R) -&gt; <span class="self">Self</span>::Response {
         <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
             <span class="self">Self</span>::Retry(<span class="kw-2">ref </span>c) =&gt; c.send(request),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;dnssec&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"dnssec"</span>)]
             </span><span class="self">Self</span>::Secure(<span class="kw-2">ref </span>c) =&gt; c.send(request),
         }
     }
@@ -923,8 +924,8 @@
 </span><span class="attr">#[doc(hidden)]
 </span><span class="kw">pub struct </span>LookupFuture&lt;C, E&gt;
 <span class="kw">where
-    </span>C: DnsHandle&lt;Error = E&gt; + <span class="lifetime">&#39;static</span>,
-    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">&#39;static</span>,
+    </span>C: DnsHandle&lt;Error = E&gt; + <span class="lifetime">'static</span>,
+    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">'static</span>,
 {
     client_cache: CachingClient&lt;C, E&gt;,
     names: Vec&lt;Name&gt;,
@@ -935,8 +936,8 @@
 
 <span class="kw">impl</span>&lt;C, E&gt; LookupFuture&lt;C, E&gt;
 <span class="kw">where
-    </span>C: DnsHandle&lt;Error = E&gt; + <span class="lifetime">&#39;static</span>,
-    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">&#39;static</span>,
+    </span>C: DnsHandle&lt;Error = E&gt; + <span class="lifetime">'static</span>,
+    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Perform a lookup from a name and type to a set of RDatas
     ///
@@ -953,7 +954,7 @@
         <span class="kw-2">mut </span>client_cache: CachingClient&lt;C, E&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>name = names.pop().ok_or_else(|| {
-            ResolveError::from(ResolveErrorKind::Message(<span class="string">&quot;can not lookup for no names&quot;</span>))
+            ResolveError::from(ResolveErrorKind::Message(<span class="string">"can not lookup for no names"</span>))
         });
 
         <span class="kw">let </span>query: Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;Lookup, ResolveError&gt;&gt; + Send&gt;&gt; = <span class="kw">match </span>name {
@@ -975,12 +976,12 @@
 
 <span class="kw">impl</span>&lt;C, E&gt; Future <span class="kw">for </span>LookupFuture&lt;C, E&gt;
 <span class="kw">where
-    </span>C: DnsHandle&lt;Error = E&gt; + <span class="lifetime">&#39;static</span>,
-    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">&#39;static</span>,
+    </span>C: DnsHandle&lt;Error = E&gt; + <span class="lifetime">'static</span>,
+    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;Lookup, ResolveError&gt;;
 
-    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="kw">loop </span>{
             <span class="comment">// Try polling the underlying DNS query.
             </span><span class="kw">let </span>query = <span class="self">self</span>.query.as_mut().poll_unpin(cx);
@@ -1002,7 +1003,7 @@
                     <span class="kw">let </span>record_type = <span class="self">self</span>.record_type;
                     <span class="kw">let </span>options = <span class="self">self</span>.options;
 
-                    <span class="comment">// If there&#39;s another name left to try, build a new query
+                    <span class="comment">// If there's another name left to try, build a new query
                     // for that next name and continue looping.
                     </span><span class="self">self</span>.query = <span class="self">self
                         </span>.client_cache
@@ -1012,8 +1013,8 @@
                     </span><span class="kw">continue</span>;
                 }
             }
-            <span class="comment">// If we didn&#39;t have to retry the query, or we weren&#39;t able to
-            // retry because we&#39;ve exhausted the names to search, return the
+            <span class="comment">// If we didn't have to retry the query, or we weren't able to
+            // retry because we've exhausted the names to search, return the
             // current query.
             </span><span class="kw">return </span>query;
             <span class="comment">// If we skipped retrying the  query, this will return the
@@ -1030,7 +1031,7 @@
 
 <span class="kw">impl </span>SrvLookup {
     <span class="doccomment">/// Returns an iterator over the SRV RData
-    </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SrvLookupIter&lt;<span class="lifetime">&#39;_</span>&gt; {
+    </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SrvLookupIter&lt;<span class="lifetime">'_</span>&gt; {
         SrvLookupIter(<span class="self">self</span>.<span class="number">0</span>.iter())
     }
 
@@ -1042,7 +1043,7 @@
     <span class="doccomment">/// Returns the list of IPs associated with the SRV record.
     ///
     /// *Note*: That Hickory DNS performs a recursive lookup on SRV records for IPs if they were not included in the original request. If there are no IPs associated to the result, a subsequent query for the IPs via the `srv.target()` should not resolve to the IPs.
-    </span><span class="kw">pub fn </span>ip_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LookupIpIter&lt;<span class="lifetime">&#39;_</span>&gt; {
+    </span><span class="kw">pub fn </span>ip_iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LookupIpIter&lt;<span class="lifetime">'_</span>&gt; {
         LookupIpIter(<span class="self">self</span>.<span class="number">0</span>.iter())
     }
 
@@ -1061,10 +1062,10 @@
 }
 
 <span class="doccomment">/// An iterator over the Lookup type
-</span><span class="kw">pub struct </span>SrvLookupIter&lt;<span class="lifetime">&#39;i</span>&gt;(LookupIter&lt;<span class="lifetime">&#39;i</span>&gt;);
+</span><span class="kw">pub struct </span>SrvLookupIter&lt;<span class="lifetime">'i</span>&gt;(LookupIter&lt;<span class="lifetime">'i</span>&gt;);
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;i</span>&gt; Iterator <span class="kw">for </span>SrvLookupIter&lt;<span class="lifetime">&#39;i</span>&gt; {
-    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;i </span>rdata::SRV;
+<span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; Iterator <span class="kw">for </span>SrvLookupIter&lt;<span class="lifetime">'i</span>&gt; {
+    <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'i </span>rdata::SRV;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="kw">let </span>iter: <span class="kw-2">&amp;mut </span><span class="kw">_ </span>= <span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>;
@@ -1112,7 +1113,7 @@
 
         <span class="kw">impl </span><span class="macro-nonterminal">$l </span>{
             <span class="doccomment">/// Returns an iterator over the RData
-            </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="macro-nonterminal">$i</span>&lt;<span class="lifetime">&#39;_</span>&gt; {
+            </span><span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="macro-nonterminal">$i</span>&lt;<span class="lifetime">'_</span>&gt; {
                 <span class="macro-nonterminal">$i</span>(<span class="self">self</span>.<span class="number">0</span>.iter())
             }
 
@@ -1147,10 +1148,10 @@
         }
 
         <span class="doccomment">/// An iterator over the Lookup type
-        </span><span class="kw">pub struct </span><span class="macro-nonterminal">$i</span>&lt;<span class="lifetime">&#39;i</span>&gt;(LookupIter&lt;<span class="lifetime">&#39;i</span>&gt;);
+        </span><span class="kw">pub struct </span><span class="macro-nonterminal">$i</span>&lt;<span class="lifetime">'i</span>&gt;(LookupIter&lt;<span class="lifetime">'i</span>&gt;);
 
-        <span class="kw">impl</span>&lt;<span class="lifetime">&#39;i</span>&gt; Iterator <span class="kw">for </span><span class="macro-nonterminal">$i</span>&lt;<span class="lifetime">&#39;i</span>&gt; {
-            <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;i </span><span class="macro-nonterminal">$t</span>;
+        <span class="kw">impl</span>&lt;<span class="lifetime">'i</span>&gt; Iterator <span class="kw">for </span><span class="macro-nonterminal">$i</span>&lt;<span class="lifetime">'i</span>&gt; {
+            <span class="kw">type </span>Item = <span class="kw-2">&amp;</span><span class="lifetime">'i </span><span class="macro-nonterminal">$t</span>;
 
             <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
                 <span class="kw">let </span>iter: <span class="kw-2">&amp;mut </span><span class="kw">_ </span>= <span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>;
@@ -1383,7 +1384,7 @@
             <span class="macro">assert_eq!</span>(<span class="kw-2">**</span>query, Query::query(Name::root(), RecordType::A));
             <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>negative_ttl, <span class="prelude-val">None</span>);
         } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;wrong error received&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"wrong error received"</span>);
         }
     }
 
@@ -1392,12 +1393,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>lookup = LookupIntoIter {
             records: Arc::from([
                 Record::from_rdata(
-                    Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+                    Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
                     <span class="number">80</span>,
                     RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
                 ),
                 Record::from_rdata(
-                    Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+                    Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
                     <span class="number">80</span>,
                     RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>)),
                 ),

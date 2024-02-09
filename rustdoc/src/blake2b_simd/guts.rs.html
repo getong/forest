@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blake2b_simd-1.0.2/src/guts.rs`."><title>guts.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="blake2b_simd" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/blake2b_simd-1.0.2/src/guts.rs`."><title>guts.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="blake2b_simd" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -569,22 +570,22 @@
 <span class="kw">use </span>arrayref::array_ref;
 <span class="kw">use </span>core::cmp;
 
-<span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+<span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
 </span><span class="kw">pub const </span>MAX_DEGREE: usize = <span class="number">4</span>;
 
-<span class="attr">#[cfg(not(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>)))]
+<span class="attr">#[cfg(not(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>)))]
 </span><span class="kw">pub const </span>MAX_DEGREE: usize = <span class="number">1</span>;
 
 <span class="comment">// Variants other than Portable are unreachable in no_std, unless CPU features
-// are explicitly enabled for the build with e.g. RUSTFLAGS=&quot;-C target-feature=avx2&quot;.
+// are explicitly enabled for the build with e.g. RUSTFLAGS="-C target-feature=avx2".
 // This might change in the future if is_x86_feature_detected moves into libcore.
 </span><span class="attr">#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 </span><span class="kw">enum </span>Platform {
     Portable,
-    <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span>SSE41,
-    <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span>AVX2,
 }
 
@@ -595,13 +596,13 @@
     <span class="kw">pub fn </span>detect() -&gt; <span class="self">Self </span>{
         <span class="comment">// Try the different implementations in order of how fast/modern they
         // are. Currently on non-x86, everything just uses portable.
-        </span><span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+        </span><span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
         </span>{
             <span class="kw">if let </span><span class="prelude-val">Some</span>(avx2_impl) = <span class="self">Self</span>::avx2_if_supported() {
                 <span class="kw">return </span>avx2_impl;
             }
         }
-        <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+        <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
         </span>{
             <span class="kw">if let </span><span class="prelude-val">Some</span>(sse41_impl) = <span class="self">Self</span>::sse41_if_supported() {
                 <span class="kw">return </span>sse41_impl;
@@ -614,36 +615,36 @@
         Implementation(Platform::Portable)
     }
 
-    <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     #[allow(unreachable_code)]
     </span><span class="kw">pub fn </span>sse41_if_supported() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
         <span class="comment">// Check whether SSE4.1 support is assumed by the build.
-        </span><span class="attr">#[cfg(target_feature = <span class="string">&quot;sse4.1&quot;</span>)]
+        </span><span class="attr">#[cfg(target_feature = <span class="string">"sse4.1"</span>)]
         </span>{
             <span class="kw">return </span><span class="prelude-val">Some</span>(Implementation(Platform::SSE41));
         }
         <span class="comment">// Otherwise dynamically check for support if we can.
-        </span><span class="attr">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]
+        </span><span class="attr">#[cfg(feature = <span class="string">"std"</span>)]
         </span>{
-            <span class="kw">if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">&quot;sse4.1&quot;</span>) {
+            <span class="kw">if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">"sse4.1"</span>) {
                 <span class="kw">return </span><span class="prelude-val">Some</span>(Implementation(Platform::SSE41));
             }
         }
         <span class="prelude-val">None
     </span>}
 
-    <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     #[allow(unreachable_code)]
     </span><span class="kw">pub fn </span>avx2_if_supported() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
         <span class="comment">// Check whether AVX2 support is assumed by the build.
-        </span><span class="attr">#[cfg(target_feature = <span class="string">&quot;avx2&quot;</span>)]
+        </span><span class="attr">#[cfg(target_feature = <span class="string">"avx2"</span>)]
         </span>{
             <span class="kw">return </span><span class="prelude-val">Some</span>(Implementation(Platform::AVX2));
         }
         <span class="comment">// Otherwise dynamically check for support if we can.
-        </span><span class="attr">#[cfg(feature = <span class="string">&quot;std&quot;</span>)]
+        </span><span class="attr">#[cfg(feature = <span class="string">"std"</span>)]
         </span>{
-            <span class="kw">if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">&quot;avx2&quot;</span>) {
+            <span class="kw">if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">"avx2"</span>) {
                 <span class="kw">return </span><span class="prelude-val">Some</span>(Implementation(Platform::AVX2));
             }
         }
@@ -652,9 +653,9 @@
 
     <span class="kw">pub fn </span>degree(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
-            <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+            <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
             </span>Platform::AVX2 =&gt; avx2::DEGREE,
-            <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+            <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
             </span>Platform::SSE41 =&gt; sse41::DEGREE,
             Platform::Portable =&gt; <span class="number">1</span>,
         }
@@ -670,50 +671,50 @@
         stride: Stride,
     ) {
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
-            <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+            <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
             </span>Platform::AVX2 =&gt; <span class="kw">unsafe </span>{
                 avx2::compress1_loop(input, words, count, last_node, finalize, stride);
             },
-            <span class="comment">// Note that there&#39;s an SSE version of compress1 in the official C
-            // implementation, but I haven&#39;t ported it yet.
+            <span class="comment">// Note that there's an SSE version of compress1 in the official C
+            // implementation, but I haven't ported it yet.
             </span><span class="kw">_ </span>=&gt; {
                 portable::compress1_loop(input, words, count, last_node, finalize, stride);
             }
         }
     }
 
-    <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">pub fn </span>compress2_loop(<span class="kw-2">&amp;</span><span class="self">self</span>, jobs: <span class="kw-2">&amp;mut </span>[Job; <span class="number">2</span>], finalize: Finalize, stride: Stride) {
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
             Platform::AVX2 | Platform::SSE41 =&gt; <span class="kw">unsafe </span>{
                 sse41::compress2_loop(jobs, finalize, stride)
             },
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unsupported&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unsupported"</span>),
         }
     }
 
-    <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">pub fn </span>compress4_loop(<span class="kw-2">&amp;</span><span class="self">self</span>, jobs: <span class="kw-2">&amp;mut </span>[Job; <span class="number">4</span>], finalize: Finalize, stride: Stride) {
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0 </span>{
             Platform::AVX2 =&gt; <span class="kw">unsafe </span>{ avx2::compress4_loop(jobs, finalize, stride) },
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unsupported&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unsupported"</span>),
         }
     }
 }
 
-<span class="kw">pub struct </span>Job&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>&gt; {
-    <span class="kw">pub </span>input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
-    <span class="kw">pub </span>words: <span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span><span class="kw-2">mut </span>[Word; <span class="number">8</span>],
+<span class="kw">pub struct </span>Job&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; {
+    <span class="kw">pub </span>input: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
+    <span class="kw">pub </span>words: <span class="kw-2">&amp;</span><span class="lifetime">'b </span><span class="kw-2">mut </span>[Word; <span class="number">8</span>],
     <span class="kw">pub </span>count: Count,
     <span class="kw">pub </span>last_node: LastNode,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>&gt; core::fmt::Debug <span class="kw">for </span>Job&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; core::fmt::Debug <span class="kw">for </span>Job&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-        <span class="comment">// NB: Don&#39;t print the words. Leaking them would allow length extension.
+        <span class="comment">// NB: Don't print the words. Leaking them would allow length extension.
         </span><span class="macro">write!</span>(
             f,
-            <span class="string">&quot;Job {{ input_len: {}, count: {}, last_node: {} }}&quot;</span>,
+            <span class="string">"Job {{ input_len: {}, count: {}, last_node: {} }}"</span>,
             <span class="self">self</span>.input.len(),
             <span class="self">self</span>.count,
             <span class="self">self</span>.last_node.yes(),
@@ -776,7 +777,7 @@
     (count &gt;&gt; <span class="number">8 </span>* size_of::&lt;Word&gt;()) <span class="kw">as </span>Word
 }
 
-<span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+<span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>assemble_count(low: Word, high: Word) -&gt; Count {
     low <span class="kw">as </span>Count + ((high <span class="kw">as </span>Count) &lt;&lt; <span class="number">8 </span>* size_of::&lt;Word&gt;())
 }
@@ -790,18 +791,18 @@
 }
 
 <span class="comment">// Pull a array reference at the given offset straight from the input, if
-// there&#39;s a full block of input available. If there&#39;s only a partial block,
+// there's a full block of input available. If there's only a partial block,
 // copy it into the provided buffer, and return an array reference that. Along
 // with the array, return the number of bytes of real input, and whether the
-// input can be finalized (i.e. whether there aren&#39;t any more bytes after this
+// input can be finalized (i.e. whether there aren't any more bytes after this
 // block). Note that this is written so that the optimizer can elide bounds
 // checks, see: https://godbolt.org/z/0hH2bC
-</span><span class="kw">pub fn </span>final_block&lt;<span class="lifetime">&#39;a</span>&gt;(
-    input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+</span><span class="kw">pub fn </span>final_block&lt;<span class="lifetime">'a</span>&gt;(
+    input: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
     offset: usize,
-    buffer: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[u8; BLOCKBYTES],
+    buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[u8; BLOCKBYTES],
     stride: Stride,
-) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8; BLOCKBYTES], usize, bool) {
+) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8; BLOCKBYTES], usize, bool) {
     <span class="kw">let </span>capped_offset = cmp::min(offset, input.len());
     <span class="kw">let </span>offset_slice = <span class="kw-2">&amp;</span>input[capped_offset..];
     <span class="kw">if </span>offset_slice.len() &gt;= BLOCKBYTES {
@@ -817,7 +818,7 @@
 }
 
 <span class="kw">pub fn </span>input_debug_asserts(input: <span class="kw-2">&amp;</span>[u8], finalize: Finalize) {
-    <span class="comment">// If we&#39;re not finalizing, the input must not be empty, and it must be an
+    <span class="comment">// If we're not finalizing, the input must not be empty, and it must be an
     // even multiple of the block size.
     </span><span class="kw">if </span>!finalize.yes() {
         <span class="macro">debug_assert!</span>(!input.is_empty());
@@ -834,10 +835,10 @@
     </span><span class="kw">fn </span>test_detection() {
         <span class="macro">assert_eq!</span>(Platform::Portable, Implementation::portable().<span class="number">0</span>);
 
-        <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
-        #[cfg(feature = <span class="string">&quot;std&quot;</span>)]
+        <span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
+        #[cfg(feature = <span class="string">"std"</span>)]
         </span>{
-            <span class="kw">if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">&quot;avx2&quot;</span>) {
+            <span class="kw">if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">"avx2"</span>) {
                 <span class="macro">assert_eq!</span>(Platform::AVX2, Implementation::detect().<span class="number">0</span>);
                 <span class="macro">assert_eq!</span>(
                     Platform::AVX2,
@@ -847,7 +848,7 @@
                     Platform::SSE41,
                     Implementation::sse41_if_supported().unwrap().<span class="number">0
                 </span>);
-            } <span class="kw">else if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">&quot;sse4.1&quot;</span>) {
+            } <span class="kw">else if </span><span class="macro">is_x86_feature_detected!</span>(<span class="string">"sse4.1"</span>) {
                 <span class="macro">assert_eq!</span>(Platform::SSE41, Implementation::detect().<span class="number">0</span>);
                 <span class="macro">assert!</span>(Implementation::avx2_if_supported().is_none());
                 <span class="macro">assert_eq!</span>(
@@ -894,11 +895,11 @@
                 <span class="kw">for </span><span class="kw-2">&amp;</span>last_node <span class="kw">in </span><span class="kw-2">&amp;</span>[LastNode::No, LastNode::Yes] {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>finalize <span class="kw">in </span><span class="kw-2">&amp;</span>[Finalize::No, Finalize::Yes] {
                         <span class="kw">if </span>!finalize.yes() &amp;&amp; (length == <span class="number">0 </span>|| length % BLOCKBYTES != <span class="number">0</span>) {
-                            <span class="comment">// Skip these cases, they&#39;re invalid.
+                            <span class="comment">// Skip these cases, they're invalid.
                             </span><span class="kw">continue</span>;
                         }
                         <span class="kw">for </span><span class="kw-2">&amp;</span>count <span class="kw">in </span>counts {
-                            <span class="comment">// eprintln!(&quot;\ncase -----&quot;);
+                            <span class="comment">// eprintln!("\ncase -----");
                             // dbg!(stride);
                             // dbg!(length);
                             // dbg!(last_node);
@@ -956,7 +957,7 @@
     // implementation gives the same answer as the portable implementation does
     // when invoked one block at a time. (So even the portable implementation
     // itself is being tested here, to make sure its loop is correct.) Note
-    // that this doesn&#39;t include any fixed test vectors; those are taken from
+    // that this doesn't include any fixed test vectors; those are taken from
     // the blake2-kat.json file (copied from upstream) and tested elsewhere.
     </span><span class="kw">fn </span>exercise_compress1_loop(implementation: Implementation) {
         <span class="kw">let </span><span class="kw-2">mut </span>input = [<span class="number">0</span>; <span class="number">100 </span>* BLOCKBYTES];
@@ -985,7 +986,7 @@
     }
 
     <span class="attr">#[test]
-    #[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    #[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>test_compress1_loop_sse41() {
         <span class="comment">// Currently this just falls back to portable, but we test it anyway.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(imp) = Implementation::sse41_if_supported() {
@@ -994,7 +995,7 @@
     }
 
     <span class="attr">#[test]
-    #[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    #[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>test_compress1_loop_avx2() {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(imp) = Implementation::avx2_if_supported() {
             exercise_compress1_loop(imp);
@@ -1002,11 +1003,11 @@
     }
 
     <span class="comment">// I use ArrayVec everywhere in here becuase currently these tests pass
-    // under no_std. I might decide that&#39;s not worth maintaining at some point,
+    // under no_std. I might decide that's not worth maintaining at some point,
     // since really all we care about with no_std is that the library builds,
-    // but for now it&#39;s here. Everything is keyed off of this N constant so
-    // that it&#39;s easy to copy the code to exercise_compress4_loop.
-    </span><span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    // but for now it's here. Everything is keyed off of this N constant so
+    // that it's easy to copy the code to exercise_compress4_loop.
+    </span><span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>exercise_compress2_loop(implementation: Implementation) {
         <span class="kw">const </span>N: usize = <span class="number">2</span>;
 
@@ -1044,17 +1045,17 @@
                     last_node,
                 });
             }
-            <span class="kw">let </span><span class="kw-2">mut </span>jobs = jobs.into_inner().expect(<span class="string">&quot;full&quot;</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>jobs = jobs.into_inner().expect(<span class="string">"full"</span>);
             implementation.compress2_loop(<span class="kw-2">&amp;mut </span>jobs, finalize, stride);
 
             <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..N {
-                <span class="macro">assert_eq!</span>(reference_words[i], test_words[i], <span class="string">&quot;words {} unequal&quot;</span>, i);
+                <span class="macro">assert_eq!</span>(reference_words[i], test_words[i], <span class="string">"words {} unequal"</span>, i);
             }
         });
     }
 
     <span class="attr">#[test]
-    #[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    #[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>test_compress2_loop_sse41() {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(imp) = Implementation::sse41_if_supported() {
             exercise_compress2_loop(imp);
@@ -1062,7 +1063,7 @@
     }
 
     <span class="attr">#[test]
-    #[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    #[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>test_compress2_loop_avx2() {
         <span class="comment">// Currently this just falls back to SSE4.1, but we test it anyway.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(imp) = Implementation::avx2_if_supported() {
@@ -1072,7 +1073,7 @@
 
     <span class="comment">// Copied from exercise_compress2_loop, with a different value of N and an
     // interior call to compress4_loop.
-    </span><span class="attr">#[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    </span><span class="attr">#[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>exercise_compress4_loop(implementation: Implementation) {
         <span class="kw">const </span>N: usize = <span class="number">4</span>;
 
@@ -1110,17 +1111,17 @@
                     last_node,
                 });
             }
-            <span class="kw">let </span><span class="kw-2">mut </span>jobs = jobs.into_inner().expect(<span class="string">&quot;full&quot;</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>jobs = jobs.into_inner().expect(<span class="string">"full"</span>);
             implementation.compress4_loop(<span class="kw-2">&amp;mut </span>jobs, finalize, stride);
 
             <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..N {
-                <span class="macro">assert_eq!</span>(reference_words[i], test_words[i], <span class="string">&quot;words {} unequal&quot;</span>, i);
+                <span class="macro">assert_eq!</span>(reference_words[i], test_words[i], <span class="string">"words {} unequal"</span>, i);
             }
         });
     }
 
     <span class="attr">#[test]
-    #[cfg(any(target_arch = <span class="string">&quot;x86&quot;</span>, target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+    #[cfg(any(target_arch = <span class="string">"x86"</span>, target_arch = <span class="string">"x86_64"</span>))]
     </span><span class="kw">fn </span>test_compress4_loop_avx2() {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(imp) = Implementation::avx2_if_supported() {
             exercise_compress4_loop(imp);

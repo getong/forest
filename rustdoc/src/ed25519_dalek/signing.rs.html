@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ed25519-dalek-2.1.0/src/signing.rs`."><title>signing.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ed25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ed25519-dalek-2.1.0/src/signing.rs`."><title>signing.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ed25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -922,13 +923,13 @@
 
 </span><span class="kw">use </span>core::fmt::Debug;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pkcs8&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pkcs8"</span>)]
 </span><span class="kw">use </span>ed25519::pkcs8;
 
-<span class="attr">#[cfg(any(test, feature = <span class="string">&quot;rand_core&quot;</span>))]
+<span class="attr">#[cfg(any(test, feature = <span class="string">"rand_core"</span>))]
 </span><span class="kw">use </span>rand_core::CryptoRngCore;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"serde"</span>)]
 </span><span class="kw">use </span>serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 <span class="kw">use </span>sha2::Sha512;
@@ -942,12 +943,12 @@
 
 <span class="kw">use </span>ed25519::signature::{KeypairRef, Signer, Verifier};
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
 </span><span class="kw">use </span><span class="kw">crate</span>::context::Context;
-<span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
 </span><span class="kw">use </span>signature::DigestSigner;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;zeroize&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"zeroize"</span>)]
 </span><span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
 <span class="kw">use crate</span>::{
@@ -1063,7 +1064,7 @@
     /// An array of bytes, `[u8; KEYPAIR_LENGTH]`.  The first
     /// `SECRET_KEY_LENGTH` of bytes is the `SecretKey`, and the next
     /// `PUBLIC_KEY_LENGTH` bytes is the `VerifyingKey` (the same as other
-    /// libraries, such as [Adam Langley&#39;s ed25519 Golang
+    /// libraries, such as [Adam Langley's ed25519 Golang
     /// implementation](https://github.com/agl/ed25519/)). It is guaranteed that
     /// the encoded public key is the one derived from the encoded secret key.
     </span><span class="kw">pub fn </span>to_keypair_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; KEYPAIR_LENGTH] {
@@ -1081,11 +1082,11 @@
 
     <span class="doccomment">/// Create a signing context that can be used for Ed25519ph with
     /// [`DigestSigner`].
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
-    </span><span class="kw">pub fn </span>with_context&lt;<span class="lifetime">&#39;k</span>, <span class="lifetime">&#39;v</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;k </span><span class="self">self</span>,
-        context_value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;v </span>[u8],
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Context&lt;<span class="lifetime">&#39;k</span>, <span class="lifetime">&#39;v</span>, <span class="self">Self</span>&gt;, SignatureError&gt; {
+    </span><span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
+    </span><span class="kw">pub fn </span>with_context&lt;<span class="lifetime">'k</span>, <span class="lifetime">'v</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'k </span><span class="self">self</span>,
+        context_value: <span class="kw-2">&amp;</span><span class="lifetime">'v </span>[u8],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Context&lt;<span class="lifetime">'k</span>, <span class="lifetime">'v</span>, <span class="self">Self</span>&gt;, SignatureError&gt; {
         Context::new(<span class="self">self</span>, context_value)
     }
 
@@ -1093,8 +1094,8 @@
     ///
     /// # Example
     ///
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;rand_core&quot;</span>, doc = <span class="string">&quot;```&quot;</span>)]
-    #[cfg_attr(not(feature = <span class="string">&quot;rand_core&quot;</span>), doc = <span class="string">&quot;```ignore&quot;</span>)]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"rand_core"</span>, doc = <span class="string">"```"</span>)]
+    #[cfg_attr(not(feature = <span class="string">"rand_core"</span>), doc = <span class="string">"```ignore"</span>)]
     </span><span class="doccomment">/// # fn main() {
     /// use rand::rngs::OsRng;
     /// use ed25519_dalek::{Signature, SigningKey};
@@ -1113,7 +1114,7 @@
     /// The standard hash function used for most ed25519 libraries is SHA-512,
     /// which is available with `use sha2::Sha512` as in the example above.
     /// Other suitable hash functions include Keccak-512 and Blake2b-512.
-    </span><span class="attr">#[cfg(any(test, feature = <span class="string">&quot;rand_core&quot;</span>))]
+    </span><span class="attr">#[cfg(any(test, feature = <span class="string">"rand_core"</span>))]
     </span><span class="kw">pub fn </span>generate&lt;R: CryptoRngCore + <span class="question-mark">?</span>Sized&gt;(csprng: <span class="kw-2">&amp;mut </span>R) -&gt; SigningKey {
         <span class="kw">let </span><span class="kw-2">mut </span>secret = SecretKey::default();
         csprng.fill_bytes(<span class="kw-2">&amp;mut </span>secret);
@@ -1145,10 +1146,10 @@
     ///
     /// # Examples
     ///
-    </span><span class="attr">#[cfg_attr(all(feature = <span class="string">&quot;rand_core&quot;</span>, feature = <span class="string">&quot;digest&quot;</span>), doc = <span class="string">&quot;```&quot;</span>)]
+    </span><span class="attr">#[cfg_attr(all(feature = <span class="string">"rand_core"</span>, feature = <span class="string">"digest"</span>), doc = <span class="string">"```"</span>)]
     #[cfg_attr(
-        any(not(feature = <span class="string">&quot;rand_core&quot;</span>), not(feature = <span class="string">&quot;digest&quot;</span>)),
-        doc = <span class="string">&quot;```ignore&quot;
+        any(not(feature = <span class="string">"rand_core"</span>), not(feature = <span class="string">"digest"</span>)),
+        doc = <span class="string">"```ignore"
     </span>)]
     </span><span class="doccomment">/// use ed25519_dalek::Digest;
     /// use ed25519_dalek::SigningKey;
@@ -1159,40 +1160,40 @@
     /// # fn main() {
     /// let mut csprng = OsRng;
     /// let signing_key: SigningKey = SigningKey::generate(&amp;mut csprng);
-    /// let message: &amp;[u8] = b&quot;All I want is to pet all of the dogs.&quot;;
+    /// let message: &amp;[u8] = b"All I want is to pet all of the dogs.";
     ///
-    /// // Create a hash digest object which we&#39;ll feed the message into:
+    /// // Create a hash digest object which we'll feed the message into:
     /// let mut prehashed: Sha512 = Sha512::new();
     ///
     /// prehashed.update(message);
     /// # }
     /// ```
     ///
-    /// If you want, you can optionally pass a &quot;context&quot;.  It is generally a
+    /// If you want, you can optionally pass a "context".  It is generally a
     /// good idea to choose a context and try to make it unique to your project
     /// and this specific usage of signatures.
     ///
     /// For example, without this, if you were to [convert your OpenPGP key
-    /// to a Bitcoin key][terrible_idea] (just as an example, and also Don&#39;t
-    /// Ever Do That) and someone tricked you into signing an &quot;email&quot; which was
+    /// to a Bitcoin key][terrible_idea] (just as an example, and also Don't
+    /// Ever Do That) and someone tricked you into signing an "email" which was
     /// actually a Bitcoin transaction moving all your magic internet money to
-    /// their address, it&#39;d be a valid transaction.
+    /// their address, it'd be a valid transaction.
     ///
     /// By adding a context, this trick becomes impossible, because the context
     /// is concatenated into the hash, which is then signed.  So, going with the
     /// previous example, if your bitcoin wallet used a context of
-    /// &quot;BitcoinWalletAppTxnSigning&quot; and OpenPGP used a context (this is likely
-    /// the least of their safety problems) of &quot;GPGsCryptoIsntConstantTimeLol&quot;,
+    /// "BitcoinWalletAppTxnSigning" and OpenPGP used a context (this is likely
+    /// the least of their safety problems) of "GPGsCryptoIsntConstantTimeLol",
     /// then the signatures produced by both could never match the other, even
     /// if they signed the exact same message with the same key.
     ///
-    /// Let&#39;s add a context for good measure (remember, you&#39;ll want to choose
+    /// Let's add a context for good measure (remember, you'll want to choose
     /// your own!):
     ///
-    </span><span class="attr">#[cfg_attr(all(feature = <span class="string">&quot;rand_core&quot;</span>, feature = <span class="string">&quot;digest&quot;</span>), doc = <span class="string">&quot;```&quot;</span>)]
+    </span><span class="attr">#[cfg_attr(all(feature = <span class="string">"rand_core"</span>, feature = <span class="string">"digest"</span>), doc = <span class="string">"```"</span>)]
     #[cfg_attr(
-        any(not(feature = <span class="string">&quot;rand_core&quot;</span>), not(feature = <span class="string">&quot;digest&quot;</span>)),
-        doc = <span class="string">&quot;```ignore&quot;
+        any(not(feature = <span class="string">"rand_core"</span>), not(feature = <span class="string">"digest"</span>)),
+        doc = <span class="string">"```ignore"
     </span>)]
     </span><span class="doccomment">/// # use ed25519_dalek::Digest;
     /// # use ed25519_dalek::SigningKey;
@@ -1204,11 +1205,11 @@
     /// # fn do_test() -&gt; Result&lt;Signature, SignatureError&gt; {
     /// # let mut csprng = OsRng;
     /// # let signing_key: SigningKey = SigningKey::generate(&amp;mut csprng);
-    /// # let message: &amp;[u8] = b&quot;All I want is to pet all of the dogs.&quot;;
+    /// # let message: &amp;[u8] = b"All I want is to pet all of the dogs.";
     /// # let mut prehashed: Sha512 = Sha512::new();
     /// # prehashed.update(message);
     /// #
-    /// let context: &amp;[u8] = b&quot;Ed25519DalekSignPrehashedDoctest&quot;;
+    /// let context: &amp;[u8] = b"Ed25519DalekSignPrehashedDoctest";
     ///
     /// let sig: Signature = signing_key.sign_prehashed(prehashed, Some(context))?;
     /// #
@@ -1221,7 +1222,7 @@
     ///
     /// [rfc8032]: https://tools.ietf.org/html/rfc8032#section-5.1
     /// [terrible_idea]: https://github.com/isislovecruft/scripts/blob/master/gpgkey2bc.py
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
     </span><span class="kw">pub fn </span>sign_prehashed&lt;MsgDigest&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         prehashed_message: MsgDigest,
@@ -1237,7 +1238,7 @@
         )
     }
 
-    <span class="doccomment">/// Verify a signature on a message with this signing key&#39;s public key.
+    <span class="doccomment">/// Verify a signature on a message with this signing key's public key.
     </span><span class="kw">pub fn </span>verify(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8], signature: <span class="kw-2">&amp;</span>Signature) -&gt; <span class="prelude-ty">Result</span>&lt;(), SignatureError&gt; {
         <span class="self">self</span>.verifying_key.verify(message, signature)
     }
@@ -1268,10 +1269,10 @@
     ///
     /// # Examples
     ///
-    </span><span class="attr">#[cfg_attr(all(feature = <span class="string">&quot;rand_core&quot;</span>, feature = <span class="string">&quot;digest&quot;</span>), doc = <span class="string">&quot;```&quot;</span>)]
+    </span><span class="attr">#[cfg_attr(all(feature = <span class="string">"rand_core"</span>, feature = <span class="string">"digest"</span>), doc = <span class="string">"```"</span>)]
     #[cfg_attr(
-        any(not(feature = <span class="string">&quot;rand_core&quot;</span>), not(feature = <span class="string">&quot;digest&quot;</span>)),
-        doc = <span class="string">&quot;```ignore&quot;
+        any(not(feature = <span class="string">"rand_core"</span>), not(feature = <span class="string">"digest"</span>)),
+        doc = <span class="string">"```ignore"
     </span>)]
     </span><span class="doccomment">/// use ed25519_dalek::Digest;
     /// use ed25519_dalek::SigningKey;
@@ -1283,16 +1284,16 @@
     /// # fn do_test() -&gt; Result&lt;(), SignatureError&gt; {
     /// let mut csprng = OsRng;
     /// let signing_key: SigningKey = SigningKey::generate(&amp;mut csprng);
-    /// let message: &amp;[u8] = b&quot;All I want is to pet all of the dogs.&quot;;
+    /// let message: &amp;[u8] = b"All I want is to pet all of the dogs.";
     ///
     /// let mut prehashed: Sha512 = Sha512::new();
     /// prehashed.update(message);
     ///
-    /// let context: &amp;[u8] = b&quot;Ed25519DalekSignPrehashedDoctest&quot;;
+    /// let context: &amp;[u8] = b"Ed25519DalekSignPrehashedDoctest";
     ///
     /// let sig: Signature = signing_key.sign_prehashed(prehashed, Some(context))?;
     ///
-    /// // The sha2::Sha512 struct doesn&#39;t implement Copy, so we&#39;ll have to create a new one:
+    /// // The sha2::Sha512 struct doesn't implement Copy, so we'll have to create a new one:
     /// let mut prehashed_again: Sha512 = Sha512::default();
     /// prehashed_again.update(message);
     ///
@@ -1309,7 +1310,7 @@
     /// ```
     ///
     /// [rfc8032]: https://tools.ietf.org/html/rfc8032#section-5.1
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
     </span><span class="kw">pub fn </span>verify_prehashed&lt;MsgDigest&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         prehashed_message: MsgDigest,
@@ -1323,7 +1324,7 @@
             .verify_prehashed(prehashed_message, context, signature)
     }
 
-    <span class="doccomment">/// Strictly verify a signature on a message with this signing key&#39;s public key.
+    <span class="doccomment">/// Strictly verify a signature on a message with this signing key's public key.
     ///
     /// # On The (Multiple) Sources of Malleability in Ed25519 Signatures
     ///
@@ -1340,7 +1341,7 @@
     /// &gt; Ed25519ph is being used, C being the context, first split the
     /// &gt; signature into two 32-octet halves.  Decode the first half as a
     /// &gt; point R, and the second half as an integer S, in the range
-    /// &gt; 0 &lt;= s &lt; L.  Decode the public key A as point A&#39;.  If any of the
+    /// &gt; 0 &lt;= s &lt; L.  Decode the public key A as point A'.  If any of the
     /// &gt; decodings fail (including S being out of range), the signature is
     /// &gt; invalid.)
     ///
@@ -1352,13 +1353,13 @@
     /// §5.1.7, for small torsion components in the `R` value of the signature,
     /// *which is not strictly required*, as they state:
     ///
-    /// &gt; Check the group equation \[8\]\[S\]B = \[8\]R + \[8\]\[k\]A&#39;.  It&#39;s
-    /// &gt; sufficient, but not required, to instead check \[S\]B = R + \[k\]A&#39;.
+    /// &gt; Check the group equation \[8\]\[S\]B = \[8\]R + \[8\]\[k\]A'.  It's
+    /// &gt; sufficient, but not required, to instead check \[S\]B = R + \[k\]A'.
     ///
     /// # History of Malleability Checks
     ///
-    /// As originally defined (cf. the &quot;Malleability&quot; section in the README of
-    /// this repo), ed25519 signatures didn&#39;t consider *any* form of
+    /// As originally defined (cf. the "Malleability" section in the README of
+    /// this repo), ed25519 signatures didn't consider *any* form of
     /// malleability to be an issue.  Later the scalar malleability was
     /// considered important.  Still later, particularly with interests in
     /// cryptocurrency design and in unique identities (e.g. for Signal users,
@@ -1372,11 +1373,11 @@
     /// verify fine individually, but suddenly, when verifying it with a bunch
     /// of other signatures, the whole batch would fail!
     ///
-    /// # &quot;Strict&quot; Verification
+    /// # "Strict" Verification
     ///
     /// This method performs *both* of the above signature malleability checks.
     ///
-    /// It must be done as a separate method because one doesn&#39;t simply get to
+    /// It must be done as a separate method because one doesn't simply get to
     /// change the definition of a cryptographic primitive ten years
     /// after-the-fact with zero consideration for backwards compatibility in
     /// hardware and protocols which have it already have the older definition
@@ -1454,9 +1455,9 @@
 }
 
 <span class="kw">impl </span>Debug <span class="kw">for </span>SigningKey {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>::core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; ::core::fmt::Result {
-        f.debug_struct(<span class="string">&quot;SigningKey&quot;</span>)
-            .field(<span class="string">&quot;verifying_key&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.verifying_key)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>::core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; ::core::fmt::Result {
+        f.debug_struct(<span class="string">"SigningKey"</span>)
+            .field(<span class="string">"verifying_key"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.verifying_key)
             .finish_non_exhaustive() <span class="comment">// avoids printing `secret_key`
     </span>}
 }
@@ -1466,7 +1467,7 @@
 }
 
 <span class="kw">impl </span>Signer&lt;Signature&gt; <span class="kw">for </span>SigningKey {
-    <span class="doccomment">/// Sign a message with this signing key&#39;s secret key.
+    <span class="doccomment">/// Sign a message with this signing key's secret key.
     </span><span class="kw">fn </span>try_sign(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Signature, SignatureError&gt; {
         <span class="kw">let </span>expanded: ExpandedSecretKey = (<span class="kw-2">&amp;</span><span class="self">self</span>.secret_key).into();
         <span class="prelude-val">Ok</span>(expanded.raw_sign::&lt;Sha512&gt;(message, <span class="kw-2">&amp;</span><span class="self">self</span>.verifying_key))
@@ -1480,7 +1481,7 @@
 /// The RFC only permits SHA-512 to be used for prehashing. This function technically works, and is
 /// probably safe to use, with any secure hash function with 512-bit digests, but anything outside
 /// of SHA-512 is NOT specification-compliant. We expose [`crate::Sha512`] for user convenience.
-</span><span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
+</span><span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
 </span><span class="kw">impl</span>&lt;D&gt; DigestSigner&lt;D, Signature&gt; <span class="kw">for </span>SigningKey
 <span class="kw">where
     </span>D: Digest&lt;OutputSize = U64&gt;,
@@ -1498,8 +1499,8 @@
 /// The RFC only permits SHA-512 to be used for prehashing. This function technically works, and is
 /// probably safe to use, with any secure hash function with 512-bit digests, but anything outside
 /// of SHA-512 is NOT specification-compliant. We expose [`crate::Sha512`] for user convenience.
-</span><span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
-</span><span class="kw">impl</span>&lt;D&gt; DigestSigner&lt;D, Signature&gt; <span class="kw">for </span>Context&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>, SigningKey&gt;
+</span><span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
+</span><span class="kw">impl</span>&lt;D&gt; DigestSigner&lt;D, Signature&gt; <span class="kw">for </span>Context&lt;<span class="lifetime">'_</span>, <span class="lifetime">'_</span>, SigningKey&gt;
 <span class="kw">where
     </span>D: Digest&lt;OutputSize = U64&gt;,
 {
@@ -1509,7 +1510,7 @@
 }
 
 <span class="kw">impl </span>Verifier&lt;Signature&gt; <span class="kw">for </span>SigningKey {
-    <span class="doccomment">/// Verify a signature on a message with this signing key&#39;s public key.
+    <span class="doccomment">/// Verify a signature on a message with this signing key's public key.
     </span><span class="kw">fn </span>verify(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8], signature: <span class="kw-2">&amp;</span>Signature) -&gt; <span class="prelude-ty">Result</span>&lt;(), SignatureError&gt; {
         <span class="self">self</span>.verifying_key.verify(message, signature)
     }
@@ -1537,7 +1538,7 @@
             .map(|bytes| <span class="self">Self</span>::from_bytes(<span class="kw-2">&amp;</span>bytes))
             .map_err(|<span class="kw">_</span>| {
                 InternalError::BytesLength {
-                    name: <span class="string">&quot;SecretKey&quot;</span>,
+                    name: <span class="string">"SecretKey"</span>,
                     length: SECRET_KEY_LENGTH,
                 }
                 .into()
@@ -1559,24 +1560,24 @@
 
 <span class="kw">impl </span>Eq <span class="kw">for </span>SigningKey {}
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;zeroize&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"zeroize"</span>)]
 </span><span class="kw">impl </span>Drop <span class="kw">for </span>SigningKey {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.secret_key.zeroize();
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;zeroize&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"zeroize"</span>)]
 </span><span class="kw">impl </span>ZeroizeOnDrop <span class="kw">for </span>SigningKey {}
 
-<span class="attr">#[cfg(all(feature = <span class="string">&quot;alloc&quot;</span>, feature = <span class="string">&quot;pkcs8&quot;</span>))]
+<span class="attr">#[cfg(all(feature = <span class="string">"alloc"</span>, feature = <span class="string">"pkcs8"</span>))]
 </span><span class="kw">impl </span>pkcs8::EncodePrivateKey <span class="kw">for </span>SigningKey {
     <span class="kw">fn </span>to_pkcs8_der(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; pkcs8::Result&lt;pkcs8::SecretDocument&gt; {
         pkcs8::KeypairBytes::from(<span class="self">self</span>).to_pkcs8_der()
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pkcs8&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pkcs8"</span>)]
 </span><span class="kw">impl </span>TryFrom&lt;pkcs8::KeypairBytes&gt; <span class="kw">for </span>SigningKey {
     <span class="kw">type </span>Error = pkcs8::Error;
 
@@ -1585,7 +1586,7 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pkcs8&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pkcs8"</span>)]
 </span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>pkcs8::KeypairBytes&gt; <span class="kw">for </span>SigningKey {
     <span class="kw">type </span>Error = pkcs8::Error;
 
@@ -1606,14 +1607,14 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pkcs8&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pkcs8"</span>)]
 </span><span class="kw">impl </span>From&lt;SigningKey&gt; <span class="kw">for </span>pkcs8::KeypairBytes {
     <span class="kw">fn </span>from(signing_key: SigningKey) -&gt; pkcs8::KeypairBytes {
         pkcs8::KeypairBytes::from(<span class="kw-2">&amp;</span>signing_key)
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pkcs8&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pkcs8"</span>)]
 </span><span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>SigningKey&gt; <span class="kw">for </span>pkcs8::KeypairBytes {
     <span class="kw">fn </span>from(signing_key: <span class="kw-2">&amp;</span>SigningKey) -&gt; pkcs8::KeypairBytes {
         pkcs8::KeypairBytes {
@@ -1623,16 +1624,16 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pkcs8&quot;</span>)]
-</span><span class="kw">impl </span>TryFrom&lt;pkcs8::PrivateKeyInfo&lt;<span class="lifetime">&#39;_</span>&gt;&gt; <span class="kw">for </span>SigningKey {
+<span class="attr">#[cfg(feature = <span class="string">"pkcs8"</span>)]
+</span><span class="kw">impl </span>TryFrom&lt;pkcs8::PrivateKeyInfo&lt;<span class="lifetime">'_</span>&gt;&gt; <span class="kw">for </span>SigningKey {
     <span class="kw">type </span>Error = pkcs8::Error;
 
-    <span class="kw">fn </span>try_from(private_key: pkcs8::PrivateKeyInfo&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; pkcs8::Result&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(private_key: pkcs8::PrivateKeyInfo&lt;<span class="lifetime">'_</span>&gt;) -&gt; pkcs8::Result&lt;<span class="self">Self</span>&gt; {
         pkcs8::KeypairBytes::try_from(private_key)<span class="question-mark">?</span>.try_into()
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"serde"</span>)]
 </span><span class="kw">impl </span>Serialize <span class="kw">for </span>SigningKey {
     <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
     <span class="kw">where
@@ -1642,38 +1643,38 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;serde&quot;</span>)]
-</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;d</span>&gt; Deserialize&lt;<span class="lifetime">&#39;d</span>&gt; <span class="kw">for </span>SigningKey {
+<span class="attr">#[cfg(feature = <span class="string">"serde"</span>)]
+</span><span class="kw">impl</span>&lt;<span class="lifetime">'d</span>&gt; Deserialize&lt;<span class="lifetime">'d</span>&gt; <span class="kw">for </span>SigningKey {
     <span class="kw">fn </span>deserialize&lt;D&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, D::Error&gt;
     <span class="kw">where
-        </span>D: Deserializer&lt;<span class="lifetime">&#39;d</span>&gt;,
+        </span>D: Deserializer&lt;<span class="lifetime">'d</span>&gt;,
     {
         <span class="kw">struct </span>SigningKeyVisitor;
 
-        <span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>&gt; serde::de::Visitor&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for </span>SigningKeyVisitor {
+        <span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; serde::de::Visitor&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>SigningKeyVisitor {
             <span class="kw">type </span>Value = SigningKey;
 
-            <span class="kw">fn </span>expecting(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>::core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; ::core::fmt::Result {
-                <span class="macro">write!</span>(formatter, <span class="macro">concat!</span>(<span class="string">&quot;An ed25519 signing (private) key&quot;</span>))
+            <span class="kw">fn </span>expecting(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>::core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; ::core::fmt::Result {
+                <span class="macro">write!</span>(formatter, <span class="macro">concat!</span>(<span class="string">"An ed25519 signing (private) key"</span>))
             }
 
             <span class="kw">fn </span>visit_borrowed_bytes&lt;E: serde::de::Error&gt;(
                 <span class="self">self</span>,
-                bytes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;de </span>[u8],
+                bytes: <span class="kw-2">&amp;</span><span class="lifetime">'de </span>[u8],
             ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Value, E&gt; {
                 SigningKey::try_from(bytes).map_err(E::custom)
             }
 
             <span class="kw">fn </span>visit_seq&lt;A&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>seq: A) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Value, A::Error&gt;
             <span class="kw">where
-                </span>A: serde::de::SeqAccess&lt;<span class="lifetime">&#39;de</span>&gt;,
+                </span>A: serde::de::SeqAccess&lt;<span class="lifetime">'de</span>&gt;,
             {
                 <span class="kw">let </span><span class="kw-2">mut </span>bytes = [<span class="number">0u8</span>; <span class="number">32</span>];
                 <span class="attr">#[allow(clippy::needless_range_loop)]
                 </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">32 </span>{
                     bytes[i] = seq
                         .next_element()<span class="question-mark">?
-                        </span>.ok_or_else(|| serde::de::Error::invalid_length(i, <span class="kw-2">&amp;</span><span class="string">&quot;expected 32 bytes&quot;</span>))<span class="question-mark">?</span>;
+                        </span>.ok_or_else(|| serde::de::Error::invalid_length(i, <span class="kw-2">&amp;</span><span class="string">"expected 32 bytes"</span>))<span class="question-mark">?</span>;
                 }
 
                 <span class="kw">let </span>remaining = (<span class="number">0</span>..)
@@ -1684,7 +1685,7 @@
                 <span class="kw">if </span>remaining &gt; <span class="number">0 </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(serde::de::Error::invalid_length(
                         <span class="number">32 </span>+ remaining,
-                        <span class="kw-2">&amp;</span><span class="string">&quot;expected 32 bytes&quot;</span>,
+                        <span class="kw-2">&amp;</span><span class="string">"expected 32 bytes"</span>,
                     ));
                 }
 
@@ -1756,7 +1757,7 @@
     ///
     /// This definition is loose in its parameters so that end-users of the `hazmat` module can
     /// change how the `ExpandedSecretKey` is calculated and which `CtxDigest` function to use.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;digest&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"digest"</span>)]
     #[allow(non_snake_case)]
     #[inline(always)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>raw_sign_prehashed&lt;CtxDigest, MsgDigest&gt;(
@@ -1771,7 +1772,7 @@
     {
         <span class="kw">let </span><span class="kw-2">mut </span>prehash: [u8; <span class="number">64</span>] = [<span class="number">0u8</span>; <span class="number">64</span>];
 
-        <span class="kw">let </span>ctx: <span class="kw-2">&amp;</span>[u8] = context.unwrap_or(<span class="string">b&quot;&quot;</span>); <span class="comment">// By default, the context is an empty string.
+        <span class="kw">let </span>ctx: <span class="kw-2">&amp;</span>[u8] = context.unwrap_or(<span class="string">b""</span>); <span class="comment">// By default, the context is an empty string.
 
         </span><span class="kw">if </span>ctx.len() &gt; <span class="number">255 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(SignatureError::from(InternalError::PrehashedContextLength));
@@ -1784,18 +1785,18 @@
 
         <span class="comment">// This is the dumbest, ten-years-late, non-admission of fucking up the
         // domain separation I have ever seen.  Why am I still required to put
-        // the upper half &quot;prefix&quot; of the hashed &quot;secret key&quot; in here?  Why
-        // can&#39;t the user just supply their own nonce and decide for themselves
+        // the upper half "prefix" of the hashed "secret key" in here?  Why
+        // can't the user just supply their own nonce and decide for themselves
         // whether or not they want a deterministic signature scheme?  Why does
-        // the message go into what&#39;s ostensibly the signature domain separation
-        // hash?  Why wasn&#39;t there always a way to provide a context string?
+        // the message go into what's ostensibly the signature domain separation
+        // hash?  Why wasn't there always a way to provide a context string?
         //
         // ...
         //
         // This is a really fucking stupid bandaid, and the damned scheme is
-        // still bleeding from malleability, for fuck&#39;s sake.
+        // still bleeding from malleability, for fuck's sake.
         </span><span class="kw">let </span><span class="kw-2">mut </span>h = CtxDigest::new()
-            .chain_update(<span class="string">b&quot;SigEd25519 no Ed25519 collisions&quot;</span>)
+            .chain_update(<span class="string">b"SigEd25519 no Ed25519 collisions"</span>)
             .chain_update([<span class="number">1</span>]) <span class="comment">// Ed25519ph
             </span>.chain_update([ctx_len])
             .chain_update(ctx)
@@ -1806,7 +1807,7 @@
         <span class="kw">let </span>R: CompressedEdwardsY = EdwardsPoint::mul_base(<span class="kw-2">&amp;</span>r).compress();
 
         h = CtxDigest::new()
-            .chain_update(<span class="string">b&quot;SigEd25519 no Ed25519 collisions&quot;</span>)
+            .chain_update(<span class="string">b"SigEd25519 no Ed25519 collisions"</span>)
             .chain_update([<span class="number">1</span>]) <span class="comment">// Ed25519ph
             </span>.chain_update([ctx_len])
             .chain_update(ctx)

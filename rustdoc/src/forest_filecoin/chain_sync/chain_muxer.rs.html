@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/chain_sync/chain_muxer.rs`."><title>chain_muxer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/chain_sync/chain_muxer.rs`."><title>chain_muxer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1056,25 +1057,25 @@
 
 <span class="attr">#[derive(Debug, Error)]
 </span><span class="kw">pub enum </span>ChainMuxerError {
-    <span class="attr">#[error(<span class="string">&quot;Tipset processor error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Tipset processor error: {0}"</span>)]
     </span>TipsetProcessor(<span class="attr">#[from] </span>TipsetProcessorError),
-    <span class="attr">#[error(<span class="string">&quot;Tipset range syncer error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Tipset range syncer error: {0}"</span>)]
     </span>TipsetRangeSyncer(<span class="attr">#[from] </span>TipsetRangeSyncerError),
-    <span class="attr">#[error(<span class="string">&quot;Tipset validation error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Tipset validation error: {0}"</span>)]
     </span>TipsetValidator(<span class="attr">#[from] </span>Box&lt;TipsetValidationError&gt;),
-    <span class="attr">#[error(<span class="string">&quot;Sending tipset on channel failed: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Sending tipset on channel failed: {0}"</span>)]
     </span>TipsetChannelSend(String),
-    <span class="attr">#[error(<span class="string">&quot;Receiving p2p network event failed: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Receiving p2p network event failed: {0}"</span>)]
     </span>P2PEventStreamReceive(String),
-    <span class="attr">#[error(<span class="string">&quot;Chain store error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Chain store error: {0}"</span>)]
     </span>ChainStore(<span class="attr">#[from] </span>ChainStoreError),
-    <span class="attr">#[error(<span class="string">&quot;Chain exchange: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Chain exchange: {0}"</span>)]
     </span>ChainExchange(String),
-    <span class="attr">#[error(<span class="string">&quot;Bitswap: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Bitswap: {0}"</span>)]
     </span>Bitswap(String),
-    <span class="attr">#[error(<span class="string">&quot;Block error: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Block error: {0}"</span>)]
     </span>Block(<span class="attr">#[from] </span>CreateTipsetError),
-    <span class="attr">#[error(<span class="string">&quot;Following network unexpectedly failed: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"Following network unexpectedly failed: {0}"</span>)]
     </span>NetworkFollowingFailure(String),
 }
 
@@ -1169,8 +1170,8 @@
 
 <span class="kw">impl</span>&lt;DB, M&gt; ChainMuxer&lt;DB, M&gt;
 <span class="kw">where
-    </span>DB: Blockstore + Sync + Send + <span class="lifetime">&#39;static</span>,
-    M: Provider + Sync + Send + <span class="lifetime">&#39;static</span>,
+    </span>DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>,
+    M: Provider + Sync + Send + <span class="lifetime">'static</span>,
 {
     <span class="attr">#[allow(clippy::too_many_arguments)]
     </span><span class="kw">pub fn </span>new(
@@ -1275,7 +1276,7 @@
                 <span class="kw">match </span>network.hello_request(peer_id, request).<span class="kw">await </span>{
                     <span class="prelude-val">Ok</span>(response) =&gt; response,
                     <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Hello request failed: {}&quot;</span>, e);
+                        <span class="macro">debug!</span>(<span class="string">"Hello request failed: {}"</span>, e);
                         <span class="kw">return</span>;
                     }
                 };
@@ -1305,7 +1306,7 @@
         network: SyncNetworkContext&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;FullTipset, ChainMuxerError&gt; {
         <span class="macro">debug!</span>(
-            <span class="string">&quot;Received block over GossipSub: {} height {} from {}&quot;</span>,
+            <span class="string">"Received block over GossipSub: {} height {} from {}"</span>,
             block.header.cid(),
             block.header.epoch,
             source,
@@ -1314,7 +1315,7 @@
         <span class="kw">let </span>epoch = block.header.epoch;
 
         <span class="macro">debug!</span>(
-            <span class="string">&quot;Getting messages of gossipblock, epoch: {epoch}, block: {}&quot;</span>,
+            <span class="string">"Getting messages of gossipblock, epoch: {epoch}, block: {}"</span>,
             block.header.cid()
         );
         <span class="comment">// Get bls_message in the store or over Bitswap
@@ -1348,7 +1349,7 @@
     <span class="kw">fn </span>handle_pubsub_message(mem_pool: Arc&lt;MessagePool&lt;M&gt;&gt;, message: SignedMessage) {
         <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = mem_pool.add(message) {
             <span class="macro">debug!</span>(
-                <span class="string">&quot;GossipSub message could not be added to the mem pool: {}&quot;</span>,
+                <span class="string">"GossipSub message could not be added to the mem pool: {}"</span>,
                 why
             );
         }
@@ -1390,7 +1391,7 @@
                 </span>{
                     <span class="prelude-val">Ok</span>(tipset) =&gt; tipset,
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Querying full tipset failed: {}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Querying full tipset failed: {}"</span>, why);
                         <span class="kw">return </span><span class="prelude-val">Err</span>(why);
                     }
                 };
@@ -1484,7 +1485,7 @@
             &lt; chain_store.heaviest_tipset().epoch()
         {
             <span class="macro">debug!</span>(
-                <span class="string">&quot;Skip processing tipset at epoch {} from {source} that is too old&quot;</span>,
+                <span class="string">"Skip processing tipset at epoch {} from {source} that is too old"</span>,
                 tipset.epoch()
             );
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
@@ -1499,7 +1500,7 @@
         ) {
             metrics::INVALID_TIPSET_TOTAL.inc();
             <span class="macro">warn!</span>(
-                <span class="string">&quot;Validating tipset received through GossipSub failed: {}&quot;</span>,
+                <span class="string">"Validating tipset received through GossipSub failed: {}"</span>,
                 why
             );
             <span class="kw">return </span><span class="prelude-val">Err</span>(why.into());
@@ -1535,7 +1536,7 @@
                 <span class="kw">let </span>event = <span class="kw">match </span>p2p_messages.recv_async().<span class="kw">await </span>{
                     <span class="prelude-val">Ok</span>(event) =&gt; event,
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Receiving event from p2p event stream failed: {why}&quot;</span>);
+                        <span class="macro">debug!</span>(<span class="string">"Receiving event from p2p event stream failed: {why}"</span>);
                         <span class="kw">return </span><span class="prelude-val">Err</span>(ChainMuxerError::P2PEventStreamReceive(why.to_string()));
                     }
                 };
@@ -1554,7 +1555,7 @@
                 </span>{
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {}
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Processing GossipSub event failed: {why:?}&quot;</span>);
+                        <span class="macro">debug!</span>(<span class="string">"Processing GossipSub event failed: {why:?}"</span>);
                     }
                 };
             }
@@ -1579,7 +1580,7 @@
                 <span class="kw">let </span>event = <span class="kw">match </span>p2p_messages.recv_async().<span class="kw">await </span>{
                     <span class="prelude-val">Ok</span>(event) =&gt; event,
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Receiving event from p2p event stream failed: {}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Receiving event from p2p event stream failed: {}"</span>, why);
                         <span class="kw">return </span><span class="prelude-val">Err</span>(ChainMuxerError::P2PEventStreamReceive(why.to_string()));
                     }
                 };
@@ -1599,7 +1600,7 @@
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, source))) =&gt; (tipset, source),
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="kw">continue</span>,
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Processing GossipSub event failed: {:?}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Processing GossipSub event failed: {:?}"</span>, why);
                         <span class="kw">continue</span>;
                     }
                 };
@@ -1614,13 +1615,13 @@
                     <span class="kw">let </span>header = <span class="kw-2">&amp;</span>block.header;
                     <span class="kw">if </span>!header.is_within_clock_drift() {
                         <span class="macro">warn!</span>(
-                            <span class="string">&quot;Skipping tipset with invalid block timestamp from the future, now_epoch: {now_epoch}, epoch: {}, timestamp: {}&quot;</span>,
+                            <span class="string">"Skipping tipset with invalid block timestamp from the future, now_epoch: {now_epoch}, epoch: {}, timestamp: {}"</span>,
                             header.epoch, header.timestamp
                         );
                         <span class="bool-val">false
                     </span>} <span class="kw">else if </span>tipset.epoch() &gt; now_epoch {
                         <span class="macro">warn!</span>(
-                                <span class="string">&quot;Skipping tipset with invalid epoch from the future, now_epoch: {now_epoch}, epoch: {}, timestamp: {}&quot;</span>,
+                                <span class="string">"Skipping tipset with invalid epoch from the future, now_epoch: {now_epoch}, epoch: {}, timestamp: {}"</span>,
                                 header.epoch, header.timestamp
                             );
                         <span class="bool-val">false
@@ -1718,7 +1719,7 @@
                 <span class="kw">let </span>event = <span class="kw">match </span>p2p_messages.recv_async().<span class="kw">await </span>{
                     <span class="prelude-val">Ok</span>(event) =&gt; event,
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Receiving event from p2p event stream failed: {}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Receiving event from p2p event stream failed: {}"</span>, why);
                         <span class="kw">return </span><span class="prelude-val">Err</span>(ChainMuxerError::P2PEventStreamReceive(why.to_string()));
                     }
                 };
@@ -1738,7 +1739,7 @@
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, source))) =&gt; (tipset, source),
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="kw">continue</span>,
                     <span class="prelude-val">Err</span>(why) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;Processing GossipSub event failed: {:?}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Processing GossipSub event failed: {:?}"</span>, why);
                         <span class="kw">continue</span>;
                     }
                 };
@@ -1812,7 +1813,7 @@
                         .send_async(Arc::new(tipset.into_tipset()))
                         .<span class="kw">await
                     </span>{
-                        <span class="macro">debug!</span>(<span class="string">&quot;Sending tipset to TipsetProcessor failed: {}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Sending tipset to TipsetProcessor failed: {}"</span>, why);
                         <span class="kw">return </span><span class="prelude-val">Err</span>(ChainMuxerError::TipsetChannelSend(why.to_string()));
                     };
                 }
@@ -1820,7 +1821,7 @@
                     <span class="kw">let </span>event = <span class="kw">match </span>p2p_messages.recv_async().<span class="kw">await </span>{
                         <span class="prelude-val">Ok</span>(event) =&gt; event,
                         <span class="prelude-val">Err</span>(why) =&gt; {
-                            <span class="macro">debug!</span>(<span class="string">&quot;Receiving event from p2p event stream failed: {}&quot;</span>, why);
+                            <span class="macro">debug!</span>(<span class="string">"Receiving event from p2p event stream failed: {}"</span>, why);
                             <span class="kw">return </span><span class="prelude-val">Err</span>(ChainMuxerError::P2PEventStreamReceive(why.to_string()));
                         }
                     };
@@ -1840,7 +1841,7 @@
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, source))) =&gt; (tipset, source),
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="kw">continue</span>,
                         <span class="prelude-val">Err</span>(why) =&gt; {
-                            <span class="macro">debug!</span>(<span class="string">&quot;Processing GossipSub event failed: {:?}&quot;</span>, why);
+                            <span class="macro">debug!</span>(<span class="string">"Processing GossipSub event failed: {:?}"</span>, why);
                             <span class="kw">continue</span>;
                         }
                     };
@@ -1849,7 +1850,7 @@
                     // tipset in the store
                     </span><span class="kw">if </span>tipset.weight() &lt; chain_store.heaviest_tipset().weight() {
                         <span class="comment">// Only send heavier Tipsets to the TipsetProcessor
-                        </span><span class="macro">trace!</span>(<span class="string">&quot;Dropping tipset [Key = {:?}] that is not heavier than the heaviest tipset in the store&quot;</span>, tipset.key());
+                        </span><span class="macro">trace!</span>(<span class="string">"Dropping tipset [Key = {:?}] that is not heavier than the heaviest tipset in the store"</span>, tipset.key());
                         <span class="kw">continue</span>;
                     }
 
@@ -1857,7 +1858,7 @@
                         .send_async(Arc::new(tipset.into_tipset()))
                         .<span class="kw">await
                     </span>{
-                        <span class="macro">debug!</span>(<span class="string">&quot;Sending tipset to TipsetProcessor failed: {}&quot;</span>, why);
+                        <span class="macro">debug!</span>(<span class="string">"Sending tipset to TipsetProcessor failed: {}"</span>, why);
                         <span class="kw">return </span><span class="prelude-val">Err</span>(ChainMuxerError::TipsetChannelSend(why.to_string()));
                     };
                 }
@@ -1879,13 +1880,13 @@
                     </span><span class="kw">match </span>kind {
                         UnexpectedReturnKind::TipsetProcessor =&gt; {
                             <span class="prelude-val">Err</span>(ChainMuxerError::NetworkFollowingFailure(String::from(
-                                <span class="string">&quot;Tipset processor unexpectedly returned&quot;</span>,
+                                <span class="string">"Tipset processor unexpectedly returned"</span>,
                             )))
                         }
                     }
                 }
                 <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)) =&gt; {
-                    <span class="macro">error!</span>(<span class="string">&quot;Following the network failed unexpectedly: {}&quot;</span>, e);
+                    <span class="macro">error!</span>(<span class="string">"Following the network failed unexpectedly: {}"</span>, e);
                     <span class="prelude-val">Err</span>(e)
                 }
                 <span class="comment">// This arm is reliably unreachable because the FuturesUnordered
@@ -1907,8 +1908,8 @@
 
 <span class="kw">impl</span>&lt;DB, M&gt; Future <span class="kw">for </span>ChainMuxer&lt;DB, M&gt;
 <span class="kw">where
-    </span>DB: Blockstore + Sync + Send + <span class="lifetime">&#39;static</span>,
-    M: Provider + Sync + Send + <span class="lifetime">&#39;static</span>,
+    </span>DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>,
+    M: Provider + Sync + Send + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Output = ChainMuxerError;
 
@@ -1917,16 +1918,16 @@
             <span class="kw">match </span><span class="self">self</span>.state {
                 ChainMuxerState::Idle =&gt; {
                     <span class="kw">if </span><span class="self">self</span>.stateless_mode {
-                        <span class="macro">info!</span>(<span class="string">&quot;Running chain muxer in stateless mode...&quot;</span>);
+                        <span class="macro">info!</span>(<span class="string">"Running chain muxer in stateless mode..."</span>);
                         <span class="self">self</span>.state = ChainMuxerState::Stateless(<span class="self">self</span>.stateless_node());
                     } <span class="kw">else if </span><span class="self">self</span>.state_manager.sync_config().tipset_sample_size == <span class="number">0 </span>{
                         <span class="comment">// A standalone node might use this option to not be stuck waiting for P2P
                         // messages.
-                        </span><span class="macro">info!</span>(<span class="string">&quot;Skip evaluating network head, assume in-sync.&quot;</span>);
+                        </span><span class="macro">info!</span>(<span class="string">"Skip evaluating network head, assume in-sync."</span>);
                         <span class="self">self</span>.state = ChainMuxerState::Follow(<span class="self">self</span>.follow(<span class="prelude-val">None</span>));
                     } <span class="kw">else </span>{
                         <span class="comment">// Create the connect future and set the state to connect
-                        </span><span class="macro">info!</span>(<span class="string">&quot;Evaluating network head...&quot;</span>);
+                        </span><span class="macro">info!</span>(<span class="string">"Evaluating network head..."</span>);
                         <span class="self">self</span>.state = ChainMuxerState::Connect(<span class="self">self</span>.evaluate_network_head());
                     }
                 }
@@ -1941,23 +1942,23 @@
                             network_head,
                             local_head,
                         } =&gt; {
-                            <span class="macro">info!</span>(<span class="string">&quot;Local node is behind the network, starting BOOTSTRAP from LOCAL_HEAD = {} -&gt; NETWORK_HEAD = {}&quot;</span>, local_head.epoch(), network_head.epoch());
+                            <span class="macro">info!</span>(<span class="string">"Local node is behind the network, starting BOOTSTRAP from LOCAL_HEAD = {} -&gt; NETWORK_HEAD = {}"</span>, local_head.epoch(), network_head.epoch());
                             <span class="self">self</span>.state = ChainMuxerState::Bootstrap(
                                 <span class="self">self</span>.bootstrap(network_head, local_head),
                             );
                         }
                         NetworkHeadEvaluation::InRange { network_head } =&gt; {
-                            <span class="macro">info!</span>(<span class="string">&quot;Local node is within range of the NETWORK_HEAD = {}, starting FOLLOW&quot;</span>, network_head.epoch());
+                            <span class="macro">info!</span>(<span class="string">"Local node is within range of the NETWORK_HEAD = {}, starting FOLLOW"</span>, network_head.epoch());
                             <span class="self">self</span>.state = ChainMuxerState::Follow(<span class="self">self</span>.follow(<span class="prelude-val">Some</span>(network_head)));
                         }
                         NetworkHeadEvaluation::InSync =&gt; {
-                            <span class="macro">info!</span>(<span class="string">&quot;Local node is in sync with the network&quot;</span>);
+                            <span class="macro">info!</span>(<span class="string">"Local node is in sync with the network"</span>);
                             <span class="self">self</span>.state = ChainMuxerState::Follow(<span class="self">self</span>.follow(<span class="prelude-val">None</span>));
                         }
                     },
                     Poll::Ready(<span class="prelude-val">Err</span>(why)) =&gt; {
                         <span class="macro">error!</span>(
-                            <span class="string">&quot;Evaluating the network head failed, retrying. Error = {:?}&quot;</span>,
+                            <span class="string">"Evaluating the network head failed, retrying. Error = {:?}"</span>,
                             why
                         );
                         metrics::NETWORK_HEAD_EVALUATION_ERRORS.inc();
@@ -1971,11 +1972,11 @@
                 ChainMuxerState::Bootstrap(<span class="kw-2">ref mut </span>bootstrap) =&gt; {
                     <span class="kw">match </span>bootstrap.as_mut().poll(cx) {
                         Poll::Ready(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-                            <span class="macro">info!</span>(<span class="string">&quot;Bootstrap successfully completed, now evaluating the network head to ensure the node is in sync&quot;</span>);
+                            <span class="macro">info!</span>(<span class="string">"Bootstrap successfully completed, now evaluating the network head to ensure the node is in sync"</span>);
                             <span class="self">self</span>.state = ChainMuxerState::Idle;
                         }
                         Poll::Ready(<span class="prelude-val">Err</span>(why)) =&gt; {
-                            <span class="macro">error!</span>(<span class="string">&quot;Bootstrapping failed, re-evaluating the network head to retry the bootstrap. Error = {:?}&quot;</span>, why);
+                            <span class="macro">error!</span>(<span class="string">"Bootstrapping failed, re-evaluating the network head to retry the bootstrap. Error = {:?}"</span>, why);
                             metrics::BOOTSTRAP_ERRORS.inc();
                             <span class="self">self</span>.state = ChainMuxerState::Idle;
                         }
@@ -1984,12 +1985,12 @@
                 }
                 ChainMuxerState::Follow(<span class="kw-2">ref mut </span>follow) =&gt; <span class="kw">match </span>follow.as_mut().poll(cx) {
                     Poll::Ready(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">&quot;Following the network unexpectedly ended without an error; restarting the sync process.&quot;</span>);
+                        <span class="macro">error!</span>(<span class="string">"Following the network unexpectedly ended without an error; restarting the sync process."</span>);
                         metrics::FOLLOW_NETWORK_INTERRUPTIONS.inc();
                         <span class="self">self</span>.state = ChainMuxerState::Idle;
                     }
                     Poll::Ready(<span class="prelude-val">Err</span>(why)) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">&quot;Following the network failed, restarted. Error = {:?}&quot;</span>, why);
+                        <span class="macro">error!</span>(<span class="string">"Following the network failed, restarted. Error = {:?}"</span>, why);
                         metrics::FOLLOW_NETWORK_ERRORS.inc();
                         <span class="self">self</span>.state = ChainMuxerState::Idle;
                     }

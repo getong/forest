@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-wasm-0.99.2/src/func_translator.rs`."><title>func_translator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_wasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-wasm-0.99.2/src/func_translator.rs`."><title>func_translator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_wasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -509,20 +510,20 @@
     </span><span class="kw">pub fn </span>translate_body&lt;FE: FuncEnvironment + <span class="question-mark">?</span>Sized&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         validator: <span class="kw-2">&amp;mut </span>FuncValidator&lt;<span class="kw">impl </span>WasmModuleResources&gt;,
-        body: FunctionBody&lt;<span class="lifetime">&#39;_</span>&gt;,
+        body: FunctionBody&lt;<span class="lifetime">'_</span>&gt;,
         func: <span class="kw-2">&amp;mut </span>ir::Function,
         environ: <span class="kw-2">&amp;mut </span>FE,
     ) -&gt; WasmResult&lt;()&gt; {
         <span class="kw">let </span>_tt = timing::wasm_translate_function();
         <span class="kw">let </span><span class="kw-2">mut </span>reader = body.get_binary_reader();
         <span class="macro">log::trace!</span>(
-            <span class="string">&quot;translate({} bytes, {}{})&quot;</span>,
+            <span class="string">"translate({} bytes, {}{})"</span>,
             reader.bytes_remaining(),
             func.name,
             func.signature
         );
-        <span class="macro">debug_assert_eq!</span>(func.dfg.num_blocks(), <span class="number">0</span>, <span class="string">&quot;Function must be empty&quot;</span>);
-        <span class="macro">debug_assert_eq!</span>(func.dfg.num_insts(), <span class="number">0</span>, <span class="string">&quot;Function must be empty&quot;</span>);
+        <span class="macro">debug_assert_eq!</span>(func.dfg.num_blocks(), <span class="number">0</span>, <span class="string">"Function must be empty"</span>);
+        <span class="macro">debug_assert_eq!</span>(func.dfg.num_insts(), <span class="number">0</span>, <span class="string">"Function must be empty"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>builder = FunctionBuilder::new(func, <span class="kw-2">&amp;mut </span><span class="self">self</span>.func_ctx);
         builder.set_srcloc(cur_srcloc(<span class="kw-2">&amp;</span>reader));
@@ -547,7 +548,7 @@
         parse_function_body(validator, reader, <span class="kw-2">&amp;mut </span>builder, <span class="kw-2">&amp;mut </span><span class="self">self</span>.state, environ)<span class="question-mark">?</span>;
 
         builder.finalize();
-        <span class="macro">log::trace!</span>(<span class="string">&quot;translated Wasm to CLIF:\n{}&quot;</span>, func.display());
+        <span class="macro">log::trace!</span>(<span class="string">"translated Wasm to CLIF:\n{}"</span>, func.display());
         <span class="prelude-val">Ok</span>(())
     }
 }
@@ -683,7 +684,7 @@
     environ: <span class="kw-2">&amp;mut </span>FE,
 ) -&gt; WasmResult&lt;()&gt; {
     <span class="comment">// The control stack is initialized with a single block representing the whole function.
-    </span><span class="macro">debug_assert_eq!</span>(state.control_stack.len(), <span class="number">1</span>, <span class="string">&quot;State not initialized&quot;</span>);
+    </span><span class="macro">debug_assert_eq!</span>(state.control_stack.len(), <span class="number">1</span>, <span class="string">"State not initialized"</span>);
 
     environ.before_translate_function(builder, state)<span class="question-mark">?</span>;
     <span class="kw">while </span>!reader.eof() {
@@ -703,7 +704,7 @@
     // instruction.
     //
     // If the exit block is unreachable, it may not have the correct arguments, so we would
-    // generate a return instruction that doesn&#39;t match the signature.
+    // generate a return instruction that doesn't match the signature.
     </span><span class="kw">if </span>state.reachable {
         <span class="kw">if </span>!builder.is_unreachable() {
             bitcast_wasm_returns(environ, <span class="kw-2">&amp;mut </span>state.stack, builder);
@@ -741,13 +742,13 @@
     </span><span class="kw">fn </span>small1() {
         <span class="comment">// Implicit return.
         </span><span class="kw">let </span>wasm = wat::parse_str(
-            <span class="string">&quot;
+            <span class="string">"
                 (module
                     (func $small2 (param i32) (result i32)
                         (i32.add (get_local 0) (i32.const 1))
                     )
                 )
-            &quot;</span>,
+            "</span>,
         )
         .unwrap();
 
@@ -760,7 +761,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::new();
 
-        ctx.func.name = ir::UserFuncName::testcase(<span class="string">&quot;small1&quot;</span>);
+        ctx.func.name = ir::UserFuncName::testcase(<span class="string">"small1"</span>);
         ctx.func.signature.params.push(ir::AbiParam::new(I32));
         ctx.func.signature.returns.push(ir::AbiParam::new(I32));
 
@@ -768,7 +769,7 @@
         trans
             .translate_body(<span class="kw-2">&amp;mut </span>validator, body, <span class="kw-2">&amp;mut </span>ctx.func, <span class="kw-2">&amp;mut </span>runtime.func_env())
             .unwrap();
-        <span class="macro">debug!</span>(<span class="string">&quot;{}&quot;</span>, ctx.func.display());
+        <span class="macro">debug!</span>(<span class="string">"{}"</span>, ctx.func.display());
         ctx.verify(<span class="kw-2">&amp;</span>flags).unwrap();
     }
 
@@ -776,13 +777,13 @@
     </span><span class="kw">fn </span>small2() {
         <span class="comment">// Same as above, but with an explicit return instruction.
         </span><span class="kw">let </span>wasm = wat::parse_str(
-            <span class="string">&quot;
+            <span class="string">"
                 (module
                     (func $small2 (param i32) (result i32)
                         (return (i32.add (get_local 0) (i32.const 1)))
                     )
                 )
-            &quot;</span>,
+            "</span>,
         )
         .unwrap();
 
@@ -795,7 +796,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::new();
 
-        ctx.func.name = ir::UserFuncName::testcase(<span class="string">&quot;small2&quot;</span>);
+        ctx.func.name = ir::UserFuncName::testcase(<span class="string">"small2"</span>);
         ctx.func.signature.params.push(ir::AbiParam::new(I32));
         ctx.func.signature.returns.push(ir::AbiParam::new(I32));
 
@@ -803,7 +804,7 @@
         trans
             .translate_body(<span class="kw-2">&amp;mut </span>validator, body, <span class="kw-2">&amp;mut </span>ctx.func, <span class="kw-2">&amp;mut </span>runtime.func_env())
             .unwrap();
-        <span class="macro">debug!</span>(<span class="string">&quot;{}&quot;</span>, ctx.func.display());
+        <span class="macro">debug!</span>(<span class="string">"{}"</span>, ctx.func.display());
         ctx.verify(<span class="kw-2">&amp;</span>flags).unwrap();
     }
 
@@ -811,7 +812,7 @@
     </span><span class="kw">fn </span>infloop() {
         <span class="comment">// An infinite loop, no return instructions.
         </span><span class="kw">let </span>wasm = wat::parse_str(
-            <span class="string">&quot;
+            <span class="string">"
                 (module
                     (func $infloop (result i32)
                         (local i32)
@@ -822,7 +823,7 @@
                         )
                     )
                 )
-            &quot;</span>,
+            "</span>,
         )
         .unwrap();
 
@@ -835,18 +836,18 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::new();
 
-        ctx.func.name = ir::UserFuncName::testcase(<span class="string">&quot;infloop&quot;</span>);
+        ctx.func.name = ir::UserFuncName::testcase(<span class="string">"infloop"</span>);
         ctx.func.signature.returns.push(ir::AbiParam::new(I32));
 
         <span class="kw">let </span>(body, <span class="kw-2">mut </span>validator) = extract_func(<span class="kw-2">&amp;</span>wasm);
         trans
             .translate_body(<span class="kw-2">&amp;mut </span>validator, body, <span class="kw-2">&amp;mut </span>ctx.func, <span class="kw-2">&amp;mut </span>runtime.func_env())
             .unwrap();
-        <span class="macro">debug!</span>(<span class="string">&quot;{}&quot;</span>, ctx.func.display());
+        <span class="macro">debug!</span>(<span class="string">"{}"</span>, ctx.func.display());
         ctx.verify(<span class="kw-2">&amp;</span>flags).unwrap();
     }
 
-    <span class="kw">fn </span>extract_func(wat: <span class="kw-2">&amp;</span>[u8]) -&gt; (FunctionBody&lt;<span class="lifetime">&#39;_</span>&gt;, FuncValidator&lt;ValidatorResources&gt;) {
+    <span class="kw">fn </span>extract_func(wat: <span class="kw-2">&amp;</span>[u8]) -&gt; (FunctionBody&lt;<span class="lifetime">'_</span>&gt;, FuncValidator&lt;ValidatorResources&gt;) {
         <span class="kw">let </span><span class="kw-2">mut </span>validator = Validator::new();
         <span class="kw">for </span>payload <span class="kw">in </span>Parser::new(<span class="number">0</span>).parse_all(wat) {
             <span class="kw">match </span>validator.payload(<span class="kw-2">&amp;</span>payload.unwrap()).unwrap() {
@@ -857,7 +858,7 @@
                 <span class="kw">_ </span>=&gt; {}
             }
         }
-        <span class="macro">panic!</span>(<span class="string">&quot;failed to find function&quot;</span>);
+        <span class="macro">panic!</span>(<span class="string">"failed to find function"</span>);
     }
 }
 </code></pre></div></section></main></body></html>

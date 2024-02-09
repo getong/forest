@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/regalloc2-0.9.3/src/checker.rs`."><title>checker.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="regalloc2" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/regalloc2-0.9.3/src/checker.rs`."><title>checker.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="regalloc2" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1103,7 +1104,7 @@
 //! particular virtual registers in the original function body
 //! presented to the register allocator. Any instruction in the
 //! original function body (i.e., not added by the allocator)
-//! conceptually generates a symbolic value &quot;Vn&quot; when storing to (or
+//! conceptually generates a symbolic value "Vn" when storing to (or
 //! modifying) a virtual register.
 //!
 //! A symbolic value is logically a *set of virtual registers*,
@@ -1112,7 +1113,7 @@
 //! opposed to tracking just one virtual register) is necessary
 //! because the regalloc may implement moves in the source program
 //! (via move instructions or blockparam assignments on edges) in
-//! &quot;intelligent&quot; ways, taking advantage of values that are already in
+//! "intelligent" ways, taking advantage of values that are already in
 //! the right place, so we need to know *all* names for a value.
 //!
 //! These symbolic values are precise but partial: in other words, if
@@ -1141,7 +1142,7 @@
 //! bound) is set-intersection.
 //!
 //! (For efficiency, we represent ⊤ not by actually listing out all
-//! virtual registers, but by representing a special &quot;top&quot; value, but
+//! virtual registers, but by representing a special "top" value, but
 //! the semantics are the same.)
 //!
 //! The dataflow analysis state at each program point (each point
@@ -1154,12 +1155,12 @@
 //!
 //!   - `Edit::Move` inserted by RA:       [ alloc_d := alloc_s ]
 //!
-//!       A&#39; = A[alloc_d → A[alloc_s]]
+//!       A' = A[alloc_d → A[alloc_s]]
 //!
 //!   - statement in pre-regalloc function [ V_i := op V_j, V_k, ... ]
 //!     with allocated form                [ A_i := op A_j, A_k, ... ]
 //!
-//!       A&#39; = { A_k → A[A_k] \ { V_i } for k ≠ i } ∪
+//!       A' = { A_k → A[A_k] \ { V_i } for k ≠ i } ∪
 //!            { A_i -&gt; { V_i } }
 //!
 //!     In other words, a statement, even after allocation, generates
@@ -1170,7 +1171,7 @@
 //!   - Parallel moves or blockparam-assignments in original program
 //!                                       [ V_d1 := V_s1, V_d2 := V_s2, ... ]
 //!
-//!       A&#39; = { A_k → subst(A[A_k]) for all k }
+//!       A' = { A_k → subst(A[A_k]) for all k }
 //!            where subst(S) removes symbols for overwritten virtual
 //!            registers (V_d1 .. V_dn) and then adds V_di whenever
 //!            V_si appeared prior to the removals.
@@ -1327,7 +1328,7 @@
     <span class="kw">fn </span>remove_vreg(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: VReg) {
         <span class="kw">match </span><span class="self">self </span>{
             CheckerValue::Universe =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot remove VReg from Universe set (we do not have the full list of vregs available&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"Cannot remove VReg from Universe set (we do not have the full list of vregs available"</span>);
             }
             CheckerValue::VRegs(vregs) =&gt; {
                 vregs.remove(<span class="kw-2">&amp;</span>reg);
@@ -1391,26 +1392,26 @@
 
     <span class="kw">fn </span>get_values_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;mut </span>CheckerValue&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            CheckerState::Top =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot get mutable values iterator on Top state&quot;</span>),
+            CheckerState::Top =&gt; <span class="macro">panic!</span>(<span class="string">"Cannot get mutable values iterator on Top state"</span>),
             CheckerState::Allocations(allocs) =&gt; allocs.values_mut(),
         }
     }
 
     <span class="kw">fn </span>get_mappings(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span>Allocation, <span class="kw-2">&amp;</span>CheckerValue)&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            CheckerState::Top =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot get mappings iterator on Top state&quot;</span>),
+            CheckerState::Top =&gt; <span class="macro">panic!</span>(<span class="string">"Cannot get mappings iterator on Top state"</span>),
             CheckerState::Allocations(allocs) =&gt; allocs.iter(),
         }
     }
 
     <span class="kw">fn </span>get_mappings_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (<span class="kw-2">&amp;</span>Allocation, <span class="kw-2">&amp;mut </span>CheckerValue)&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            CheckerState::Top =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot get mutable mappings iterator on Top state&quot;</span>),
+            CheckerState::Top =&gt; <span class="macro">panic!</span>(<span class="string">"Cannot get mutable mappings iterator on Top state"</span>),
             CheckerState::Allocations(allocs) =&gt; allocs.iter_mut(),
         }
     }
 
-    <span class="doccomment">/// Transition from a &quot;top&quot; (undefined/unanalyzed) state to an empty set of allocations.
+    <span class="doccomment">/// Transition from a "top" (undefined/unanalyzed) state to an empty set of allocations.
     </span><span class="kw">fn </span>become_defined(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">match </span><span class="self">self </span>{
             CheckerState::Top =&gt; <span class="kw-2">*</span><span class="self">self </span>= CheckerState::Allocations(FxHashMap::default()),
@@ -1421,7 +1422,7 @@
     <span class="kw">fn </span>set_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: Allocation, value: CheckerValue) {
         <span class="kw">match </span><span class="self">self </span>{
             CheckerState::Top =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot set value on Top state&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"Cannot set value on Top state"</span>);
             }
             CheckerState::Allocations(allocs) =&gt; {
                 allocs.insert(alloc, value);
@@ -1445,7 +1446,7 @@
     <span class="kw">fn </span>remove_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, alloc: <span class="kw-2">&amp;</span>Allocation) {
         <span class="kw">match </span><span class="self">self </span>{
             CheckerState::Top =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot remove value on Top state&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"Cannot remove value on Top state"</span>);
             }
             CheckerState::Allocations(allocs) =&gt; {
                 allocs.remove(alloc);
@@ -1468,14 +1469,14 @@
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter) -&gt; core::fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
             CheckerValue::Universe =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;top&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"top"</span>)
             }
             CheckerValue::VRegs(vregs) =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;{{ &quot;</span>)<span class="question-mark">?</span>;
+                <span class="macro">write!</span>(f, <span class="string">"{{ "</span>)<span class="question-mark">?</span>;
                 <span class="kw">for </span>vreg <span class="kw">in </span>vregs {
-                    <span class="macro">write!</span>(f, <span class="string">&quot;{} &quot;</span>, vreg)<span class="question-mark">?</span>;
+                    <span class="macro">write!</span>(f, <span class="string">"{} "</span>, vreg)<span class="question-mark">?</span>;
                 }
-                <span class="macro">write!</span>(f, <span class="string">&quot;}}&quot;</span>)<span class="question-mark">?</span>;
+                <span class="macro">write!</span>(f, <span class="string">"}}"</span>)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
         }
@@ -1521,14 +1522,14 @@
         }
     }
 
-    <span class="kw">fn </span>check_val&lt;<span class="lifetime">&#39;a</span>, F: Function&gt;(
+    <span class="kw">fn </span>check_val&lt;<span class="lifetime">'a</span>, F: Function&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         inst: Inst,
         op: Operand,
         alloc: Allocation,
         val: <span class="kw-2">&amp;</span>CheckerValue,
         allocs: <span class="kw-2">&amp;</span>[Allocation],
-        checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">&#39;a</span>, F&gt;,
+        checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CheckerError&gt; {
         <span class="kw">if </span>alloc == Allocation::none() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(CheckerError::MissingAllocation { inst, op });
@@ -1559,11 +1560,11 @@
     <span class="doccomment">/// Check an instruction against this state. This must be called
     /// twice: once with `InstPosition::Before`, and once with
     /// `InstPosition::After` (after updating state with defs).
-    </span><span class="kw">fn </span>check&lt;<span class="lifetime">&#39;a</span>, F: Function&gt;(
+    </span><span class="kw">fn </span>check&lt;<span class="lifetime">'a</span>, F: Function&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         pos: InstPosition,
         checkinst: <span class="kw-2">&amp;</span>CheckerInst,
-        checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">&#39;a</span>, F&gt;,
+        checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CheckerError&gt; {
         <span class="kw">let </span>default_val = Default::default();
         <span class="kw">match </span>checkinst {
@@ -1598,7 +1599,7 @@
 
                     <span class="kw">let </span>val = <span class="self">self</span>.get_value(alloc).unwrap_or(<span class="kw-2">&amp;</span>default_val);
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;checker: checkinst {:?}: op {:?}, alloc {:?}, checker value {:?}&quot;</span>,
+                        <span class="string">"checker: checkinst {:?}: op {:?}, alloc {:?}, checker value {:?}"</span>,
                         checkinst,
                         op,
                         alloc,
@@ -1611,7 +1612,7 @@
                 <span class="kw">for </span><span class="kw-2">&amp;</span>alloc <span class="kw">in </span>allocs {
                     <span class="kw">let </span>val = <span class="self">self</span>.get_value(<span class="kw-2">&amp;</span>alloc).unwrap_or(<span class="kw-2">&amp;</span>default_val);
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;checker: checkinst {:?}: safepoint slot {}, checker value {:?}&quot;</span>,
+                        <span class="string">"checker: checkinst {:?}: safepoint slot {}, checker value {:?}"</span>,
                         checkinst,
                         alloc,
                         val
@@ -1619,7 +1620,7 @@
 
                     <span class="kw">let </span>reffy = val
                         .vregs()
-                        .expect(<span class="string">&quot;checker value should not be Universe set&quot;</span>)
+                        .expect(<span class="string">"checker value should not be Universe set"</span>)
                         .iter()
                         .any(|vreg| checker.reftyped_vregs.contains(vreg));
                     <span class="kw">if </span>!reffy {
@@ -1645,7 +1646,7 @@
                 }
             }
             <span class="kw-2">&amp;</span>CheckerInst::ParallelMove { .. } =&gt; {
-                <span class="comment">// This doesn&#39;t need verification; we just update
+                <span class="comment">// This doesn't need verification; we just update
                 // according to the move semantics in the step
                 // function below.
             </span>}
@@ -1654,20 +1655,20 @@
     }
 
     <span class="doccomment">/// Update according to instruction.
-    </span><span class="kw">fn </span>update&lt;<span class="lifetime">&#39;a</span>, F: Function&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, checkinst: <span class="kw-2">&amp;</span>CheckerInst, checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">&#39;a</span>, F&gt;) {
+    </span><span class="kw">fn </span>update&lt;<span class="lifetime">'a</span>, F: Function&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, checkinst: <span class="kw-2">&amp;</span>CheckerInst, checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">'a</span>, F&gt;) {
         <span class="self">self</span>.become_defined();
 
         <span class="kw">match </span>checkinst {
             <span class="kw-2">&amp;</span>CheckerInst::Move { into, from } =&gt; {
                 <span class="comment">// Value may not be present if this move is part of
-                // the parallel move resolver&#39;s fallback sequence that
+                // the parallel move resolver's fallback sequence that
                 // saves a victim register elsewhere. (In other words,
                 // that sequence saves an undefined value and restores
                 // it, so has no effect.) The checker needs to avoid
                 // putting Universe lattice values into the map.
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(val) = <span class="self">self</span>.get_value(<span class="kw-2">&amp;</span>from).cloned() {
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;checker: checkinst {:?} updating: move {:?} -&gt; {:?} val {:?}&quot;</span>,
+                        <span class="string">"checker: checkinst {:?} updating: move {:?} -&gt; {:?} val {:?}"</span>,
                         checkinst,
                         from,
                         into,
@@ -1682,7 +1683,7 @@
                 // move, then for each use of V_i as a source (V_i -&gt;
                 // V_j), we might add a new V_j wherever V_i appears;
                 // and if V_i is used as a dest (at most once), then
-                // it must be removed first from allocs&#39; vreg sets.
+                // it must be removed first from allocs' vreg sets.
                 </span><span class="kw">let </span><span class="kw-2">mut </span>additions: FxHashMap&lt;VReg, SmallVec&lt;[VReg; <span class="number">2</span>]&gt;&gt; = FxHashMap::default();
                 <span class="kw">let </span><span class="kw-2">mut </span>deletions: FxHashSet&lt;VReg&gt; = FxHashSet::default();
 
@@ -1694,7 +1695,7 @@
                         .push(dest);
                 }
 
-                <span class="comment">// Now process each allocation&#39;s set of vreg labels,
+                <span class="comment">// Now process each allocation's set of vreg labels,
                 // first deleting those labels that were updated by
                 // this parallel move, then adding back labels
                 // redefined by the move.
@@ -1760,13 +1761,13 @@
         }
     }
 
-    <span class="kw">fn </span>check_constraint&lt;<span class="lifetime">&#39;a</span>, F: Function&gt;(
+    <span class="kw">fn </span>check_constraint&lt;<span class="lifetime">'a</span>, F: Function&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         inst: Inst,
         op: Operand,
         alloc: Allocation,
         allocs: <span class="kw-2">&amp;</span>[Allocation],
-        checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">&#39;a</span>, F&gt;,
+        checker: <span class="kw-2">&amp;</span>Checker&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CheckerError&gt; {
         <span class="kw">match </span>op.constraint() {
             OperandConstraint::Any =&gt; {}
@@ -1813,7 +1814,7 @@
     }
 }
 
-<span class="doccomment">/// An instruction representation in the checker&#39;s BB summary.
+<span class="doccomment">/// An instruction representation in the checker's BB summary.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>CheckerInst {
     <span class="doccomment">/// A move between allocations (these could be registers or
@@ -1845,22 +1846,22 @@
 }
 
 <span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>Checker&lt;<span class="lifetime">&#39;a</span>, F: Function&gt; {
-    f: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>F,
+</span><span class="kw">pub struct </span>Checker&lt;<span class="lifetime">'a</span>, F: Function&gt; {
+    f: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>F,
     bb_in: FxHashMap&lt;Block, CheckerState&gt;,
     bb_insts: FxHashMap&lt;Block, Vec&lt;CheckerInst&gt;&gt;,
     edge_insts: FxHashMap&lt;(Block, Block), Vec&lt;CheckerInst&gt;&gt;,
     reftyped_vregs: FxHashSet&lt;VReg&gt;,
-    machine_env: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>MachineEnv,
+    machine_env: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>MachineEnv,
     stack_pregs: PRegSet,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, F: Function&gt; Checker&lt;<span class="lifetime">&#39;a</span>, F&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, F: Function&gt; Checker&lt;<span class="lifetime">'a</span>, F&gt; {
     <span class="doccomment">/// Create a new checker for the given function, initializing CFG
     /// info immediately.  The client should call the `add_*()`
     /// methods to add abstract instructions to each BB before
     /// invoking `run()` to check for errors.
-    </span><span class="kw">pub fn </span>new(f: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>F, machine_env: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>MachineEnv) -&gt; Checker&lt;<span class="lifetime">&#39;a</span>, F&gt; {
+    </span><span class="kw">pub fn </span>new(f: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>F, machine_env: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>MachineEnv) -&gt; Checker&lt;<span class="lifetime">'a</span>, F&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>bb_in = FxHashMap::default();
         <span class="kw">let </span><span class="kw-2">mut </span>bb_insts = FxHashMap::default();
         <span class="kw">let </span><span class="kw-2">mut </span>edge_insts = FxHashMap::default();
@@ -1900,7 +1901,7 @@
     <span class="doccomment">/// Build the list of checker instructions based on the given func
     /// and allocation results.
     </span><span class="kw">pub fn </span>prepare(<span class="kw-2">&amp;mut </span><span class="self">self</span>, out: <span class="kw-2">&amp;</span>Output) {
-        <span class="macro">trace!</span>(<span class="string">&quot;checker: out = {:?}&quot;</span>, out);
+        <span class="macro">trace!</span>(<span class="string">"checker: out = {:?}"</span>, out);
         <span class="comment">// Preprocess safepoint stack-maps into per-inst vecs.
         </span><span class="kw">let </span><span class="kw-2">mut </span>safepoint_slots: FxHashMap&lt;Inst, Vec&lt;Allocation&gt;&gt; = FxHashMap::default();
         <span class="kw">for </span><span class="kw-2">&amp;</span>(progpoint, slot) <span class="kw">in </span><span class="kw-2">&amp;</span>out.safepoint_slots {
@@ -1955,7 +1956,7 @@
                 allocs,
                 clobbers,
             };
-            <span class="macro">trace!</span>(<span class="string">&quot;checker: adding inst {:?}&quot;</span>, checkinst);
+            <span class="macro">trace!</span>(<span class="string">"checker: adding inst {:?}"</span>, checkinst);
             <span class="self">self</span>.bb_insts.get_mut(<span class="kw-2">&amp;</span>block).unwrap().push(checkinst);
         }
         <span class="comment">// Instead, if this is a branch, emit a ParallelMove on each
@@ -1967,7 +1968,7 @@
                 <span class="macro">assert_eq!</span>(
                     args.len(),
                     params.len(),
-                    <span class="string">&quot;block{} has succ block{}; gave {} args for {} params&quot;</span>,
+                    <span class="string">"block{} has succ block{}; gave {} args for {} params"</span>,
                     block.index(),
                     succ.index(),
                     args.len(),
@@ -1985,7 +1986,7 @@
     }
 
     <span class="kw">fn </span>handle_edit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block, edit: <span class="kw-2">&amp;</span>Edit) {
-        <span class="macro">trace!</span>(<span class="string">&quot;checker: adding edit {:?}&quot;</span>, edit);
+        <span class="macro">trace!</span>(<span class="string">"checker: adding edit {:?}"</span>, edit);
         <span class="kw">match </span>edit {
             <span class="kw-2">&amp;</span>Edit::Move { from, to } =&gt; {
                 <span class="self">self</span>.bb_insts
@@ -2018,10 +2019,10 @@
         <span class="kw">while let </span><span class="prelude-val">Some</span>(block) = queue.pop() {
             queue_set.remove(<span class="kw-2">&amp;</span>block);
             <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.bb_in.get(<span class="kw-2">&amp;</span>block).cloned().unwrap();
-            <span class="macro">trace!</span>(<span class="string">&quot;analyze: block {} has state {:?}&quot;</span>, block.index(), state);
+            <span class="macro">trace!</span>(<span class="string">"analyze: block {} has state {:?}"</span>, block.index(), state);
             <span class="kw">for </span>inst <span class="kw">in </span><span class="self">self</span>.bb_insts.get(<span class="kw-2">&amp;</span>block).unwrap() {
                 state.update(inst, <span class="self">self</span>);
-                <span class="macro">trace!</span>(<span class="string">&quot;analyze: inst {:?} -&gt; state {:?}&quot;</span>, inst, state);
+                <span class="macro">trace!</span>(<span class="string">"analyze: inst {:?} -&gt; state {:?}"</span>, inst, state);
             }
 
             <span class="kw">for </span><span class="kw-2">&amp;</span>succ <span class="kw">in </span><span class="self">self</span>.f.block_succs(block) {
@@ -2029,7 +2030,7 @@
                 <span class="kw">for </span>edge_inst <span class="kw">in </span><span class="self">self</span>.edge_insts.get(<span class="kw-2">&amp;</span>(block, succ)).unwrap() {
                     new_state.update(edge_inst, <span class="self">self</span>);
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;analyze: succ {:?}: inst {:?} -&gt; state {:?}&quot;</span>,
+                        <span class="string">"analyze: succ {:?}: inst {:?} -&gt; state {:?}"</span>,
                         succ,
                         edge_inst,
                         new_state
@@ -2038,7 +2039,7 @@
 
                 <span class="kw">let </span>cur_succ_in = <span class="self">self</span>.bb_in.get(<span class="kw-2">&amp;</span>succ).unwrap();
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot;meeting state {:?} for block {} with state {:?} for block {}&quot;</span>,
+                    <span class="string">"meeting state {:?} for block {} with state {:?} for block {}"</span>,
                     new_state,
                     block.index(),
                     cur_succ_in,
@@ -2046,11 +2047,11 @@
                 );
                 new_state.meet_with(cur_succ_in);
                 <span class="kw">let </span>changed = <span class="kw-2">&amp;</span>new_state != cur_succ_in;
-                <span class="macro">trace!</span>(<span class="string">&quot; -&gt; {:?}, changed {}&quot;</span>, new_state, changed);
+                <span class="macro">trace!</span>(<span class="string">" -&gt; {:?}, changed {}"</span>, new_state, changed);
 
                 <span class="kw">if </span>changed {
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;analyze: block {} state changed from {:?} to {:?}; pushing onto queue&quot;</span>,
+                        <span class="string">"analyze: block {} state changed from {:?} to {:?}; pushing onto queue"</span>,
                         succ.index(),
                         cur_succ_in,
                         new_state
@@ -2065,7 +2066,7 @@
     }
 
     <span class="doccomment">/// Using BB-start state computed by `analyze()`, step the checker state
-    /// through each BB and check each instruction&#39;s register allocations
+    /// through each BB and check each instruction's register allocations
     /// for errors.
     </span><span class="kw">fn </span>find_errors(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CheckerErrors&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>errors = <span class="macro">vec!</span>[];
@@ -2073,12 +2074,12 @@
             <span class="kw">let </span><span class="kw-2">mut </span>state = input.clone();
             <span class="kw">for </span>inst <span class="kw">in </span><span class="self">self</span>.bb_insts.get(block).unwrap() {
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.check(InstPosition::Before, inst, <span class="self">self</span>) {
-                    <span class="macro">trace!</span>(<span class="string">&quot;Checker error: {:?}&quot;</span>, e);
+                    <span class="macro">trace!</span>(<span class="string">"Checker error: {:?}"</span>, e);
                     errors.push(e);
                 }
                 state.update(inst, <span class="self">self</span>);
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.check(InstPosition::After, inst, <span class="self">self</span>) {
-                    <span class="macro">trace!</span>(<span class="string">&quot;Checker error: {:?}&quot;</span>, e);
+                    <span class="macro">trace!</span>(<span class="string">"Checker error: {:?}"</span>, e);
                     errors.push(e);
                 }
             }
@@ -2097,7 +2098,7 @@
         <span class="self">self</span>.analyze();
         <span class="kw">let </span>result = <span class="self">self</span>.find_errors();
 
-        <span class="macro">trace!</span>(<span class="string">&quot;=== CHECKER RESULT ===&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">"=== CHECKER RESULT ==="</span>);
         <span class="kw">fn </span>print_state(state: <span class="kw-2">&amp;</span>CheckerState) {
             <span class="kw">if </span>!<span class="macro">trace_enabled!</span>() {
                 <span class="kw">return</span>;
@@ -2105,17 +2106,17 @@
             <span class="kw">if let </span>CheckerState::Allocations(allocs) = state {
                 <span class="kw">let </span><span class="kw-2">mut </span>s = <span class="macro">vec!</span>[];
                 <span class="kw">for </span>(alloc, state) <span class="kw">in </span>allocs {
-                    s.push(<span class="macro">format!</span>(<span class="string">&quot;{} := {}&quot;</span>, alloc, state));
+                    s.push(<span class="macro">format!</span>(<span class="string">"{} := {}"</span>, alloc, state));
                 }
-                <span class="macro">trace!</span>(<span class="string">&quot;    {{ {} }}&quot;</span>, s.join(<span class="string">&quot;, &quot;</span>))
+                <span class="macro">trace!</span>(<span class="string">"    {{ {} }}"</span>, s.join(<span class="string">", "</span>))
             }
         }
         <span class="kw">for </span>vreg <span class="kw">in </span><span class="self">self</span>.f.reftype_vregs() {
-            <span class="macro">trace!</span>(<span class="string">&quot;  REF: {}&quot;</span>, vreg);
+            <span class="macro">trace!</span>(<span class="string">"  REF: {}"</span>, vreg);
         }
         <span class="kw">for </span>bb <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.f.num_blocks() {
             <span class="kw">let </span>bb = Block::new(bb);
-            <span class="macro">trace!</span>(<span class="string">&quot;block{}:&quot;</span>, bb.index());
+            <span class="macro">trace!</span>(<span class="string">"block{}:"</span>, bb.index());
             <span class="kw">let </span>insts = <span class="self">self</span>.bb_insts.get(<span class="kw-2">&amp;</span>bb).unwrap();
             <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.bb_in.get(<span class="kw-2">&amp;</span>bb).unwrap().clone();
             print_state(<span class="kw-2">&amp;</span>state);
@@ -2128,7 +2129,7 @@
                         <span class="kw-2">ref </span>clobbers,
                     } =&gt; {
                         <span class="macro">trace!</span>(
-                            <span class="string">&quot;  inst{}: {:?} ({:?}) clobbers:{:?}&quot;</span>,
+                            <span class="string">"  inst{}: {:?} ({:?}) clobbers:{:?}"</span>,
                             inst.index(),
                             operands,
                             allocs,
@@ -2136,17 +2137,17 @@
                         );
                     }
                     <span class="kw-2">&amp;</span>CheckerInst::Move { from, into } =&gt; {
-                        <span class="macro">trace!</span>(<span class="string">&quot;    {} -&gt; {}&quot;</span>, from, into);
+                        <span class="macro">trace!</span>(<span class="string">"    {} -&gt; {}"</span>, from, into);
                     }
                     <span class="kw-2">&amp;</span>CheckerInst::Safepoint { <span class="kw-2">ref </span>allocs, .. } =&gt; {
                         <span class="kw">let </span><span class="kw-2">mut </span>slotargs = <span class="macro">vec!</span>[];
                         <span class="kw">for </span><span class="kw-2">&amp;</span>slot <span class="kw">in </span>allocs {
-                            slotargs.push(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, slot));
+                            slotargs.push(<span class="macro">format!</span>(<span class="string">"{}"</span>, slot));
                         }
-                        <span class="macro">trace!</span>(<span class="string">&quot;    safepoint: {}&quot;</span>, slotargs.join(<span class="string">&quot;, &quot;</span>));
+                        <span class="macro">trace!</span>(<span class="string">"    safepoint: {}"</span>, slotargs.join(<span class="string">", "</span>));
                     }
                     <span class="kw-2">&amp;</span>CheckerInst::ParallelMove { .. } =&gt; {
-                        <span class="macro">panic!</span>(<span class="string">&quot;unexpected parallel_move in body (non-edge)&quot;</span>)
+                        <span class="macro">panic!</span>(<span class="string">"unexpected parallel_move in body (non-edge)"</span>)
                     }
                 }
                 state.update(inst, <span class="kw-2">&amp;</span><span class="self">self</span>);
@@ -2154,18 +2155,18 @@
             }
 
             <span class="kw">for </span><span class="kw-2">&amp;</span>succ <span class="kw">in </span><span class="self">self</span>.f.block_succs(bb) {
-                <span class="macro">trace!</span>(<span class="string">&quot;  succ {:?}:&quot;</span>, succ);
+                <span class="macro">trace!</span>(<span class="string">"  succ {:?}:"</span>, succ);
                 <span class="kw">let </span><span class="kw-2">mut </span>state = state.clone();
                 <span class="kw">for </span>edge_inst <span class="kw">in </span><span class="self">self</span>.edge_insts.get(<span class="kw-2">&amp;</span>(bb, succ)).unwrap() {
                     <span class="kw">match </span>edge_inst {
                         <span class="kw-2">&amp;</span>CheckerInst::ParallelMove { <span class="kw-2">ref </span>moves } =&gt; {
                             <span class="kw">let </span>moves = moves
                                 .iter()
-                                .map(|(dest, src)| <span class="macro">format!</span>(<span class="string">&quot;{} -&gt; {}&quot;</span>, src, dest))
+                                .map(|(dest, src)| <span class="macro">format!</span>(<span class="string">"{} -&gt; {}"</span>, src, dest))
                                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-                            <span class="macro">trace!</span>(<span class="string">&quot;    parallel_move {}&quot;</span>, moves.join(<span class="string">&quot;, &quot;</span>));
+                            <span class="macro">trace!</span>(<span class="string">"    parallel_move {}"</span>, moves.join(<span class="string">", "</span>));
                         }
-                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected edge_inst: not a parallel move&quot;</span>),
+                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected edge_inst: not a parallel move"</span>),
                     }
                     state.update(edge_inst, <span class="kw-2">&amp;</span><span class="self">self</span>);
                     print_state(<span class="kw-2">&amp;</span>state);

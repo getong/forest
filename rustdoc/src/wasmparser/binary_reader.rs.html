@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/binary_reader.rs`."><title>binary_reader.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmparser-0.118.1/src/binary_reader.rs`."><title>binary_reader.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmparser" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1706,14 +1707,14 @@
 <a href="#1706" id="1706">1706</a>
 </pre></div><pre class="rust"><code><span class="comment">/* Copyright 2018 Mozilla Foundation
  *
- * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -1727,7 +1728,7 @@
 <span class="kw">use </span>std::ops::Range;
 <span class="kw">use </span>std::str;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>WASM_MAGIC_NUMBER: <span class="kw-2">&amp;</span>[u8; <span class="number">4</span>] = <span class="string">b&quot;\0asm&quot;</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>WASM_MAGIC_NUMBER: <span class="kw-2">&amp;</span>[u8; <span class="number">4</span>] = <span class="string">b"\0asm"</span>;
 
 <span class="doccomment">/// A binary reader for WebAssembly modules.
 </span><span class="attr">#[derive(Debug, Clone)]
@@ -1754,7 +1755,7 @@
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;{} (at offset 0x{:x})&quot;</span>,
+            <span class="string">"{} (at offset 0x{:x})"</span>,
             <span class="self">self</span>.inner.message, <span class="self">self</span>.inner.offset
         )
     }
@@ -1774,7 +1775,7 @@
     }
 
     <span class="attr">#[cold]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>fmt(args: fmt::Arguments&lt;<span class="lifetime">&#39;_</span>&gt;, offset: usize) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>fmt(args: fmt::Arguments&lt;<span class="lifetime">'_</span>&gt;, offset: usize) -&gt; <span class="self">Self </span>{
         BinaryReaderError::new(args.to_string(), offset)
     }
 
@@ -1782,14 +1783,14 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>eof(offset: usize, needed_hint: usize) -&gt; <span class="self">Self </span>{
         BinaryReaderError {
             inner: Box::new(BinaryReaderErrorInner {
-                message: <span class="string">&quot;unexpected end-of-file&quot;</span>.to_string(),
+                message: <span class="string">"unexpected end-of-file"</span>.to_string(),
                 offset,
                 needed_hint: <span class="prelude-val">Some</span>(needed_hint),
             }),
         }
     }
 
-    <span class="doccomment">/// Get this error&#39;s message.
+    <span class="doccomment">/// Get this error's message.
     </span><span class="kw">pub fn </span>message(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="kw-2">&amp;</span><span class="self">self</span>.inner.message
     }
@@ -1800,21 +1801,21 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>add_context(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>context: String) {
-        context.push_str(<span class="string">&quot;\n&quot;</span>);
+        context.push_str(<span class="string">"\n"</span>);
         <span class="self">self</span>.inner.message.insert_str(<span class="number">0</span>, <span class="kw-2">&amp;</span>context);
     }
 }
 
 <span class="doccomment">/// A binary reader of the WebAssembly structures and types.
 </span><span class="attr">#[derive(Clone, Debug, Hash)]
-</span><span class="kw">pub struct </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) buffer: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8],
+</span><span class="kw">pub struct </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
     <span class="kw">pub</span>(<span class="kw">crate</span>) position: usize,
     original_offset: usize,
     allow_memarg64: bool,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; BinaryReader&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Constructs `BinaryReader` type.
     ///
     /// # Examples
@@ -1823,7 +1824,7 @@
     /// let mut reader = wasmparser::BinaryReader::new(fn_body);
     /// while !reader.eof() {
     ///     let op = reader.read_operator();
-    ///     println!(&quot;{:?}&quot;, op)
+    ///     println!("{:?}", op)
     /// }
     /// ```
     </span><span class="kw">pub fn </span>new(data: <span class="kw-2">&amp;</span>[u8]) -&gt; BinaryReader {
@@ -1864,7 +1865,7 @@
         <span class="self">self</span>.original_offset..<span class="self">self</span>.original_offset + <span class="self">self</span>.buffer.len()
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>remaining_buffer(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8] {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>remaining_buffer(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.buffer[<span class="self">self</span>.position..]
     }
 
@@ -1890,7 +1891,7 @@
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>read&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;
     <span class="kw">where
-        </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
     {
         T::from_reader(<span class="self">self</span>)
     }
@@ -1899,7 +1900,7 @@
         <span class="kw">let </span>b = <span class="self">self</span>.read_u8()<span class="question-mark">?</span>;
         <span class="kw">if </span>(b &amp; <span class="number">0x80</span>) != <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;invalid u7&quot;</span>,
+                <span class="string">"invalid u7"</span>,
                 <span class="self">self</span>.original_position() - <span class="number">1</span>,
             ));
         }
@@ -1913,7 +1914,7 @@
             <span class="number">0x02 </span>=&gt; <span class="prelude-val">Ok</span>(ExternalKind::Memory),
             <span class="number">0x03 </span>=&gt; <span class="prelude-val">Ok</span>(ExternalKind::Global),
             <span class="number">0x04 </span>=&gt; <span class="prelude-val">Ok</span>(ExternalKind::Tag),
-            x =&gt; <span class="prelude-val">Err</span>(<span class="self">Self</span>::invalid_leading_byte_error(x, <span class="string">&quot;external kind&quot;</span>, offset)),
+            x =&gt; <span class="prelude-val">Err</span>(<span class="self">Self</span>::invalid_leading_byte_error(x, <span class="string">"external kind"</span>, offset)),
         }
     }
 
@@ -1923,7 +1924,7 @@
         <span class="kw">let </span>pos = <span class="self">self</span>.original_position();
         <span class="kw">let </span>size = <span class="self">self</span>.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
         <span class="kw">if </span>size &gt; limit {
-            <span class="macro">bail!</span>(pos, <span class="string">&quot;{desc} size is out of bounds&quot;</span>);
+            <span class="macro">bail!</span>(pos, <span class="string">"{desc} size is out of bounds"</span>);
         }
         <span class="prelude-val">Ok</span>(size)
     }
@@ -1935,13 +1936,13 @@
     ///
     /// Note that regardless of how many items are read from the returned
     /// iterator the items will still be parsed from this reader.
-    </span><span class="kw">pub fn </span>read_iter&lt;<span class="lifetime">&#39;me</span>, T&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;me </span><span class="kw-2">mut </span><span class="self">self</span>,
+    </span><span class="kw">pub fn </span>read_iter&lt;<span class="lifetime">'me</span>, T&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'me </span><span class="kw-2">mut </span><span class="self">self</span>,
         limit: usize,
         desc: <span class="kw-2">&amp;</span>str,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;BinaryReaderIter&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;me</span>, T&gt;&gt;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;BinaryReaderIter&lt;<span class="lifetime">'a</span>, <span class="lifetime">'me</span>, T&gt;&gt;
     <span class="kw">where
-        </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>size = <span class="self">self</span>.read_size(limit, desc)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(BinaryReaderIter {
@@ -1967,7 +1968,7 @@
             <span class="number">0
         </span>};
         <span class="kw">let </span>align = <span class="kw">if </span>flags &gt;= (<span class="number">1 </span>&lt;&lt; <span class="number">6</span>) {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">&quot;alignment too large&quot;</span>, flags_pos));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(<span class="string">"alignment too large"</span>, flags_pos));
         } <span class="kw">else </span>{
             flags <span class="kw">as </span>u8
         };
@@ -1984,8 +1985,8 @@
         })
     }
 
-    <span class="kw">fn </span>read_br_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BrTable&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-        <span class="kw">let </span>cnt = <span class="self">self</span>.read_size(MAX_WASM_BR_TABLE_SIZE, <span class="string">&quot;br_table&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">fn </span>read_br_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BrTable&lt;<span class="lifetime">'a</span>&gt;&gt; {
+        <span class="kw">let </span>cnt = <span class="self">self</span>.read_size(MAX_WASM_BR_TABLE_SIZE, <span class="string">"br_table"</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>start = <span class="self">self</span>.position;
         <span class="kw">for _ in </span><span class="number">0</span>..cnt {
             <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
@@ -2005,7 +2006,7 @@
         <span class="self">self</span>.position &gt;= <span class="self">self</span>.buffer.len()
     }
 
-    <span class="doccomment">/// Returns the `BinaryReader`&#39;s current position.
+    <span class="doccomment">/// Returns the `BinaryReader`'s current position.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>current_position(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.position
@@ -2022,7 +2023,7 @@
     ///
     /// # Errors
     /// If `size` exceeds the remaining length in `BinaryReader`.
-    </span><span class="kw">pub fn </span>read_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, size: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[u8]&gt; {
+    </span><span class="kw">pub fn </span>read_bytes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, size: usize) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt; {
         <span class="self">self</span>.ensure_has_bytes(size)<span class="question-mark">?</span>;
         <span class="kw">let </span>start = <span class="self">self</span>.position;
         <span class="self">self</span>.position += size;
@@ -2033,7 +2034,7 @@
     /// new `BinaryReader` to read that list of bytes.
     ///
     /// Advances the position of this reader by the number of bytes read.
-    </span><span class="kw">pub fn </span>read_reader(<span class="kw-2">&amp;mut </span><span class="self">self</span>, err: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    </span><span class="kw">pub fn </span>read_reader(<span class="kw-2">&amp;mut </span><span class="self">self</span>, err: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;BinaryReader&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="kw">let </span>size = <span class="self">self</span>.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
         <span class="kw">let </span>body_start = <span class="self">self</span>.position;
         <span class="kw">let </span>buffer = <span class="kw">match </span><span class="self">self</span>.buffer.get(<span class="self">self</span>.position..).and_then(|s| s.get(..size)) {
@@ -2126,9 +2127,9 @@
             result |= ((byte &amp; <span class="number">0x7F</span>) <span class="kw">as </span>u32) &lt;&lt; shift;
             <span class="kw">if </span>shift &gt;= <span class="number">25 </span>&amp;&amp; (byte &gt;&gt; (<span class="number">32 </span>- shift)) != <span class="number">0 </span>{
                 <span class="kw">let </span>msg = <span class="kw">if </span>byte &amp; <span class="number">0x80 </span>!= <span class="number">0 </span>{
-                    <span class="string">&quot;invalid var_u32: integer representation too long&quot;
+                    <span class="string">"invalid var_u32: integer representation too long"
                 </span>} <span class="kw">else </span>{
-                    <span class="string">&quot;invalid var_u32: integer too large&quot;
+                    <span class="string">"invalid var_u32: integer too large"
                 </span>};
                 <span class="comment">// The continuation bit or unused bits are set.
                 </span><span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(msg, <span class="self">self</span>.original_position() - <span class="number">1</span>));
@@ -2167,9 +2168,9 @@
             result |= (byte &amp; <span class="number">0x7F</span>) &lt;&lt; shift;
             <span class="kw">if </span>shift &gt;= <span class="number">57 </span>&amp;&amp; (byte &gt;&gt; (<span class="number">64 </span>- shift)) != <span class="number">0 </span>{
                 <span class="kw">let </span>msg = <span class="kw">if </span>byte &amp; <span class="number">0x80 </span>!= <span class="number">0 </span>{
-                    <span class="string">&quot;invalid var_u64: integer representation too long&quot;
+                    <span class="string">"invalid var_u64: integer representation too long"
                 </span>} <span class="kw">else </span>{
-                    <span class="string">&quot;invalid var_u64: integer too large&quot;
+                    <span class="string">"invalid var_u64: integer too large"
                 </span>};
                 <span class="comment">// The continuation bit or unused bits are set.
                 </span><span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(msg, <span class="self">self</span>.original_position() - <span class="number">1</span>));
@@ -2196,14 +2197,14 @@
     <span class="doccomment">/// Advances the `BinaryReader` past a WebAssembly string. This method does
     /// not perform any utf-8 validation.
     /// # Errors
-    /// If `BinaryReader` has less than four bytes, the string&#39;s length exceeds
+    /// If `BinaryReader` has less than four bytes, the string's length exceeds
     /// the remaining bytes, or the string length
     /// exceeds `limits::MAX_WASM_STRING_SIZE`.
     </span><span class="kw">pub fn </span>skip_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>len = <span class="self">self</span>.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
         <span class="kw">if </span>len &gt; MAX_WASM_STRING_SIZE {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;string size out of bounds&quot;</span>,
+                <span class="string">"string size out of bounds"</span>,
                 <span class="self">self</span>.original_position() - <span class="number">1</span>,
             ));
         }
@@ -2239,9 +2240,9 @@
                 <span class="kw">let </span>sign_and_unused_bit = (byte &lt;&lt; <span class="number">1</span>) <span class="kw">as </span>i8 &gt;&gt; (<span class="number">32 </span>- shift);
                 <span class="kw">if </span>continuation_bit || (sign_and_unused_bit != <span class="number">0 </span>&amp;&amp; sign_and_unused_bit != -<span class="number">1</span>) {
                     <span class="kw">let </span>msg = <span class="kw">if </span>continuation_bit {
-                        <span class="string">&quot;invalid var_i32: integer representation too long&quot;
+                        <span class="string">"invalid var_i32: integer representation too long"
                     </span>} <span class="kw">else </span>{
-                        <span class="string">&quot;invalid var_i32: integer too large&quot;
+                        <span class="string">"invalid var_i32: integer too large"
                     </span>};
                     <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(msg, <span class="self">self</span>.original_position() - <span class="number">1</span>));
                 }
@@ -2278,7 +2279,7 @@
                 <span class="kw">let </span>sign_and_unused_bit = (byte &lt;&lt; <span class="number">1</span>) <span class="kw">as </span>i8 &gt;&gt; (<span class="number">33 </span>- shift);
                 <span class="kw">if </span>continuation_bit || (sign_and_unused_bit != <span class="number">0 </span>&amp;&amp; sign_and_unused_bit != -<span class="number">1</span>) {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                        <span class="string">&quot;invalid var_s33: integer representation too long&quot;</span>,
+                        <span class="string">"invalid var_s33: integer representation too long"</span>,
                         <span class="self">self</span>.original_position() - <span class="number">1</span>,
                     ));
                 }
@@ -2309,9 +2310,9 @@
                 <span class="kw">let </span>sign_and_unused_bit = ((byte &lt;&lt; <span class="number">1</span>) <span class="kw">as </span>i8) &gt;&gt; (<span class="number">64 </span>- shift);
                 <span class="kw">if </span>continuation_bit || (sign_and_unused_bit != <span class="number">0 </span>&amp;&amp; sign_and_unused_bit != -<span class="number">1</span>) {
                     <span class="kw">let </span>msg = <span class="kw">if </span>continuation_bit {
-                        <span class="string">&quot;invalid var_i64: integer representation too long&quot;
+                        <span class="string">"invalid var_i64: integer representation too long"
                     </span>} <span class="kw">else </span>{
-                        <span class="string">&quot;invalid var_i64: integer too large&quot;
+                        <span class="string">"invalid var_i64: integer too large"
                     </span>};
                     <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(msg, <span class="self">self</span>.original_position() - <span class="number">1</span>));
                 }
@@ -2348,20 +2349,20 @@
 
     <span class="doccomment">/// Reads a WebAssembly string from the module.
     /// # Errors
-    /// If `BinaryReader` has less than up to four bytes remaining, the string&#39;s
-    /// length exceeds the remaining bytes, the string&#39;s length exceeds
+    /// If `BinaryReader` has less than up to four bytes remaining, the string's
+    /// length exceeds the remaining bytes, the string's length exceeds
     /// `limits::MAX_WASM_STRING_SIZE`, or the string contains invalid utf-8.
-    </span><span class="kw">pub fn </span>read_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; {
+    </span><span class="kw">pub fn </span>read_string(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt; {
         <span class="kw">let </span>len = <span class="self">self</span>.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
         <span class="kw">if </span>len &gt; MAX_WASM_STRING_SIZE {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;string size out of bounds&quot;</span>,
+                <span class="string">"string size out of bounds"</span>,
                 <span class="self">self</span>.original_position() - <span class="number">1</span>,
             ));
         }
         <span class="kw">let </span>bytes = <span class="self">self</span>.read_bytes(len)<span class="question-mark">?</span>;
         str::from_utf8(bytes).map_err(|<span class="kw">_</span>| {
-            BinaryReaderError::new(<span class="string">&quot;invalid UTF-8 encoding&quot;</span>, <span class="self">self</span>.original_position() - <span class="number">1</span>)
+            BinaryReaderError::new(<span class="string">"invalid UTF-8 encoding"</span>, <span class="self">self</span>.original_position() - <span class="number">1</span>)
         })
     }
 
@@ -2379,7 +2380,7 @@
         desc: <span class="kw-2">&amp;</span>str,
         offset: usize,
     ) -&gt; BinaryReaderError {
-        <span class="macro">format_err!</span>(offset, <span class="string">&quot;invalid leading byte (0x{byte:x}) for {desc}&quot;</span>)
+        <span class="macro">format_err!</span>(offset, <span class="string">"invalid leading byte (0x{byte:x}) for {desc}"</span>)
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>peek(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u8&gt; {
@@ -2407,7 +2408,7 @@
             <span class="prelude-val">Ok</span>(idx) =&gt; <span class="prelude-val">Ok</span>(BlockType::FuncType(idx)),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                    <span class="string">&quot;invalid function type&quot;</span>,
+                    <span class="string">"invalid function type"</span>,
                     <span class="self">self</span>.original_position(),
                 ));
             }
@@ -2447,21 +2448,21 @@
     ///     ($(@$proposal:ident $op:ident $({ $($arg:ident: $argty:ty),* })? =&gt; $visit:ident)*) =&gt; {
     ///         $(
     ///             fn $visit(&amp;mut self $($(,$arg: $argty)*)?) -&gt; Self::Output {
-    ///                 println!(&quot;{}: {}&quot;, self.offset, stringify!($visit));
+    ///                 println!("{}: {}", self.offset, stringify!($visit));
     ///             }
     ///         )*
     ///     }
     /// }
     ///
-    /// impl&lt;&#39;a&gt; VisitOperator&lt;&#39;a&gt; for Dumper {
+    /// impl&lt;'a&gt; VisitOperator&lt;'a&gt; for Dumper {
     ///     type Output = ();
     ///     for_each_operator!(define_visit_operator);
     /// }
     ///
     /// ```
-    </span><span class="kw">pub fn </span>visit_operator&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, visitor: <span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;&gt;::Output&gt;
+    </span><span class="kw">pub fn </span>visit_operator&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, visitor: <span class="kw-2">&amp;mut </span>T) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">'a</span>&gt;&gt;::Output&gt;
     <span class="kw">where
-        </span>T: VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: VisitOperator&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>pos = <span class="self">self</span>.original_position();
         <span class="kw">let </span>code = <span class="self">self</span>.read_u8()<span class="question-mark">? </span><span class="kw">as </span>u8;
@@ -2499,7 +2500,7 @@
                 <span class="kw">let </span>results = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
                 <span class="kw">if </span>results != <span class="number">1 </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                        <span class="string">&quot;invalid result arity&quot;</span>,
+                        <span class="string">"invalid result arity"</span>,
                         <span class="self">self</span>.position,
                     ));
                 }
@@ -2693,7 +2694,7 @@
             <span class="number">0xfd </span>=&gt; <span class="self">self</span>.visit_0xfd_operator(pos, visitor)<span class="question-mark">?</span>,
             <span class="number">0xfe </span>=&gt; <span class="self">self</span>.visit_0xfe_operator(pos, visitor)<span class="question-mark">?</span>,
 
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">&quot;illegal opcode: 0x{code:x}&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">"illegal opcode: 0x{code:x}"</span>),
         })
     }
 
@@ -2701,9 +2702,9 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         pos: usize,
         visitor: <span class="kw-2">&amp;mut </span>T,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;&gt;::Output&gt;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">'a</span>&gt;&gt;::Output&gt;
     <span class="kw">where
-        </span>T: VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: VisitOperator&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>code = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>code {
@@ -2711,7 +2712,7 @@
             <span class="number">0x1d </span>=&gt; visitor.visit_i31_get_s(),
             <span class="number">0x1e </span>=&gt; visitor.visit_i31_get_u(),
 
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">&quot;unknown 0xfb subopcode: 0x{code:x}&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">"unknown 0xfb subopcode: 0x{code:x}"</span>),
         })
     }
 
@@ -2719,9 +2720,9 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         pos: usize,
         visitor: <span class="kw-2">&amp;mut </span>T,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;&gt;::Output&gt;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">'a</span>&gt;&gt;::Output&gt;
     <span class="kw">where
-        </span>T: VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: VisitOperator&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>code = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>code {
@@ -2786,7 +2787,7 @@
                 visitor.visit_memory_discard(mem)
             }
 
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">&quot;unknown 0xfc subopcode: 0x{code:x}&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">"unknown 0xfc subopcode: 0x{code:x}"</span>),
         })
     }
 
@@ -2794,9 +2795,9 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         pos: usize,
         visitor: <span class="kw-2">&amp;mut </span>T,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;&gt;::Output&gt;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">'a</span>&gt;&gt;::Output&gt;
     <span class="kw">where
-        </span>T: VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: VisitOperator&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>code = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>code {
@@ -3102,7 +3103,7 @@
             <span class="number">0x112 </span>=&gt; visitor.visit_i16x8_relaxed_dot_i8x16_i7x16_s(),
             <span class="number">0x113 </span>=&gt; visitor.visit_i32x4_relaxed_dot_i8x16_i7x16_add_s(),
 
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">&quot;unknown 0xfd subopcode: 0x{code:x}&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">"unknown 0xfd subopcode: 0x{code:x}"</span>),
         })
     }
 
@@ -3110,9 +3111,9 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         pos: usize,
         visitor: <span class="kw-2">&amp;mut </span>T,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;&gt;::Output&gt;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;&lt;T <span class="kw">as </span>VisitOperator&lt;<span class="lifetime">'a</span>&gt;&gt;::Output&gt;
     <span class="kw">where
-        </span>T: VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt;,
+        </span>T: VisitOperator&lt;<span class="lifetime">'a</span>&gt;,
     {
         <span class="kw">let </span>code = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>code {
@@ -3121,7 +3122,7 @@
             <span class="number">0x02 </span>=&gt; visitor.visit_memory_atomic_wait64(<span class="self">self</span>.read_memarg(<span class="number">3</span>)<span class="question-mark">?</span>),
             <span class="number">0x03 </span>=&gt; {
                 <span class="kw">if </span><span class="self">self</span>.read_u8()<span class="question-mark">? </span>!= <span class="number">0 </span>{
-                    <span class="macro">bail!</span>(pos, <span class="string">&quot;nonzero byte after `atomic.fence`&quot;</span>);
+                    <span class="macro">bail!</span>(pos, <span class="string">"nonzero byte after `atomic.fence`"</span>);
                 }
                 visitor.visit_atomic_fence()
             }
@@ -3189,7 +3190,7 @@
             <span class="number">0x4d </span>=&gt; visitor.visit_i64_atomic_rmw16_cmpxchg_u(<span class="self">self</span>.read_memarg(<span class="number">1</span>)<span class="question-mark">?</span>),
             <span class="number">0x4e </span>=&gt; visitor.visit_i64_atomic_rmw32_cmpxchg_u(<span class="self">self</span>.read_memarg(<span class="number">2</span>)<span class="question-mark">?</span>),
 
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">&quot;unknown 0xfe subopcode: 0x{code:x}&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(pos, <span class="string">"unknown 0xfe subopcode: 0x{code:x}"</span>),
         })
     }
 
@@ -3199,7 +3200,7 @@
     ///
     /// If `BinaryReader` has less bytes remaining than required to parse
     /// the `Operator`.
-    </span><span class="kw">pub fn </span>read_operator(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Operator&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    </span><span class="kw">pub fn </span>read_operator(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Operator&lt;<span class="lifetime">'a</span>&gt;&gt; {
         <span class="self">self</span>.visit_operator(<span class="kw-2">&amp;mut </span>OperatorFactory::new())
     }
 
@@ -3207,7 +3208,7 @@
         <span class="kw">let </span>index = <span class="self">self</span>.read_u8()<span class="question-mark">?</span>;
         <span class="kw">if </span>index &gt;= max {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="string">&quot;invalid lane index&quot;</span>,
+                <span class="string">"invalid lane index"</span>,
                 <span class="self">self</span>.original_position() - <span class="number">1</span>,
             ));
         }
@@ -3224,7 +3225,7 @@
         <span class="kw">let </span>magic_number = <span class="self">self</span>.read_bytes(<span class="number">4</span>)<span class="question-mark">?</span>;
         <span class="kw">if </span>magic_number != WASM_MAGIC_NUMBER {
             <span class="kw">return </span><span class="prelude-val">Err</span>(BinaryReaderError::new(
-                <span class="macro">format!</span>(<span class="string">&quot;magic header not detected: bad magic number - expected={WASM_MAGIC_NUMBER:#x?} actual={magic_number:#x?}&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">"magic header not detected: bad magic number - expected={WASM_MAGIC_NUMBER:#x?} actual={magic_number:#x?}"</span>),
                 <span class="self">self</span>.original_position() - <span class="number">4</span>,
             ));
         }
@@ -3241,14 +3242,14 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; BrTable&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; BrTable&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Returns the number of `br_table` entries, not including the default
     /// label
     </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
         <span class="self">self</span>.cnt
     }
 
-    <span class="doccomment">/// Returns whether `BrTable` doesn&#39;t have any labels apart from the default one.
+    <span class="doccomment">/// Returns whether `BrTable` doesn't have any labels apart from the default one.
     </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.len() == <span class="number">0
     </span>}
@@ -3291,17 +3292,17 @@
 /// This iterator parses each target of the underlying `br_table`
 /// except for the default target.
 /// The iterator will yield exactly as many targets as the `br_table` has.
-</span><span class="kw">pub struct </span>BrTableTargets&lt;<span class="lifetime">&#39;a</span>&gt; {
-    reader: <span class="kw">crate</span>::BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+</span><span class="kw">pub struct </span>BrTableTargets&lt;<span class="lifetime">'a</span>&gt; {
+    reader: <span class="kw">crate</span>::BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     remaining: u32,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Iterator <span class="kw">for </span>BrTableTargets&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Iterator <span class="kw">for </span>BrTableTargets&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;u32&gt;;
 
     <span class="kw">fn </span>size_hint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="prelude-ty">Option</span>&lt;usize&gt;) {
         <span class="kw">let </span>remaining = usize::try_from(<span class="self">self</span>.remaining).unwrap_or_else(|error| {
-            <span class="macro">panic!</span>(<span class="string">&quot;could not convert remaining `u32` into `usize`: {}&quot;</span>, error)
+            <span class="macro">panic!</span>(<span class="string">"could not convert remaining `u32` into `usize`: {}"</span>, error)
         });
         (remaining, <span class="prelude-val">Some</span>(remaining))
     }
@@ -3310,7 +3311,7 @@
         <span class="kw">if </span><span class="self">self</span>.remaining == <span class="number">0 </span>{
             <span class="kw">if </span>!<span class="self">self</span>.reader.eof() {
                 <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(BinaryReaderError::new(
-                    <span class="string">&quot;trailing data in br_table&quot;</span>,
+                    <span class="string">"trailing data in br_table"</span>,
                     <span class="self">self</span>.reader.original_position(),
                 )));
             }
@@ -3321,17 +3322,17 @@
     }
 }
 
-<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>BrTable&lt;<span class="lifetime">&#39;_</span>&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="kw">let </span><span class="kw-2">mut </span>f = f.debug_struct(<span class="string">&quot;BrTable&quot;</span>);
-        f.field(<span class="string">&quot;count&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.cnt);
-        f.field(<span class="string">&quot;default&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.default);
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>BrTable&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span><span class="kw-2">mut </span>f = f.debug_struct(<span class="string">"BrTable"</span>);
+        f.field(<span class="string">"count"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.cnt);
+        f.field(<span class="string">"default"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.default);
         <span class="kw">match </span><span class="self">self</span>.targets().collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;() {
             <span class="prelude-val">Ok</span>(targets) =&gt; {
-                f.field(<span class="string">&quot;targets&quot;</span>, <span class="kw-2">&amp;</span>targets);
+                f.field(<span class="string">"targets"</span>, <span class="kw-2">&amp;</span>targets);
             }
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                f.field(<span class="string">&quot;reader&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.reader);
+                f.field(<span class="string">"reader"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.reader);
             }
         }
         f.finish()
@@ -3339,11 +3340,11 @@
 }
 
 <span class="doccomment">/// A factory to construct [`Operator`] instances via the [`VisitOperator`] trait.
-</span><span class="kw">struct </span>OperatorFactory&lt;<span class="lifetime">&#39;a</span>&gt; {
-    marker: core::marker::PhantomData&lt;<span class="kw">fn</span>() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>()&gt;,
+</span><span class="kw">struct </span>OperatorFactory&lt;<span class="lifetime">'a</span>&gt; {
+    marker: core::marker::PhantomData&lt;<span class="kw">fn</span>() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; OperatorFactory&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; OperatorFactory&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Creates a new [`OperatorFactory`].
     </span><span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -3355,29 +3356,29 @@
 <span class="macro">macro_rules! </span>define_visit_operator {
     ($(@<span class="macro-nonterminal">$proposal</span>:ident <span class="macro-nonterminal">$op</span>:ident $({ $(<span class="macro-nonterminal">$arg</span>:ident: <span class="macro-nonterminal">$argty</span>:ty),* })<span class="question-mark">? </span>=&gt; <span class="macro-nonterminal">$visit</span>:ident)<span class="kw-2">*</span>) =&gt; {
         $(
-            <span class="kw">fn </span><span class="macro-nonterminal">$visit</span>(<span class="kw-2">&amp;mut </span><span class="self">self </span>$($(,<span class="macro-nonterminal">$arg</span>: <span class="macro-nonterminal">$argty</span>)<span class="kw-2">*</span>)<span class="question-mark">?</span>) -&gt; Operator&lt;<span class="lifetime">&#39;a</span>&gt; {
+            <span class="kw">fn </span><span class="macro-nonterminal">$visit</span>(<span class="kw-2">&amp;mut </span><span class="self">self </span>$($(,<span class="macro-nonterminal">$arg</span>: <span class="macro-nonterminal">$argty</span>)<span class="kw-2">*</span>)<span class="question-mark">?</span>) -&gt; Operator&lt;<span class="lifetime">'a</span>&gt; {
                 Operator::<span class="macro-nonterminal">$op </span>$({ $(<span class="macro-nonterminal">$arg</span>),* })<span class="question-mark">?
             </span>}
         )*
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; VisitOperator&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>OperatorFactory&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type </span>Output = Operator&lt;<span class="lifetime">&#39;a</span>&gt;;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; VisitOperator&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>OperatorFactory&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">type </span>Output = Operator&lt;<span class="lifetime">'a</span>&gt;;
 
     <span class="macro">for_each_operator!</span>(define_visit_operator);
 }
 
 <span class="doccomment">/// Iterator returned from [`BinaryReader::read_iter`].
-</span><span class="kw">pub struct </span>BinaryReaderIter&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;me</span>, T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub struct </span>BinaryReaderIter&lt;<span class="lifetime">'a</span>, <span class="lifetime">'me</span>, T: FromReader&lt;<span class="lifetime">'a</span>&gt;&gt; {
     remaining: usize,
-    reader: <span class="kw-2">&amp;</span><span class="lifetime">&#39;me </span><span class="kw-2">mut </span>BinaryReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    reader: <span class="kw-2">&amp;</span><span class="lifetime">'me </span><span class="kw-2">mut </span>BinaryReader&lt;<span class="lifetime">'a</span>&gt;,
     _marker: marker::PhantomData&lt;T&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Iterator <span class="kw">for </span>BinaryReaderIter&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;_</span>, T&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Iterator <span class="kw">for </span>BinaryReaderIter&lt;<span class="lifetime">'a</span>, <span class="lifetime">'_</span>, T&gt;
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;T&gt;;
 
@@ -3400,9 +3401,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; Drop <span class="kw">for </span>BinaryReaderIter&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;_</span>, T&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; Drop <span class="kw">for </span>BinaryReaderIter&lt;<span class="lifetime">'a</span>, <span class="lifetime">'_</span>, T&gt;
 <span class="kw">where
-    </span>T: FromReader&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span>T: FromReader&lt;<span class="lifetime">'a</span>&gt;,
 {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">while </span><span class="self">self</span>.next().is_some() {

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-proto-0.24.0/src/xfer/dns_multiplexer.rs`."><title>dns_multiplexer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_proto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-proto-0.24.0/src/xfer/dns_multiplexer.rs`."><title>dns_multiplexer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hickory_proto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -790,7 +791,7 @@
     }
 
     <span class="doccomment">/// polls the timeout and converts the error
-    </span><span class="kw">fn </span>poll_timeout(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;()&gt; {
+    </span><span class="kw">fn </span>poll_timeout(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;()&gt; {
         <span class="self">self</span>.timeout.poll_unpin(cx)
     }
 
@@ -815,10 +816,10 @@
 /// This Client is generic and capable of wrapping UDP, TCP, and other underlying DNS protocol
 ///  implementations. This should be used for underlying protocols that do not natively support
 ///  multiplexed sessions.
-</span><span class="attr">#[must_use = <span class="string">&quot;futures do nothing unless polled&quot;</span>]
+</span><span class="attr">#[must_use = <span class="string">"futures do nothing unless polled"</span>]
 </span><span class="kw">pub struct </span>DnsMultiplexer&lt;S, MF&gt;
 <span class="kw">where
-    </span>S: DnsClientStream + <span class="lifetime">&#39;static</span>,
+    </span>S: DnsClientStream + <span class="lifetime">'static</span>,
     MF: MessageFinalizer,
 {
     stream: S,
@@ -831,7 +832,7 @@
 
 <span class="kw">impl</span>&lt;S, MF&gt; DnsMultiplexer&lt;S, MF&gt;
 <span class="kw">where
-    </span>S: DnsClientStream + Unpin + <span class="lifetime">&#39;static</span>,
+    </span>S: DnsClientStream + Unpin + <span class="lifetime">'static</span>,
     MF: MessageFinalizer,
 {
     <span class="doccomment">/// Spawns a new DnsMultiplexer Stream. This uses a default timeout of 5 seconds for all requests.
@@ -849,7 +850,7 @@
         signer: <span class="prelude-ty">Option</span>&lt;Arc&lt;MF&gt;&gt;,
     ) -&gt; DnsMultiplexerConnect&lt;F, S, MF&gt;
     <span class="kw">where
-        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">&#39;static</span>,
+        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>,
     {
         <span class="self">Self</span>::with_timeout(stream, stream_handle, Duration::from_secs(<span class="number">5</span>), signer)
     }
@@ -871,7 +872,7 @@
         signer: <span class="prelude-ty">Option</span>&lt;Arc&lt;MF&gt;&gt;,
     ) -&gt; DnsMultiplexerConnect&lt;F, S, MF&gt;
     <span class="kw">where
-        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">&#39;static</span>,
+        </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>,
     {
         DnsMultiplexerConnect {
             stream,
@@ -883,17 +884,17 @@
 
     <span class="doccomment">/// loop over active_requests and remove cancelled requests
     ///  this should free up space if we already had 4096 active requests
-    </span><span class="kw">fn </span>drop_cancelled(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    </span><span class="kw">fn </span>drop_cancelled(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span><span class="kw-2">mut </span>canceled = HashMap::&lt;u16, ProtoError&gt;::new();
         <span class="kw">for </span>(<span class="kw-2">&amp;</span>id, <span class="kw-2">ref mut </span>active_req) <span class="kw">in </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.active_requests {
             <span class="kw">if </span>active_req.is_canceled() {
-                canceled.insert(id, ProtoError::from(<span class="string">&quot;requestor canceled&quot;</span>));
+                canceled.insert(id, ProtoError::from(<span class="string">"requestor canceled"</span>));
             }
 
             <span class="comment">// check for timeouts...
             </span><span class="kw">match </span>active_req.poll_timeout(cx) {
                 Poll::Ready(()) =&gt; {
-                    <span class="macro">debug!</span>(<span class="string">&quot;request timed out: {}&quot;</span>, id);
+                    <span class="macro">debug!</span>(<span class="string">"request timed out: {}"</span>, id);
                     canceled.insert(id, ProtoError::from(ProtoErrorKind::Timeout));
                 }
                 Poll::Pending =&gt; (),
@@ -903,7 +904,7 @@
         <span class="comment">// drop all the canceled requests
         </span><span class="kw">for </span>(id, error) <span class="kw">in </span>canceled {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(active_request) = <span class="self">self</span>.active_requests.remove(<span class="kw-2">&amp;</span>id) {
-                <span class="comment">// complete the request, it&#39;s failed...
+                <span class="comment">// complete the request, it's failed...
                 </span>active_request.complete_with_error(error);
             }
         }
@@ -922,7 +923,7 @@
         }
 
         <span class="prelude-val">Err</span>(ProtoError::from(
-            <span class="string">&quot;id space exhausted, consider filing an issue&quot;</span>,
+            <span class="string">"id space exhausted, consider filing an issue"</span>,
         ))
     }
 
@@ -931,19 +932,19 @@
         <span class="macro">debug!</span>(error = error.as_dyn(), stream = %<span class="self">self</span>.stream);
 
         <span class="kw">for </span>(<span class="kw">_</span>, active_request) <span class="kw">in </span><span class="self">self</span>.active_requests.drain() {
-            <span class="comment">// complete the request, it&#39;s failed...
+            <span class="comment">// complete the request, it's failed...
             </span>active_request.complete_with_error(error.clone());
         }
     }
 }
 
 <span class="doccomment">/// A wrapper for a future DnsExchange connection
-</span><span class="attr">#[must_use = <span class="string">&quot;futures do nothing unless polled&quot;</span>]
+</span><span class="attr">#[must_use = <span class="string">"futures do nothing unless polled"</span>]
 </span><span class="kw">pub struct </span>DnsMultiplexerConnect&lt;F, S, MF&gt;
 <span class="kw">where
-    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">&#39;static</span>,
+    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>,
     S: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;SerialMessage, ProtoError&gt;&gt; + Unpin,
-    MF: MessageFinalizer + Send + Sync + <span class="lifetime">&#39;static</span>,
+    MF: MessageFinalizer + Send + Sync + <span class="lifetime">'static</span>,
 {
     stream: F,
     stream_handle: <span class="prelude-ty">Option</span>&lt;BufDnsStreamHandle&gt;,
@@ -953,13 +954,13 @@
 
 <span class="kw">impl</span>&lt;F, S, MF&gt; Future <span class="kw">for </span>DnsMultiplexerConnect&lt;F, S, MF&gt;
 <span class="kw">where
-    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">&#39;static</span>,
-    S: DnsClientStream + Unpin + <span class="lifetime">&#39;static</span>,
-    MF: MessageFinalizer + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;S, ProtoError&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>,
+    S: DnsClientStream + Unpin + <span class="lifetime">'static</span>,
+    MF: MessageFinalizer + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;DnsMultiplexer&lt;S, MF&gt;, ProtoError&gt;;
 
-    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="kw">let </span>stream: S = <span class="macro">ready!</span>(<span class="self">self</span>.stream.poll_unpin(cx))<span class="question-mark">?</span>;
 
         Poll::Ready(<span class="prelude-val">Ok</span>(DnsMultiplexer {
@@ -968,7 +969,7 @@
             stream_handle: <span class="self">self
                 </span>.stream_handle
                 .take()
-                .expect(<span class="string">&quot;must not poll after complete&quot;</span>),
+                .expect(<span class="string">"must not poll after complete"</span>),
             active_requests: HashMap::new(),
             signer: <span class="self">self</span>.signer.clone(),
             is_shutdown: <span class="bool-val">false</span>,
@@ -978,22 +979,22 @@
 
 <span class="kw">impl</span>&lt;S, MF&gt; Display <span class="kw">for </span>DnsMultiplexer&lt;S, MF&gt;
 <span class="kw">where
-    </span>S: DnsClientStream + <span class="lifetime">&#39;static</span>,
-    MF: MessageFinalizer + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>S: DnsClientStream + <span class="lifetime">'static</span>,
+    MF: MessageFinalizer + Send + Sync + <span class="lifetime">'static</span>,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(formatter, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.stream)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(formatter, <span class="string">"{}"</span>, <span class="self">self</span>.stream)
     }
 }
 
 <span class="kw">impl</span>&lt;S, MF&gt; DnsRequestSender <span class="kw">for </span>DnsMultiplexer&lt;S, MF&gt;
 <span class="kw">where
-    </span>S: DnsClientStream + Unpin + <span class="lifetime">&#39;static</span>,
-    MF: MessageFinalizer + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>S: DnsClientStream + Unpin + <span class="lifetime">'static</span>,
+    MF: MessageFinalizer + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>send_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, request: DnsRequest) -&gt; DnsResponseStream {
         <span class="kw">if </span><span class="self">self</span>.is_shutdown {
-            <span class="macro">panic!</span>(<span class="string">&quot;can not send messages after stream is shutdown&quot;</span>)
+            <span class="macro">panic!</span>(<span class="string">"can not send messages after stream is shutdown"</span>)
         }
 
         <span class="kw">if </span><span class="self">self</span>.active_requests.len() &gt; CHANNEL_BUFFER_SIZE {
@@ -1010,7 +1011,7 @@
 
         <span class="kw">let </span>now = <span class="kw">match </span>SystemTime::now().duration_since(UNIX_EPOCH) {
             <span class="prelude-val">Ok</span>(now) =&gt; now.as_secs(),
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span>ProtoError::from(<span class="string">&quot;Current time is before the Unix epoch.&quot;</span>).into(),
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span>ProtoError::from(<span class="string">"Current time is before the Unix epoch."</span>).into(),
         };
 
         <span class="comment">// TODO: truncates u64 to u32, error on overflow?
@@ -1022,7 +1023,7 @@
                 <span class="kw">match </span>request.finalize::&lt;MF&gt;(signer.borrow(), now) {
                     <span class="prelude-val">Ok</span>(answer_verifier) =&gt; verifier = answer_verifier,
                     <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;could not sign message: {}&quot;</span>, e);
+                        <span class="macro">debug!</span>(<span class="string">"could not sign message: {}"</span>, e);
                         <span class="kw">return </span>e.into();
                     }
                 }
@@ -1040,17 +1041,17 @@
 
         <span class="kw">match </span>request.to_vec() {
             <span class="prelude-val">Ok</span>(buffer) =&gt; {
-                <span class="macro">debug!</span>(id = %active_request.request_id(), <span class="string">&quot;sending message&quot;</span>);
+                <span class="macro">debug!</span>(id = %active_request.request_id(), <span class="string">"sending message"</span>);
                 <span class="kw">let </span>serial_message = SerialMessage::new(buffer, <span class="self">self</span>.stream.name_server_addr());
 
                 <span class="macro">debug!</span>(
-                    <span class="string">&quot;final message: {}&quot;</span>,
+                    <span class="string">"final message: {}"</span>,
                     serial_message
                         .to_message()
-                        .expect(<span class="string">&quot;bizarre we just made this message&quot;</span>)
+                        .expect(<span class="string">"bizarre we just made this message"</span>)
                 );
 
-                <span class="comment">// add to the map -after- the client send b/c we don&#39;t want to put it in the map if
+                <span class="comment">// add to the map -after- the client send b/c we don't want to put it in the map if
                 //  we ended up returning an error from the send.
                 </span><span class="kw">match </span><span class="self">self</span>.stream_handle.send(serial_message) {
                     <span class="prelude-val">Ok</span>(()) =&gt; <span class="self">self
@@ -1063,9 +1064,9 @@
                 <span class="macro">debug!</span>(
                     id = %active_request.request_id(),
                     error = e.as_dyn(),
-                    <span class="string">&quot;error message&quot;
+                    <span class="string">"error message"
                 </span>);
-                <span class="comment">// complete with the error, don&#39;t add to the map of active requests
+                <span class="comment">// complete with the error, don't add to the map of active requests
                 </span><span class="kw">return </span>e.into();
             }
         }
@@ -1084,22 +1085,22 @@
 
 <span class="kw">impl</span>&lt;S, MF&gt; Stream <span class="kw">for </span>DnsMultiplexer&lt;S, MF&gt;
 <span class="kw">where
-    </span>S: DnsClientStream + Unpin + <span class="lifetime">&#39;static</span>,
-    MF: MessageFinalizer + Send + Sync + <span class="lifetime">&#39;static</span>,
+    </span>S: DnsClientStream + Unpin + <span class="lifetime">'static</span>,
+    MF: MessageFinalizer + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;(), ProtoError&gt;;
 
-    <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+    <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
         <span class="comment">// Always drop the cancelled queries first
         </span><span class="self">self</span>.drop_cancelled(cx);
 
         <span class="kw">if </span><span class="self">self</span>.is_shutdown &amp;&amp; <span class="self">self</span>.active_requests.is_empty() {
-            <span class="macro">debug!</span>(<span class="string">&quot;stream is done: {}&quot;</span>, <span class="self">self</span>);
+            <span class="macro">debug!</span>(<span class="string">"stream is done: {}"</span>, <span class="self">self</span>);
             <span class="kw">return </span>Poll::Ready(<span class="prelude-val">None</span>);
         }
 
         <span class="comment">// Collect all inbound requests, max 100 at a time for QoS
-        //   by having a max we will guarantee that the client can&#39;t be DOSed in this loop
+        //   by having a max we will guarantee that the client can't be DOSed in this loop
         // TODO: make the QoS configurable
         </span><span class="kw">let </span><span class="kw-2">mut </span>messages_received = <span class="number">0</span>;
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..QOS_MAX_RECEIVE_MSGS {
@@ -1125,16 +1126,16 @@
                                     )));
                                 }
                             }
-                            Entry::Vacant(..) =&gt; <span class="macro">debug!</span>(<span class="string">&quot;unexpected request_id: {}&quot;</span>, message.id()),
+                            Entry::Vacant(..) =&gt; <span class="macro">debug!</span>(<span class="string">"unexpected request_id: {}"</span>, message.id()),
                         },
                         <span class="comment">// TODO: return src address for diagnostics
-                        </span><span class="prelude-val">Err</span>(error) =&gt; <span class="macro">debug!</span>(error = error.as_dyn(), <span class="string">&quot;error decoding message&quot;</span>),
+                        </span><span class="prelude-val">Err</span>(error) =&gt; <span class="macro">debug!</span>(error = error.as_dyn(), <span class="string">"error decoding message"</span>),
                     }
                 }
                 Poll::Ready(err) =&gt; {
                     <span class="kw">let </span>err = <span class="kw">match </span>err {
                         <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)) =&gt; e,
-                        <span class="prelude-val">None </span>=&gt; ProtoError::from(<span class="string">&quot;stream closed&quot;</span>),
+                        <span class="prelude-val">None </span>=&gt; ProtoError::from(<span class="string">"stream closed"</span>),
                         <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
                     };
 
@@ -1147,14 +1148,14 @@
         }
 
         <span class="comment">// If still active, then if the qos (for _ in 0..100 loop) limit
-        // was hit then &quot;yield&quot;. This&#39;ll make sure that the future is
+        // was hit then "yield". This'll make sure that the future is
         // woken up immediately on the next turn of the event loop.
         </span><span class="kw">if </span>messages_received == QOS_MAX_RECEIVE_MSGS {
             <span class="comment">// FIXME: this was a task::current().notify(); is this right?
             </span>cx.waker().wake_by_ref();
         }
 
-        <span class="comment">// Finally, return not ready to keep the &#39;driver task&#39; alive.
+        <span class="comment">// Finally, return not ready to keep the 'driver task' alive.
         </span>Poll::Pending
     }
 }
@@ -1197,22 +1198,22 @@
     }
 
     <span class="kw">impl </span>fmt::Display <span class="kw">for </span>MockClientStream {
-        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-            <span class="macro">write!</span>(formatter, <span class="string">&quot;TestClientStream&quot;</span>)
+        <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+            <span class="macro">write!</span>(formatter, <span class="string">"TestClientStream"</span>)
         }
     }
 
     <span class="kw">impl </span>Stream <span class="kw">for </span>MockClientStream {
         <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;SerialMessage, ProtoError&gt;;
 
-        <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+        <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
             <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = <span class="self">self</span>.id {
                 id
             } <span class="kw">else </span>{
                 <span class="kw">let </span>serial = <span class="macro">ready!</span>(<span class="self">self
                     </span>.receiver
                     .as_mut()
-                    .expect(<span class="string">&quot;should only be polled after receiver has been set&quot;</span>)
+                    .expect(<span class="string">"should only be polled after receiver has been set"</span>)
                     .poll_next_unpin(cx));
                 <span class="kw">let </span>message = serial.unwrap().to_message().unwrap();
                 <span class="self">self</span>.id = <span class="prelude-val">Some</span>(message.id());
@@ -1256,7 +1257,7 @@
     }
 
     <span class="kw">fn </span>a_query_answer() -&gt; (DnsRequest, Vec&lt;Message&gt;) {
-        <span class="kw">let </span>name = Name::from_ascii(<span class="string">&quot;www.example.com&quot;</span>).unwrap();
+        <span class="kw">let </span>name = Name::from_ascii(<span class="string">"www.example.com"</span>).unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>msg = Message::new();
         msg.add_query({
@@ -1285,7 +1286,7 @@
     }
 
     <span class="kw">fn </span>axfr_query() -&gt; Message {
-        <span class="kw">let </span>name = Name::from_ascii(<span class="string">&quot;example.com&quot;</span>).unwrap();
+        <span class="kw">let </span>name = Name::from_ascii(<span class="string">"example.com"</span>).unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>msg = Message::new();
         msg.add_query({
@@ -1301,15 +1302,15 @@
 
     <span class="kw">fn </span>axfr_response() -&gt; Vec&lt;Record&gt; {
         <span class="kw">use </span><span class="kw">crate</span>::rr::rdata::<span class="kw-2">*</span>;
-        <span class="kw">let </span>origin = Name::from_ascii(<span class="string">&quot;example.com&quot;</span>).unwrap();
+        <span class="kw">let </span>origin = Name::from_ascii(<span class="string">"example.com"</span>).unwrap();
         <span class="kw">let </span>soa = Record::new()
             .set_name(origin.clone())
             .set_ttl(<span class="number">3600</span>)
             .set_rr_type(RecordType::SOA)
             .set_dns_class(DNSClass::IN)
             .set_data(<span class="prelude-val">Some</span>(RData::SOA(SOA::new(
-                Name::parse(<span class="string">&quot;sns.dns.icann.org.&quot;</span>, <span class="prelude-val">None</span>).unwrap(),
-                Name::parse(<span class="string">&quot;noc.dns.icann.org.&quot;</span>, <span class="prelude-val">None</span>).unwrap(),
+                Name::parse(<span class="string">"sns.dns.icann.org."</span>, <span class="prelude-val">None</span>).unwrap(),
+                Name::parse(<span class="string">"noc.dns.icann.org."</span>, <span class="prelude-val">None</span>).unwrap(),
                 <span class="number">2015082403</span>,
                 <span class="number">7200</span>,
                 <span class="number">3600</span>,
@@ -1326,7 +1327,7 @@
                 .set_rr_type(RecordType::NS)
                 .set_dns_class(DNSClass::IN)
                 .set_data(<span class="prelude-val">Some</span>(RData::NS(NS(Name::parse(
-                    <span class="string">&quot;a.iana-servers.net.&quot;</span>,
+                    <span class="string">"a.iana-servers.net."</span>,
                     <span class="prelude-val">None</span>,
                 )
                 .unwrap()))))
@@ -1337,7 +1338,7 @@
                 .set_rr_type(RecordType::NS)
                 .set_dns_class(DNSClass::IN)
                 .set_data(<span class="prelude-val">Some</span>(RData::NS(NS(Name::parse(
-                    <span class="string">&quot;b.iana-servers.net.&quot;</span>,
+                    <span class="string">"b.iana-servers.net."</span>,
                     <span class="prelude-val">None</span>,
                 )
                 .unwrap()))))
@@ -1400,7 +1401,7 @@
         <span class="kw">let </span>response = <span class="macro">tokio::select! </span>{
             <span class="kw">_ </span>= multiplexer.next() =&gt; {
                 <span class="comment">// polling multiplexer to make it run
-                </span><span class="macro">panic!</span>(<span class="string">&quot;should never end&quot;</span>)
+                </span><span class="macro">panic!</span>(<span class="string">"should never end"</span>)
             },
             r = response.try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() =&gt; r.unwrap(),
         };
@@ -1415,7 +1416,7 @@
         <span class="kw">let </span>response = <span class="macro">tokio::select! </span>{
             <span class="kw">_ </span>= multiplexer.next() =&gt; {
                 <span class="comment">// polling multiplexer to make it run
-                </span><span class="macro">panic!</span>(<span class="string">&quot;should never end&quot;</span>)
+                </span><span class="macro">panic!</span>(<span class="string">"should never end"</span>)
             },
             r = response.try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() =&gt; r.unwrap(),
         };
@@ -1431,7 +1432,7 @@
         <span class="kw">let </span>response = <span class="macro">tokio::select! </span>{
             <span class="kw">_ </span>= multiplexer.next() =&gt; {
                 <span class="comment">// polling multiplexer to make it run
-                </span><span class="macro">panic!</span>(<span class="string">&quot;should never end&quot;</span>)
+                </span><span class="macro">panic!</span>(<span class="string">"should never end"</span>)
             },
             r = response.try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() =&gt; r.unwrap(),
         };

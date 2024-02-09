@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/curve25519-dalek-4.1.1/src/backend/vector/packed_simd.rs`."><title>packed_simd.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="curve25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../curve25519_dalek/index.html"><img src="https://cdn.jsdelivr.net/gh/dalek-cryptography/curve25519-dalek/docs/assets/dalek-logo-clear.png" alt="curve25519_dalek"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/curve25519-dalek-4.1.1/src/backend/vector/packed_simd.rs`."><title>packed_simd.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="curve25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><a class="sub-logo-container" href="../../../../curve25519_dalek/index.html"><img src="https://cdn.jsdelivr.net/gh/dalek-cryptography/curve25519-dalek/docs/assets/dalek-logo-clear.png" alt="curve25519_dalek"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -343,7 +344,7 @@
 </span><span class="doccomment">//! This module defines wrappers over platform-specific SIMD types to make them
 //! more convenient to use.
 //!
-//! UNSAFETY: Everything in this module assumes that we&#39;re running on hardware
+//! UNSAFETY: Everything in this module assumes that we're running on hardware
 //!           which supports at least AVX2. This invariant *must* be enforced
 //!           by the callers of this code.
 </span><span class="kw">use </span>core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitXor, BitXorAssign, Sub};
@@ -365,7 +366,7 @@
         #[repr(transparent)]
         </span><span class="kw">pub struct </span><span class="macro-nonterminal">$ty</span>(core::arch::x86_64::__m256i);
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>From&lt;<span class="macro-nonterminal">$ty</span>&gt; <span class="kw">for </span>core::arch::x86_64::__m256i {
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>from(value: <span class="macro-nonterminal">$ty</span>) -&gt; core::arch::x86_64::__m256i {
@@ -373,7 +374,7 @@
             </span>}
         }
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>From&lt;core::arch::x86_64::__m256i&gt; <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>from(value: core::arch::x86_64::__m256i) -&gt; <span class="macro-nonterminal">$ty </span>{
@@ -381,15 +382,15 @@
             }
         }
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>PartialEq <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, rhs: <span class="kw-2">&amp;</span><span class="macro-nonterminal">$ty</span>) -&gt; bool {
                 <span class="kw">unsafe </span>{
                     <span class="comment">// This compares each pair of 8-bit packed integers and returns either 0xFF or
-                    // 0x00 depending on whether they&#39;re equal.
+                    // 0x00 depending on whether they're equal.
                     //
-                    // So the values are equal if (and only if) this returns a value that&#39;s filled
+                    // So the values are equal if (and only if) this returns a value that's filled
                     // with only 0xFF.
                     //
                     // Pseudocode of what this does:
@@ -414,7 +415,7 @@
 
         <span class="kw">impl </span>Eq <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{}
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>Add <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="kw">type </span>Output = <span class="self">Self</span>;
 
@@ -425,7 +426,7 @@
         }
 
         <span class="attr">#[allow(clippy::assign_op_pattern)]
-        #[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        #[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>AddAssign <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>add_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rhs: <span class="macro-nonterminal">$ty</span>) {
@@ -433,7 +434,7 @@
             }
         }
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>Sub <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="kw">type </span>Output = <span class="self">Self</span>;
 
@@ -443,7 +444,7 @@
             }
         }
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>BitAnd <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="kw">type </span>Output = <span class="self">Self</span>;
 
@@ -453,7 +454,7 @@
             }
         }
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>BitXor <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="kw">type </span>Output = <span class="self">Self</span>;
 
@@ -464,7 +465,7 @@
         }
 
         <span class="attr">#[allow(clippy::assign_op_pattern)]
-        #[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        #[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>BitAndAssign <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>bitand_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rhs: <span class="macro-nonterminal">$ty</span>) {
@@ -473,7 +474,7 @@
         }
 
         <span class="attr">#[allow(clippy::assign_op_pattern)]
-        #[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        #[unsafe_target_feature(<span class="string">"avx2"</span>)]
         </span><span class="kw">impl </span>BitXorAssign <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
             <span class="attr">#[inline]
             </span><span class="kw">fn </span>bitxor_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, rhs: <span class="macro-nonterminal">$ty</span>) {
@@ -481,7 +482,7 @@
             }
         }
 
-        <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+        <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
         #[allow(dead_code)]
         </span><span class="kw">impl </span><span class="macro-nonterminal">$ty </span>{
             <span class="attr">#[inline]
@@ -505,7 +506,7 @@
 <span class="macro">macro_rules! </span>impl_conv {
     (<span class="macro-nonterminal">$src</span>:ident =&gt; $(<span class="macro-nonterminal">$dst</span>:ident),+) =&gt; {
         $(
-            <span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+            <span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
             </span><span class="kw">impl </span>From&lt;<span class="macro-nonterminal">$src</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$dst </span>{
                 <span class="attr">#[inline]
                 </span><span class="kw">fn </span>from(value: <span class="macro-nonterminal">$src</span>) -&gt; <span class="macro-nonterminal">$dst </span>{
@@ -522,12 +523,12 @@
 // to doing the same thing on unsigned integers? Shl/shr is clear, because casting does not change
 // the bits of the integer. But what about add/sub? This is due to the following:
 //
-//     1) Rust uses two&#39;s complement to represent signed integers. So we&#39;re assured that the values
-//        we cast into SIMD and extract out at the end are two&#39;s complement.
+//     1) Rust uses two's complement to represent signed integers. So we're assured that the values
+//        we cast into SIMD and extract out at the end are two's complement.
 //
 //        https://doc.rust-lang.org/reference/types/numeric.html
 //
-//     2) Wrapping add/sub is compatible between two&#39;s complement signed and unsigned integers.
+//     2) Wrapping add/sub is compatible between two's complement signed and unsigned integers.
 //        That is, for all x,y: u64 (or any unsigned integer type),
 //
 //            x.wrapping_add(y) == (x as i64).wrapping_add(y as i64) as u64, and
@@ -589,7 +590,7 @@
     }
 
     <span class="doccomment">/// Constructs a new instance.
-    </span><span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+    </span><span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
     #[inline]
     </span><span class="kw">pub fn </span>new(x0: u64, x1: u64, x2: u64, x3: u64) -&gt; u64x4 {
         <span class="kw">unsafe </span>{
@@ -601,7 +602,7 @@
     }
 
     <span class="doccomment">/// Constructs a new instance with all of the elements initialized to the given value.
-    </span><span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+    </span><span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
     #[inline]
     </span><span class="kw">pub fn </span>splat(x: u64) -&gt; u64x4 {
         <span class="kw">unsafe </span>{ u64x4(core::arch::x86_64::_mm256_set1_epi64x(x <span class="kw">as </span>i64)) }
@@ -640,7 +641,7 @@
 
     <span class="doccomment">/// Constructs a new instance.
     </span><span class="attr">#[allow(clippy::too_many_arguments)]
-    #[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+    #[unsafe_target_feature(<span class="string">"avx2"</span>)]
     #[inline]
     </span><span class="kw">pub fn </span>new(x0: u32, x1: u32, x2: u32, x3: u32, x4: u32, x5: u32, x6: u32, x7: u32) -&gt; u32x8 {
         <span class="kw">unsafe </span>{
@@ -653,14 +654,14 @@
     }
 
     <span class="doccomment">/// Constructs a new instance with all of the elements initialized to the given value.
-    </span><span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+    </span><span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
     #[inline]
     </span><span class="kw">pub fn </span>splat(x: u32) -&gt; u32x8 {
         <span class="kw">unsafe </span>{ u32x8(core::arch::x86_64::_mm256_set1_epi32(x <span class="kw">as </span>i32)) }
     }
 }
 
-<span class="attr">#[unsafe_target_feature(<span class="string">&quot;avx2&quot;</span>)]
+<span class="attr">#[unsafe_target_feature(<span class="string">"avx2"</span>)]
 </span><span class="kw">impl </span>u32x8 {
     <span class="doccomment">/// Multiplies the low unsigned 32-bits from each packed 64-bit element
     /// and returns the unsigned 64-bit results.

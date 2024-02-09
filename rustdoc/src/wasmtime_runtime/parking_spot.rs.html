@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/parking_spot.rs`."><title>parking_spot.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/parking_spot.rs`."><title>parking_spot.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -588,7 +589,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self
             </span>.inner
             .lock()
-            .expect(<span class="string">&quot;failed to lock inner parking table&quot;</span>);
+            .expect(<span class="string">"failed to lock inner parking table"</span>);
 
         <span class="comment">// check validation with lock held
         </span><span class="kw">if </span>!validate() {
@@ -601,7 +602,7 @@
             spot.num_parked = spot
                 .num_parked
                 .checked_add(<span class="number">1</span>)
-                .expect(<span class="string">&quot;parking spot number overflow&quot;</span>);
+                .expect(<span class="string">"parking spot number overflow"</span>);
             spot.cvar.clone()
         };
 
@@ -614,16 +615,16 @@
                     <span class="kw">let </span>dur = timeout - now;
                     <span class="kw">let </span>(lock, result) = cvar
                         .wait_timeout(inner, dur)
-                        .expect(<span class="string">&quot;failed to wait for condition&quot;</span>);
+                        .expect(<span class="string">"failed to wait for condition"</span>);
                     inner = lock;
                     result.timed_out()
                 }
             } <span class="kw">else </span>{
-                inner = cvar.wait(inner).expect(<span class="string">&quot;failed to wait for condition&quot;</span>);
+                inner = cvar.wait(inner).expect(<span class="string">"failed to wait for condition"</span>);
                 <span class="bool-val">false
             </span>};
 
-            <span class="kw">let </span>spot = inner.get_mut(<span class="kw-2">&amp;</span>key).expect(<span class="string">&quot;failed to get spot&quot;</span>);
+            <span class="kw">let </span>spot = inner.get_mut(<span class="kw-2">&amp;</span>key).expect(<span class="string">"failed to get spot"</span>);
 
             <span class="kw">if </span>timed_out {
                 <span class="comment">// If waiting on the cvar timed out then due to how system cvars
@@ -635,9 +636,9 @@
                 }
 
                 <span class="comment">// Opportunistically consume `to_unpark` signals even on
-                // timeout. From the perspective of `unpark` this &quot;agent&quot; raced
+                // timeout. From the perspective of `unpark` this "agent" raced
                 // between its own timeout and receiving the unpark signal, but
-                // from unpark&#39;s perspective it&#39;s definitely going to wake up N
+                // from unpark's perspective it's definitely going to wake up N
                 // agents as returned from the `unpark` return value.
                 //
                 // Note that this may actually prevent other threads from
@@ -646,19 +647,19 @@
                 // * Thread A parks with a timeout
                 // * Thread B parks with no timeout
                 // * Thread C decides to unpark 1 thread
-                // * Thread A&#39;s cvar wakes up due to a timeout, blocks on the
+                // * Thread A's cvar wakes up due to a timeout, blocks on the
                 //   lock
                 // * Thread C finishes unpark and signals the cvar once
                 // * Thread B wakes up
                 // * Thread A and B contend for the lock and A wins
-                // * A consumes the &quot;to_unpark&quot; value
+                // * A consumes the "to_unpark" value
                 // * B goes back to sleep since `to_unpark == 0`, thinking that
                 //   a spurious wakeup happened.
                 //
-                // It&#39;s believed that this is ok, however, since from C&#39;s
+                // It's believed that this is ok, however, since from C's
                 // perspective one agent was still woken up and is allowed to
-                // continue, notably A in this case. C doesn&#39;t know that A raced
-                // with B and &quot;stole&quot; its wakeup signal.
+                // continue, notably A in this case. C doesn't know that A raced
+                // with B and "stole" its wakeup signal.
                 </span><span class="kw">if </span>spot.to_unpark &gt; <span class="number">0 </span>{
                     spot.to_unpark -= <span class="number">1</span>;
                 }
@@ -667,7 +668,7 @@
                     <span class="comment">// If no timeout happen but nothing has unparked this spot (as
                     // signaled through `to_unpark`) then this is indicative of a
                     // spurious wakeup. In this situation turn the crank again and
-                    // go back to sleep as this interface doesn&#39;t allow for spurious
+                    // go back to sleep as this interface doesn't allow for spurious
                     // wakeups.
                     </span><span class="kw">continue</span>;
                 }
@@ -679,13 +680,13 @@
             spot.num_parked = spot
                 .num_parked
                 .checked_sub(<span class="number">1</span>)
-                .expect(<span class="string">&quot;corrupted parking spot state&quot;</span>);
+                .expect(<span class="string">"corrupted parking spot state"</span>);
 
             <span class="kw">if </span>spot.num_parked == <span class="number">0 </span>{
                 <span class="macro">assert_eq!</span>(spot.to_unpark, <span class="number">0</span>);
                 inner
                     .remove(<span class="kw-2">&amp;</span>key)
-                    .expect(<span class="string">&quot;failed to remove spot from inner parking table&quot;</span>);
+                    .expect(<span class="string">"failed to remove spot from inner parking table"</span>);
             }
 
             <span class="kw">if </span>timed_out {
@@ -724,7 +725,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self
             </span>.inner
             .lock()
-            .expect(<span class="string">&quot;failed to lock inner parking table&quot;</span>);
+            .expect(<span class="string">"failed to lock inner parking table"</span>);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(spot) = inner.get_mut(<span class="kw-2">&amp;</span>key) {
             f(spot);
         }
@@ -803,7 +804,7 @@
                 <span class="attr">#[test]
                 #[cfg_attr(miri, ignore)]
                 </span><span class="kw">fn </span><span class="macro-nonterminal">$name</span>() {
-                    <span class="kw">if </span>std::env::var(<span class="string">&quot;WASMTIME_TEST_NO_HOG_MEMORY&quot;</span>).is_ok() {
+                    <span class="kw">if </span>std::env::var(<span class="string">"WASMTIME_TEST_NO_HOG_MEMORY"</span>).is_ok() {
                         <span class="kw">return</span>;
                     }
                     <span class="kw">let </span>delay = Duration::from_micros(<span class="macro-nonterminal">$delay</span>);
@@ -884,22 +885,22 @@
                 <span class="kw">for </span>(test, threads) <span class="kw">in </span>tests {
                     test.finish(num_single_unparks);
                     <span class="kw">for </span>thread <span class="kw">in </span>threads {
-                        thread.join().expect(<span class="string">&quot;Test thread panic&quot;</span>);
+                        thread.join().expect(<span class="string">"Test thread panic"</span>);
                     }
                 }
             });
         }
 
-        <span class="kw">struct </span>SingleLatchTest&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">struct </span>SingleLatchTest&lt;<span class="lifetime">'a</span>&gt; {
             semaphore: AtomicIsize,
             num_awake: AtomicU32,
             <span class="doccomment">/// Total number of threads participating in this test.
             </span>num_threads: u32,
-            spot: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ParkingSpot,
+            spot: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ParkingSpot,
         }
 
-        <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; SingleLatchTest&lt;<span class="lifetime">&#39;a</span>&gt; {
-            <span class="kw">pub fn </span>new(num_threads: u32, spot: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ParkingSpot) -&gt; <span class="self">Self </span>{
+        <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; SingleLatchTest&lt;<span class="lifetime">'a</span>&gt; {
+            <span class="kw">pub fn </span>new(num_threads: u32, spot: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ParkingSpot) -&gt; <span class="self">Self </span>{
                 <span class="self">Self </span>{
                     <span class="comment">// This implements a fair (FIFO) semaphore, and it starts out unavailable.
                     </span>semaphore: AtomicIsize::new(<span class="number">0</span>),
@@ -992,7 +993,7 @@
                         <span class="kw">match </span><span class="self">self</span>.spot.unpark(<span class="self">self</span>.semaphore_addr(), <span class="number">1</span>) {
                             <span class="number">1 </span>=&gt; <span class="kw">break</span>,
                             <span class="number">0 </span>=&gt; (),
-                            i =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Should not wake up {i} threads&quot;</span>),
+                            i =&gt; <span class="macro">panic!</span>(<span class="string">"Should not wake up {i} threads"</span>),
                         }
                     }
                 }

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/egraph/elaborate.rs`."><title>elaborate.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/egraph/elaborate.rs`."><title>elaborate.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -705,12 +706,12 @@
 <span class="kw">use </span>cranelift_entity::{packed_option::ReservedValue, SecondaryMap};
 <span class="kw">use </span>smallvec::{smallvec, SmallVec};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Elaborator&lt;<span class="lifetime">&#39;a</span>&gt; {
-    func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Function,
-    domtree: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTree,
-    domtree_children: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DomTreeWithChildren,
-    loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>LoopAnalysis,
-    eclasses: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>UnionFind&lt;Value&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Elaborator&lt;<span class="lifetime">'a</span>&gt; {
+    func: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Function,
+    domtree: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTree,
+    domtree_children: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DomTreeWithChildren,
+    loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>LoopAnalysis,
+    eclasses: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>UnionFind&lt;Value&gt;,
     <span class="doccomment">/// Map from Value that is produced by a pure Inst (and was thus
     /// not in the side-effecting skeleton) to the value produced by
     /// an elaborated inst (placed in the layout) to whose results we
@@ -718,7 +719,7 @@
     ///
     /// The first time we use some result of an instruction during
     /// elaboration, we can place it and insert an identity map (inst
-    /// results to that same inst&#39;s results) in this scoped
+    /// results to that same inst's results) in this scoped
     /// map. Within that block and its dom-tree children, that mapping
     /// is visible and we can continue to use it. This allows us to
     /// avoid cloning the instruction. However, if we pop that scope
@@ -726,8 +727,8 @@
     /// duplicate. We detect this case by checking, when a value that
     /// we want is not present in this map, whether the producing inst
     /// is already placed in the Layout. If so, we duplicate, and
-    /// insert non-identity mappings from the original inst&#39;s results
-    /// to the cloned inst&#39;s results.
+    /// insert non-identity mappings from the original inst's results
+    /// to the cloned inst's results.
     </span>value_to_elaborated_value: ScopedHashMap&lt;Value, ElaboratedValue&gt;,
     <span class="doccomment">/// Map from Value to the best (lowest-cost) Value in its eclass
     /// (tree of union value-nodes).
@@ -738,8 +739,8 @@
     </span>cur_block: Block,
     <span class="doccomment">/// Values that opt rules have indicated should be rematerialized
     /// in every block they are used (e.g., immediates or other
-    /// &quot;cheap-to-compute&quot; ops).
-    </span>remat_values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FxHashSet&lt;Value&gt;,
+    /// "cheap-to-compute" ops).
+    </span>remat_values: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FxHashSet&lt;Value&gt;,
     <span class="doccomment">/// Explicitly-unrolled value elaboration stack.
     </span>elab_stack: Vec&lt;ElabStackEntry&gt;,
     <span class="doccomment">/// Results from the elab stack.
@@ -748,7 +749,7 @@
     </span>block_stack: Vec&lt;BlockStackEntry&gt;,
     <span class="doccomment">/// Stats for various events during egraph processing, to help
     /// with optimization of this infrastructure.
-    </span>stats: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Stats,
+    </span>stats: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Stats,
 }
 
 <span class="attr">#[derive(Clone, Copy, Debug)]
@@ -796,15 +797,15 @@
     Pop,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Elaborator&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Elaborator&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
-        func: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Function,
-        domtree: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DominatorTree,
-        domtree_children: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DomTreeWithChildren,
-        loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>LoopAnalysis,
-        remat_values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FxHashSet&lt;Value&gt;,
-        eclasses: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>UnionFind&lt;Value&gt;,
-        stats: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Stats,
+        func: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Function,
+        domtree: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DominatorTree,
+        domtree_children: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DomTreeWithChildren,
+        loop_analysis: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>LoopAnalysis,
+        remat_values: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FxHashSet&lt;Value&gt;,
+        eclasses: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>UnionFind&lt;Value&gt;,
+        stats: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Stats,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>num_values = func.dfg.num_values();
         <span class="kw">let </span><span class="kw-2">mut </span>value_to_best_value =
@@ -830,14 +831,14 @@
 
     <span class="kw">fn </span>start_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idom: <span class="prelude-ty">Option</span>&lt;Block&gt;, block: Block) {
         <span class="macro">trace!</span>(
-            <span class="string">&quot;start_block: block {:?} with idom {:?} at loop depth {:?} scope depth {}&quot;</span>,
+            <span class="string">"start_block: block {:?} with idom {:?} at loop depth {:?} scope depth {}"</span>,
             block,
             idom,
             <span class="self">self</span>.loop_stack.len(),
             <span class="self">self</span>.value_to_elaborated_value.depth()
         );
 
-        <span class="comment">// Pop any loop levels we&#39;re no longer in.
+        <span class="comment">// Pop any loop levels we're no longer in.
         </span><span class="kw">while let </span><span class="prelude-val">Some</span>(inner_loop) = <span class="self">self</span>.loop_stack.last() {
             <span class="kw">if </span><span class="self">self</span>.loop_analysis.is_in_loop(block, inner_loop.lp) {
                 <span class="kw">break</span>;
@@ -857,24 +858,24 @@
                     lp,
                     <span class="comment">// Any code hoisted out of this loop will have code
                     // placed in `idom`, and will have def mappings
-                    // inserted in to the scoped hashmap at that block&#39;s
+                    // inserted in to the scoped hashmap at that block's
                     // level.
                     </span>hoist_block: idom,
                     scope_depth: (<span class="self">self</span>.value_to_elaborated_value.depth() - <span class="number">1</span>) <span class="kw">as </span>u32,
                 });
                 <span class="macro">trace!</span>(
-                    <span class="string">&quot; -&gt; loop header, pushing; depth now {}&quot;</span>,
+                    <span class="string">" -&gt; loop header, pushing; depth now {}"</span>,
                     <span class="self">self</span>.loop_stack.len()
                 );
             }
         } <span class="kw">else </span>{
             <span class="macro">debug_assert!</span>(
                 <span class="self">self</span>.loop_analysis.is_loop_header(block).is_none(),
-                <span class="string">&quot;Entry block (domtree root) cannot be a loop header!&quot;
+                <span class="string">"Entry block (domtree root) cannot be a loop header!"
             </span>);
         }
 
-        <span class="macro">trace!</span>(<span class="string">&quot;block {}: loop stack is {:?}&quot;</span>, block, <span class="self">self</span>.loop_stack);
+        <span class="macro">trace!</span>(<span class="string">"block {}: loop stack is {:?}"</span>, block, <span class="self">self</span>.loop_stack);
 
         <span class="self">self</span>.cur_block = block;
     }
@@ -882,7 +883,7 @@
     <span class="kw">fn </span>compute_best_values(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>best = <span class="kw-2">&amp;mut </span><span class="self">self</span>.value_to_best_value;
         <span class="kw">for </span>(value, def) <span class="kw">in </span><span class="self">self</span>.func.dfg.values_and_defs() {
-            <span class="macro">trace!</span>(<span class="string">&quot;computing best for value {:?} def {:?}&quot;</span>, value, def);
+            <span class="macro">trace!</span>(<span class="string">"computing best for value {:?} def {:?}"</span>, value, def);
             <span class="kw">match </span>def {
                 ValueDef::Union(x, y) =&gt; {
                     <span class="comment">// Pick the best of the two options based on
@@ -890,9 +891,9 @@
                     // is a `(cost, value)` tuple; `cost` comes first so
                     // the natural comparison works based on cost, and
                     // breaks ties based on value number.
-                    </span><span class="macro">trace!</span>(<span class="string">&quot; -&gt; best of {:?} and {:?}&quot;</span>, best[x], best[y]);
+                    </span><span class="macro">trace!</span>(<span class="string">" -&gt; best of {:?} and {:?}"</span>, best[x], best[y]);
                     best[value] = std::cmp::min(best[x], best[y]);
-                    <span class="macro">trace!</span>(<span class="string">&quot; -&gt; {:?}&quot;</span>, best[value]);
+                    <span class="macro">trace!</span>(<span class="string">" -&gt; {:?}"</span>, best[value]);
                 }
                 ValueDef::Param(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
                     best[value] = (Cost::zero(), value);
@@ -905,7 +906,7 @@
                     best[value] = (Cost::zero(), value);
                 }
                 ValueDef::Result(inst, <span class="kw">_</span>) =&gt; {
-                    <span class="macro">trace!</span>(<span class="string">&quot; -&gt; value {}: result, computing cost&quot;</span>, value);
+                    <span class="macro">trace!</span>(<span class="string">" -&gt; value {}: result, computing cost"</span>, value);
                     <span class="kw">let </span>inst_data = <span class="kw-2">&amp;</span><span class="self">self</span>.func.dfg.insts[inst];
                     <span class="kw">let </span>loop_level = <span class="self">self
                         </span>.func
@@ -914,7 +915,7 @@
                         .map(|block| <span class="self">self</span>.loop_analysis.loop_level(block))
                         .unwrap_or(LoopLevel::root());
                     <span class="comment">// N.B.: at this point we know that the opcode is
-                    // pure, so `pure_op_cost`&#39;s precondition is
+                    // pure, so `pure_op_cost`'s precondition is
                     // satisfied.
                     </span><span class="kw">let </span>cost = <span class="self">self</span>.func.dfg.inst_values(inst).fold(
                         pure_op_cost(inst_data.opcode()).at_level(loop_level.level()),
@@ -925,7 +926,7 @@
             };
             <span class="macro">debug_assert_ne!</span>(best[value].<span class="number">0</span>, Cost::infinity());
             <span class="macro">debug_assert_ne!</span>(best[value].<span class="number">1</span>, Value::reserved_value());
-            <span class="macro">trace!</span>(<span class="string">&quot;best for eclass {:?}: {:?}&quot;</span>, value, best[value]);
+            <span class="macro">trace!</span>(<span class="string">"best for eclass {:?}: {:?}"</span>, value, best[value]);
         }
     }
 
@@ -962,7 +963,7 @@
                     <span class="kw">let </span>canonical_value = <span class="self">self</span>.eclasses.find_and_update(value);
                     <span class="macro">debug_assert_ne!</span>(canonical_value, Value::reserved_value());
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;elaborate: value {} canonical {} before {}&quot;</span>,
+                        <span class="string">"elaborate: value {} canonical {} before {}"</span>,
                         value,
                         canonical_value,
                         before
@@ -971,10 +972,10 @@
                     <span class="comment">// Get the best option; we use `value` (latest
                     // value) here so we have a full view of the
                     // eclass.
-                    </span><span class="macro">trace!</span>(<span class="string">&quot;looking up best value for {}&quot;</span>, value);
+                    </span><span class="macro">trace!</span>(<span class="string">"looking up best value for {}"</span>, value);
                     <span class="kw">let </span>(<span class="kw">_</span>, best_value) = <span class="self">self</span>.value_to_best_value[value];
                     <span class="macro">debug_assert_ne!</span>(best_value, Value::reserved_value());
-                    <span class="macro">trace!</span>(<span class="string">&quot;elaborate: value {} -&gt; best {}&quot;</span>, value, best_value);
+                    <span class="macro">trace!</span>(<span class="string">"elaborate: value {} -&gt; best {}"</span>, value, best_value);
 
                     <span class="kw">let </span>remat = <span class="kw">if let </span><span class="prelude-val">Some</span>(elab_val) =
                         <span class="self">self</span>.value_to_elaborated_value.get(<span class="kw-2">&amp;</span>canonical_value)
@@ -987,12 +988,12 @@
                         </span><span class="kw">let </span>remat = elab_val.in_block != <span class="self">self</span>.cur_block
                             &amp;&amp; <span class="self">self</span>.remat_values.contains(<span class="kw-2">&amp;</span>best_value);
                         <span class="kw">if </span>!remat {
-                            <span class="macro">trace!</span>(<span class="string">&quot;elaborate: value {} -&gt; {:?}&quot;</span>, value, elab_val);
+                            <span class="macro">trace!</span>(<span class="string">"elaborate: value {} -&gt; {:?}"</span>, value, elab_val);
                             <span class="self">self</span>.stats.elaborate_memoize_hit += <span class="number">1</span>;
                             <span class="self">self</span>.elab_result_stack.push(<span class="kw-2">*</span>elab_val);
                             <span class="kw">continue</span>;
                         }
-                        <span class="macro">trace!</span>(<span class="string">&quot;elaborate: value {} -&gt; remat&quot;</span>, canonical_value);
+                        <span class="macro">trace!</span>(<span class="string">"elaborate: value {} -&gt; remat"</span>, canonical_value);
                         <span class="self">self</span>.stats.elaborate_memoize_miss_remat += <span class="number">1</span>;
                         <span class="comment">// The op is pure at this point, so it is always valid to
                         // remove from this map.
@@ -1000,10 +1001,10 @@
                         <span class="bool-val">true
                     </span>} <span class="kw">else </span>{
                         <span class="comment">// Value not available; but still look up
-                        // whether it&#39;s been flagged for remat because
+                        // whether it's been flagged for remat because
                         // this affects placement.
                         </span><span class="kw">let </span>remat = <span class="self">self</span>.remat_values.contains(<span class="kw-2">&amp;</span>best_value);
-                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; not present in map; remat = {}&quot;</span>, remat);
+                        <span class="macro">trace!</span>(<span class="string">" -&gt; not present in map; remat = {}"</span>, remat);
                         remat
                     };
                     <span class="self">self</span>.stats.elaborate_memoize_miss += <span class="number">1</span>;
@@ -1013,7 +1014,7 @@
                     </span><span class="kw">let </span>(inst, result_idx) = <span class="kw">match </span><span class="self">self</span>.func.dfg.value_def(best_value) {
                         ValueDef::Result(inst, result_idx) =&gt; {
                             <span class="macro">trace!</span>(
-                                <span class="string">&quot; -&gt; value {} is result {} of {}&quot;</span>,
+                                <span class="string">" -&gt; value {} is result {} of {}"</span>,
                                 best_value,
                                 result_idx,
                                 inst
@@ -1021,11 +1022,11 @@
                             (inst, result_idx)
                         }
                         ValueDef::Param(in_block, <span class="kw">_</span>) =&gt; {
-                            <span class="comment">// We don&#39;t need to do anything to compute
+                            <span class="comment">// We don't need to do anything to compute
                             // this value; just push its result on the
                             // result stack (blockparams are already
                             // available).
-                            </span><span class="macro">trace!</span>(<span class="string">&quot; -&gt; value {} is a blockparam&quot;</span>, best_value);
+                            </span><span class="macro">trace!</span>(<span class="string">" -&gt; value {} is a blockparam"</span>, best_value);
                             <span class="self">self</span>.elab_result_stack.push(ElaboratedValue {
                                 in_block,
                                 value: best_value,
@@ -1033,17 +1034,17 @@
                             <span class="kw">continue</span>;
                         }
                         ValueDef::Union(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-                            <span class="macro">panic!</span>(<span class="string">&quot;Should never have a Union value as the best value&quot;</span>);
+                            <span class="macro">panic!</span>(<span class="string">"Should never have a Union value as the best value"</span>);
                         }
                     };
 
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot; -&gt; result {} of inst {:?}&quot;</span>,
+                        <span class="string">" -&gt; result {} of inst {:?}"</span>,
                         result_idx,
                         <span class="self">self</span>.func.dfg.insts[inst]
                     );
 
-                    <span class="comment">// We&#39;re going to need to use this instruction
+                    <span class="comment">// We're going to need to use this instruction
                     // result, placing the instruction into the
                     // layout. First, enqueue all args to be
                     // elaborated. Push state to receive the results
@@ -1076,7 +1077,7 @@
                     <span class="self">self</span>.elab_stack.pop();
 
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot;PendingInst: {} result {} args {} remat {} before {}&quot;</span>,
+                        <span class="string">"PendingInst: {} result {} args {} remat {} before {}"</span>,
                         inst,
                         result_idx,
                         num_args,
@@ -1096,17 +1097,17 @@
                     // is allowed to get hoisted up one loop. This is not
                     // usually used since no-argument values are things like
                     // constants which are typically rematerialized, but for the
-                    // `vconst` instruction 128-bit constants aren&#39;t as easily
-                    // rematerialized. They&#39;re hoisted out of inner loops but
+                    // `vconst` instruction 128-bit constants aren't as easily
+                    // rematerialized. They're hoisted out of inner loops but
                     // not to the function entry which may run the risk of
                     // placing too much register pressure on the entire
                     // function. This is modeled with the `.saturating_sub(1)`
-                    // as the default if there&#39;s otherwise no maximum.
+                    // as the default if there's otherwise no maximum.
                     </span><span class="kw">let </span>loop_hoist_level = arg_values
                         .iter()
                         .map(|<span class="kw-2">&amp;</span>value| {
                             <span class="comment">// Find the outermost loop level at which
-                            // the value&#39;s defining block *is not* a
+                            // the value's defining block *is not* a
                             // member. This is the loop-nest level
                             // whose hoist-block we hoist to.
                             </span><span class="kw">let </span>hoist_level = <span class="self">self
@@ -1117,7 +1118,7 @@
                                 })
                                 .unwrap_or(<span class="self">self</span>.loop_stack.len());
                             <span class="macro">trace!</span>(
-                                <span class="string">&quot; -&gt; arg: elab_value {:?} hoist level {:?}&quot;</span>,
+                                <span class="string">" -&gt; arg: elab_value {:?} hoist level {:?}"</span>,
                                 value,
                                 hoist_level
                             );
@@ -1126,7 +1127,7 @@
                         .max()
                         .unwrap_or(<span class="self">self</span>.loop_stack.len().saturating_sub(<span class="number">1</span>));
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot; -&gt; loop hoist level: {:?}; cur loop depth: {:?}, loop_stack: {:?}&quot;</span>,
+                        <span class="string">" -&gt; loop hoist level: {:?}; cur loop depth: {:?}, loop_stack: {:?}"</span>,
                         loop_hoist_level,
                         <span class="self">self</span>.loop_stack.len(),
                         <span class="self">self</span>.loop_stack,
@@ -1134,7 +1135,7 @@
 
                     <span class="comment">// We know that this is a pure inst, because
                     // non-pure roots have already been placed in the
-                    // value-to-elab&#39;d-value map and are never subject
+                    // value-to-elab'd-value map and are never subject
                     // to remat, so they will not reach this stage of
                     // processing.
                     //
@@ -1157,7 +1158,7 @@
                             // loop depth: hoist out of loop.
                             </span><span class="self">self</span>.stats.elaborate_licm_hoist += <span class="number">1</span>;
                             <span class="kw">let </span>data = <span class="kw-2">&amp;</span><span class="self">self</span>.loop_stack[loop_hoist_level];
-                            <span class="comment">// `data.hoist_block` should dominate `before`&#39;s block.
+                            <span class="comment">// `data.hoist_block` should dominate `before`'s block.
                             </span><span class="kw">let </span>before_block = <span class="self">self</span>.func.layout.inst_block(before).unwrap();
                             <span class="macro">debug_assert!</span>(<span class="self">self</span>.domtree.dominates(
                                 data.hoist_block,
@@ -1171,7 +1172,7 @@
                         };
 
                     <span class="macro">trace!</span>(
-                        <span class="string">&quot; -&gt; decided to place: before {} insert_block {}&quot;</span>,
+                        <span class="string">" -&gt; decided to place: before {} insert_block {}"</span>,
                         before,
                         insert_block
                     );
@@ -1184,17 +1185,17 @@
                     //  duplicate the instruction (and return the
                     //  `Value`s for that duplicated instance
                     //  instead).
-                    </span><span class="macro">trace!</span>(<span class="string">&quot;need inst {} before {}&quot;</span>, inst, before);
+                    </span><span class="macro">trace!</span>(<span class="string">"need inst {} before {}"</span>, inst, before);
                     <span class="kw">let </span>inst = <span class="kw">if </span><span class="self">self</span>.func.layout.inst_block(inst).is_some() {
                         <span class="comment">// Clone the inst!
                         </span><span class="kw">let </span>new_inst = <span class="self">self</span>.func.dfg.clone_inst(inst);
                         <span class="macro">trace!</span>(
-                            <span class="string">&quot; -&gt; inst {} already has a location; cloned to {}&quot;</span>,
+                            <span class="string">" -&gt; inst {} already has a location; cloned to {}"</span>,
                             inst,
                             new_inst
                         );
                         <span class="comment">// Create mappings in the
-                        // value-to-elab&#39;d-value map from original
+                        // value-to-elab'd-value map from original
                         // results to cloned results.
                         </span><span class="kw">for </span>(<span class="kw-2">&amp;</span>result, <span class="kw-2">&amp;</span>new_result) <span class="kw">in </span><span class="self">self
                             </span>.func
@@ -1219,16 +1220,16 @@
                             <span class="self">self</span>.value_to_best_value[new_result] = <span class="self">self</span>.value_to_best_value[result];
 
                             <span class="macro">trace!</span>(
-                                <span class="string">&quot; -&gt; cloned inst has new result {} for orig {}&quot;</span>,
+                                <span class="string">" -&gt; cloned inst has new result {} for orig {}"</span>,
                                 new_result,
                                 result
                             );
                         }
                         new_inst
                     } <span class="kw">else </span>{
-                        <span class="macro">trace!</span>(<span class="string">&quot; -&gt; no location; using original inst&quot;</span>);
+                        <span class="macro">trace!</span>(<span class="string">" -&gt; no location; using original inst"</span>);
                         <span class="comment">// Create identity mappings from result values
-                        // to themselves in this scope, since we&#39;re
+                        // to themselves in this scope, since we're
                         // using the original inst.
                         </span><span class="kw">for </span><span class="kw-2">&amp;</span>result <span class="kw">in </span><span class="self">self</span>.func.dfg.inst_results(inst) {
                             <span class="kw">let </span>elab_value = ElaboratedValue {
@@ -1241,19 +1242,19 @@
                                 elab_value,
                                 scope_depth,
                             );
-                            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; inserting identity mapping for {}&quot;</span>, result);
+                            <span class="macro">trace!</span>(<span class="string">" -&gt; inserting identity mapping for {}"</span>, result);
                         }
                         inst
                     };
                     <span class="comment">// Place the inst just before `before`.
                     </span><span class="self">self</span>.func.layout.insert_inst(inst, before);
 
-                    <span class="comment">// Update the inst&#39;s arguments.
+                    <span class="comment">// Update the inst's arguments.
                     </span><span class="self">self</span>.func
                         .dfg
                         .overwrite_inst_values(inst, arg_values.into_iter().map(|ev| ev.value));
 
-                    <span class="comment">// Now that we&#39;ve consumed the arg values, pop
+                    <span class="comment">// Now that we've consumed the arg values, pop
                     // them off the stack.
                     </span><span class="self">self</span>.elab_result_stack.truncate(arg_idx);
 
@@ -1269,7 +1270,7 @@
     }
 
     <span class="kw">fn </span>elaborate_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, elab_values: <span class="kw-2">&amp;mut </span>Vec&lt;Value&gt;, idom: <span class="prelude-ty">Option</span>&lt;Block&gt;, block: Block) {
-        <span class="macro">trace!</span>(<span class="string">&quot;elaborate_block: block {}&quot;</span>, block);
+        <span class="macro">trace!</span>(<span class="string">"elaborate_block: block {}"</span>, block);
         <span class="self">self</span>.start_block(idom, block);
 
         <span class="comment">// Iterate over the side-effecting skeleton using the linked
@@ -1280,7 +1281,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>first_branch = <span class="prelude-val">None</span>;
         <span class="kw">while let </span><span class="prelude-val">Some</span>(inst) = next_inst {
             <span class="macro">trace!</span>(
-                <span class="string">&quot;elaborating inst {} with results {:?}&quot;</span>,
+                <span class="string">"elaborating inst {} with results {:?}"</span>,
                 inst,
                 <span class="self">self</span>.func.dfg.inst_results(inst)
             );
@@ -1294,16 +1295,16 @@
 
             <span class="comment">// Determine where elaboration inserts insts.
             </span><span class="kw">let </span>before = first_branch.unwrap_or(inst);
-            <span class="macro">trace!</span>(<span class="string">&quot; -&gt; inserting before {}&quot;</span>, before);
+            <span class="macro">trace!</span>(<span class="string">" -&gt; inserting before {}"</span>, before);
 
             elab_values.extend(<span class="self">self</span>.func.dfg.inst_values(inst));
             <span class="kw">for </span>arg <span class="kw">in </span>elab_values.iter_mut() {
-                <span class="macro">trace!</span>(<span class="string">&quot; -&gt; arg {}&quot;</span>, <span class="kw-2">*</span>arg);
+                <span class="macro">trace!</span>(<span class="string">" -&gt; arg {}"</span>, <span class="kw-2">*</span>arg);
                 <span class="comment">// Elaborate the arg, placing any newly-inserted insts
                 // before `before`. Get the updated value, which may
                 // be different than the original.
                 </span><span class="kw">let </span>new_arg = <span class="self">self</span>.elaborate_eclass_use(<span class="kw-2">*</span>arg, before);
-                <span class="macro">trace!</span>(<span class="string">&quot;   -&gt; rewrote arg to {:?}&quot;</span>, new_arg);
+                <span class="macro">trace!</span>(<span class="string">"   -&gt; rewrote arg to {:?}"</span>, new_arg);
                 <span class="kw-2">*</span>arg = new_arg.value;
             }
             <span class="self">self</span>.func
@@ -1313,7 +1314,7 @@
             <span class="comment">// We need to put the results of this instruction in the
             // map now.
             </span><span class="kw">for </span><span class="kw-2">&amp;</span>result <span class="kw">in </span><span class="self">self</span>.func.dfg.inst_results(inst) {
-                <span class="macro">trace!</span>(<span class="string">&quot; -&gt; result {}&quot;</span>, result);
+                <span class="macro">trace!</span>(<span class="string">" -&gt; result {}"</span>, result);
                 <span class="kw">let </span>canonical_result = <span class="self">self</span>.eclasses.find_and_update(result);
                 <span class="self">self</span>.value_to_elaborated_value.insert_if_absent(
                     canonical_result,
@@ -1360,7 +1361,7 @@
                     <span class="comment">// Reverse what we just pushed so we elaborate in
                     // original block order. (The domtree iter is a
                     // single-ended iter over a singly-linked list so
-                    // we can&#39;t `.rev()` above.)
+                    // we can't `.rev()` above.)
                     </span><span class="self">self</span>.block_stack[block_stack_end..].reverse();
                 }
                 BlockStackEntry::Pop =&gt; {

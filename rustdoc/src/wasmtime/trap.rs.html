@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/trap.rs`."><title>trap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/trap.rs`."><title>trap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -660,9 +661,9 @@
 /// where most results are a [`Result&lt;T&gt;`](anyhow::Result) which is an alias for
 /// [`Result&lt;T, anyhow::Error&gt;`](std::result::Result). Errors in Wasmtime are
 /// represented with [`anyhow::Error`] which acts as a container for any type of
-/// error in addition to optional context for this error. The &quot;base&quot; error or
+/// error in addition to optional context for this error. The "base" error or
 /// [`anyhow::Error::root_cause`] is a [`Trap`] whenever WebAssembly hits a
-/// trap, or otherwise it&#39;s whatever the host created the error with when
+/// trap, or otherwise it's whatever the host created the error with when
 /// returning an error for a host call.
 ///
 /// Any error which happens while WebAssembly is executing will also, by
@@ -682,24 +683,24 @@
 /// let engine = Engine::default();
 /// let module = Module::new(
 ///     &amp;engine,
-///     r#&quot;
+///     r#"
 ///         (module
-///             (func (export &quot;trap&quot;)
+///             (func (export "trap")
 ///                 unreachable)
-///             (func $overflow (export &quot;overflow&quot;)
+///             (func $overflow (export "overflow")
 ///                 call $overflow)
 ///         )
-///     &quot;#,
+///     "#,
 /// )?;
 /// let mut store = Store::new(&amp;engine, ());
 /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[])?;
 ///
-/// let trap = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, &quot;trap&quot;)?;
+/// let trap = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, "trap")?;
 /// let error = trap.call(&amp;mut store, ()).unwrap_err();
 /// assert_eq!(*error.downcast_ref::&lt;Trap&gt;().unwrap(), Trap::UnreachableCodeReached);
 /// assert!(error.root_cause().is::&lt;Trap&gt;());
 ///
-/// let overflow = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, &quot;overflow&quot;)?;
+/// let overflow = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, "overflow")?;
 /// let error = overflow.call(&amp;mut store, ()).unwrap_err();
 /// assert_eq!(*error.downcast_ref::&lt;Trap&gt;().unwrap(), Trap::StackOverflow);
 /// # Ok(())
@@ -725,13 +726,13 @@
         coredumpstack,
     } = <span class="kw-2">*</span>runtime_trap;
     <span class="kw">let </span>(<span class="kw-2">mut </span>error, pc) = <span class="kw">match </span>reason {
-        <span class="comment">// For user-defined errors they&#39;re already an `anyhow::Error` so no
+        <span class="comment">// For user-defined errors they're already an `anyhow::Error` so no
         // conversion is really necessary here, but a `backtrace` may have
-        // been captured so it&#39;s attempted to get inserted here.
+        // been captured so it's attempted to get inserted here.
         //
         // If the error is actually a `Trap` then the backtrace is inserted
-        // directly into the `Trap` since there&#39;s storage there for it.
-        // Otherwise though this represents a host-defined error which isn&#39;t
+        // directly into the `Trap` since there's storage there for it.
+        // Otherwise though this represents a host-defined error which isn't
         // using a `Trap` but instead some other condition that was fatal to
         // wasm itself. In that situation the backtrace is inserted as
         // contextual information on error using `error.context(...)` to
@@ -755,7 +756,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>err: Error = code.into();
 
             <span class="comment">// If a fault address was present, for example with segfaults,
-            // then simultaneously assert that it&#39;s within a known linear memory
+            // then simultaneously assert that it's within a known linear memory
             // and additionally translate it to a wasm-local address to be added
             // as context to the error.
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(fault) = faulting_addr.and_then(|addr| store.wasm_fault(pc, addr)) {
@@ -788,7 +789,7 @@
 /// Wasmtime functions that execute WebAssembly such as [`Instance::new`] or
 /// [`Func::call`]. This can be acquired with the [`anyhow::Error::downcast`]
 /// family of methods to programmatically inspect the backtrace. Otherwise since
-/// it&#39;s part of the error returned this will get printed along with the rest of
+/// it's part of the error returned this will get printed along with the rest of
 /// the error when the error is logged.
 ///
 /// Capturing of wasm backtraces can be configured through the
@@ -809,24 +810,24 @@
 /// let engine = Engine::default();
 /// let module = Module::new(
 ///     &amp;engine,
-///     r#&quot;
+///     r#"
 ///         (module
-///             (func $start (export &quot;run&quot;)
+///             (func $start (export "run")
 ///                 call $trap)
 ///             (func $trap
 ///                 unreachable)
 ///         )
-///     &quot;#,
+///     "#,
 /// )?;
 /// let mut store = Store::new(&amp;engine, ());
 /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[])?;
-/// let func = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, &quot;run&quot;)?;
+/// let func = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, "run")?;
 /// let error = func.call(&amp;mut store, ()).unwrap_err();
 /// let bt = error.downcast_ref::&lt;WasmBacktrace&gt;().unwrap();
 /// let frames = bt.frames();
 /// assert_eq!(frames.len(), 2);
-/// assert_eq!(frames[0].func_name(), Some(&quot;trap&quot;));
-/// assert_eq!(frames[1].func_name(), Some(&quot;start&quot;));
+/// assert_eq!(frames[0].func_name(), Some("trap"));
+/// assert_eq!(frames[1].func_name(), Some("start"));
 /// # Ok(())
 /// # }
 /// ```
@@ -869,22 +870,22 @@
     /// let engine = Engine::default();
     /// let module = Module::new(
     ///     &amp;engine,
-    ///     r#&quot;
+    ///     r#"
     ///         (module
-    ///             (import &quot;&quot; &quot;&quot; (func $host))
-    ///             (func $foo (export &quot;f&quot;) call $bar)
+    ///             (import "" "" (func $host))
+    ///             (func $foo (export "f") call $bar)
     ///             (func $bar call $host)
     ///         )
-    ///     &quot;#,
+    ///     "#,
     /// )?;
     ///
     /// let mut store = Store::new(&amp;engine, ());
-    /// let func = Func::wrap(&amp;mut store, |cx: Caller&lt;&#39;_, ()&gt;| {
+    /// let func = Func::wrap(&amp;mut store, |cx: Caller&lt;'_, ()&gt;| {
     ///     let trace = WasmBacktrace::capture(&amp;cx);
-    ///     println!(&quot;{trace:?}&quot;);
+    ///     println!("{trace:?}");
     /// });
     /// let instance = Instance::new(&amp;mut store, &amp;module, &amp;[func.into()])?;
-    /// let func = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, &quot;f&quot;)?;
+    /// let func = instance.get_typed_func::&lt;(), ()&gt;(&amp;mut store, "f")?;
     /// func.call(&amp;mut store, ())?;
     /// # Ok(())
     /// # }
@@ -936,7 +937,7 @@
             // the origin wasm module. If this pc is the exact pc that
             // the trap happened at, then we look up that pc precisely.
             // Otherwise backtrace information typically points at the
-            // pc *after* the call instruction (because otherwise it&#39;s
+            // pc *after* the call instruction (because otherwise it's
             // likely a call instruction on the stack). In that case we
             // want to lookup information for the previous instruction
             // (the call instruction) so we subtract one as the lookup.
@@ -969,12 +970,12 @@
             // modules instantiated within this store. Therefore, we use `if let
             // Some(..)` instead of the `unwrap` you might otherwise expect and
             // we ignore frames from modules that were not registered in this
-            // store&#39;s module registry.
+            // store's module registry.
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>((info, module)) = store.modules().lookup_frame_info(pc_to_lookup) {
                 wasm_trace.push(info);
 
                 <span class="comment">// If this frame has unparsed debug information and the
-                // store&#39;s configuration indicates that we were
+                // store's configuration indicates that we were
                 // respecting the environment variable of whether to
                 // do this then we will print out a helpful note in
                 // `Display` to indicate that more detailed information
@@ -1001,49 +1002,49 @@
 }
 
 <span class="kw">impl </span>fmt::Display <span class="kw">for </span>WasmBacktrace {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="macro">writeln!</span>(f, <span class="string">&quot;error while executing at wasm backtrace:&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">writeln!</span>(f, <span class="string">"error while executing at wasm backtrace:"</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>needs_newline = <span class="bool-val">false</span>;
         <span class="kw">for </span>(i, frame) <span class="kw">in </span><span class="self">self</span>.wasm_trace.iter().enumerate() {
             <span class="comment">// Avoid putting a trailing newline on the output
             </span><span class="kw">if </span>needs_newline {
-                <span class="macro">writeln!</span>(f, <span class="string">&quot;&quot;</span>)<span class="question-mark">?</span>;
+                <span class="macro">writeln!</span>(f, <span class="string">""</span>)<span class="question-mark">?</span>;
             } <span class="kw">else </span>{
                 needs_newline = <span class="bool-val">true</span>;
             }
-            <span class="kw">let </span>name = frame.module_name().unwrap_or(<span class="string">&quot;&lt;unknown&gt;&quot;</span>);
-            <span class="macro">write!</span>(f, <span class="string">&quot;  {:&gt;3}: &quot;</span>, i)<span class="question-mark">?</span>;
+            <span class="kw">let </span>name = frame.module_name().unwrap_or(<span class="string">"&lt;unknown&gt;"</span>);
+            <span class="macro">write!</span>(f, <span class="string">"  {:&gt;3}: "</span>, i)<span class="question-mark">?</span>;
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(offset) = frame.module_offset() {
-                <span class="macro">write!</span>(f, <span class="string">&quot;{:#6x} - &quot;</span>, offset)<span class="question-mark">?</span>;
+                <span class="macro">write!</span>(f, <span class="string">"{:#6x} - "</span>, offset)<span class="question-mark">?</span>;
             }
 
-            <span class="kw">let </span>write_raw_func_name = |f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;| {
+            <span class="kw">let </span>write_raw_func_name = |f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;| {
                 demangle_function_name_or_index(f, frame.func_name(), frame.func_index() <span class="kw">as </span>usize)
             };
             <span class="kw">if </span>frame.symbols().is_empty() {
-                <span class="macro">write!</span>(f, <span class="string">&quot;{}!&quot;</span>, name)<span class="question-mark">?</span>;
+                <span class="macro">write!</span>(f, <span class="string">"{}!"</span>, name)<span class="question-mark">?</span>;
                 write_raw_func_name(f)<span class="question-mark">?</span>;
             } <span class="kw">else </span>{
                 <span class="kw">for </span>(i, symbol) <span class="kw">in </span>frame.symbols().iter().enumerate() {
                     <span class="kw">if </span>i &gt; <span class="number">0 </span>{
-                        <span class="macro">write!</span>(f, <span class="string">&quot;              - &quot;</span>)<span class="question-mark">?</span>;
+                        <span class="macro">write!</span>(f, <span class="string">"              - "</span>)<span class="question-mark">?</span>;
                     } <span class="kw">else </span>{
                         <span class="comment">// ...
                     </span>}
                     <span class="kw">match </span>symbol.name() {
                         <span class="prelude-val">Some</span>(name) =&gt; demangle_function_name(f, name)<span class="question-mark">?</span>,
                         <span class="prelude-val">None </span><span class="kw">if </span>i == <span class="number">0 </span>=&gt; write_raw_func_name(f)<span class="question-mark">?</span>,
-                        <span class="prelude-val">None </span>=&gt; <span class="macro">write!</span>(f, <span class="string">&quot;&lt;inlined function&gt;&quot;</span>)<span class="question-mark">?</span>,
+                        <span class="prelude-val">None </span>=&gt; <span class="macro">write!</span>(f, <span class="string">"&lt;inlined function&gt;"</span>)<span class="question-mark">?</span>,
                     }
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(file) = symbol.file() {
-                        <span class="macro">writeln!</span>(f, <span class="string">&quot;&quot;</span>)<span class="question-mark">?</span>;
-                        <span class="macro">write!</span>(f, <span class="string">&quot;                    at {}&quot;</span>, file)<span class="question-mark">?</span>;
+                        <span class="macro">writeln!</span>(f, <span class="string">""</span>)<span class="question-mark">?</span>;
+                        <span class="macro">write!</span>(f, <span class="string">"                    at {}"</span>, file)<span class="question-mark">?</span>;
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(line) = symbol.line() {
-                            <span class="macro">write!</span>(f, <span class="string">&quot;:{}&quot;</span>, line)<span class="question-mark">?</span>;
+                            <span class="macro">write!</span>(f, <span class="string">":{}"</span>, line)<span class="question-mark">?</span>;
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = symbol.column() {
-                                <span class="macro">write!</span>(f, <span class="string">&quot;:{}&quot;</span>, col)<span class="question-mark">?</span>;
+                                <span class="macro">write!</span>(f, <span class="string">":{}"</span>, col)<span class="question-mark">?</span>;
                             }
                         }
                     }
@@ -1051,7 +1052,7 @@
             }
         }
         <span class="kw">if </span><span class="self">self</span>.hint_wasm_backtrace_details_env {
-            <span class="macro">write!</span>(f, <span class="string">&quot;\nnote: using the `WASMTIME_BACKTRACE_DETAILS=1` environment variable may show more debugging information&quot;</span>)<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(f, <span class="string">"\nnote: using the `WASMTIME_BACKTRACE_DETAILS=1` environment variable may show more debugging information"</span>)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -1086,18 +1087,18 @@
 
         <span class="comment">// In debug mode for now assert that we found a mapping for `pc` within
         // the function, because otherwise something is buggy along the way and
-        // not accounting for all the instructions. This isn&#39;t super critical
+        // not accounting for all the instructions. This isn't super critical
         // though so we can omit this check in release mode.
         //
-        // Note that if the module doesn&#39;t even have an address map due to
-        // compilation settings then it&#39;s expected that `instr` is `None`.
+        // Note that if the module doesn't even have an address map due to
+        // compilation settings then it's expected that `instr` is `None`.
         </span><span class="macro">debug_assert!</span>(
             instr.is_some() || !module.has_address_map(),
-            <span class="string">&quot;failed to find instruction for {:#x}&quot;</span>,
+            <span class="string">"failed to find instruction for {:#x}"</span>,
             text_offset
         );
 
-        <span class="comment">// Use our wasm-relative pc to symbolize this frame. If there&#39;s a
+        <span class="comment">// Use our wasm-relative pc to symbolize this frame. If there's a
         // symbolication context (dwarf debug info) available then we can try to
         // look this up there.
         //
@@ -1169,11 +1170,11 @@
     ///
     /// The name of this function may come from the `name` section of the
     /// WebAssembly binary, or wasmtime may try to infer a better name for it if
-    /// not available, for example the name of the export if it&#39;s exported.
+    /// not available, for example the name of the export if it's exported.
     ///
     /// This return value is primarily used for debugging and human-readable
     /// purposes for things like traps. Note that the exact return value may be
-    /// tweaked over time here and isn&#39;t guaranteed to be something in
+    /// tweaked over time here and isn't guaranteed to be something in
     /// particular about a wasm module due to its primary purpose of assisting
     /// in debugging.
     ///
@@ -1182,7 +1183,7 @@
         <span class="self">self</span>.func_name.as_deref()
     }
 
-    <span class="doccomment">/// Returns the offset within the original wasm module this frame&#39;s program
+    <span class="doccomment">/// Returns the offset within the original wasm module this frame's program
     /// counter was at.
     ///
     /// The offset here is the offset from the beginning of the original wasm
@@ -1197,8 +1198,8 @@
         <span class="prelude-val">Some</span>(<span class="self">self</span>.instr<span class="question-mark">?</span>.file_offset()<span class="question-mark">? </span><span class="kw">as </span>usize)
     }
 
-    <span class="doccomment">/// Returns the offset from the original wasm module&#39;s function to this
-    /// frame&#39;s program counter.
+    <span class="doccomment">/// Returns the offset from the original wasm module's function to this
+    /// frame's program counter.
     ///
     /// The offset here is the offset from the beginning of the defining
     /// function of this frame (within the wasm module) to the instruction this

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance.rs`."><title>instance.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance.rs`."><title>instance.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1390,7 +1391,7 @@
 /// dynamic size corresponding to the `module` configured within. Memory
 /// management of this structure is always externalized.
 ///
-/// Instances here can correspond to actual instantiated modules, but it&#39;s also
+/// Instances here can correspond to actual instantiated modules, but it's also
 /// used ubiquitously for host-defined objects. For example creating a
 /// host-defined memory will have a `module` that looks like it exports a single
 /// memory (and similar for other constructs).
@@ -1399,7 +1400,7 @@
 /// values, whether or not they were created on the host or through a module.
 </span><span class="attr">#[repr(C)] </span><span class="comment">// ensure that the vmctx field is last.
 </span><span class="kw">pub struct </span>Instance {
-    <span class="doccomment">/// The runtime info (corresponding to the &quot;compiled module&quot;
+    <span class="doccomment">/// The runtime info (corresponding to the "compiled module"
     /// abstraction in higher layers) that is retained and needed for
     /// lazy initialization. This provides access to the underlying
     /// Wasm module entities, the compiled JIT code, metadata about
@@ -1435,17 +1436,17 @@
     <span class="doccomment">/// Instance of this instance within its `InstanceAllocator` trait
     /// implementation.
     ///
-    /// This is always 0 for the on-demand instance allocator and it&#39;s the
+    /// This is always 0 for the on-demand instance allocator and it's the
     /// index of the slot in the pooling allocator.
     </span>index: usize,
 
     <span class="doccomment">/// A pointer to the `vmctx` field at the end of the `Instance`.
     ///
-    /// If you&#39;re looking at this a reasonable question would be &quot;why do we need
-    /// a pointer to ourselves?&quot; because after all the pointer&#39;s value is
+    /// If you're looking at this a reasonable question would be "why do we need
+    /// a pointer to ourselves?" because after all the pointer's value is
     /// trivially derivable from any `&amp;Instance` pointer. The rationale for this
-    /// field&#39;s existence is subtle, but it&#39;s required for correctness. The
-    /// short version is &quot;this makes miri happy&quot;.
+    /// field's existence is subtle, but it's required for correctness. The
+    /// short version is "this makes miri happy".
     ///
     /// The long version of why this field exists is that the rules that MIRI
     /// uses to ensure pointers are used correctly have various conditions on
@@ -1459,14 +1460,14 @@
     /// source-of-truth for where `*mut VMContext` pointers come from.
     ///
     /// This field is initialized when the `Instance` is created with the
-    /// original allocation&#39;s pointer. That means that the provenance of this
+    /// original allocation's pointer. That means that the provenance of this
     /// pointer contains the entire allocation (both instance and `VMContext`).
-    /// This provenance bit is then &quot;carried through&quot; where `fn vmctx` will base
+    /// This provenance bit is then "carried through" where `fn vmctx` will base
     /// all returned pointers on this pointer itself. This provides the means of
     /// never invalidating this pointer throughout MIRI and additionally being
     /// able to still temporarily have `&amp;mut Instance` methods and such.
     ///
-    /// It&#39;s important to note, though, that this is not here purely for MIRI.
+    /// It's important to note, though, that this is not here purely for MIRI.
     /// The careful construction of the `fn vmctx` method has ramifications on
     /// the LLVM IR generated, for example. A historical CVE on Wasmtime,
     /// GHSA-ch89-5g45-qwc7, was caused due to relying on undefined behavior. By
@@ -1477,9 +1478,9 @@
     /// which we want, since writes to this should basically never be optimized
     /// out.
     ///
-    /// As a final note it&#39;s worth pointing out that the machine code generated
-    /// for accessing `fn vmctx` is still as one would expect. This member isn&#39;t
-    /// actually ever loaded at runtime (or at least shouldn&#39;t be). Perhaps in
+    /// As a final note it's worth pointing out that the machine code generated
+    /// for accessing `fn vmctx` is still as one would expect. This member isn't
+    /// actually ever loaded at runtime (or at least shouldn't be). Perhaps in
     /// the future if the memory consumption of this field is a problem we could
     /// shrink it slightly, but for now one extra pointer per wasm instance
     /// seems not too bad.
@@ -1546,13 +1547,13 @@
     /// This method will move the `vmctx` pointer backwards to point to the
     /// original `Instance` that precedes it. The closure is provided a
     /// temporary version of the `Instance` pointer with a constrained lifetime
-    /// to the closure to ensure it doesn&#39;t accidentally escape.
+    /// to the closure to ensure it doesn't accidentally escape.
     ///
     /// # Unsafety
     ///
     /// Callers must validate that the `vmctx` pointer is a valid allocation
-    /// and that it&#39;s valid to acquire `&amp;mut Instance` at this time. For example
-    /// this can&#39;t be called twice on the same `VMContext` to get two active
+    /// and that it's valid to acquire `&amp;mut Instance` at this time. For example
+    /// this can't be called twice on the same `VMContext` to get two active
     /// pointers to the same `Instance`.
     </span><span class="kw">pub unsafe fn </span>from_vmctx&lt;R&gt;(vmctx: <span class="kw-2">*mut </span>VMContext, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>Instance) -&gt; R) -&gt; R {
         <span class="kw">let </span>ptr = vmctx
@@ -1712,15 +1713,15 @@
         <span class="kw">unsafe </span>{ <span class="self">self</span>.vmctx_plus_offset_mut(<span class="self">self</span>.offsets().vmctx_externref_activations_table()) }
     }
 
-    <span class="doccomment">/// Gets a pointer to this instance&#39;s `Store` which was originally
+    <span class="doccomment">/// Gets a pointer to this instance's `Store` which was originally
     /// configured on creation.
     ///
     /// # Panics
     ///
     /// This will panic if the originally configured store was `None`. That can
-    /// happen for host functions so host functions can&#39;t be queried what their
-    /// original `Store` was since it&#39;s just retained as null (since host
-    /// functions are shared amongst threads and don&#39;t all share the same
+    /// happen for host functions so host functions can't be queried what their
+    /// original `Store` was since it's just retained as null (since host
+    /// functions are shared amongst threads and don't all share the same
     /// store).
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>store(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span><span class="kw">dyn </span>Store {
@@ -1760,8 +1761,8 @@
     </span><span class="kw">pub fn </span>vmctx(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>VMContext {
         <span class="comment">// The definition of this method is subtle but intentional. The goal
         // here is that effectively this should return `&amp;mut self.vmctx`, but
-        // it&#39;s not quite so simple. Some more documentation is available on the
-        // `vmctx_self_reference` field, but the general idea is that we&#39;re
+        // it's not quite so simple. Some more documentation is available on the
+        // `vmctx_self_reference` field, but the general idea is that we're
         // creating a pointer to return with proper provenance. Provenance is
         // still in the works in Rust at the time of this writing but the load
         // of the `self.vmctx_self_reference` field is important here as it
@@ -1769,9 +1770,9 @@
         // pointer.
         //
         // The intention of this method is to codegen to machine code as `&amp;mut
-        // self.vmctx`, however. While it doesn&#39;t show up like this in LLVM IR
-        // (there&#39;s an actual load of the field) it does look like that by the
-        // time the backend runs. (that&#39;s magic to me, the backend removing
+        // self.vmctx`, however. While it doesn't show up like this in LLVM IR
+        // (there's an actual load of the field) it does look like that by the
+        // time the backend runs. (that's magic to me, the backend removing
         // loads...)
         //
         // As a final minor note, strict provenance APIs are not stable on Rust
@@ -1860,7 +1861,7 @@
 
     <span class="doccomment">/// Grow memory by the specified amount of pages.
     ///
-    /// Returns `None` if memory can&#39;t be grown by the specified amount
+    /// Returns `None` if memory can't be grown by the specified amount
     /// of pages. Returns `Some` with the old size in bytes if growth was
     /// successful.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>memory_grow(
@@ -1908,7 +1909,7 @@
     <span class="doccomment">/// Grow table by the specified amount of elements, filling them with
     /// `init_value`.
     ///
-    /// Returns `None` if table can&#39;t be grown by the specified amount of
+    /// Returns `None` if table can't be grown by the specified amount of
     /// elements, or if `init_value` is the wrong type of table element.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>table_grow(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -1931,7 +1932,7 @@
         <span class="kw">let </span>table = <span class="self">self
             </span>.tables
             .get_mut(table_index)
-            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;no table for index {}&quot;</span>, table_index.index()));
+            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"no table for index {}"</span>, table_index.index()));
 
         <span class="kw">let </span>result = <span class="kw">unsafe </span>{ table.grow(delta, init_value, store) };
 
@@ -1957,7 +1958,7 @@
     ///
     /// Note that our current lazy-init scheme actually calls this every
     /// time the funcref pointer is fetched; this turns out to be better
-    /// than tracking state related to whether it&#39;s been initialized
+    /// than tracking state related to whether it's been initialized
     /// before, because resetting that state on (re)instantiation is
     /// very expensive if there are many funcrefs.
     </span><span class="kw">fn </span>construct_func_ref(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: FuncIndex, sig: SignatureIndex, into: <span class="kw-2">*mut </span>VMFuncRef) {
@@ -1972,11 +1973,11 @@
                 native_call: <span class="self">self
                     </span>.runtime_info
                     .native_to_wasm_trampoline(def_index)
-                    .expect(<span class="string">&quot;should have native-to-Wasm trampoline for escaping function&quot;</span>),
+                    .expect(<span class="string">"should have native-to-Wasm trampoline for escaping function"</span>),
                 array_call: <span class="self">self
                     </span>.runtime_info
                     .array_to_wasm_trampoline(def_index)
-                    .expect(<span class="string">&quot;should have array-to-Wasm trampoline for escaping function&quot;</span>),
+                    .expect(<span class="string">"should have array-to-Wasm trampoline for escaping function"</span>),
                 wasm_call: <span class="prelude-val">Some</span>(<span class="self">self</span>.runtime_info.function(def_index)),
                 vmctx: VMOpaqueContext::from_vmcontext(<span class="self">self</span>.vmctx()),
                 type_index,
@@ -2003,7 +2004,7 @@
     ///
     /// Returns `None` if the index is the reserved index value.
     ///
-    /// The returned reference is a stable reference that won&#39;t be moved and can
+    /// The returned reference is a stable reference that won't be moved and can
     /// be passed into JIT code.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_func_ref(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: FuncIndex) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*mut </span>VMFuncRef&gt; {
         <span class="kw">if </span>index == FuncIndex::reserved_value() {
@@ -2028,14 +2029,14 @@
             // When `ref.func` becomes more commonly used or if we
             // otherwise see a use-case where this becomes a hotpath,
             // we can reconsider by using some state to track
-            // &quot;uninitialized&quot; explicitly, for example by zeroing the
+            // "uninitialized" explicitly, for example by zeroing the
             // funcrefs (perhaps together with other
             // zeroed-at-instantiate-time state) or using a separate
             // is-initialized bitmap.
             //
             // We arrived at this design because zeroing memory is
-            // expensive, so it&#39;s better for instantiation performance
-            // if we don&#39;t have to track &quot;is-initialized&quot; state at
+            // expensive, so it's better for instantiation performance
+            // if we don't have to track "is-initialized" state at
             // all!
             </span><span class="kw">let </span>func = <span class="kw-2">&amp;</span><span class="self">self</span>.module().functions[index];
             <span class="kw">let </span>sig = func.signature;
@@ -2062,7 +2063,7 @@
         src: u32,
         len: u32,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Trap&gt; {
-        <span class="comment">// TODO: this `clone()` shouldn&#39;t be necessary but is used for now to
+        <span class="comment">// TODO: this `clone()` shouldn't be necessary but is used for now to
         // inform `rustc` that the lifetime of the elements here are
         // disconnected from the lifetime of `self`.
         </span><span class="kw">let </span>module = <span class="self">self</span>.module().clone();
@@ -2120,7 +2121,7 @@
 
         </span><span class="self">self</span>.dropped_elements.insert(elem_index);
 
-        <span class="comment">// Note that we don&#39;t check that we actually removed a segment because
+        <span class="comment">// Note that we don't check that we actually removed a segment because
         // dropping a non-passive segment is a no-op (not a trap).
     </span>}
 
@@ -2208,8 +2209,8 @@
     ///
     /// # Errors
     ///
-    /// Returns a `Trap` error if the destination range is out of this module&#39;s
-    /// memory&#39;s bounds or if the source range is outside the data segment&#39;s
+    /// Returns a `Trap` error if the destination range is out of this module's
+    /// memory's bounds or if the source range is outside the data segment's
     /// bounds.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>memory_init(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -2261,7 +2262,7 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>data_drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data_index: DataIndex) {
         <span class="self">self</span>.dropped_data.insert(data_index);
 
-        <span class="comment">// Note that we don&#39;t check that we actually removed a segment because
+        <span class="comment">// Note that we don't check that we actually removed a segment because
         // dropping a non-passive segment is a no-op (not a trap).
     </span>}
 
@@ -2319,7 +2320,7 @@
                 // list is extracted and then it is consulted with `i` to
                 // determine the function that is going to be initialized. Note
                 // that `i` may be outside the limits of the static
-                // initialization so it&#39;s a fallible `get` instead of an index.
+                // initialization so it's a fallible `get` instead of an index.
                 </span><span class="kw">let </span>module = <span class="self">self</span>.module();
                 <span class="kw">let </span>precomputed = <span class="kw">match </span><span class="kw-2">&amp;</span>module.table_initialization.initial_values[idx] {
                     TableInitialValue::Null { precomputed } =&gt; precomputed,
@@ -2331,7 +2332,7 @@
                     .unwrap_or(std::ptr::null_mut());
                 <span class="self">self</span>.tables[idx]
                     .set(i, TableElement::FuncRef(func_ref))
-                    .expect(<span class="string">&quot;Table type should match and index should be in-bounds&quot;</span>);
+                    .expect(<span class="string">"Table type should match and index should be in-bounds"</span>);
             }
         }
 
@@ -2425,7 +2426,7 @@
         <span class="comment">// N.B.: there is no need to initialize the funcrefs array because we
         // eagerly construct each element in it whenever asked for a reference
         // to that element. In other words, there is no state needed to track
-        // the lazy-init, so we don&#39;t need to initialize any state now.
+        // the lazy-init, so we don't need to initialize any state now.
 
         // Initialize the defined tables
         </span><span class="kw">let </span><span class="kw-2">mut </span>ptr = <span class="self">self</span>.vmctx_plus_offset_mut(offsets.vmctx_tables_begin());
@@ -2499,7 +2500,7 @@
                 GlobalInit::RefNullConst =&gt; <span class="kw">match </span>wasm_ty {
                     <span class="comment">// `VMGlobalDefinition::new()` already zeroed out the bits
                     </span>WasmType::Ref(WasmRefType { nullable: <span class="bool-val">true</span>, .. }) =&gt; {}
-                    ty =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unsupported reference type for global: {:?}&quot;</span>, ty),
+                    ty =&gt; <span class="macro">panic!</span>(<span class="string">"unsupported reference type for global: {:?}"</span>, ty),
                 },
             }
         }
@@ -2553,7 +2554,7 @@
 }
 
 <span class="kw">impl </span>InstanceHandle {
-    <span class="doccomment">/// Creates an &quot;empty&quot; instance handle which internally has a null pointer
+    <span class="doccomment">/// Creates an "empty" instance handle which internally has a null pointer
     /// to an instance.
     </span><span class="kw">pub fn </span>null() -&gt; InstanceHandle {
         InstanceHandle { instance: <span class="prelude-val">None </span>}
@@ -2657,8 +2658,8 @@
     <span class="doccomment">/// Returns a clone of this instance.
     ///
     /// This is unsafe because the returned handle here is just a cheap clone
-    /// of the internals, there&#39;s no lifetime tracking around its validity.
-    /// You&#39;ll need to ensure that the returned handles all go out of scope at
+    /// of the internals, there's no lifetime tracking around its validity.
+    /// You'll need to ensure that the returned handles all go out of scope at
     /// the same time.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub unsafe fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; InstanceHandle {
@@ -2683,7 +2684,7 @@
     /// This method will check all linear memories that this instance contains
     /// to see if any of them contain `addr`. If one does then `Some` is
     /// returned with metadata about the wasm fault. Otherwise `None` is
-    /// returned and `addr` doesn&#39;t belong to this instance.
+    /// returned and `addr` doesn't belong to this instance.
     </span><span class="kw">pub fn </span>wasm_fault(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: usize) -&gt; <span class="prelude-ty">Option</span>&lt;WasmFault&gt; {
         <span class="self">self</span>.instance().wasm_fault(addr)
     }

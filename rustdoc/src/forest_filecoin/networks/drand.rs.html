@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/networks/drand.rs`."><title>drand.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/networks/drand.rs`."><title>drand.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -124,62 +125,62 @@
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>std::borrow::Cow;
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_MAINNET: Lazy&lt;DrandConfig&lt;<span class="lifetime">&#39;static</span>&gt;&gt; = Lazy::new(|| {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_MAINNET: Lazy&lt;DrandConfig&lt;<span class="lifetime">'static</span>&gt;&gt; = Lazy::new(|| {
     DrandConfig {
         <span class="comment">// https://drand.love/developer/http-api/#public-endpoints
         </span>servers: <span class="macro">vec!</span>[
-                <span class="string">&quot;https://api.drand.sh&quot;</span>.try_into().unwrap(),
-                <span class="string">&quot;https://api2.drand.sh&quot;</span>.try_into().unwrap(),
-                <span class="string">&quot;https://api3.drand.sh&quot;</span>.try_into().unwrap(),
-                <span class="string">&quot;https://drand.cloudflare.com&quot;</span>.try_into().unwrap(),
-                <span class="string">&quot;https://api.drand.secureweb3.com:6875&quot;</span>.try_into().unwrap(),
+                <span class="string">"https://api.drand.sh"</span>.try_into().unwrap(),
+                <span class="string">"https://api2.drand.sh"</span>.try_into().unwrap(),
+                <span class="string">"https://api3.drand.sh"</span>.try_into().unwrap(),
+                <span class="string">"https://drand.cloudflare.com"</span>.try_into().unwrap(),
+                <span class="string">"https://api.drand.secureweb3.com:6875"</span>.try_into().unwrap(),
             ],
         <span class="comment">// https://api.drand.sh/8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce/info
         </span>chain_info:  ChainInfo {
-            public_key: Cow::Borrowed(<span class="string">&quot;868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31&quot;</span>),
+            public_key: Cow::Borrowed(<span class="string">"868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31"</span>),
             period: <span class="number">30</span>,
             genesis_time: <span class="number">1595431050</span>,
-            hash: Cow::Borrowed(<span class="string">&quot;8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce&quot;</span>),
-            group_hash: Cow::Borrowed(<span class="string">&quot;176f93498eac9ca337150b46d21dd58673ea4e3581185f869672e59fa4cb390a&quot;</span>),
+            hash: Cow::Borrowed(<span class="string">"8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce"</span>),
+            group_hash: Cow::Borrowed(<span class="string">"176f93498eac9ca337150b46d21dd58673ea4e3581185f869672e59fa4cb390a"</span>),
         },
         network_type: DrandNetwork::Mainnet,
     }
 });
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_QUICKNET: Lazy&lt;DrandConfig&lt;<span class="lifetime">&#39;static</span>&gt;&gt; = Lazy::new(|| {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_QUICKNET: Lazy&lt;DrandConfig&lt;<span class="lifetime">'static</span>&gt;&gt; = Lazy::new(|| {
     DrandConfig {
         <span class="comment">// https://drand.love/developer/http-api/#public-endpoints
         </span>servers: <span class="macro">vec!</span>[
-            <span class="string">&quot;https://api.drand.sh&quot;</span>.try_into().unwrap(),
-            <span class="string">&quot;https://api2.drand.sh&quot;</span>.try_into().unwrap(),
-            <span class="string">&quot;https://api3.drand.sh&quot;</span>.try_into().unwrap(),
-            <span class="string">&quot;https://drand.cloudflare.com&quot;</span>.try_into().unwrap(),
-            <span class="string">&quot;https://api.drand.secureweb3.com:6875&quot;</span>.try_into().unwrap(),
+            <span class="string">"https://api.drand.sh"</span>.try_into().unwrap(),
+            <span class="string">"https://api2.drand.sh"</span>.try_into().unwrap(),
+            <span class="string">"https://api3.drand.sh"</span>.try_into().unwrap(),
+            <span class="string">"https://drand.cloudflare.com"</span>.try_into().unwrap(),
+            <span class="string">"https://api.drand.secureweb3.com:6875"</span>.try_into().unwrap(),
         ],
         <span class="comment">// https://api.drand.sh/52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971/info
         </span>chain_info:  ChainInfo {
-            public_key: Cow::Borrowed(<span class="string">&quot;83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a&quot;</span>),
+            public_key: Cow::Borrowed(<span class="string">"83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a"</span>),
             period: <span class="number">3</span>,
             genesis_time: <span class="number">1692803367</span>,
-            hash: Cow::Borrowed(<span class="string">&quot;52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971&quot;</span>),
-            group_hash: Cow::Borrowed(<span class="string">&quot;f477d5c89f21a17c863a7f937c6a6d15859414d2be09cd448d4279af331c5d3e&quot;</span>),
+            hash: Cow::Borrowed(<span class="string">"52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971"</span>),
+            group_hash: Cow::Borrowed(<span class="string">"f477d5c89f21a17c863a7f937c6a6d15859414d2be09cd448d4279af331c5d3e"</span>),
         },
         network_type: DrandNetwork::Quicknet,
     }
 });
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_INCENTINET: Lazy&lt;DrandConfig&lt;<span class="lifetime">&#39;static</span>&gt;&gt; = Lazy::new(|| {
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_INCENTINET: Lazy&lt;DrandConfig&lt;<span class="lifetime">'static</span>&gt;&gt; = Lazy::new(|| {
     DrandConfig {
         <span class="comment">// Note: This URL is no longer valid.
         // See &lt;https://github.com/filecoin-project/lotus/pull/10476/files&gt; and its related issues
         </span>servers: <span class="macro">vec!</span>[],
-        <span class="comment">// Source json: serde_json::from_str(r#&quot;{&quot;public_key&quot;:&quot;8cad0c72c606ab27d36ee06de1d5b2db1faf92e447025ca37575ab3a8aac2eaae83192f846fc9e158bc738423753d000&quot;,&quot;period&quot;:30,&quot;genesis_time&quot;:1595873820,&quot;hash&quot;:&quot;80c8b872c714f4c00fdd3daa465d5514049f457f01f85a4caf68cdcd394ba039&quot;,&quot;groupHash&quot;:&quot;d9406aaed487f7af71851b4399448e311f2328923d454e971536c05398ce2d9b&quot;}&quot;#).unwrap(),
+        <span class="comment">// Source json: serde_json::from_str(r#"{"public_key":"8cad0c72c606ab27d36ee06de1d5b2db1faf92e447025ca37575ab3a8aac2eaae83192f846fc9e158bc738423753d000","period":30,"genesis_time":1595873820,"hash":"80c8b872c714f4c00fdd3daa465d5514049f457f01f85a4caf68cdcd394ba039","groupHash":"d9406aaed487f7af71851b4399448e311f2328923d454e971536c05398ce2d9b"}"#).unwrap(),
         </span>chain_info:  ChainInfo {
-            public_key: Cow::Borrowed(<span class="string">&quot;8cad0c72c606ab27d36ee06de1d5b2db1faf92e447025ca37575ab3a8aac2eaae83192f846fc9e158bc738423753d000&quot;</span>),
+            public_key: Cow::Borrowed(<span class="string">"8cad0c72c606ab27d36ee06de1d5b2db1faf92e447025ca37575ab3a8aac2eaae83192f846fc9e158bc738423753d000"</span>),
             period: <span class="number">30</span>,
             genesis_time: <span class="number">1595873820</span>,
-            hash: Cow::Borrowed(<span class="string">&quot;80c8b872c714f4c00fdd3daa465d5514049f457f01f85a4caf68cdcd394ba039&quot;</span>),
-            group_hash: Cow::Borrowed(<span class="string">&quot;d9406aaed487f7af71851b4399448e311f2328923d454e971536c05398ce2d9b&quot;</span>),
+            hash: Cow::Borrowed(<span class="string">"80c8b872c714f4c00fdd3daa465d5514049f457f01f85a4caf68cdcd394ba039"</span>),
+            group_hash: Cow::Borrowed(<span class="string">"d9406aaed487f7af71851b4399448e311f2328923d454e971536c05398ce2d9b"</span>),
         },
         network_type: DrandNetwork::Incentinet,
     }
@@ -204,13 +205,13 @@
     </span>}
 
     <span class="attr">#[tokio::test]
-    #[ignore = <span class="string">&quot;server url is no longer valid&quot;</span>]
+    #[ignore = <span class="string">"server url is no longer valid"</span>]
     </span><span class="kw">async fn </span>test_drand_incentinet() {
         test_drand(<span class="kw-2">&amp;</span>DRAND_INCENTINET).<span class="kw">await
     </span>}
 
-    <span class="kw">async fn </span>test_drand&lt;<span class="lifetime">&#39;a</span>&gt;(config: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>DrandConfig&lt;<span class="lifetime">&#39;a</span>&gt;) {
-        <span class="kw">let </span>get_remote_chain_info = |server: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Url| <span class="kw">async move </span>{
+    <span class="kw">async fn </span>test_drand&lt;<span class="lifetime">'a</span>&gt;(config: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>DrandConfig&lt;<span class="lifetime">'a</span>&gt;) {
+        <span class="kw">let </span>get_remote_chain_info = |server: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Url| <span class="kw">async move </span>{
             retry(
                 RetryArgs {
                     timeout: <span class="prelude-val">Some</span>(Duration::from_secs(<span class="number">15</span>)),
@@ -218,7 +219,7 @@
                 },
                 || <span class="kw">async </span>{
                     <span class="kw">let </span>remote_chain_info: ChainInfo = global_http_client()
-                        .get(server.join(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}/info&quot;</span>, config.chain_info.hash))<span class="question-mark">?</span>)
+                        .get(server.join(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}/info"</span>, config.chain_info.hash))<span class="question-mark">?</span>)
                         .send()
                         .<span class="kw">await</span><span class="question-mark">?
                         </span>.error_for_status()<span class="question-mark">?

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/store.rs`."><title>store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/store.rs`."><title>store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -2210,7 +2211,7 @@
 <a href="#2210" id="2210">2210</a>
 <a href="#2211" id="2211">2211</a>
 <a href="#2212" id="2212">2212</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Wasmtime&#39;s &quot;store&quot; type
+</pre></div><pre class="rust"><code><span class="doccomment">//! Wasmtime's "store" type
 //!
 //! This module, and its submodules, contain the `Store` type and various types
 //! used to interact with it. At first glance this is a pretty confusing module
@@ -2225,11 +2226,11 @@
 //! * `StoreOpaque`
 //! * `StoreData`
 //!
-//! There&#39;s... quite a lot going on here, and it&#39;s easy to be confused. This
+//! There's... quite a lot going on here, and it's easy to be confused. This
 //! comment is ideally going to serve the purpose of clarifying what all these
-//! types are for and why they&#39;re motivated.
+//! types are for and why they're motivated.
 //!
-//! First it&#39;s important to know what&#39;s &quot;internal&quot; and what&#39;s &quot;external&quot;. Almost
+//! First it's important to know what's "internal" and what's "external". Almost
 //! everything above is defined as `pub`, but only some of the items are
 //! reexported to the outside world to be usable from this crate. Otherwise all
 //! items are `pub` within this `store` module, and the `store` module is
@@ -2237,7 +2238,7 @@
 //! `StoreContextMut&lt;T&gt;`, `AsContext`, and `AsContextMut` are all public
 //! interfaces to the `wasmtime` crate. You can think of these as:
 //!
-//! * `Store&lt;T&gt;` - an owned reference to a store, the &quot;root of everything&quot;
+//! * `Store&lt;T&gt;` - an owned reference to a store, the "root of everything"
 //! * `StoreContext&lt;T&gt;` - basically `&amp;StoreInner&lt;T&gt;`
 //! * `StoreContextMut&lt;T&gt;` - more-or-less `&amp;mut StoreInner&lt;T&gt;` with caveats.
 //!   Explained later.
@@ -2246,37 +2247,37 @@
 //!
 //! Next comes the internal structure of the `Store&lt;T&gt;` itself. This looks like:
 //!
-//! * `Store&lt;T&gt;` - this type is just a pointer large. It&#39;s primarily just
-//!   intended to be consumed by the outside world. Note that the &quot;just a
-//!   pointer large&quot; is a load-bearing implementation detail in Wasmtime. This
-//!   enables it to store a pointer to its own trait object which doesn&#39;t need
+//! * `Store&lt;T&gt;` - this type is just a pointer large. It's primarily just
+//!   intended to be consumed by the outside world. Note that the "just a
+//!   pointer large" is a load-bearing implementation detail in Wasmtime. This
+//!   enables it to store a pointer to its own trait object which doesn't need
 //!   to change over time.
 //!
-//! * `StoreInner&lt;T&gt;` - the first layer of the contents of a `Store&lt;T&gt;`, what&#39;s
+//! * `StoreInner&lt;T&gt;` - the first layer of the contents of a `Store&lt;T&gt;`, what's
 //!   stored inside the `Box`. This is the general Rust pattern when one struct
 //!   is a layer over another. The surprising part, though, is that this is
 //!   further subdivided. This structure only contains things which actually
-//!   need `T` itself. The downside of this structure is that it&#39;s always
+//!   need `T` itself. The downside of this structure is that it's always
 //!   generic and means that code is monomorphized into consumer crates. We
 //!   strive to have things be as monomorphic as possible in `wasmtime` so this
 //!   type is not heavily used.
 //!
 //! * `StoreOpaque` - this is the primary contents of the `StoreInner&lt;T&gt;` type.
-//!   Stored inline in the outer type the &quot;opaque&quot; here means that it&#39;s a
-//!   &quot;store&quot; but it doesn&#39;t have access to the `T`. This is the primary
-//!   &quot;internal&quot; reference that Wasmtime uses since `T` is rarely needed by the
+//!   Stored inline in the outer type the "opaque" here means that it's a
+//!   "store" but it doesn't have access to the `T`. This is the primary
+//!   "internal" reference that Wasmtime uses since `T` is rarely needed by the
 //!   internals of Wasmtime.
 //!
 //! * `StoreData` - this is a final helper struct stored within `StoreOpaque`.
 //!   All references of Wasm items into a `Store` are actually indices into a
 //!   table in this structure, and the `StoreData` being separate makes it a bit
-//!   easier to manage/define/work with. There&#39;s no real fundamental reason this
-//!   is split out, although sometimes it&#39;s useful to have separate borrows into
+//!   easier to manage/define/work with. There's no real fundamental reason this
+//!   is split out, although sometimes it's useful to have separate borrows into
 //!   these tables than the `StoreOpaque`.
 //!
 //! A major caveat with these representations is that the internal `&amp;mut
 //! StoreInner&lt;T&gt;` is never handed out publicly to consumers of this crate, only
-//! through a wrapper of `StoreContextMut&lt;&#39;_, T&gt;`. The reason for this is that
+//! through a wrapper of `StoreContextMut&lt;'_, T&gt;`. The reason for this is that
 //! we want to provide mutable, but not destructive, access to the contents of a
 //! `Store`. For example if a `StoreInner&lt;T&gt;` were replaced with some other
 //! `StoreInner&lt;T&gt;` then that would drop live instances, possibly those
@@ -2331,9 +2332,9 @@
 /// of GC is implemented at this time so once an instance is created within a
 /// [`Store`] it will not be deallocated until the [`Store`] itself is dropped.
 /// This makes [`Store`] unsuitable for creating an unbounded number of
-/// instances in it because [`Store`] will never release this memory. It&#39;s
-/// recommended to have a [`Store`] correspond roughly to the lifetime of a &quot;main
-/// instance&quot; that an embedding is interested in executing.
+/// instances in it because [`Store`] will never release this memory. It's
+/// recommended to have a [`Store`] correspond roughly to the lifetime of a "main
+/// instance" that an embedding is interested in executing.
 ///
 /// ## Type parameter `T`
 ///
@@ -2355,7 +2356,7 @@
 /// contexts are:
 ///
 /// * `Store&lt;T&gt;`
-/// * `Caller&lt;&#39;_, T&gt;`
+/// * `Caller&lt;'_, T&gt;`
 ///
 /// corresponding to what you create and what you have access to in a host
 /// function. You can also explicitly acquire a [`StoreContext`] or
@@ -2409,10 +2410,10 @@
 <span class="doccomment">/// Internal contents of a `Store&lt;T&gt;` that live on the heap.
 ///
 /// The members of this struct are those that need to be generic over `T`, the
-/// store&#39;s internal type storage. Otherwise all things that don&#39;t rely on `T`
+/// store's internal type storage. Otherwise all things that don't rely on `T`
 /// should go into `StoreOpaque`.
 </span><span class="kw">pub struct </span>StoreInner&lt;T&gt; {
-    <span class="doccomment">/// Generic metadata about the store that doesn&#39;t need access to `T`.
+    <span class="doccomment">/// Generic metadata about the store that doesn't need access to `T`.
     </span>inner: StoreOpaque,
 
     limiter: <span class="prelude-ty">Option</span>&lt;ResourceLimiterInner&lt;T&gt;&gt;,
@@ -2425,12 +2426,12 @@
 
 <span class="kw">enum </span>ResourceLimiterInner&lt;T&gt; {
     Sync(Box&lt;<span class="kw">dyn </span>FnMut(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>(<span class="kw">dyn </span><span class="kw">crate</span>::ResourceLimiter) + Send + Sync&gt;),
-    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span>Async(Box&lt;<span class="kw">dyn </span>FnMut(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>(<span class="kw">dyn </span><span class="kw">crate</span>::ResourceLimiterAsync) + Send + Sync&gt;),
 }
 
 <span class="doccomment">/// An object that can take callbacks when the runtime enters or exits hostcalls.
-</span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+</span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 #[async_trait::async_trait]
 </span><span class="kw">pub trait </span>CallHookHandler&lt;T&gt;: Send {
     <span class="doccomment">/// A callback to run when wasmtime is about to enter a host call, or when about to
@@ -2440,7 +2441,7 @@
 
 <span class="kw">enum </span>CallHookInner&lt;T&gt; {
     Sync(Box&lt;<span class="kw">dyn </span>FnMut(<span class="kw-2">&amp;mut </span>T, CallHook) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync&gt;),
-    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span>Async(Box&lt;<span class="kw">dyn </span>CallHookHandler&lt;T&gt; + Send + Sync&gt;),
 }
 
@@ -2452,7 +2453,7 @@
     <span class="doccomment">/// Extend the deadline by the specified number of ticks after yielding to
     /// the async executor loop. This can only be used with an async [`Store`]
     /// configured via [`Config::async_support`](crate::Config::async_support).
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span>Yield(u64),
 }
 
@@ -2473,11 +2474,11 @@
 <span class="doccomment">/// Monomorphic storage for a `Store&lt;T&gt;`.
 ///
 /// This structure contains the bulk of the metadata about a `Store`. This is
-/// used internally in Wasmtime when dependence on the `T` of `Store&lt;T&gt;` isn&#39;t
+/// used internally in Wasmtime when dependence on the `T` of `Store&lt;T&gt;` isn't
 /// necessary, allowing code to be monomorphic and compiled into the `wasmtime`
 /// crate itself.
 </span><span class="kw">pub struct </span>StoreOpaque {
-    <span class="comment">// This `StoreOpaque` structure has references to itself. These aren&#39;t
+    <span class="comment">// This `StoreOpaque` structure has references to itself. These aren't
     // immediately evident, however, so we need to tell the compiler that it
     // contains self-references. This notably suppresses `noalias` annotations
     // when this shows up in compiled code because types of this structure do
@@ -2485,17 +2486,17 @@
     // `*mut dyn Store` to the address of this `StoreOpaque` itself, indeed
     // aliasing!
     //
-    // It&#39;s somewhat unclear to me at this time if this is 100% sufficient to
+    // It's somewhat unclear to me at this time if this is 100% sufficient to
     // get all the right codegen in all the right places. For example does
     // `Store` need to internally contain a `Pin&lt;Box&lt;StoreInner&lt;T&gt;&gt;&gt;`? Do the
-    // contexts need to contain `Pin&lt;&amp;mut StoreInner&lt;T&gt;&gt;`? I&#39;m not familiar
-    // enough with `Pin` to understand if it&#39;s appropriate here (we do, for
+    // contexts need to contain `Pin&lt;&amp;mut StoreInner&lt;T&gt;&gt;`? I'm not familiar
+    // enough with `Pin` to understand if it's appropriate here (we do, for
     // example want to allow movement in and out of `data: T`, just not movement
-    // of most of the other members). It&#39;s also not clear if using `Pin` in a
+    // of most of the other members). It's also not clear if using `Pin` in a
     // few places buys us much other than a bunch of `unsafe` that we already
     // sort of hand-wave away.
     //
-    // In any case this seems like a good mid-ground for now where we&#39;re at
+    // In any case this seems like a good mid-ground for now where we're at
     // least telling the compiler something about all the aliasing happening
     // within a `Store`.
     </span>_marker: marker::PhantomPinned,
@@ -2503,7 +2504,7 @@
     engine: Engine,
     runtime_limits: VMRuntimeLimits,
     instances: Vec&lt;StoreInstance&gt;,
-    signal_handler: <span class="prelude-ty">Option</span>&lt;Box&lt;SignalHandler&lt;<span class="lifetime">&#39;static</span>&gt;&gt;&gt;,
+    signal_handler: <span class="prelude-ty">Option</span>&lt;Box&lt;SignalHandler&lt;<span class="lifetime">'static</span>&gt;&gt;&gt;,
     externref_activations_table: VMExternRefActivationsTable,
     modules: ModuleRegistry,
     func_refs: FuncRefs,
@@ -2519,7 +2520,7 @@
     <span class="doccomment">/// An adjustment to add to the fuel consumed value in `runtime_limits` above
     /// to get the true amount of fuel consumed.
     </span>fuel_adj: i64,
-    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span>async_state: AsyncState,
     out_of_gas_behavior: OutOfGas,
     <span class="doccomment">/// Indexed data within this `Store`, used to store information about
@@ -2556,23 +2557,23 @@
     <span class="doccomment">/// Runtime state for components used in the handling of resources, borrow,
     /// and calls. These also interact with the `ResourceAny` type and its
     /// internal representation.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span>component_host_table: wasmtime_runtime::component::ResourceTable,
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span>component_calls: wasmtime_runtime::component::CallContexts,
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">struct </span>AsyncState {
     current_suspend: UnsafeCell&lt;<span class="kw-2">*const </span>wasmtime_fiber::Suspend&lt;<span class="prelude-ty">Result</span>&lt;()&gt;, (), <span class="prelude-ty">Result</span>&lt;()&gt;&gt;&gt;,
-    current_poll_cx: UnsafeCell&lt;<span class="kw-2">*mut </span>Context&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
+    current_poll_cx: UnsafeCell&lt;<span class="kw-2">*mut </span>Context&lt;<span class="lifetime">'static</span>&gt;&gt;,
 }
 
 <span class="comment">// Lots of pesky unsafe cells and pointers in this structure. This means we need
 // to declare explicitly that we use this in a threadsafe fashion.
-</span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+</span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>AsyncState {}
-<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>AsyncState {}
 
 <span class="doccomment">/// An RAII type to automatically mark a region of code as unsafe for GC.
@@ -2685,7 +2686,7 @@
                 table_count: <span class="number">0</span>,
                 table_limit: <span class="kw">crate</span>::DEFAULT_TABLE_LIMIT,
                 fuel_adj: <span class="number">0</span>,
-                <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+                <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
                 </span>async_state: AsyncState {
                     current_suspend: UnsafeCell::new(ptr::null()),
                     current_poll_cx: UnsafeCell::new(ptr::null_mut()),
@@ -2696,9 +2697,9 @@
                 hostcall_val_storage: Vec::new(),
                 wasm_val_raw_storage: Vec::new(),
                 rooted_host_funcs: ManuallyDrop::new(Vec::new()),
-                <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+                <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
                 </span>component_host_table: Default::default(),
-                <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+                <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
                 </span>component_calls: Default::default(),
             },
             limiter: <span class="prelude-val">None</span>,
@@ -2710,8 +2711,8 @@
         <span class="comment">// Wasmtime uses the callee argument to host functions to learn about
         // the original pointer to the `Store` itself, allowing it to
         // reconstruct a `StoreContextMut&lt;T&gt;`. When we initially call a `Func`,
-        // however, there&#39;s no &quot;callee&quot; to provide. To fix this we allocate a
-        // single &quot;default callee&quot; for the entire `Store`. This is then used as
+        // however, there's no "callee" to provide. To fix this we allocate a
+        // single "default callee" for the entire `Store`. This is then used as
         // part of `Func::call` to guarantee that the `callee: *mut VMContext`
         // is never null.
         </span>inner.default_caller = {
@@ -2724,16 +2725,16 @@
                     store: StorePtr::empty(),
                     runtime_info: <span class="kw-2">&amp;</span>shim,
                 })
-                .expect(<span class="string">&quot;failed to allocate default callee&quot;</span>);
+                .expect(<span class="string">"failed to allocate default callee"</span>);
 
-            <span class="comment">// Note the erasure of the lifetime here into `&#39;static`, so in
+            <span class="comment">// Note the erasure of the lifetime here into `'static`, so in
             // general usage of this trait object must be strictly bounded to
             // the `Store` itself, and is a variant that we have to maintain
             // throughout Wasmtime.
             </span><span class="kw">unsafe </span>{
                 <span class="kw">let </span>traitobj = std::mem::transmute::&lt;
-                    <span class="kw-2">*mut </span>(<span class="kw">dyn </span>wasmtime_runtime::Store + <span class="lifetime">&#39;_</span>),
-                    <span class="kw-2">*mut </span>(<span class="kw">dyn </span>wasmtime_runtime::Store + <span class="lifetime">&#39;static</span>),
+                    <span class="kw-2">*mut </span>(<span class="kw">dyn </span>wasmtime_runtime::Store + <span class="lifetime">'_</span>),
+                    <span class="kw-2">*mut </span>(<span class="kw">dyn </span>wasmtime_runtime::Store + <span class="lifetime">'static</span>),
                 &gt;(<span class="kw-2">&amp;mut *</span>inner);
                 instance.set_store(traitobj);
             }
@@ -2761,22 +2762,22 @@
     </span><span class="kw">pub fn </span>into_data(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; T {
         <span class="comment">// This is an unsafe operation because we want to avoid having a runtime
         // check or boolean for whether the data is actually contained within a
-        // `Store`. The data itself is stored as `ManuallyDrop` since we&#39;re
-        // manually managing the memory here, and there&#39;s also a `ManuallyDrop`
+        // `Store`. The data itself is stored as `ManuallyDrop` since we're
+        // manually managing the memory here, and there's also a `ManuallyDrop`
         // around the `Box&lt;StoreInner&lt;T&gt;&gt;`. The way this works though is a bit
-        // tricky, so here&#39;s how things get dropped appropriately:
+        // tricky, so here's how things get dropped appropriately:
         //
         // * When a `Store&lt;T&gt;` is normally dropped, the custom destructor for
         //   `Store&lt;T&gt;` will drop `T`, then the `self.inner` field. The
         //   rustc-glue destructor runs for `Box&lt;StoreInner&lt;T&gt;&gt;` which drops
-        //   `StoreInner&lt;T&gt;`. This cleans up all internal fields and doesn&#39;t
-        //   touch `T` because it&#39;s wrapped in `ManuallyDrop`.
+        //   `StoreInner&lt;T&gt;`. This cleans up all internal fields and doesn't
+        //   touch `T` because it's wrapped in `ManuallyDrop`.
         //
         // * When calling this method we skip the top-level destructor for
         //   `Store&lt;T&gt;` with `mem::forget`. This skips both the destructor for
         //   `T` and the destructor for `StoreInner&lt;T&gt;`. We do, however, run the
         //   destructor for `Box&lt;StoreInner&lt;T&gt;&gt;` which, like above, will skip
-        //   the destructor for `T` since it&#39;s `ManuallyDrop`.
+        //   the destructor for `T` since it's `ManuallyDrop`.
         //
         // In both cases all the other fields of `StoreInner&lt;T&gt;` should all get
         // dropped, and the manual management of destructors is basically
@@ -2794,7 +2795,7 @@
     /// within this [`Store`].
     ///
     /// Whenever resources such as linear memory, tables, or instances are
-    /// allocated the `limiter` specified here is invoked with the store&#39;s data
+    /// allocated the `limiter` specified here is invoked with the store's data
     /// `T` and the returned [`ResourceLimiter`] is used to limit the operation
     /// being allocated. The returned [`ResourceLimiter`] is intended to live
     /// within the `T` itself, for example by storing a
@@ -2828,13 +2829,13 @@
     /// // Creation of smaller memories is allowed
     /// Memory::new(&amp;mut store, MemoryType::new(1, None)).unwrap();
     ///
-    /// // Creation of a larger memory, however, will exceed the 1MB limit we&#39;ve
+    /// // Creation of a larger memory, however, will exceed the 1MB limit we've
     /// // configured
     /// assert!(Memory::new(&amp;mut store, MemoryType::new(1000, None)).is_err());
     ///
     /// // The number of instances in this store is limited to 2, so the third
     /// // instance here should fail.
-    /// let module = Module::new(&amp;engine, &quot;(module)&quot;).unwrap();
+    /// let module = Module::new(&amp;engine, "(module)").unwrap();
     /// assert!(Instance::new(&amp;mut store, &amp;module, &amp;[]).is_ok());
     /// assert!(Instance::new(&amp;mut store, &amp;module, &amp;[]).is_ok());
     /// assert!(Instance::new(&amp;mut store, &amp;module, &amp;[]).is_err());
@@ -2843,7 +2844,7 @@
     /// [`ResourceLimiter`]: crate::ResourceLimiter
     </span><span class="kw">pub fn </span>limiter(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>limiter: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>(<span class="kw">dyn </span><span class="kw">crate</span>::ResourceLimiter) + Send + Sync + <span class="lifetime">&#39;static</span>,
+        <span class="kw-2">mut </span>limiter: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>(<span class="kw">dyn </span><span class="kw">crate</span>::ResourceLimiter) + Send + Sync + <span class="lifetime">'static</span>,
     ) {
         <span class="comment">// Apply the limits on instances, tables, and memory given by the limiter:
         </span><span class="kw">let </span>inner = <span class="kw-2">&amp;mut </span><span class="self">self</span>.inner;
@@ -2883,14 +2884,14 @@
     /// limits to the [`Store`]. Additionally this must be used with an async
     /// [`Store`] configured via
     /// [`Config::async_support`](crate::Config::async_support).
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
-    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="kw">pub fn </span>limiter_async(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         <span class="kw-2">mut </span>limiter: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>T) -&gt; <span class="kw-2">&amp;mut </span>(<span class="kw">dyn </span><span class="kw">crate</span>::ResourceLimiterAsync)
             + Send
             + Sync
-            + <span class="lifetime">&#39;static</span>,
+            + <span class="lifetime">'static</span>,
     ) {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.inner.async_support());
         <span class="comment">// Apply the limits on instances, tables, and memory given by the limiter:
@@ -2908,7 +2909,7 @@
         </span>inner.limiter = <span class="prelude-val">Some</span>(ResourceLimiterInner::Async(Box::new(limiter)));
     }
 
-    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="doccomment">/// Configures an async function that runs on calls and returns between
     /// WebAssembly and host code. For the non-async equivalent of this method,
     /// see [`Store::call_hook`].
@@ -2916,16 +2917,16 @@
     /// The function is passed a [`CallHook`] argument, which indicates which
     /// state transition the VM is making.
     ///
-    /// This function&#39;s future may return a [`Trap`]. If a trap is returned
+    /// This function's future may return a [`Trap`]. If a trap is returned
     /// when an import was called, it is immediately raised as-if the host
     /// import had returned the trap. If a trap is returned after wasm returns
-    /// to the host then the wasm function&#39;s result is ignored and this trap is
+    /// to the host then the wasm function's result is ignored and this trap is
     /// returned instead.
     ///
     /// After this function returns a trap, it may be called for subsequent
     /// returns to host or wasm code as the trap propagates to the root call.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
-    </span><span class="kw">pub fn </span>call_hook_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hook: <span class="kw">impl </span>CallHookHandler&lt;T&gt; + Send + Sync + <span class="lifetime">&#39;static</span>) {
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    </span><span class="kw">pub fn </span>call_hook_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>, hook: <span class="kw">impl </span>CallHookHandler&lt;T&gt; + Send + Sync + <span class="lifetime">'static</span>) {
         <span class="self">self</span>.inner.call_hook = <span class="prelude-val">Some</span>(CallHookInner::Async(Box::new(hook)));
     }
 
@@ -2938,14 +2939,14 @@
     /// This function may return a [`Trap`]. If a trap is returned when an
     /// import was called, it is immediately raised as-if the host import had
     /// returned the trap. If a trap is returned after wasm returns to the host
-    /// then the wasm function&#39;s result is ignored and this trap is returned
+    /// then the wasm function's result is ignored and this trap is returned
     /// instead.
     ///
     /// After this function returns a trap, it may be called for subsequent returns
     /// to host or wasm code as the trap propagates to the root call.
     </span><span class="kw">pub fn </span>call_hook(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        hook: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>T, CallHook) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+        hook: <span class="kw">impl </span>FnMut(<span class="kw-2">&amp;mut </span>T, CallHook) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; + Send + Sync + <span class="lifetime">'static</span>,
     ) {
         <span class="self">self</span>.inner.call_hook = <span class="prelude-val">Some</span>(CallHookInner::Sync(Box::new(hook)));
     }
@@ -2964,7 +2965,7 @@
         <span class="self">self</span>.inner.gc()
     }
 
-    <span class="doccomment">/// Returns the amount of fuel consumed by this store&#39;s execution so far.
+    <span class="doccomment">/// Returns the amount of fuel consumed by this store's execution so far.
     ///
     /// If fuel consumption is not enabled via
     /// [`Config::consume_fuel`](crate::Config::consume_fuel) then this
@@ -3089,7 +3090,7 @@
     /// When the Wasm guest code is compiled with epoch-interruption
     /// instrumentation
     /// ([`Config::epoch_interruption()`](crate::Config::epoch_interruption)),
-    /// and when the `Engine`&#39;s epoch is incremented
+    /// and when the `Engine`'s epoch is incremented
     /// ([`Engine::increment_epoch()`](crate::Engine::increment_epoch))
     /// past a deadline, execution can be configured to either trap or
     /// yield and then continue.
@@ -3104,7 +3105,7 @@
     /// `ticks_beyond_current` times.
     ///
     /// By default a store will trap immediately with an epoch deadline of 0
-    /// (which has always &quot;elapsed&quot;). This method is required to be configured
+    /// (which has always "elapsed"). This method is required to be configured
     /// for stores with epochs enabled to some future epoch deadline.
     ///
     /// See documentation on
@@ -3131,9 +3132,9 @@
     /// This setting is intended to allow for coarse-grained
     /// interruption, but not a deterministic deadline of a fixed,
     /// finite interval. For deterministic interruption, see the
-    /// &quot;fuel&quot; mechanism instead.
+    /// "fuel" mechanism instead.
     ///
-    /// Note that when this is used it&#39;s required to call
+    /// Note that when this is used it's required to call
     /// [`Store::set_epoch_deadline`] or otherwise wasm will always immediately
     /// trap.
     ///
@@ -3166,19 +3167,19 @@
     /// This setting is intended to allow for coarse-grained
     /// interruption, but not a deterministic deadline of a fixed,
     /// finite interval. For deterministic interruption, see the
-    /// &quot;fuel&quot; mechanism instead.
+    /// "fuel" mechanism instead.
     ///
     /// See documentation on
     /// [`Config::epoch_interruption()`](crate::Config::epoch_interruption)
     /// for an introduction to epoch-based interruption.
     </span><span class="kw">pub fn </span>epoch_deadline_callback(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        callback: <span class="kw">impl </span>FnMut(StoreContextMut&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;UpdateDeadline&gt; + Send + Sync + <span class="lifetime">&#39;static</span>,
+        callback: <span class="kw">impl </span>FnMut(StoreContextMut&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;UpdateDeadline&gt; + Send + Sync + <span class="lifetime">'static</span>,
     ) {
         <span class="self">self</span>.inner.epoch_deadline_callback(Box::new(callback));
     }
 
-    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="doccomment">/// Configures epoch-deadline expiration to yield to the async
     /// caller and the update the deadline.
     ///
@@ -3193,7 +3194,7 @@
     /// This setting is intended to allow for cooperative timeslicing
     /// of multiple CPU-bound Wasm guests in different stores, all
     /// executing under the control of an async executor. To drive
-    /// this, stores should be configured to &quot;yield and update&quot;
+    /// this, stores should be configured to "yield and update"
     /// automatically with this function, and some external driver (a
     /// thread that wakes up periodically, or a timer
     /// signal/interrupt) should call
@@ -3202,13 +3203,13 @@
     /// See documentation on
     /// [`Config::epoch_interruption()`](crate::Config::epoch_interruption)
     /// for an introduction to epoch-based interruption.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">pub fn </span>epoch_deadline_async_yield_and_update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta: u64) {
         <span class="self">self</span>.inner.epoch_deadline_async_yield_and_update(delta);
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; StoreContext&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; StoreContext&lt;<span class="lifetime">'a</span>, T&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>async_support(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.<span class="number">0</span>.async_support()
     }
@@ -3221,7 +3222,7 @@
     <span class="doccomment">/// Access the underlying data owned by this `Store`.
     ///
     /// Same as [`Store::data`].
-    </span><span class="kw">pub fn </span>data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T {
+    </span><span class="kw">pub fn </span>data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>T {
         <span class="self">self</span>.<span class="number">0</span>.data()
     }
 
@@ -3240,7 +3241,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T&gt; StoreContextMut&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T&gt; StoreContextMut&lt;<span class="lifetime">'a</span>, T&gt; {
     <span class="doccomment">/// Access the underlying data owned by this `Store`.
     ///
     /// Same as [`Store::data`].
@@ -3325,13 +3326,13 @@
         <span class="self">self</span>.<span class="number">0</span>.epoch_deadline_trap();
     }
 
-    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    <span class="attr">#[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="doccomment">/// Configures epoch-deadline expiration to yield to the async
     /// caller and the update the deadline.
     ///
     /// For more information see
     /// [`Store::epoch_deadline_async_yield_and_update`].
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">pub fn </span>epoch_deadline_async_yield_and_update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta: u64) {
         <span class="self">self</span>.<span class="number">0</span>.epoch_deadline_async_yield_and_update(delta);
     }
@@ -3352,12 +3353,12 @@
         <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.call_hook {
             <span class="prelude-val">Some</span>(CallHookInner::Sync(hook)) =&gt; hook(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data, s),
 
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span><span class="prelude-val">Some</span>(CallHookInner::Async(handler)) =&gt; <span class="kw">unsafe </span>{
                 <span class="prelude-val">Ok</span>(<span class="self">self
                     </span>.inner
                     .async_cx()
-                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;couldn&#39;t grab async_cx for call hook&quot;</span>))<span class="question-mark">?
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"couldn't grab async_cx for call hook"</span>))<span class="question-mark">?
                     </span>.block_on(handler.handle_call_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data, s).as_mut())<span class="question-mark">??</span>)
             },
 
@@ -3377,7 +3378,7 @@
             <span class="kw">let </span>new = slot.saturating_add(amt);
             <span class="kw">if </span>new &gt; max {
                 <span class="macro">bail!</span>(
-                    <span class="string">&quot;resource limit exceeded: {} count too high at {}&quot;</span>,
+                    <span class="string">"resource limit exceeded: {} count too high at {}"</span>,
                     desc,
                     new
                 );
@@ -3390,21 +3391,21 @@
         <span class="kw">let </span>memories = module.memory_plans.len() - module.num_imported_memories;
         <span class="kw">let </span>tables = module.table_plans.len() - module.num_imported_tables;
 
-        bump(<span class="kw-2">&amp;mut </span><span class="self">self</span>.instance_count, <span class="self">self</span>.instance_limit, <span class="number">1</span>, <span class="string">&quot;instance&quot;</span>)<span class="question-mark">?</span>;
+        bump(<span class="kw-2">&amp;mut </span><span class="self">self</span>.instance_count, <span class="self">self</span>.instance_limit, <span class="number">1</span>, <span class="string">"instance"</span>)<span class="question-mark">?</span>;
         bump(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.memory_count,
             <span class="self">self</span>.memory_limit,
             memories,
-            <span class="string">&quot;memory&quot;</span>,
+            <span class="string">"memory"</span>,
         )<span class="question-mark">?</span>;
-        bump(<span class="kw-2">&amp;mut </span><span class="self">self</span>.table_count, <span class="self">self</span>.table_limit, tables, <span class="string">&quot;table&quot;</span>)<span class="question-mark">?</span>;
+        bump(<span class="kw-2">&amp;mut </span><span class="self">self</span>.table_count, <span class="self">self</span>.table_limit, tables, <span class="string">"table"</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attr">#[inline]
     </span><span class="kw">pub fn </span>async_support(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">cfg!</span>(feature = <span class="string">&quot;async&quot;</span>) &amp;&amp; <span class="self">self</span>.engine().config().async_support
+        <span class="macro">cfg!</span>(feature = <span class="string">"async"</span>) &amp;&amp; <span class="self">self</span>.engine().config().async_support
     }
 
     <span class="attr">#[inline]
@@ -3482,8 +3483,8 @@
             .map(Global::from_stored)
     }
 
-    <span class="attr">#[cfg_attr(not(target_os = <span class="string">&quot;linux&quot;</span>), allow(dead_code))] </span><span class="comment">// not used on all platforms
-    </span><span class="kw">pub fn </span>set_signal_handler(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handler: <span class="prelude-ty">Option</span>&lt;Box&lt;SignalHandler&lt;<span class="lifetime">&#39;static</span>&gt;&gt;&gt;) {
+    <span class="attr">#[cfg_attr(not(target_os = <span class="string">"linux"</span>), allow(dead_code))] </span><span class="comment">// not used on all platforms
+    </span><span class="kw">pub fn </span>set_signal_handler(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handler: <span class="prelude-ty">Option</span>&lt;Box&lt;SignalHandler&lt;<span class="lifetime">'static</span>&gt;&gt;&gt;) {
         <span class="self">self</span>.signal_handler = handler;
     }
 
@@ -3498,7 +3499,7 @@
     }
 
     <span class="kw">pub fn </span>gc(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="comment">// For this crate&#39;s API, we ensure that `set_stack_canary` invariants
+        <span class="comment">// For this crate's API, we ensure that `set_stack_canary` invariants
         // are upheld for all host--&gt;Wasm calls.
         </span><span class="kw">unsafe </span>{
             wasmtime_runtime::gc(
@@ -3513,7 +3514,7 @@
     /// that fiber is not in the process of dying. This function will return
     /// None in the latter case (the fiber is dying), and panic if
     /// `async_support()` is false.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     #[inline]
     </span><span class="kw">pub fn </span>async_cx(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;AsyncCx&gt; {
         <span class="macro">debug_assert!</span>(<span class="self">self</span>.async_support());
@@ -3557,7 +3558,7 @@
     <span class="kw">fn </span>out_of_fuel_async_yield(<span class="kw-2">&amp;mut </span><span class="self">self</span>, injection_count: u64, fuel_to_inject: u64) {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.async_support(),
-            <span class="string">&quot;cannot use `out_of_fuel_async_yield` without enabling async support in the config&quot;
+            <span class="string">"cannot use `out_of_fuel_async_yield` without enabling async support in the config"
         </span>);
         <span class="self">self</span>.out_of_gas_behavior = OutOfGas::InjectFuel {
             injection_count,
@@ -3567,9 +3568,9 @@
 
     <span class="doccomment">/// Yields execution to the caller on out-of-gas or epoch interruption.
     ///
-    /// This only works on async futures and stores, and assumes that we&#39;re
+    /// This only works on async futures and stores, and assumes that we're
     /// executing on a fiber. This will yield execution back to the caller once.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">fn </span>async_yield_impl(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// Small future that yields once and then returns ()
         </span><span class="attr">#[derive(Default)]
@@ -3580,12 +3581,12 @@
         <span class="kw">impl </span>Future <span class="kw">for </span>Yield {
             <span class="kw">type </span>Output = ();
 
-            <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;()&gt; {
+            <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;()&gt; {
                 <span class="kw">if </span><span class="self">self</span>.yielded {
                     Poll::Ready(())
                 } <span class="kw">else </span>{
                     <span class="comment">// Flag ourselves as yielded to return next time, and also
-                    // flag the waker that we&#39;re already ready to get
+                    // flag the waker that we're already ready to get
                     // re-enqueued for another poll.
                     </span><span class="self">self</span>.yielded = <span class="bool-val">true</span>;
                     cx.waker().wake_by_ref();
@@ -3605,7 +3606,7 @@
         // things up.
         </span><span class="kw">unsafe </span>{
             <span class="self">self</span>.async_cx()
-                .expect(<span class="string">&quot;attempted to pull async context during shutdown&quot;</span>)
+                .expect(<span class="string">"attempted to pull async context during shutdown"</span>)
                 .block_on(Pin::new_unchecked(<span class="kw-2">&amp;mut </span>future))
         }
     }
@@ -3613,12 +3614,12 @@
     <span class="kw">fn </span>add_fuel(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fuel: u64) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">anyhow::ensure!</span>(
             <span class="self">self</span>.engine().config().tunables.consume_fuel,
-            <span class="string">&quot;fuel is not configured in this store&quot;
+            <span class="string">"fuel is not configured in this store"
         </span>);
 
         <span class="comment">// Fuel is stored as an i64, so we need to cast it. If the provided fuel
         // value overflows that just assume that i64::max will suffice. Wasm
-        // execution isn&#39;t fast enough to burn through i64::max fuel in any
+        // execution isn't fast enough to burn through i64::max fuel in any
         // reasonable amount of time anyway.
         </span><span class="kw">let </span>fuel = i64::try_from(fuel).unwrap_or(i64::max_value());
         <span class="kw">let </span>adj = <span class="self">self</span>.fuel_adj;
@@ -3633,7 +3634,7 @@
             }
 
             <span class="comment">// Otherwise something overflowed. Make sure that we preserve the
-            // amount of fuel that&#39;s already consumed, but otherwise assume that
+            // amount of fuel that's already consumed, but otherwise assume that
             // we were given infinite fuel.
             </span><span class="kw">_ </span>=&gt; {
                 <span class="self">self</span>.fuel_adj = i64::max_value();
@@ -3654,12 +3655,12 @@
                 <span class="kw-2">*</span>consumed_ptr = consumed;
                 <span class="prelude-val">Ok</span>(u64::try_from(-consumed).unwrap())
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;not enough fuel remaining in store&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"not enough fuel remaining in store"</span>),
         }
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>signal_handler(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">&#39;static</span>&gt;&gt; {
+    </span><span class="kw">pub fn </span>signal_handler(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">*const </span>SignalHandler&lt;<span class="lifetime">'static</span>&gt;&gt; {
         <span class="kw">let </span>handler = <span class="self">self</span>.signal_handler.as_ref()<span class="question-mark">?</span>;
         <span class="prelude-val">Some</span>(<span class="kw-2">&amp;**</span>handler <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_</span>)
     }
@@ -3730,7 +3731,7 @@
     /// This function returns `None` for dynamically-bounds-checked-memories
     /// with spectre mitigations enabled since the hardware fault address is
     /// always zero in these situations which means that the trapping context
-    /// doesn&#39;t have enough information to report the fault address.
+    /// doesn't have enough information to report the fault address.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>wasm_fault(<span class="kw-2">&amp;</span><span class="self">self</span>, pc: usize, addr: usize) -&gt; <span class="prelude-ty">Option</span>&lt;WasmFault&gt; {
         <span class="comment">// Explicitly bounds-checked memories with spectre-guards enabled will
         // cause out-of-bounds accesses to get routed to address 0, so allow
@@ -3742,7 +3743,7 @@
         <span class="comment">// Search all known instances in this store for this address. Note that
         // this is probably not the speediest way to do this. Traps, however,
         // are generally not expected to be super fast and additionally stores
-        // probably don&#39;t have all that many instances or memories.
+        // probably don't have all that many instances or memories.
         //
         // If this loop becomes hot in the future, however, it should be
         // possible to precompute maps about linear memories in a store and have
@@ -3759,29 +3760,29 @@
         }
 
         <span class="macro">eprintln!</span>(
-            <span class="string">&quot;\
+            <span class="string">"\
 Wasmtime caught a segfault for a wasm program because the faulting instruction
 is allowed to segfault due to how linear memories are implemented. The address
 that was accessed, however, is not known to any linear memory in use within this
-Store. This may be indicative of a critical bug in Wasmtime&#39;s code generation
-because all addresses which are known to be reachable from wasm won&#39;t reach this
+Store. This may be indicative of a critical bug in Wasmtime's code generation
+because all addresses which are known to be reachable from wasm won't reach this
 message.
 
     pc:      0x{pc:x}
     address: 0x{addr:x}
 
 This is a possible security issue because WebAssembly has accessed something it
-shouldn&#39;t have been able to. Other accesses may have succeeded and this one just
+shouldn't have been able to. Other accesses may have succeeded and this one just
 happened to be caught. The process will now be aborted to prevent this damage
-from going any further and to alert what&#39;s going on. If this is a security
+from going any further and to alert what's going on. If this is a security
 issue please reach out to the Wasmtime team via its security policy
 at https://bytecodealliance.org/security.
-&quot;
+"
         </span>);
         std::process::abort();
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>component_calls_and_host_table(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
     ) -&gt; (
@@ -3792,7 +3793,7 @@ at https://bytecodealliance.org/security.
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; StoreContextMut&lt;<span class="lifetime">&#39;_</span>, T&gt; {
+<span class="kw">impl</span>&lt;T&gt; StoreContextMut&lt;<span class="lifetime">'_</span>, T&gt; {
     <span class="doccomment">/// Executes a synchronous computation `func` asynchronously on a new fiber.
     ///
     /// This function will convert the synchronous `func` into an asynchronous
@@ -3800,12 +3801,12 @@ at https://bytecodealliance.org/security.
     /// stack which can be suspended and resumed from.
     ///
     /// Most of the nitty-gritty here is how we juggle the various contexts
-    /// necessary to suspend the fiber later on and poll sub-futures. It&#39;s hoped
-    /// that the various comments are illuminating as to what&#39;s going on here.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    /// necessary to suspend the fiber later on and poll sub-futures. It's hoped
+    /// that the various comments are illuminating as to what's going on here.
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>on_fiber&lt;R&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        func: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">&#39;_</span>, T&gt;) -&gt; R + Send,
+        func: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">'_</span>, T&gt;) -&gt; R + Send,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;R&gt;
     <span class="kw">where
         </span>T: Send,
@@ -3824,15 +3825,15 @@ at https://bytecodealliance.org/security.
             <span class="kw">let </span>slot = <span class="kw-2">&amp;mut </span>slot;
             <span class="kw">let </span>fiber = wasmtime_fiber::Fiber::new(stack, <span class="kw">move </span>|keep_going, suspend| {
                 <span class="comment">// First check and see if we were interrupted/dropped, and only
-                // continue if we haven&#39;t been.
+                // continue if we haven't been.
                 </span>keep_going<span class="question-mark">?</span>;
 
-                <span class="comment">// Configure our store&#39;s suspension context for the rest of the
+                <span class="comment">// Configure our store's suspension context for the rest of the
                 // execution of this fiber. Note that a raw pointer is stored here
                 // which is only valid for the duration of this closure.
                 // Consequently we at least replace it with the previous value when
-                // we&#39;re done. This reset is also required for correctness because
-                // otherwise our value will overwrite another active fiber&#39;s value.
+                // we're done. This reset is also required for correctness because
+                // otherwise our value will overwrite another active fiber's value.
                 // There should be a test that segfaults in `async_functions.rs` if
                 // this `Replace` is removed.
                 </span><span class="kw">unsafe </span>{
@@ -3858,9 +3859,9 @@ at https://bytecodealliance.org/security.
 
         <span class="kw">return </span><span class="prelude-val">Ok</span>(slot.unwrap());
 
-        <span class="kw">struct </span>FiberFuture&lt;<span class="lifetime">&#39;a</span>&gt; {
-            fiber: wasmtime_fiber::Fiber&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;()&gt;, (), <span class="prelude-ty">Result</span>&lt;()&gt;&gt;,
-            current_poll_cx: <span class="kw-2">*mut *mut </span>Context&lt;<span class="lifetime">&#39;static</span>&gt;,
+        <span class="kw">struct </span>FiberFuture&lt;<span class="lifetime">'a</span>&gt; {
+            fiber: wasmtime_fiber::Fiber&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;()&gt;, (), <span class="prelude-ty">Result</span>&lt;()&gt;&gt;,
+            current_poll_cx: <span class="kw-2">*mut *mut </span>Context&lt;<span class="lifetime">'static</span>&gt;,
             engine: Engine,
             <span class="comment">// See comments in `FiberFuture::resume` for this
             </span>state: <span class="prelude-ty">Option</span>&lt;wasmtime_runtime::AsyncWasmCallState&gt;,
@@ -3871,39 +3872,39 @@ at https://bytecodealliance.org/security.
         // be `Send`. One is `current_poll_cx` and is entirely uninteresting.
         // This is just used to manage `Context` pointers across `await` points
         // in the future, and requires raw pointers to get it to happen easily.
-        // Nothing too weird about the `Send`-ness, values aren&#39;t actually
+        // Nothing too weird about the `Send`-ness, values aren't actually
         // crossing threads.
         //
-        // The really interesting piece is `fiber`. Now the &quot;fiber&quot; here is
-        // actual honest-to-god Rust code which we&#39;re moving around. What we&#39;re
-        // doing is the equivalent of moving our thread&#39;s stack to another OS
-        // thread. Turns out we, in general, have no idea what&#39;s on the stack
+        // The really interesting piece is `fiber`. Now the "fiber" here is
+        // actual honest-to-god Rust code which we're moving around. What we're
+        // doing is the equivalent of moving our thread's stack to another OS
+        // thread. Turns out we, in general, have no idea what's on the stack
         // and would generally have no way to verify that this is actually safe
         // to do!
         //
-        // Thankfully, though, Wasmtime has the power. Without being glib it&#39;s
-        // actually worth examining what&#39;s on the stack. It&#39;s unfortunately not
+        // Thankfully, though, Wasmtime has the power. Without being glib it's
+        // actually worth examining what's on the stack. It's unfortunately not
         // super-local to this function itself. Our closure to `Fiber::new` runs
         // `func`, which is given to us from the outside. Thankfully, though, we
         // have tight control over this. Usage of `on_fiber` is typically done
-        // *just* before entering WebAssembly itself, so we&#39;ll have a few stack
+        // *just* before entering WebAssembly itself, so we'll have a few stack
         // frames of Rust code (all in Wasmtime itself) before we enter wasm.
         //
-        // Once we&#39;ve entered wasm, well then we have a whole bunch of wasm
-        // frames on the stack. We&#39;ve got this nifty thing called Cranelift,
+        // Once we've entered wasm, well then we have a whole bunch of wasm
+        // frames on the stack. We've got this nifty thing called Cranelift,
         // though, which allows us to also have complete control over everything
         // on the stack!
         //
-        // Finally, when wasm switches back to the fiber&#39;s starting pointer
-        // (this future we&#39;re returning) then it means wasm has reentered Rust.
+        // Finally, when wasm switches back to the fiber's starting pointer
+        // (this future we're returning) then it means wasm has reentered Rust.
         // Suspension can only happen via the `block_on` function of an
         // `AsyncCx`. This, conveniently, also happens entirely in Wasmtime
         // controlled code!
         //
-        // There&#39;s an extremely important point that should be called out here.
+        // There's an extremely important point that should be called out here.
         // User-provided futures **are not on the stack** during suspension
         // points. This is extremely crucial because we in general cannot reason
-        // about Send/Sync for stack-local variables since rustc doesn&#39;t analyze
+        // about Send/Sync for stack-local variables since rustc doesn't analyze
         // them at all. With our construction, though, we are guaranteed that
         // Wasmtime owns all stack frames between the stack of a fiber and when
         // the fiber suspends (and it could move across threads). At this time
@@ -3913,40 +3914,40 @@ at https://bytecodealliance.org/security.
         //
         // What this all boils down to is that we, as the authors of Wasmtime,
         // need to be extremely careful that on the async fiber stack we only
-        // store Send things. For example we can&#39;t start using `Rc` willy nilly
+        // store Send things. For example we can't start using `Rc` willy nilly
         // by accident and leave a copy in TLS somewhere. (similarly we have to
-        // be ready for TLS to change while we&#39;re executing wasm code between
+        // be ready for TLS to change while we're executing wasm code between
         // suspension points).
         //
-        // While somewhat onerous it shouldn&#39;t be too too hard (the TLS bit is
+        // While somewhat onerous it shouldn't be too too hard (the TLS bit is
         // the hardest bit so far). This does mean, though, that no user should
         // ever have to worry about the `Send`-ness of Wasmtime. If rustc says
-        // it&#39;s ok, then it&#39;s ok.
+        // it's ok, then it's ok.
         //
         // With all that in mind we unsafely assert here that wasmtime is
         // correct. We declare the fiber as only containing Send data on its
         // stack, despite not knowing for sure at compile time that this is
-        // correct. That&#39;s what `unsafe` in Rust is all about, though, right?
-        </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>FiberFuture&lt;<span class="lifetime">&#39;_</span>&gt; {}
+        // correct. That's what `unsafe` in Rust is all about, though, right?
+        </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>FiberFuture&lt;<span class="lifetime">'_</span>&gt; {}
 
-        <span class="kw">impl </span>FiberFuture&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="kw">impl </span>FiberFuture&lt;<span class="lifetime">'_</span>&gt; {
             <span class="doccomment">/// This is a helper function to call `resume` on the underlying
-            /// fiber while correctly managing Wasmtime&#39;s thread-local data.
+            /// fiber while correctly managing Wasmtime's thread-local data.
             ///
-            /// Wasmtime&#39;s implementation of traps leverages thread-local data
+            /// Wasmtime's implementation of traps leverages thread-local data
             /// to get access to metadata during a signal. This thread-local
-            /// data is a linked list of &quot;activations&quot; where the nodes of the
+            /// data is a linked list of "activations" where the nodes of the
             /// linked list are stored on the stack. It would be invalid as a
             /// result to suspend a computation with the head of the linked list
             /// on this stack then move the stack to another thread and resume
             /// it. That means that a different thread would point to our stack
-            /// and our thread doesn&#39;t point to our stack at all!
+            /// and our thread doesn't point to our stack at all!
             ///
             /// Basically management of TLS is required here one way or another.
             /// The strategy currently settled on is to manage the list of
             /// activations created by this fiber as a unit. When a fiber
-            /// resumes the linked list is prepended to the current thread&#39;s
-            /// list. When the fiber is suspended then the fiber&#39;s list of
+            /// resumes the linked list is prepended to the current thread's
+            /// list. When the fiber is suspended then the fiber's list of
             /// activations are all removed en-masse and saved within the fiber.
             </span><span class="kw">fn </span>resume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="prelude-ty">Result</span>&lt;()&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Result</span>&lt;()&gt;, ()&gt; {
                 <span class="kw">unsafe </span>{
@@ -3958,12 +3959,12 @@ at https://bytecodealliance.org/security.
                     <span class="kw">return </span>restore.fiber.fiber.resume(val);
                 }
 
-                <span class="kw">struct </span>Restore&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;b</span>&gt; {
-                    fiber: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FiberFuture&lt;<span class="lifetime">&#39;b</span>&gt;,
+                <span class="kw">struct </span>Restore&lt;<span class="lifetime">'a</span>, <span class="lifetime">'b</span>&gt; {
+                    fiber: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FiberFuture&lt;<span class="lifetime">'b</span>&gt;,
                     state: <span class="prelude-ty">Option</span>&lt;wasmtime_runtime::PreviousAsyncWasmCallState&gt;,
                 }
 
-                <span class="kw">impl </span>Drop <span class="kw">for </span>Restore&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;_</span>&gt; {
+                <span class="kw">impl </span>Drop <span class="kw">for </span>Restore&lt;<span class="lifetime">'_</span>, <span class="lifetime">'_</span>&gt; {
                     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
                         <span class="kw">unsafe </span>{
                             <span class="self">self</span>.fiber.state = <span class="prelude-val">Some</span>(<span class="self">self</span>.state.take().unwrap().restore());
@@ -3973,11 +3974,11 @@ at https://bytecodealliance.org/security.
             }
         }
 
-        <span class="kw">impl </span>Future <span class="kw">for </span>FiberFuture&lt;<span class="lifetime">&#39;_</span>&gt; {
+        <span class="kw">impl </span>Future <span class="kw">for </span>FiberFuture&lt;<span class="lifetime">'_</span>&gt; {
             <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;()&gt;;
 
             <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-                <span class="comment">// We need to carry over this `cx` into our fiber&#39;s runtime
+                <span class="comment">// We need to carry over this `cx` into our fiber's runtime
                 // for when it tries to poll sub-futures that are created. Doing
                 // this must be done unsafely, however, since `cx` is only alive
                 // for this one singular function call. Here we do a `transmute`
@@ -3986,7 +3987,7 @@ at https://bytecodealliance.org/security.
                 // with this one.
                 //
                 // Note that the replace is done for weird situations where
-                // futures might be switching contexts and there&#39;s multiple
+                // futures might be switching contexts and there's multiple
                 // wasmtime futures in a chain of futures.
                 //
                 // On exit from this function, though, we reset the polling
@@ -3995,9 +3996,9 @@ at https://bytecodealliance.org/security.
                 </span><span class="kw">unsafe </span>{
                     <span class="kw">let </span>_reset = Reset(<span class="self">self</span>.current_poll_cx, <span class="kw-2">*</span><span class="self">self</span>.current_poll_cx);
                     <span class="kw-2">*</span><span class="self">self</span>.current_poll_cx =
-                        std::mem::transmute::&lt;<span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">*mut </span>Context&lt;<span class="lifetime">&#39;static</span>&gt;&gt;(cx);
+                        std::mem::transmute::&lt;<span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;, <span class="kw-2">*mut </span>Context&lt;<span class="lifetime">'static</span>&gt;&gt;(cx);
 
-                    <span class="comment">// After that&#39;s set up we resume execution of the fiber, which
+                    <span class="comment">// After that's set up we resume execution of the fiber, which
                     // may also start the fiber for the first time. This either
                     // returns `Ok` saying the fiber finished (yay!) or it
                     // returns `Err` with the payload passed to `suspend`, which
@@ -4006,20 +4007,20 @@ at https://bytecodealliance.org/security.
                         <span class="prelude-val">Ok</span>(result) =&gt; Poll::Ready(result),
 
                         <span class="comment">// If `Err` is returned that means the fiber polled a
-                        // future but it said &quot;Pending&quot;, so we propagate that
+                        // future but it said "Pending", so we propagate that
                         // here.
                         //
                         // An additional safety check is performed when leaving
                         // this function to help bolster the guarantees of
                         // `unsafe impl Send` above. Notably this future may get
-                        // re-polled on a different thread. Wasmtime&#39;s
+                        // re-polled on a different thread. Wasmtime's
                         // thread-local state points to the stack, however,
                         // meaning that it would be incorrect to leave a pointer
                         // in TLS when this function returns. This function
                         // performs a runtime assert to verify that this is the
                         // case, notably that the one TLS pointer Wasmtime uses
                         // is not pointing anywhere within the stack. If it is
-                        // then that&#39;s a bug indicating that TLS management in
+                        // then that's a bug indicating that TLS management in
                         // Wasmtime is incorrect.
                         </span><span class="prelude-val">Err</span>(()) =&gt; {
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(range) = <span class="self">self</span>.fiber.stack().range() {
@@ -4037,24 +4038,24 @@ at https://bytecodealliance.org/security.
         // in-progress fiber, and if we were to do nothing then the fiber would
         // leak all its owned stack resources.
         //
-        // To handle this we implement `Drop` here and, if the fiber isn&#39;t done,
-        // resume execution of the fiber saying &quot;hey please stop you&#39;re
-        // interrupted&quot;. Our `Trap` created here (which has the stack trace
+        // To handle this we implement `Drop` here and, if the fiber isn't done,
+        // resume execution of the fiber saying "hey please stop you're
+        // interrupted". Our `Trap` created here (which has the stack trace
         // of whomever dropped us) will then get propagated in whatever called
         // `block_on`, and the idea is that the trap propagates all the way back
         // up to the original fiber start, finishing execution.
         //
-        // We don&#39;t actually care about the fiber&#39;s return value here (no one&#39;s
+        // We don't actually care about the fiber's return value here (no one's
         // around to look at it), we just assert the fiber finished to
         // completion.
-        </span><span class="kw">impl </span>Drop <span class="kw">for </span>FiberFuture&lt;<span class="lifetime">&#39;_</span>&gt; {
+        </span><span class="kw">impl </span>Drop <span class="kw">for </span>FiberFuture&lt;<span class="lifetime">'_</span>&gt; {
             <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
                 <span class="kw">if </span>!<span class="self">self</span>.fiber.done() {
-                    <span class="kw">let </span>result = <span class="self">self</span>.resume(<span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;future dropped&quot;</span>)));
+                    <span class="kw">let </span>result = <span class="self">self</span>.resume(<span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"future dropped"</span>)));
                     <span class="comment">// This resumption with an error should always complete the
-                    // fiber. While it&#39;s technically possible for host code to catch
-                    // the trap and re-resume, we&#39;d ideally like to signal that to
-                    // callers that they shouldn&#39;t be doing that.
+                    // fiber. While it's technically possible for host code to catch
+                    // the trap and re-resume, we'd ideally like to signal that to
+                    // callers that they shouldn't be doing that.
                     </span><span class="macro">debug_assert!</span>(result.is_ok());
                 }
 
@@ -4070,21 +4071,21 @@ at https://bytecodealliance.org/security.
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">pub struct </span>AsyncCx {
     current_suspend: <span class="kw-2">*mut *const </span>wasmtime_fiber::Suspend&lt;<span class="prelude-ty">Result</span>&lt;()&gt;, (), <span class="prelude-ty">Result</span>&lt;()&gt;&gt;,
-    current_poll_cx: <span class="kw-2">*mut *mut </span>Context&lt;<span class="lifetime">&#39;static</span>&gt;,
+    current_poll_cx: <span class="kw-2">*mut *mut </span>Context&lt;<span class="lifetime">'static</span>&gt;,
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
 </span><span class="kw">impl </span>AsyncCx {
     <span class="doccomment">/// Blocks on the asynchronous computation represented by `future` and
     /// produces the result here, in-line.
     ///
-    /// This function is designed to only work when it&#39;s currently executing on
+    /// This function is designed to only work when it's currently executing on
     /// a native fiber. This fiber provides the ability for us to handle the
-    /// future&#39;s `Pending` state as &quot;jump back to whomever called the fiber in
-    /// an asynchronous fashion and propagate `Pending`&quot;. This tight coupling
+    /// future's `Pending` state as "jump back to whomever called the fiber in
+    /// an asynchronous fashion and propagate `Pending`". This tight coupling
     /// with `on_fiber` below is what powers the asynchronicity of calling wasm.
     /// Note that the asynchronous part only applies to host functions, wasm
     /// itself never really does anything asynchronous at this time.
@@ -4097,21 +4098,21 @@ at https://bytecodealliance.org/security.
     /// The return value here is either the output of the future `T`, or a trap
     /// which represents that the asynchronous computation was cancelled. It is
     /// not recommended to catch the trap and try to keep executing wasm, so
-    /// we&#39;ve tried to liberally document this.
+    /// we've tried to liberally document this.
     </span><span class="kw">pub unsafe fn </span>block_on&lt;U&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>future: Pin&lt;<span class="kw-2">&amp;mut </span>(<span class="kw">dyn </span>Future&lt;Output = U&gt; + Send)&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;U&gt; {
         <span class="comment">// Take our current `Suspend` context which was configured as soon as
         // our fiber started. Note that we must load it at the front here and
-        // save it on our stack frame. While we&#39;re polling the future other
+        // save it on our stack frame. While we're polling the future other
         // fibers may be started for recursive computations, and the current
         // suspend context is only preserved at the edges of the fiber, not
         // during the fiber itself.
         //
         // For a little bit of extra safety we also replace the current value
         // with null to try to catch any accidental bugs on our part early.
-        // This is all pretty unsafe so we&#39;re trying to be careful...
+        // This is all pretty unsafe so we're trying to be careful...
         //
         // Note that there should be a segfaulting test  in `async_functions.rs`
         // if this `Reset` is removed.
@@ -4168,11 +4169,11 @@ at https://bytecodealliance.org/security.
             <span class="prelude-val">Some</span>(ResourceLimiterInner::Sync(<span class="kw-2">ref mut </span>limiter)) =&gt; {
                 limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data).memory_growing(current, desired, maximum)
             }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span><span class="prelude-val">Some</span>(ResourceLimiterInner::Async(<span class="kw-2">ref mut </span>limiter)) =&gt; <span class="kw">unsafe </span>{
                 <span class="self">self</span>.inner
                     .async_cx()
-                    .expect(<span class="string">&quot;ResourceLimiterAsync requires async Store&quot;</span>)
+                    .expect(<span class="string">"ResourceLimiterAsync requires async Store"</span>)
                     .block_on(
                         limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data)
                             .memory_growing(current, desired, maximum)
@@ -4188,7 +4189,7 @@ at https://bytecodealliance.org/security.
             <span class="prelude-val">Some</span>(ResourceLimiterInner::Sync(<span class="kw-2">ref mut </span>limiter)) =&gt; {
                 limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data).memory_grow_failed(error)
             }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span><span class="prelude-val">Some</span>(ResourceLimiterInner::Async(<span class="kw-2">ref mut </span>limiter)) =&gt; {
                 limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data).memory_grow_failed(error)
             }
@@ -4205,7 +4206,7 @@ at https://bytecodealliance.org/security.
         <span class="comment">// Need to borrow async_cx before the mut borrow of the limiter.
         // self.async_cx() panicks when used with a non-async store, so
         // wrap this in an option.
-        </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+        </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
         </span><span class="kw">let </span>async_cx = <span class="kw">if </span><span class="self">self</span>.async_support() {
             <span class="prelude-val">Some</span>(<span class="self">self</span>.async_cx().unwrap())
         } <span class="kw">else </span>{
@@ -4216,10 +4217,10 @@ at https://bytecodealliance.org/security.
             <span class="prelude-val">Some</span>(ResourceLimiterInner::Sync(<span class="kw-2">ref mut </span>limiter)) =&gt; {
                 limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data).table_growing(current, desired, maximum)
             }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span><span class="prelude-val">Some</span>(ResourceLimiterInner::Async(<span class="kw-2">ref mut </span>limiter)) =&gt; <span class="kw">unsafe </span>{
                 async_cx
-                    .expect(<span class="string">&quot;ResourceLimiterAsync requires async Store&quot;</span>)
+                    .expect(<span class="string">"ResourceLimiterAsync requires async Store"</span>)
                     .block_on(
                         limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data)
                             .table_growing(current, desired, maximum)
@@ -4235,7 +4236,7 @@ at https://bytecodealliance.org/security.
             <span class="prelude-val">Some</span>(ResourceLimiterInner::Sync(<span class="kw-2">ref mut </span>limiter)) =&gt; {
                 limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data).table_grow_failed(error)
             }
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span><span class="prelude-val">Some</span>(ResourceLimiterInner::Async(<span class="kw-2">ref mut </span>limiter)) =&gt; {
                 limiter(<span class="kw-2">&amp;mut </span><span class="self">self</span>.data).table_grow_failed(error)
             }
@@ -4246,7 +4247,7 @@ at https://bytecodealliance.org/security.
     <span class="kw">fn </span>out_of_gas(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), anyhow::Error&gt; {
         <span class="kw">return match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.out_of_gas_behavior {
             OutOfGas::Trap =&gt; <span class="prelude-val">Err</span>(Trap::OutOfFuel.into()),
-            <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span>OutOfGas::InjectFuel {
                 injection_count,
                 fuel_to_inject,
@@ -4262,7 +4263,7 @@ at https://bytecodealliance.org/security.
                 }
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="attr">#[cfg(not(feature = <span class="string">&quot;async&quot;</span>))]
+            <span class="attr">#[cfg(not(feature = <span class="string">"async"</span>))]
             </span>OutOfGas::InjectFuel { .. } =&gt; <span class="macro">unreachable!</span>(),
         };
     }
@@ -4277,21 +4278,21 @@ at https://bytecodealliance.org/security.
                 <span class="kw">let </span>delta = <span class="kw">match </span>update {
                     UpdateDeadline::Continue(delta) =&gt; delta,
 
-                    <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+                    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
                     </span>UpdateDeadline::Yield(delta) =&gt; {
                         <span class="macro">assert!</span>(
                             <span class="self">self</span>.async_support(),
-                            <span class="string">&quot;cannot use `UpdateDeadline::Yield` without enabling async support in the config&quot;
+                            <span class="string">"cannot use `UpdateDeadline::Yield` without enabling async support in the config"
                         </span>);
                         <span class="comment">// Do the async yield. May return a trap if future was
-                        // canceled while we&#39;re yielded.
+                        // canceled while we're yielded.
                         </span><span class="self">self</span>.async_yield_impl()<span class="question-mark">?</span>;
                         delta
                     }
                 };
 
                 <span class="comment">// Set a new deadline and return the new epoch deadline so
-                // the Wasm code doesn&#39;t have to reload it.
+                // the Wasm code doesn't have to reload it.
                 </span><span class="self">self</span>.set_epoch_deadline(delta);
                 <span class="prelude-val">Ok</span>(<span class="self">self</span>.get_epoch_deadline())
             })
@@ -4302,7 +4303,7 @@ at https://bytecodealliance.org/security.
         delta_result
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">fn </span>component_calls(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>wasmtime_runtime::component::CallContexts {
         <span class="kw-2">&amp;mut </span><span class="self">self</span>.component_calls
     }
@@ -4310,7 +4311,7 @@ at https://bytecodealliance.org/security.
 
 <span class="kw">impl</span>&lt;T&gt; StoreInner&lt;T&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_epoch_deadline(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta: u64) {
-        <span class="comment">// Set a new deadline based on the &quot;epoch deadline delta&quot;.
+        <span class="comment">// Set a new deadline based on the "epoch deadline delta".
         //
         // Safety: this is safe because the epoch deadline in the
         // `VMRuntimeLimits` is accessed only here and by Wasm guest code
@@ -4337,9 +4338,9 @@ at https://bytecodealliance.org/security.
     <span class="kw">fn </span>epoch_deadline_async_yield_and_update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta: u64) {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.async_support(),
-            <span class="string">&quot;cannot use `epoch_deadline_async_yield_and_update` without enabling async support in the config&quot;
+            <span class="string">"cannot use `epoch_deadline_async_yield_and_update` without enabling async support in the config"
         </span>);
-        <span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+        <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
         </span>{
             <span class="self">self</span>.epoch_deadline_behavior =
                 <span class="prelude-val">Some</span>(Box::new(<span class="kw">move </span>|_store| <span class="prelude-val">Ok</span>(UpdateDeadline::Yield(delta))));
@@ -4365,9 +4366,9 @@ at https://bytecodealliance.org/security.
 <span class="kw">impl</span>&lt;T: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>Store&lt;T&gt; {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
         <span class="kw">let </span>inner = <span class="kw-2">&amp;**</span><span class="self">self</span>.inner <span class="kw">as </span><span class="kw-2">*const </span>StoreInner&lt;T&gt;;
-        f.debug_struct(<span class="string">&quot;Store&quot;</span>)
-            .field(<span class="string">&quot;inner&quot;</span>, <span class="kw-2">&amp;</span>inner)
-            .field(<span class="string">&quot;data&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.inner.data)
+        f.debug_struct(<span class="string">"Store"</span>)
+            .field(<span class="string">"inner"</span>, <span class="kw-2">&amp;</span>inner)
+            .field(<span class="string">"data"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.inner.data)
             .finish()
     }
 }
@@ -4384,7 +4385,7 @@ at https://bytecodealliance.org/security.
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>StoreOpaque {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="comment">// NB it&#39;s important that this destructor does not access `self.data`.
+        <span class="comment">// NB it's important that this destructor does not access `self.data`.
         // That is deallocated by `Drop for Store&lt;T&gt;` above.
 
         </span><span class="kw">unsafe </span>{

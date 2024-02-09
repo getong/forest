@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/curve25519-dalek-4.1.1/src/montgomery.rs`."><title>montgomery.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="curve25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../curve25519_dalek/index.html"><img src="https://cdn.jsdelivr.net/gh/dalek-cryptography/curve25519-dalek/docs/assets/dalek-logo-clear.png" alt="curve25519_dalek"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/curve25519-dalek-4.1.1/src/montgomery.rs`."><title>montgomery.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="curve25519_dalek" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><a class="sub-logo-container" href="../../curve25519_dalek/index.html"><img src="https://cdn.jsdelivr.net/gh/dalek-cryptography/curve25519-dalek/docs/assets/dalek-logo-clear.png" alt="curve25519_dalek"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -705,7 +706,7 @@
 
 </span><span class="comment">// We allow non snake_case names because coordinates in projective space are
 // traditionally denoted by the capitalisation of their respective
-// counterparts in affine space.  Yeah, you heard me, rustc, I&#39;m gonna have my
+// counterparts in affine space.  Yeah, you heard me, rustc, I'm gonna have my
 // affine and projective cakes and eat both of them too.
 </span><span class="attr">#![allow(non_snake_case)]
 
@@ -725,13 +726,13 @@
 <span class="kw">use </span>subtle::ConstantTimeEq;
 <span class="kw">use </span>subtle::{ConditionallyNegatable, ConditionallySelectable};
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;zeroize&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"zeroize"</span>)]
 </span><span class="kw">use </span>zeroize::Zeroize;
 
 <span class="doccomment">/// Holds the \\(u\\)-coordinate of a point on the Montgomery form of
 /// Curve25519 or its twist.
 </span><span class="attr">#[derive(Copy, Clone, Debug, Default)]
-#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = <span class="string">"serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MontgomeryPoint(<span class="kw">pub </span>[u8; <span class="number">32</span>]);
 
 <span class="doccomment">/// Equality of `MontgomeryPoint`s is defined mod p.
@@ -770,7 +771,7 @@
     }
 }
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;zeroize&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"zeroize"</span>)]
 </span><span class="kw">impl </span>Zeroize <span class="kw">for </span>MontgomeryPoint {
     <span class="kw">fn </span>zeroize(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.<span class="number">0</span>.zeroize();
@@ -790,7 +791,7 @@
         // #2. But #2 is not necessary for correctness of variable-base multiplication. All that
         // needs to hold is invariant #1, i.e., the scalar is less than 2^255. This is guaranteed
         // by clamping.
-        // Further, we don&#39;t do any reduction or arithmetic with this clamped value, so there&#39;s no
+        // Further, we don't do any reduction or arithmetic with this clamped value, so there's no
         // issues arising from the fact that the curve point is not necessarily in the prime-order
         // subgroup.
         </span><span class="kw">let </span>s = Scalar {
@@ -841,8 +842,8 @@
         }
         <span class="comment">// The final value of prev_bit above is scalar.bits()[0], i.e., the LSB of scalar
         </span>ProjectivePoint::conditional_swap(<span class="kw-2">&amp;mut </span>x0, <span class="kw-2">&amp;mut </span>x1, Choice::from(prev_bit <span class="kw">as </span>u8));
-        <span class="comment">// Don&#39;t leave the bit in the stack
-        </span><span class="attr">#[cfg(feature = <span class="string">&quot;zeroize&quot;</span>)]
+        <span class="comment">// Don't leave the bit in the stack
+        </span><span class="attr">#[cfg(feature = <span class="string">"zeroize"</span>)]
         </span>prev_bit.zeroize();
 
         x0.as_affine()
@@ -1034,10 +1035,10 @@
     </span><span class="kw">let </span>t17 = affine_PmQ * <span class="kw-2">&amp;</span>t12; <span class="comment">// U_D * 4 (W_P U_Q - U_P W_Q)^2
     </span><span class="kw">let </span>t18 = t11;               <span class="comment">// W_D * 4 (U_P U_Q - W_P W_Q)^2
 
-    </span>P.U = t14;  <span class="comment">// U_{P&#39;} = (U_P + W_P)^2 (U_P - W_P)^2
-    </span>P.W = t16;  <span class="comment">// W_{P&#39;} = (4 U_P W_P) ((U_P - W_P)^2 + ((A + 2)/4) 4 U_P W_P)
-    </span>Q.U = t18;  <span class="comment">// U_{Q&#39;} = W_D * 4 (U_P U_Q - W_P W_Q)^2
-    </span>Q.W = t17;  <span class="comment">// W_{Q&#39;} = U_D * 4 (W_P U_Q - U_P W_Q)^2
+    </span>P.U = t14;  <span class="comment">// U_{P'} = (U_P + W_P)^2 (U_P - W_P)^2
+    </span>P.W = t16;  <span class="comment">// W_{P'} = (4 U_P W_P) ((U_P - W_P)^2 + ((A + 2)/4) 4 U_P W_P)
+    </span>Q.U = t18;  <span class="comment">// U_{Q'} = W_D * 4 (U_P U_Q - W_P W_Q)^2
+    </span>Q.W = t17;  <span class="comment">// W_{Q'} = U_D * 4 (W_P U_Q - U_P W_Q)^2
 </span>}
 
 <span class="macro">define_mul_assign_variants!</span>(LHS = MontgomeryPoint, RHS = Scalar);
@@ -1088,7 +1089,7 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::constants;
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;alloc&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
     </span><span class="kw">use </span>alloc::vec::Vec;
 
     <span class="kw">use </span>rand_core::{CryptoRng, RngCore};
@@ -1107,7 +1108,7 @@
     }
 
     <span class="attr">#[test]
-    #[cfg(feature = <span class="string">&quot;serde&quot;</span>)]
+    #[cfg(feature = <span class="string">"serde"</span>)]
     </span><span class="kw">fn </span>serde_bincode_basepoint_roundtrip() {
         <span class="kw">use </span>bincode;
 
@@ -1157,7 +1158,7 @@
         <span class="macro">assert!</span>(two.to_edwards(<span class="number">0</span>).is_none());
 
         <span class="comment">// u = -1 corresponds to a point on the twist, but should be
-        // checked explicitly because it&#39;s an exceptional point for the
+        // checked explicitly because it's an exceptional point for the
         // birational map.  For instance, libsignal will accept it.
         </span><span class="kw">let </span>minus_one = MontgomeryPoint((-<span class="kw-2">&amp;</span>one).as_bytes());
 
@@ -1180,9 +1181,9 @@
         EdwardsPoint::mul_base(<span class="kw-2">&amp;</span>s)
     }
 
-    <span class="doccomment">/// Given a bytestring that&#39;s little-endian at the byte level, return an iterator over all the
+    <span class="doccomment">/// Given a bytestring that's little-endian at the byte level, return an iterator over all the
     /// bits, in little-endian order.
-    </span><span class="kw">fn </span>bytestring_bits_le(x: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">impl </span>DoubleEndedIterator&lt;Item = bool&gt; + Clone + <span class="lifetime">&#39;_ </span>{
+    </span><span class="kw">fn </span>bytestring_bits_le(x: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">impl </span>DoubleEndedIterator&lt;Item = bool&gt; + Clone + <span class="lifetime">'_ </span>{
         <span class="kw">let </span>bitlen = x.len() * <span class="number">8</span>;
         (<span class="number">0</span>..bitlen).map(|i| {
             <span class="comment">// As i runs from 0..256, the bottom 3 bits index the bit, while the upper bits index
@@ -1233,7 +1234,7 @@
     }
 
     <span class="comment">// Tests that MontgomeryPoint::mul_bits_be is consistent on any point, even ones that might be
-    // on the curve&#39;s twist. Specifically, this tests that b₁(b₂P) == b₂(b₁P) for random
+    // on the curve's twist. Specifically, this tests that b₁(b₂P) == b₂(b₁P) for random
     // integers b₁, b₂ and random (curve or twist) point P.
     </span><span class="attr">#[test]
     </span><span class="kw">fn </span>montgomery_mul_bits_be_twist() {
@@ -1292,7 +1293,7 @@
         }
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;alloc&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"alloc"</span>)]
     </span><span class="kw">const </span>ELLIGATOR_CORRECT_OUTPUT: [u8; <span class="number">32</span>] = [
         <span class="number">0x5f</span>, <span class="number">0x35</span>, <span class="number">0x20</span>, <span class="number">0x00</span>, <span class="number">0x1c</span>, <span class="number">0x6c</span>, <span class="number">0x99</span>, <span class="number">0x36</span>, <span class="number">0xa3</span>, <span class="number">0x12</span>, <span class="number">0x06</span>, <span class="number">0xaf</span>, <span class="number">0xe7</span>, <span class="number">0xc7</span>, <span class="number">0xac</span>,
         <span class="number">0x22</span>, <span class="number">0x4e</span>, <span class="number">0x88</span>, <span class="number">0x61</span>, <span class="number">0x61</span>, <span class="number">0x9b</span>, <span class="number">0xf9</span>, <span class="number">0x88</span>, <span class="number">0x72</span>, <span class="number">0x44</span>, <span class="number">0x49</span>, <span class="number">0x15</span>, <span class="number">0x89</span>, <span class="number">0x9d</span>, <span class="number">0x95</span>,
@@ -1300,10 +1301,10 @@
     ];
 
     <span class="attr">#[test]
-    #[cfg(feature = <span class="string">&quot;alloc&quot;</span>)]
+    #[cfg(feature = <span class="string">"alloc"</span>)]
     </span><span class="kw">fn </span>montgomery_elligator_correct() {
         <span class="kw">let </span>bytes: Vec&lt;u8&gt; = (<span class="number">0u8</span>..<span class="number">32u8</span>).collect();
-        <span class="kw">let </span>bits_in: [u8; <span class="number">32</span>] = (<span class="kw-2">&amp;</span>bytes[..]).try_into().expect(<span class="string">&quot;Range invariant broken&quot;</span>);
+        <span class="kw">let </span>bits_in: [u8; <span class="number">32</span>] = (<span class="kw-2">&amp;</span>bytes[..]).try_into().expect(<span class="string">"Range invariant broken"</span>);
 
         <span class="kw">let </span>fe = FieldElement::from_bytes(<span class="kw-2">&amp;</span>bits_in);
         <span class="kw">let </span>eg = elligator_encode(<span class="kw-2">&amp;</span>fe);

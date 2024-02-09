@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-jit-12.0.2/src/code_memory.rs`."><title>code_memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_jit" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-jit-12.0.2/src/code_memory.rs`."><title>code_memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_jit" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -373,7 +374,7 @@
     /// `publish` method is used to actually make the memory executable.
     </span><span class="kw">pub fn </span>new(mmap: MmapVec) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>obj = File::parse(<span class="kw-2">&amp;</span>mmap[..])
-            .with_context(|| <span class="string">&quot;failed to parse internal compilation artifact&quot;</span>)<span class="question-mark">?</span>;
+            .with_context(|| <span class="string">"failed to parse internal compilation artifact"</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>relocations = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>text = <span class="number">0</span>..<span class="number">0</span>;
@@ -394,8 +395,8 @@
             </span><span class="kw">if </span>section.align() != <span class="number">0 </span>&amp;&amp; data.len() != <span class="number">0 </span>{
                 <span class="kw">if </span>(data.as_ptr() <span class="kw">as </span>u64 - mmap.as_ptr() <span class="kw">as </span>u64) % section.align() != <span class="number">0 </span>{
                     <span class="macro">bail!</span>(
-                        <span class="string">&quot;section `{}` isn&#39;t aligned to {:#x}&quot;</span>,
-                        section.name().unwrap_or(<span class="string">&quot;ERROR&quot;</span>),
+                        <span class="string">"section `{}` isn't aligned to {:#x}"</span>,
+                        section.name().unwrap_or(<span class="string">"ERROR"</span>),
                         section.align()
                     );
                 }
@@ -404,9 +405,9 @@
             <span class="kw">match </span>name {
                 obj::ELF_WASM_BTI =&gt; <span class="kw">match </span>data.len() {
                     <span class="number">1 </span>=&gt; enable_branch_protection = <span class="prelude-val">Some</span>(data[<span class="number">0</span>] != <span class="number">0</span>),
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;invalid `{name}` section&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"invalid `{name}` section"</span>),
                 },
-                <span class="string">&quot;.text&quot; </span>=&gt; {
+                <span class="string">".text" </span>=&gt; {
                     text = range;
 
                     <span class="comment">// The text section might have relocations for things like
@@ -422,11 +423,11 @@
                         <span class="macro">assert_eq!</span>(reloc.addend(), <span class="number">0</span>);
                         <span class="kw">let </span>sym = <span class="kw">match </span>reloc.target() {
                             object::RelocationTarget::Symbol(id) =&gt; id,
-                            other =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unknown relocation target {other:?}&quot;</span>),
+                            other =&gt; <span class="macro">panic!</span>(<span class="string">"unknown relocation target {other:?}"</span>),
                         };
                         <span class="kw">let </span>sym = obj.symbol_by_index(sym).unwrap().name().unwrap();
                         <span class="kw">let </span>libcall = obj::LibCall::from_str(sym)
-                            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;unknown symbol relocation: {sym}&quot;</span>));
+                            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"unknown symbol relocation: {sym}"</span>));
 
                         <span class="kw">let </span>offset = usize::try_from(offset).unwrap();
                         relocations.push((offset, libcall));
@@ -440,7 +441,7 @@
                 obj::ELF_WASMTIME_INFO =&gt; info_data = range,
                 obj::ELF_WASMTIME_DWARF =&gt; dwarf = range,
 
-                <span class="kw">_ </span>=&gt; <span class="macro">log::debug!</span>(<span class="string">&quot;ignoring section {name}&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">log::debug!</span>(<span class="string">"ignoring section {name}"</span>),
             }
         }
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
@@ -448,7 +449,7 @@
             unwind_registration: ManuallyDrop::new(<span class="prelude-val">None</span>),
             published: <span class="bool-val">false</span>,
             enable_branch_protection: enable_branch_protection
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;missing `{}` section&quot;</span>, obj::ELF_WASM_BTI))<span class="question-mark">?</span>,
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"missing `{}` section"</span>, obj::ELF_WASM_BTI))<span class="question-mark">?</span>,
             text,
             unwind,
             trap_data,
@@ -498,13 +499,13 @@
     }
 
     <span class="doccomment">/// Returns the contents of the `ELF_WASMTIME_INFO` section, or an empty
-    /// slice if it wasn&#39;t found.
+    /// slice if it wasn't found.
     </span><span class="kw">pub fn </span>wasmtime_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.mmap[<span class="self">self</span>.info_data.clone()]
     }
 
     <span class="doccomment">/// Returns the contents of the `ELF_WASMTIME_TRAPS` section, or an empty
-    /// slice if it wasn&#39;t found.
+    /// slice if it wasn't found.
     </span><span class="kw">pub fn </span>trap_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.mmap[<span class="self">self</span>.trap_data.clone()]
     }
@@ -529,26 +530,26 @@
 
         <span class="comment">// The unsafety here comes from a few things:
         //
-        // * We&#39;re actually updating some page protections to executable memory.
+        // * We're actually updating some page protections to executable memory.
         //
-        // * We&#39;re registering unwinding information which relies on the
+        // * We're registering unwinding information which relies on the
         //   correctness of the information in the first place. This applies to
         //   both the actual unwinding tables as well as the validity of the
         //   pointers we pass in itself.
         </span><span class="kw">unsafe </span>{
             <span class="comment">// First, if necessary, apply relocations. This can happen for
             // things like libcalls which happen late in the lowering process
-            // that don&#39;t go through the Wasm-based libcalls layer that&#39;s
-            // indirected through the `VMContext`. Note that most modules won&#39;t
-            // have relocations, so this typically doesn&#39;t do anything.
+            // that don't go through the Wasm-based libcalls layer that's
+            // indirected through the `VMContext`. Note that most modules won't
+            // have relocations, so this typically doesn't do anything.
             </span><span class="self">self</span>.apply_relocations()<span class="question-mark">?</span>;
 
             <span class="comment">// Next freeze the contents of this image by making all of the
             // memory readonly. Nothing after this point should ever be modified
             // so commit everything. For a compiled-in-memory image this will
             // mean IPIs to evict writable mappings from other cores. For
-            // loaded-from-disk images this shouldn&#39;t result in IPIs so long as
-            // there weren&#39;t any relocations because nothing should have
+            // loaded-from-disk images this shouldn't result in IPIs so long as
+            // there weren't any relocations because nothing should have
             // otherwise written to the image at any point either.
             </span><span class="self">self</span>.mmap.make_readonly(<span class="number">0</span>..<span class="self">self</span>.mmap.len())<span class="question-mark">?</span>;
 
@@ -557,21 +558,21 @@
             <span class="comment">// Clear the newly allocated code from cache if the processor requires it
             //
             // Do this before marking the memory as R+X, technically we should be able to do it after
-            // but there are some CPU&#39;s that have had errata about doing this with read only memory.
+            // but there are some CPU's that have had errata about doing this with read only memory.
             </span>icache_coherence::clear_cache(text.as_ptr().cast(), text.len())
-                .expect(<span class="string">&quot;Failed cache clear&quot;</span>);
+                .expect(<span class="string">"Failed cache clear"</span>);
 
             <span class="comment">// Switch the executable portion from readonly to read/execute.
             </span><span class="self">self</span>.mmap
                 .make_executable(<span class="self">self</span>.text.clone(), <span class="self">self</span>.enable_branch_protection)
-                .expect(<span class="string">&quot;unable to make memory executable&quot;</span>);
+                .expect(<span class="string">"unable to make memory executable"</span>);
 
             <span class="comment">// Flush any in-flight instructions from the pipeline
-            </span>icache_coherence::pipeline_flush_mt().expect(<span class="string">&quot;Failed pipeline flush&quot;</span>);
+            </span>icache_coherence::pipeline_flush_mt().expect(<span class="string">"Failed pipeline flush"</span>);
 
             <span class="comment">// With all our memory set up use the platform-specific
             // `UnwindRegistration` implementation to inform the general
-            // runtime that there&#39;s unwinding information available for all
+            // runtime that there's unwinding information available for all
             // our just-published JIT functions.
             </span><span class="self">self</span>.register_unwind_info()<span class="question-mark">?</span>;
         }
@@ -597,9 +598,9 @@
                 obj::LibCall::TruncF64 =&gt; libcalls::relocs::truncf64 <span class="kw">as </span>usize,
                 obj::LibCall::FmaF32 =&gt; libcalls::relocs::fmaf32 <span class="kw">as </span>usize,
                 obj::LibCall::FmaF64 =&gt; libcalls::relocs::fmaf64 <span class="kw">as </span>usize,
-                <span class="attr">#[cfg(target_arch = <span class="string">&quot;x86_64&quot;</span>)]
+                <span class="attr">#[cfg(target_arch = <span class="string">"x86_64"</span>)]
                 </span>obj::LibCall::X86Pshufb =&gt; libcalls::relocs::x86_pshufb <span class="kw">as </span>usize,
-                <span class="attr">#[cfg(not(target_arch = <span class="string">&quot;x86_64&quot;</span>))]
+                <span class="attr">#[cfg(not(target_arch = <span class="string">"x86_64"</span>))]
                 </span>obj::LibCall::X86Pshufb =&gt; <span class="macro">unreachable!</span>(),
             };
             <span class="self">self</span>.mmap
@@ -619,7 +620,7 @@
         <span class="kw">let </span>unwind_info = <span class="kw-2">&amp;</span><span class="self">self</span>.mmap[<span class="self">self</span>.unwind.clone()];
         <span class="kw">let </span>registration =
             UnwindRegistration::new(text.as_ptr(), unwind_info.as_ptr(), unwind_info.len())
-                .context(<span class="string">&quot;failed to create unwind info registration&quot;</span>)<span class="question-mark">?</span>;
+                .context(<span class="string">"failed to create unwind info registration"</span>)<span class="question-mark">?</span>;
         <span class="kw-2">*</span><span class="self">self</span>.unwind_registration = <span class="prelude-val">Some</span>(registration);
         <span class="prelude-val">Ok</span>(())
     }

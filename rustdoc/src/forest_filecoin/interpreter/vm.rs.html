@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/interpreter/vm.rs`."><title>vm.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/interpreter/vm.rs`."><title>vm.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="forest_filecoin" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -688,7 +689,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>applied = HashMap::new();
         <span class="kw">let </span><span class="kw-2">mut </span>select_msg = |m: ChainMessage| -&gt; <span class="prelude-ty">Option</span>&lt;ChainMessage&gt; {
             <span class="comment">// The first match for a sender is guaranteed to have correct nonce
-            // the block isn&#39;t valid otherwise.
+            // the block isn't valid otherwise.
             </span><span class="kw">let </span>entry = applied.entry(m.from()).or_insert_with(|| m.sequence());
 
             <span class="kw">if </span><span class="kw-2">*</span>entry != m.sequence() {
@@ -730,7 +731,7 @@
 
 <span class="doccomment">/// Interpreter which handles execution of state transitioning messages and
 /// returns receipts from the VM execution.
-</span><span class="kw">pub enum </span>VM&lt;DB: Blockstore + Send + Sync + <span class="lifetime">&#39;static</span>&gt; {
+</span><span class="kw">pub enum </span>VM&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt; {
     VM2(ForestExecutorV2&lt;DB&gt;),
     VM3(ForestExecutorV3&lt;DB&gt;),
     VM4(ForestExecutorV4&lt;DB&gt;),
@@ -923,7 +924,7 @@
 
         <span class="kw">let </span>(ret, duration) = <span class="self">self</span>.apply_implicit_message(<span class="kw-2">&amp;</span>cron_msg)<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = ret.failure_info() {
-            <span class="macro">anyhow::bail!</span>(<span class="string">&quot;failed to apply block cron message: {}&quot;</span>, err);
+            <span class="macro">anyhow::bail!</span>(<span class="string">"failed to apply block cron message: {}"</span>, err);
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>callback) = callback {
@@ -944,8 +945,8 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         messages: <span class="kw-2">&amp;</span>[BlockMessages],
         epoch: ChainEpoch,
-        <span class="comment">// note: we take &amp;MessageCallbackCtx rather than MessageCallbackCtx&lt;&#39;_&gt;
-        //       because I&#39;m not smart enough to make the second one work
+        <span class="comment">// note: we take &amp;MessageCallbackCtx rather than MessageCallbackCtx&lt;'_&gt;
+        //       because I'm not smart enough to make the second one work
         </span><span class="kw-2">mut </span>callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>MessageCallbackCtx) -&gt; anyhow::Result&lt;()&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Receipt&gt;, anyhow::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>receipts = Vec::new();
@@ -995,7 +996,7 @@
                 <span class="kw">let </span>(ret, duration) = <span class="self">self</span>.apply_implicit_message(<span class="kw-2">&amp;</span>rew_msg)<span class="question-mark">?</span>;
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = ret.failure_info() {
                     <span class="macro">anyhow::bail!</span>(
-                        <span class="string">&quot;failed to apply reward message for miner {}: {}&quot;</span>,
+                        <span class="string">"failed to apply reward message for miner {}: {}"</span>,
                         block.miner,
                         err
                     );
@@ -1003,7 +1004,7 @@
                 <span class="comment">// This is more of a sanity check, this should not be able to be hit.
                 </span><span class="kw">if </span>!ret.msg_receipt().exit_code().is_success() {
                     <span class="macro">anyhow::bail!</span>(
-                        <span class="string">&quot;reward application message failed (exit: {:?})&quot;</span>,
+                        <span class="string">"reward application message failed (exit: {:?})"</span>,
                         ret.msg_receipt().exit_code()
                     );
                 }
@@ -1021,7 +1022,7 @@
         }
 
         <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="self">self</span>.run_cron(epoch, callback.as_mut()) {
-            <span class="macro">tracing::error!</span>(<span class="string">&quot;End of epoch cron failed to run: {}&quot;</span>, e);
+            <span class="macro">tracing::error!</span>(<span class="string">"End of epoch cron failed to run: {}"</span>, e);
         }
 
         <span class="prelude-val">Ok</span>(receipts)
@@ -1032,7 +1033,7 @@
         <span class="kw">let </span>start = Instant::now();
 
         <span class="comment">// raw_length is not used for Implicit messages.
-        </span><span class="kw">let </span>raw_length = to_vec(msg).expect(<span class="string">&quot;encoding error&quot;</span>).len();
+        </span><span class="kw">let </span>raw_length = to_vec(msg).expect(<span class="string">"encoding error"</span>).len();
 
         <span class="kw">let </span>ret = <span class="kw">match </span><span class="self">self </span>{
             VM::VM2(fvm_executor) =&gt; fvm_executor
@@ -1058,7 +1059,7 @@
         </span>msg.message().check()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>unsigned = msg.message().clone();
-        <span class="kw">let </span>raw_length = to_vec(msg).expect(<span class="string">&quot;encoding error&quot;</span>).len();
+        <span class="kw">let </span>raw_length = to_vec(msg).expect(<span class="string">"encoding error"</span>).len();
         <span class="kw">let </span>ret: ApplyRet = <span class="kw">match </span><span class="self">self </span>{
             VM::VM2(fvm_executor) =&gt; {
                 <span class="kw">let </span>ret = fvm_executor.execute_message(
@@ -1068,7 +1069,7 @@
                 )<span class="question-mark">?</span>;
 
                 <span class="kw">if </span>fvm_executor.externs().bail() {
-                    <span class="macro">bail!</span>(<span class="string">&quot;encountered a database lookup error&quot;</span>);
+                    <span class="macro">bail!</span>(<span class="string">"encountered a database lookup error"</span>);
                 }
 
                 ret.into()
@@ -1081,7 +1082,7 @@
                 )<span class="question-mark">?</span>;
 
                 <span class="kw">if </span>fvm_executor.externs().bail() {
-                    <span class="macro">bail!</span>(<span class="string">&quot;encountered a database lookup error&quot;</span>);
+                    <span class="macro">bail!</span>(<span class="string">"encountered a database lookup error"</span>);
                 }
 
                 ret.into()
@@ -1094,7 +1095,7 @@
                 )<span class="question-mark">?</span>;
 
                 <span class="kw">if </span>fvm_executor.externs().bail() {
-                    <span class="macro">bail!</span>(<span class="string">&quot;encountered a database lookup error&quot;</span>);
+                    <span class="macro">bail!</span>(<span class="string">"encountered a database lookup error"</span>);
                 }
 
                 ret.into()
@@ -1105,7 +1106,7 @@
         <span class="kw">let </span>exit_code = ret.msg_receipt().exit_code();
 
         <span class="kw">if </span>!exit_code.is_success() {
-            <span class="macro">tracing::debug!</span>(<span class="question-mark">?</span>exit_code, <span class="string">&quot;VM message execution failure.&quot;</span>)
+            <span class="macro">tracing::debug!</span>(<span class="question-mark">?</span>exit_code, <span class="string">"VM message execution failure."</span>)
         }
 
         <span class="prelude-val">Ok</span>((ret, duration))
@@ -1143,10 +1144,10 @@
 }
 
 <span class="attr">#[derive(Debug, Clone, Copy)]
-</span><span class="kw">pub struct </span>MessageCallbackCtx&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>MessageCallbackCtx&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub </span>cid: Cid,
-    <span class="kw">pub </span>message: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ChainMessage,
-    <span class="kw">pub </span>apply_ret: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ApplyRet,
+    <span class="kw">pub </span>message: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ChainMessage,
+    <span class="kw">pub </span>apply_ret: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ApplyRet,
     <span class="kw">pub </span>at: CalledAt,
     <span class="kw">pub </span>duration: Duration,
 }

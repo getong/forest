@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-swarm-0.44.1/src/connection.rs`."><title>connection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_swarm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-swarm-0.44.1/src/connection.rs`."><title>connection.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_swarm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1354,7 +1355,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2020 Parity Technologies (UK) Ltd.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the &quot;Software&quot;),
+// copy of this software and associated documentation files (the "Software"),
 // to deal in the Software without restriction, including without limitation
 // the rights to use, copy, modify, merge, publish, distribute, sublicense,
 // and/or sell copies of the Software, and to permit persons to whom the
@@ -1363,7 +1364,7 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -1438,7 +1439,7 @@
 
 <span class="kw">impl </span>Display <span class="kw">for </span>ConnectionId {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+        <span class="macro">write!</span>(f, <span class="string">"{}"</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
@@ -1517,9 +1518,9 @@
     </span>THandler: ConnectionHandler + fmt::Debug,
     THandler::OutboundOpenInfo: fmt::Debug,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;Connection&quot;</span>)
-            .field(<span class="string">&quot;handler&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.handler)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"Connection"</span>)
+            .field(<span class="string">"handler"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.handler)
             .finish()
     }
 }
@@ -1587,10 +1588,10 @@
 
     <span class="doccomment">/// Polls the handler and the substream, forwarding events from the former to the latter and
     /// vice versa.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;debug&quot;</span>, name = <span class="string">&quot;Connection::poll&quot;</span>, skip(<span class="self">self</span>, cx))]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"debug"</span>, name = <span class="string">"Connection::poll"</span>, skip(<span class="self">self</span>, cx))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>poll(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;Event&lt;THandler::ToBehaviour&gt;, ConnectionError&gt;&gt; {
         <span class="kw">let </span><span class="self">Self </span>{
             requested_substreams,
@@ -1697,21 +1698,21 @@
                     <span class="kw">continue</span>;
                 }
                 Poll::Ready(<span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="prelude-val">Err</span>(StreamUpgradeError::Io(e))))) =&gt; {
-                    <span class="macro">tracing::debug!</span>(<span class="string">&quot;failed to upgrade inbound stream: {e}&quot;</span>);
+                    <span class="macro">tracing::debug!</span>(<span class="string">"failed to upgrade inbound stream: {e}"</span>);
                     <span class="kw">continue</span>;
                 }
                 Poll::Ready(<span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="prelude-val">Err</span>(StreamUpgradeError::NegotiationFailed)))) =&gt; {
-                    <span class="macro">tracing::debug!</span>(<span class="string">&quot;no protocol could be agreed upon for inbound stream&quot;</span>);
+                    <span class="macro">tracing::debug!</span>(<span class="string">"no protocol could be agreed upon for inbound stream"</span>);
                     <span class="kw">continue</span>;
                 }
                 Poll::Ready(<span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="prelude-val">Err</span>(StreamUpgradeError::Timeout)))) =&gt; {
-                    <span class="macro">tracing::debug!</span>(<span class="string">&quot;inbound stream upgrade timed out&quot;</span>);
+                    <span class="macro">tracing::debug!</span>(<span class="string">"inbound stream upgrade timed out"</span>);
                     <span class="kw">continue</span>;
                 }
             }
 
             <span class="comment">// Check if the connection (and handler) should be shut down.
-            // As long as we&#39;re still negotiating substreams or have any active streams shutdown is always postponed.
+            // As long as we're still negotiating substreams or have any active streams shutdown is always postponed.
             </span><span class="kw">if </span>negotiating_in.is_empty()
                 &amp;&amp; negotiating_out.is_empty()
                 &amp;&amp; requested_substreams.is_empty()
@@ -1843,7 +1844,7 @@
 /// The [`Duration`] computed by the this function may not be the longest possible that we can add to `now` but it will work.
 </span><span class="kw">fn </span>checked_add_fraction(start: Instant, <span class="kw-2">mut </span>duration: Duration) -&gt; Duration {
     <span class="kw">while </span>start.checked_add(duration).is_none() {
-        <span class="macro">tracing::debug!</span>(start=<span class="question-mark">?</span>start, duration=<span class="question-mark">?</span>duration, <span class="string">&quot;start + duration cannot be presented, halving duration&quot;</span>);
+        <span class="macro">tracing::debug!</span>(start=<span class="question-mark">?</span>start, duration=<span class="question-mark">?</span>duration, <span class="string">"start + duration cannot be presented, halving duration"</span>);
 
         duration /= <span class="number">2</span>;
     }
@@ -1853,14 +1854,14 @@
 
 <span class="doccomment">/// Borrowed information about an incoming connection currently being negotiated.
 </span><span class="attr">#[derive(Debug, Copy, Clone)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>IncomingInfo&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>IncomingInfo&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Local connection address.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) local_addr: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Multiaddr,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) local_addr: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Multiaddr,
     <span class="doccomment">/// Address used to send back data to the remote.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) send_back_addr: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Multiaddr,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) send_back_addr: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Multiaddr,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; IncomingInfo&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; IncomingInfo&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Builds the [`ConnectedPoint`] corresponding to the incoming connection.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_connected_point(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ConnectedPoint {
         ConnectedPoint::Listener {
@@ -1873,7 +1874,7 @@
 <span class="kw">struct </span>StreamUpgrade&lt;UserData, TOk, TErr&gt; {
     user_data: <span class="prelude-ty">Option</span>&lt;UserData&gt;,
     timeout: Delay,
-    upgrade: BoxFuture&lt;<span class="lifetime">&#39;static</span>, <span class="prelude-ty">Result</span>&lt;TOk, StreamUpgradeError&lt;TErr&gt;&gt;&gt;,
+    upgrade: BoxFuture&lt;<span class="lifetime">'static</span>, <span class="prelude-ty">Result</span>&lt;TOk, StreamUpgradeError&lt;TErr&gt;&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;UserData, TOk, TErr&gt; StreamUpgrade&lt;UserData, TOk, TErr&gt; {
@@ -1891,7 +1892,7 @@
         <span class="kw">let </span>effective_version = <span class="kw">match </span>version_override {
             <span class="prelude-val">Some</span>(version_override) <span class="kw">if </span>version_override != upgrade::Version::default() =&gt; {
                 <span class="macro">tracing::debug!</span>(
-                    <span class="string">&quot;Substream upgrade protocol override: {:?} -&gt; {:?}&quot;</span>,
+                    <span class="string">"Substream upgrade protocol override: {:?} -&gt; {:?}"</span>,
                     upgrade::Version::default(),
                     version_override
                 );
@@ -1979,7 +1980,7 @@
                 <span class="kw">return </span>Poll::Ready((
                     <span class="self">self</span>.user_data
                         .take()
-                        .expect(<span class="string">&quot;Future not to be polled again once ready.&quot;</span>),
+                        .expect(<span class="string">"Future not to be polled again once ready."</span>),
                     <span class="prelude-val">Err</span>(StreamUpgradeError::Timeout),
                 ))
             }
@@ -1991,7 +1992,7 @@
         <span class="kw">let </span>user_data = <span class="self">self
             </span>.user_data
             .take()
-            .expect(<span class="string">&quot;Future not to be polled again once ready.&quot;</span>);
+            .expect(<span class="string">"Future not to be polled again once ready."</span>);
 
         Poll::Ready((user_data, result))
     }
@@ -2035,7 +2036,7 @@
 
                 (user_data, timeout, upgrade)
             }
-            SubstreamRequested::Done =&gt; <span class="macro">panic!</span>(<span class="string">&quot;cannot extract twice&quot;</span>),
+            SubstreamRequested::Done =&gt; <span class="macro">panic!</span>(<span class="string">"cannot extract twice"</span>),
         }
     }
 }
@@ -2045,7 +2046,7 @@
 <span class="kw">impl</span>&lt;UserData, Upgrade&gt; Future <span class="kw">for </span>SubstreamRequested&lt;UserData, Upgrade&gt; {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;(), UserData&gt;;
 
-    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
 
         <span class="kw">match </span>mem::replace(this, <span class="self">Self</span>::Done) {
@@ -2078,7 +2079,7 @@
 /// after every invocation of [`ConnectionHandler::poll`].
 ///
 /// A planned shutdown is always postponed for as long as there are ingoing
-/// or outgoing substreams being negotiated, i.e. it is a graceful, &quot;idle&quot;
+/// or outgoing substreams being negotiated, i.e. it is a graceful, "idle"
 /// shutdown.
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">enum </span>Shutdown {
@@ -2131,7 +2132,7 @@
             <span class="macro">assert_eq!</span>(
                 Arc::weak_count(<span class="kw-2">&amp;</span>alive_substream_counter),
                 max_negotiating_inbound_streams,
-                <span class="string">&quot;Expect no more than the maximum number of allowed streams&quot;
+                <span class="string">"Expect no more than the maximum number of allowed streams"
             </span>);
         }
 
@@ -2173,32 +2174,32 @@
         );
 
         <span class="comment">// First, start listening on a single protocol.
-        </span>connection.handler.listen_on(<span class="kw-2">&amp;</span>[<span class="string">&quot;/foo&quot;</span>]);
+        </span>connection.handler.listen_on(<span class="kw-2">&amp;</span>[<span class="string">"/foo"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
-        <span class="macro">assert_eq!</span>(connection.handler.local_added, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>]]);
+        <span class="macro">assert_eq!</span>(connection.handler.local_added, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>]]);
         <span class="macro">assert!</span>(connection.handler.local_removed.is_empty());
 
         <span class="comment">// Second, listen on two protocols.
-        </span>connection.handler.listen_on(<span class="kw-2">&amp;</span>[<span class="string">&quot;/foo&quot;</span>, <span class="string">&quot;/bar&quot;</span>]);
+        </span>connection.handler.listen_on(<span class="kw-2">&amp;</span>[<span class="string">"/foo"</span>, <span class="string">"/bar"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
         <span class="macro">assert_eq!</span>(
             connection.handler.local_added,
-            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>], <span class="macro">vec!</span>[<span class="string">&quot;/bar&quot;</span>]],
-            <span class="string">&quot;expect to only receive an event for the newly added protocols&quot;
+            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>], <span class="macro">vec!</span>[<span class="string">"/bar"</span>]],
+            <span class="string">"expect to only receive an event for the newly added protocols"
         </span>);
         <span class="macro">assert!</span>(connection.handler.local_removed.is_empty());
 
         <span class="comment">// Third, stop listening on the first protocol.
-        </span>connection.handler.listen_on(<span class="kw-2">&amp;</span>[<span class="string">&quot;/bar&quot;</span>]);
+        </span>connection.handler.listen_on(<span class="kw-2">&amp;</span>[<span class="string">"/bar"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
         <span class="macro">assert_eq!</span>(
             connection.handler.local_added,
-            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>], <span class="macro">vec!</span>[<span class="string">&quot;/bar&quot;</span>]]
+            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>], <span class="macro">vec!</span>[<span class="string">"/bar"</span>]]
         );
-        <span class="macro">assert_eq!</span>(connection.handler.local_removed, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>]]);
+        <span class="macro">assert_eq!</span>(connection.handler.local_removed, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>]]);
     }
 
     <span class="attr">#[test]
@@ -2212,44 +2213,44 @@
         );
 
         <span class="comment">// First, remote supports a single protocol.
-        </span>connection.handler.remote_adds_support_for(<span class="kw-2">&amp;</span>[<span class="string">&quot;/foo&quot;</span>]);
+        </span>connection.handler.remote_adds_support_for(<span class="kw-2">&amp;</span>[<span class="string">"/foo"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
-        <span class="macro">assert_eq!</span>(connection.handler.remote_added, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>]]);
+        <span class="macro">assert_eq!</span>(connection.handler.remote_added, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>]]);
         <span class="macro">assert!</span>(connection.handler.remote_removed.is_empty());
 
         <span class="comment">// Second, it adds a protocol but also still includes the first one.
         </span>connection
             .handler
-            .remote_adds_support_for(<span class="kw-2">&amp;</span>[<span class="string">&quot;/foo&quot;</span>, <span class="string">&quot;/bar&quot;</span>]);
+            .remote_adds_support_for(<span class="kw-2">&amp;</span>[<span class="string">"/foo"</span>, <span class="string">"/bar"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
         <span class="macro">assert_eq!</span>(
             connection.handler.remote_added,
-            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>], <span class="macro">vec!</span>[<span class="string">&quot;/bar&quot;</span>]],
-            <span class="string">&quot;expect to only receive an event for the newly added protocol&quot;
+            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>], <span class="macro">vec!</span>[<span class="string">"/bar"</span>]],
+            <span class="string">"expect to only receive an event for the newly added protocol"
         </span>);
         <span class="macro">assert!</span>(connection.handler.remote_removed.is_empty());
 
-        <span class="comment">// Third, stop listening on a protocol it never advertised (we can&#39;t control what handlers do so this needs to be handled gracefully).
-        </span>connection.handler.remote_removes_support_for(<span class="kw-2">&amp;</span>[<span class="string">&quot;/baz&quot;</span>]);
+        <span class="comment">// Third, stop listening on a protocol it never advertised (we can't control what handlers do so this needs to be handled gracefully).
+        </span>connection.handler.remote_removes_support_for(<span class="kw-2">&amp;</span>[<span class="string">"/baz"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
         <span class="macro">assert_eq!</span>(
             connection.handler.remote_added,
-            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>], <span class="macro">vec!</span>[<span class="string">&quot;/bar&quot;</span>]]
+            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>], <span class="macro">vec!</span>[<span class="string">"/bar"</span>]]
         );
         <span class="macro">assert!</span>(<span class="kw-2">&amp;</span>connection.handler.remote_removed.is_empty());
 
         <span class="comment">// Fourth, stop listening on a protocol that was previously supported
-        </span>connection.handler.remote_removes_support_for(<span class="kw-2">&amp;</span>[<span class="string">&quot;/bar&quot;</span>]);
+        </span>connection.handler.remote_removes_support_for(<span class="kw-2">&amp;</span>[<span class="string">"/bar"</span>]);
         <span class="kw">let _ </span>= connection.poll_noop_waker();
 
         <span class="macro">assert_eq!</span>(
             connection.handler.remote_added,
-            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/foo&quot;</span>], <span class="macro">vec!</span>[<span class="string">&quot;/bar&quot;</span>]]
+            <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/foo"</span>], <span class="macro">vec!</span>[<span class="string">"/bar"</span>]]
         );
-        <span class="macro">assert_eq!</span>(connection.handler.remote_removed, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">&quot;/bar&quot;</span>]]);
+        <span class="macro">assert_eq!</span>(connection.handler.remote_removed, <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="string">"/bar"</span>]]);
     }
 
     <span class="attr">#[tokio::test]
@@ -2351,25 +2352,25 @@
 
         <span class="kw">fn </span>poll_inbound(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Substream, <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Ready(<span class="prelude-val">Ok</span>(PendingSubstream(Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.counter))))
         }
 
         <span class="kw">fn </span>poll_outbound(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Substream, <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Pending
         }
 
-        <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+        <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Ready(<span class="prelude-val">Ok</span>(()))
         }
 
         <span class="kw">fn </span>poll(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;StreamMuxerEvent, <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Pending
         }
@@ -2384,25 +2385,25 @@
 
         <span class="kw">fn </span>poll_inbound(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Substream, <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Pending
         }
 
         <span class="kw">fn </span>poll_outbound(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Substream, <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Pending
         }
 
-        <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+        <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Pending
         }
 
         <span class="kw">fn </span>poll(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;StreamMuxerEvent, <span class="self">Self</span>::Error&gt;&gt; {
             Poll::Pending
         }
@@ -2413,7 +2414,7 @@
     <span class="kw">impl </span>AsyncRead <span class="kw">for </span>PendingSubstream {
         <span class="kw">fn </span>poll_read(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
             _buf: <span class="kw-2">&amp;mut </span>[u8],
         ) -&gt; Poll&lt;std::io::Result&lt;usize&gt;&gt; {
             Poll::Pending
@@ -2423,17 +2424,17 @@
     <span class="kw">impl </span>AsyncWrite <span class="kw">for </span>PendingSubstream {
         <span class="kw">fn </span>poll_write(
             <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-            _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
             _buf: <span class="kw-2">&amp;</span>[u8],
         ) -&gt; Poll&lt;std::io::Result&lt;usize&gt;&gt; {
             Poll::Pending
         }
 
-        <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
+        <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
             Poll::Pending
         }
 
-        <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
+        <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;std::io::Result&lt;()&gt;&gt; {
             Poll::Pending
         }
     }
@@ -2469,11 +2470,11 @@
     }
 
     <span class="kw">impl </span>ConfigurableProtocolConnectionHandler {
-        <span class="kw">fn </span>listen_on(<span class="kw-2">&amp;mut </span><span class="self">self</span>, protocols: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str]) {
+        <span class="kw">fn </span>listen_on(<span class="kw-2">&amp;mut </span><span class="self">self</span>, protocols: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str]) {
             <span class="self">self</span>.active_protocols = protocols.iter().copied().map(StreamProtocol::new).collect();
         }
 
-        <span class="kw">fn </span>remote_adds_support_for(<span class="kw-2">&amp;mut </span><span class="self">self</span>, protocols: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str]) {
+        <span class="kw">fn </span>remote_adds_support_for(<span class="kw-2">&amp;mut </span><span class="self">self</span>, protocols: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str]) {
             <span class="self">self</span>.events
                 .push(ConnectionHandlerEvent::ReportRemoteProtocols(
                     ProtocolSupport::Added(
@@ -2482,7 +2483,7 @@
                 ));
         }
 
-        <span class="kw">fn </span>remote_removes_support_for(<span class="kw-2">&amp;mut </span><span class="self">self</span>, protocols: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str]) {
+        <span class="kw">fn </span>remote_removes_support_for(<span class="kw-2">&amp;mut </span><span class="self">self</span>, protocols: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str]) {
             <span class="self">self</span>.events
                 .push(ConnectionHandlerEvent::ReportRemoteProtocols(
                     ProtocolSupport::Removed(
@@ -2544,7 +2545,7 @@
 
         <span class="kw">fn </span>poll(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;
             ConnectionHandlerEvent&lt;
                 <span class="self">Self</span>::OutboundProtocol,
@@ -2619,7 +2620,7 @@
 
         <span class="kw">fn </span>poll(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+            <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
         ) -&gt; Poll&lt;
             ConnectionHandlerEvent&lt;
                 <span class="self">Self</span>::OutboundProtocol,

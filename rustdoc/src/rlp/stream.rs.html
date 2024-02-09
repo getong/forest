@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rlp-0.5.2/src/stream.rs`."><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rlp" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rlp-0.5.2/src/stream.rs`."><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rlp" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -429,7 +430,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-</span><span class="attr">#[cfg(not(feature = <span class="string">&quot;std&quot;</span>))]
+</span><span class="attr">#[cfg(not(feature = <span class="string">"std"</span>))]
 </span><span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>bytes::{BufMut, BytesMut};
 <span class="kw">use </span>core::borrow::Borrow;
@@ -527,9 +528,9 @@
 	/// ```
 	/// use rlp::RlpStream;
 	/// let mut stream = RlpStream::new_list(2);
-	/// stream.append(&amp;&quot;cat&quot;).append(&amp;&quot;dog&quot;);
+	/// stream.append(&amp;"cat").append(&amp;"dog");
 	/// let out = stream.out();
-	/// assert_eq!(out, vec![0xc8, 0x83, b&#39;c&#39;, b&#39;a&#39;, b&#39;t&#39;, 0x83, b&#39;d&#39;, b&#39;o&#39;, b&#39;g&#39;]);
+	/// assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// ```
 	</span><span class="kw">pub fn </span>append&lt;E&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>E) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self
 	</span><span class="kw">where
@@ -548,9 +549,9 @@
 	/// ```
 	/// use rlp::RlpStream;
 	/// let mut stream = RlpStream::new_list(2);
-	/// stream.append(&amp;&quot;cat&quot;).append_iter(&quot;dog&quot;.as_bytes().iter().cloned());
+	/// stream.append(&amp;"cat").append_iter("dog".as_bytes().iter().cloned());
 	/// let out = stream.out();
-	/// assert_eq!(out, vec![0xc8, 0x83, b&#39;c&#39;, b&#39;a&#39;, b&#39;t&#39;, 0x83, b&#39;d&#39;, b&#39;o&#39;, b&#39;g&#39;]);
+	/// assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// ```
 	</span><span class="kw">pub fn </span>append_iter&lt;I&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: I) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self
 	</span><span class="kw">where
@@ -578,7 +579,7 @@
 	</span>}
 
 	<span class="doccomment">/// Appends value to the end of stream, but do not count it as an appended item.
-	/// It&#39;s useful for wrapper types
+	/// It's useful for wrapper types
 	</span><span class="kw">pub fn </span>append_internal&lt;E&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>E) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self
 	</span><span class="kw">where
 		</span>E: Encodable,
@@ -592,10 +593,10 @@
 	/// ```
 	/// use rlp::RlpStream;
 	/// let mut stream = RlpStream::new_list(2);
-	/// stream.begin_list(2).append(&amp;&quot;cat&quot;).append(&amp;&quot;dog&quot;);
-	/// stream.append(&amp;&quot;&quot;);
+	/// stream.begin_list(2).append(&amp;"cat").append(&amp;"dog");
+	/// stream.append(&amp;"");
 	/// let out = stream.out();
-	/// assert_eq!(out, vec![0xca, 0xc8, 0x83, b&#39;c&#39;, b&#39;a&#39;, b&#39;t&#39;, 0x83, b&#39;d&#39;, b&#39;o&#39;, b&#39;g&#39;, 0x80]);
+	/// assert_eq!(out, vec![0xca, 0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g', 0x80]);
 	/// ```
 	</span><span class="kw">pub fn </span>begin_list(<span class="kw-2">&amp;mut </span><span class="self">self</span>, len: usize) -&gt; <span class="kw-2">&amp;mut </span>RlpStream {
 		<span class="self">self</span>.finished_list = <span class="bool-val">false</span>;
@@ -670,11 +671,11 @@
 	/// ```
 	/// use rlp::RlpStream;
 	/// let mut stream = RlpStream::new_list(3);
-	/// stream.append(&amp;&quot;cat&quot;);
+	/// stream.append(&amp;"cat");
 	/// stream.clear();
-	/// stream.append(&amp;&quot;dog&quot;);
+	/// stream.append(&amp;"dog");
 	/// let out = stream.out();
-	/// assert_eq!(out, vec![0x83, b&#39;d&#39;, b&#39;o&#39;, b&#39;g&#39;]);
+	/// assert_eq!(out, vec![0x83, b'd', b'o', b'g']);
 	/// ```
 	</span><span class="kw">pub fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
 		<span class="comment">// clear bytes
@@ -689,12 +690,12 @@
 	/// ```
 	/// use rlp::RlpStream;
 	/// let mut stream = RlpStream::new_list(2);
-	/// stream.append(&amp;&quot;cat&quot;);
+	/// stream.append(&amp;"cat");
 	/// assert_eq!(stream.is_finished(), false);
-	/// stream.append(&amp;&quot;dog&quot;);
+	/// stream.append(&amp;"dog");
 	/// assert_eq!(stream.is_finished(), true);
 	/// let out = stream.out();
-	/// assert_eq!(out, vec![0xc8, 0x83, b&#39;c&#39;, b&#39;a&#39;, b&#39;t&#39;, 0x83, b&#39;d&#39;, b&#39;o&#39;, b&#39;g&#39;]);
+	/// assert_eq!(out, vec![0xc8, 0x83, b'c', b'a', b't', 0x83, b'd', b'o', b'g']);
 	/// ```
 	</span><span class="kw">pub fn </span>is_finished(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 		<span class="self">self</span>.unfinished_lists.is_empty()
@@ -729,7 +730,7 @@
 			<span class="prelude-val">Some</span>(<span class="kw-2">ref mut </span>x) =&gt; {
 				x.current += inserted_items;
 				<span class="kw">match </span>x.max {
-					<span class="prelude-val">Some</span>(<span class="kw-2">ref </span>max) <span class="kw">if </span>x.current &gt; <span class="kw-2">*</span>max =&gt; <span class="macro">panic!</span>(<span class="string">&quot;You cannot append more items than you expect!&quot;</span>),
+					<span class="prelude-val">Some</span>(<span class="kw-2">ref </span>max) <span class="kw">if </span>x.current &gt; <span class="kw-2">*</span>max =&gt; <span class="macro">panic!</span>(<span class="string">"You cannot append more items than you expect!"</span>),
 					<span class="prelude-val">Some</span>(<span class="kw-2">ref </span>max) =&gt; x.current == <span class="kw-2">*</span>max,
 					<span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
 				}
@@ -750,9 +751,9 @@
 
 	<span class="doccomment">/// Finalize current unbounded list. Panics if no unbounded list has been opened.
 	</span><span class="kw">pub fn </span>finalize_unbounded_list(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-		<span class="kw">let </span>list = <span class="self">self</span>.unfinished_lists.pop().expect(<span class="string">&quot;No open list.&quot;</span>);
+		<span class="kw">let </span>list = <span class="self">self</span>.unfinished_lists.pop().expect(<span class="string">"No open list."</span>);
 		<span class="kw">if </span>list.max.is_some() {
-			<span class="macro">panic!</span>(<span class="string">&quot;List type mismatch.&quot;</span>);
+			<span class="macro">panic!</span>(<span class="string">"List type mismatch."</span>);
 		}
 		<span class="kw">let </span>len = <span class="self">self</span>.total_written() - list.position;
 		<span class="self">self</span>.encoder().insert_list_payload(len, list.position);
@@ -761,13 +762,13 @@
 	}
 }
 
-<span class="kw">pub struct </span>BasicEncoder&lt;<span class="lifetime">&#39;a</span>&gt; {
-	buffer: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>BytesMut,
+<span class="kw">pub struct </span>BasicEncoder&lt;<span class="lifetime">'a</span>&gt; {
+	buffer: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>BytesMut,
 	start_pos: usize,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; BasicEncoder&lt;<span class="lifetime">&#39;a</span>&gt; {
-	<span class="kw">fn </span>new(stream: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>RlpStream, start_pos: usize) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; BasicEncoder&lt;<span class="lifetime">'a</span>&gt; {
+	<span class="kw">fn </span>new(stream: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>RlpStream, start_pos: usize) -&gt; <span class="self">Self </span>{
 		BasicEncoder { buffer: <span class="kw-2">&amp;mut </span>stream.buffer, start_pos }
 	}
 
@@ -822,7 +823,7 @@
 			<span class="comment">// just 0
 			</span><span class="number">0 </span>=&gt; <span class="self">self</span>.buffer.put_u8(<span class="number">0x80u8</span>),
 			len @ <span class="number">1</span>..=<span class="number">55 </span>=&gt; {
-				<span class="kw">let </span>first = value.next().expect(<span class="string">&quot;iterator length is higher than 1&quot;</span>);
+				<span class="kw">let </span>first = value.next().expect(<span class="string">"iterator length is higher than 1"</span>);
 				<span class="kw">if </span>len == <span class="number">1 </span>&amp;&amp; first &lt; <span class="number">0x80 </span>{
 					<span class="comment">// byte is its own encoding if &lt; 0x80
 					</span><span class="self">self</span>.buffer.put_u8(first);

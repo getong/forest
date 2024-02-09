@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/instance.rs`."><title>instance.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-12.0.2/src/instance.rs`."><title>instance.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -903,11 +904,11 @@
 /// This type represents the instantiation of a [`Module`]. Once instantiated
 /// you can access the [`exports`](Instance::exports) which are of type
 /// [`Extern`] and provide the ability to call functions, set globals, read
-/// memory, etc. When interacting with any wasm code you&#39;ll want to make an
+/// memory, etc. When interacting with any wasm code you'll want to make an
 /// [`Instance`] to call any code or execute anything.
 ///
 /// Instances are owned by a [`Store`](crate::Store) which is passed in at
-/// creation time. It&#39;s recommended to create instances with
+/// creation time. It's recommended to create instances with
 /// [`Linker::instantiate`](crate::Linker::instantiate) or similar
 /// [`Linker`](crate::Linker) methods, but a more low-level constructor is also
 /// available as [`Instance::new`].
@@ -936,7 +937,7 @@
     /// automatically run (if specified in the `module`) and then the
     /// [`Instance`] will be returned.
     ///
-    /// Per the WebAssembly spec, instantiation includes running the module&#39;s
+    /// Per the WebAssembly spec, instantiation includes running the module's
     /// start function, if it has one (not to be confused with the `_start`
     /// function, which is not run).
     ///
@@ -949,13 +950,13 @@
     ///
     /// The entries in the list of `imports` are intended to correspond 1:1
     /// with the list of imports returned by [`Module::imports`]. Before
-    /// calling [`Instance::new`] you&#39;ll want to inspect the return value of
+    /// calling [`Instance::new`] you'll want to inspect the return value of
     /// [`Module::imports`] and, for each import type, create an [`Extern`]
     /// which corresponds to that type.  These [`Extern`] values are all then
     /// collected into a list and passed to this function.
     ///
     /// Note that this function is intentionally relatively low level. For an
-    /// easier time passing imports by doing name-based resolution it&#39;s
+    /// easier time passing imports by doing name-based resolution it's
     /// recommended to instead use the [`Linker`](crate::Linker) type.
     ///
     /// ## Errors
@@ -963,15 +964,15 @@
     /// This function can fail for a number of reasons, including, but not
     /// limited to:
     ///
-    /// * The number of `imports` provided doesn&#39;t match the number of imports
-    ///   returned by the `module`&#39;s [`Module::imports`] method.
-    /// * The type of any [`Extern`] doesn&#39;t match the corresponding
+    /// * The number of `imports` provided doesn't match the number of imports
+    ///   returned by the `module`'s [`Module::imports`] method.
+    /// * The type of any [`Extern`] doesn't match the corresponding
     ///   [`ExternType`] entry that it maps to.
     /// * The `start` function in the instance, if present, traps.
     /// * Module/instance resource limits are exceeded.
     ///
-    /// When instantiation fails it&#39;s recommended to inspect the return value to
-    /// see why it failed, or bubble it upwards. If you&#39;d like to specifically
+    /// When instantiation fails it's recommended to inspect the return value to
+    /// see why it failed, or bubble it upwards. If you'd like to specifically
     /// check for trap errors, you can use `error.downcast::&lt;Trap&gt;()`. For more
     /// about error handling see the [`Trap`] documentation.
     ///
@@ -1015,8 +1016,8 @@
     ///
     /// This function will also panic, like [`Instance::new`], if any [`Extern`]
     /// specified does not belong to `store`.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
-    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="kw">pub async fn </span>new_async&lt;T&gt;(
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
         module: <span class="kw-2">&amp;</span>Module,
@@ -1038,7 +1039,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;OwnedImports&gt; {
         <span class="kw">for </span>import <span class="kw">in </span>imports {
             <span class="kw">if </span>!import.comes_from_same_store(store) {
-                <span class="macro">bail!</span>(<span class="string">&quot;cross-`Store` instantiation is not currently supported&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"cross-`Store` instantiation is not currently supported"</span>);
             }
         }
         typecheck(module, imports, |cx, ty, item| {
@@ -1054,15 +1055,15 @@
 
     <span class="doccomment">/// Internal function to create an instance and run the start function.
     ///
-    /// This function&#39;s unsafety is the same as `Instance::new_raw`.
+    /// This function's unsafety is the same as `Instance::new_raw`.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>new_started&lt;T&gt;(
-        store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">&#39;_</span>, T&gt;,
+        store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">'_</span>, T&gt;,
         module: <span class="kw-2">&amp;</span>Module,
-        imports: Imports&lt;<span class="lifetime">&#39;_</span>&gt;,
+        imports: Imports&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Instance&gt; {
         <span class="macro">assert!</span>(
             !store.<span class="number">0</span>.async_support(),
-            <span class="string">&quot;must use async instantiation when async support is enabled&quot;</span>,
+            <span class="string">"must use async instantiation when async support is enabled"</span>,
         );
         <span class="self">Self</span>::new_started_impl(store, module, imports)
     }
@@ -1072,9 +1073,9 @@
     /// ONLY CALL THIS IF YOU HAVE ALREADY CHECKED FOR ASYNCNESS AND HANDLED
     /// THE FIBER NONSENSE
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>new_started_impl&lt;T&gt;(
-        store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">&#39;_</span>, T&gt;,
+        store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">'_</span>, T&gt;,
         module: <span class="kw-2">&amp;</span>Module,
-        imports: Imports&lt;<span class="lifetime">&#39;_</span>&gt;,
+        imports: Imports&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Instance&gt; {
         <span class="kw">let </span>(instance, start) = Instance::new_raw(store.<span class="number">0</span>, module, imports)<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(start) = start {
@@ -1085,19 +1086,19 @@
 
     <span class="doccomment">/// Internal function to create an instance and run the start function.
     ///
-    /// This function&#39;s unsafety is the same as `Instance::new_raw`.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    /// This function's unsafety is the same as `Instance::new_raw`.
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">async unsafe fn </span>new_started_async&lt;T&gt;(
-        store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">&#39;_</span>, T&gt;,
+        store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">'_</span>, T&gt;,
         module: <span class="kw-2">&amp;</span>Module,
-        imports: Imports&lt;<span class="lifetime">&#39;_</span>&gt;,
+        imports: Imports&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Instance&gt;
     <span class="kw">where
         </span>T: Send,
     {
         <span class="macro">assert!</span>(
             store.<span class="number">0</span>.async_support(),
-            <span class="string">&quot;must use sync instantiation when async support is disabled&quot;</span>,
+            <span class="string">"must use sync instantiation when async support is disabled"</span>,
         );
 
         store
@@ -1105,14 +1106,14 @@
             .<span class="kw">await</span><span class="question-mark">?
     </span>}
 
-    <span class="doccomment">/// Internal function to create an instance which doesn&#39;t have its `start`
+    <span class="doccomment">/// Internal function to create an instance which doesn't have its `start`
     /// function run yet.
     ///
-    /// This is not intended to be exposed from Wasmtime, it&#39;s intended to
+    /// This is not intended to be exposed from Wasmtime, it's intended to
     /// refactor out common code from `new_started` and `new_started_async`.
     ///
     /// Note that this step needs to be run on a fiber in async mode even
-    /// though it doesn&#39;t do any blocking work because an async resource
+    /// though it doesn't do any blocking work because an async resource
     /// limiter may need to yield.
     ///
     /// # Unsafety
@@ -1123,10 +1124,10 @@
     </span><span class="kw">unsafe fn </span>new_raw(
         store: <span class="kw-2">&amp;mut </span>StoreOpaque,
         module: <span class="kw-2">&amp;</span>Module,
-        imports: Imports&lt;<span class="lifetime">&#39;_</span>&gt;,
+        imports: Imports&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(Instance, <span class="prelude-ty">Option</span>&lt;FuncIndex&gt;)&gt; {
         <span class="kw">if </span>!Engine::same(store.engine(), module.engine()) {
-            <span class="macro">bail!</span>(<span class="string">&quot;cross-`Engine` instantiation is not currently supported&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"cross-`Engine` instantiation is not currently supported"</span>);
         }
         store.bump_resource_counts(module)<span class="question-mark">?</span>;
 
@@ -1142,10 +1143,10 @@
         // instance handle.
         //
         // Note that the `host_state` here is a pointer back to the
-        // `Instance` we&#39;ll be returning from this function. This is a
-        // circular reference so we can&#39;t construct it before we construct
+        // `Instance` we'll be returning from this function. This is a
+        // circular reference so we can't construct it before we construct
         // this instance, so we determine what the ID is and then assert
-        // it&#39;s the same later when we do actually insert it.
+        // it's the same later when we do actually insert it.
         </span><span class="kw">let </span>instance_to_be = store.store_data().next_id::&lt;InstanceData&gt;();
 
         <span class="kw">let </span><span class="kw-2">mut </span>instance_handle =
@@ -1168,21 +1169,21 @@
         // Note that we `clone` the instance handle just to make easier
         // working the the borrow checker here easier. Technically the `&amp;mut
         // instance` has somewhat of a borrow on `store` (which
-        // conflicts with the borrow on `store.engine`) but this doesn&#39;t
-        // matter in practice since initialization isn&#39;t even running any
+        // conflicts with the borrow on `store.engine`) but this doesn't
+        // matter in practice since initialization isn't even running any
         // code here anyway.
         </span><span class="kw">let </span>id = store.add_instance(instance_handle.clone(), <span class="bool-val">false</span>);
 
         <span class="comment">// Additionally, before we start doing fallible instantiation, we
         // do one more step which is to insert an `InstanceData`
         // corresponding to this instance. This `InstanceData` can be used
-        // via `Caller::get_export` if our instance&#39;s state &quot;leaks&quot; into
-        // other instances, even if we don&#39;t return successfully from this
+        // via `Caller::get_export` if our instance's state "leaks" into
+        // other instances, even if we don't return successfully from this
         // function.
         //
-        // We don&#39;t actually load all exports from the instance at this
-        // time, instead preferring to lazily load them as they&#39;re demanded.
-        // For module/instance exports, though, those aren&#39;t actually
+        // We don't actually load all exports from the instance at this
+        // time, instead preferring to lazily load them as they're demanded.
+        // For module/instance exports, though, those aren't actually
         // stored in the instance handle so we need to immediately handle
         // those here.
         </span><span class="kw">let </span>instance = {
@@ -1191,11 +1192,11 @@
             Instance::from_wasmtime(data, store)
         };
 
-        <span class="comment">// double-check our guess of what the new instance&#39;s ID would be
+        <span class="comment">// double-check our guess of what the new instance's ID would be
         // was actually correct.
         </span><span class="macro">assert_eq!</span>(instance.<span class="number">0</span>, instance_to_be);
 
-        <span class="comment">// Now that we&#39;ve recorded all information we need to about this
+        <span class="comment">// Now that we've recorded all information we need to about this
         // instance within a `Store` we can start performing fallible
         // initialization. Note that we still defer the `start` function to
         // later since that may need to run asynchronously.
@@ -1203,7 +1204,7 @@
         // If this returns an error (or if the start function traps) then
         // any other initialization which may have succeeded which placed
         // items from this instance into other instances should be ok when
-        // those items are loaded and run we&#39;ll have all the metadata to
+        // those items are loaded and run we'll have all the metadata to
         // look at them.
         </span>instance_handle.initialize(
             compiled_module.module(),
@@ -1220,7 +1221,7 @@
         Instance(store.store_data_mut().insert(handle))
     }
 
-    <span class="kw">fn </span>start_raw&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">&#39;_</span>, T&gt;, start: FuncIndex) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">fn </span>start_raw&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;mut </span>StoreContextMut&lt;<span class="lifetime">'_</span>, T&gt;, start: FuncIndex) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>id = store.<span class="number">0</span>.store_data()[<span class="self">self</span>.<span class="number">0</span>].id;
         <span class="comment">// If a start function is present, invoke it. Make sure we use all the
         // trap-handling configuration in `store` as well.
@@ -1231,7 +1232,7 @@
             <span class="kw">super</span>::func::invoke_wasm_and_catch_traps(store, |_default_caller| {
                 <span class="kw">let </span>func = mem::transmute::&lt;
                     NonNull&lt;VMNativeCallFunction&gt;,
-                    <span class="kw">extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>VMOpaqueContext, <span class="kw-2">*mut </span>VMContext),
+                    <span class="kw">extern </span><span class="string">"C" </span><span class="kw">fn</span>(<span class="kw-2">*mut </span>VMOpaqueContext, <span class="kw-2">*mut </span>VMContext),
                 &gt;(f.func_ref.as_ref().native_call);
                 func(f.func_ref.as_ref().vmctx, caller_vmctx)
             })<span class="question-mark">?</span>;
@@ -1244,19 +1245,19 @@
     /// # Panics
     ///
     /// Panics if `store` does not own this instance.
-    </span><span class="kw">pub fn </span>exports&lt;<span class="lifetime">&#39;a</span>, T: <span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
-        store: <span class="kw">impl </span>Into&lt;StoreContextMut&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt;,
-    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = Export&lt;<span class="lifetime">&#39;a</span>&gt;&gt; + <span class="lifetime">&#39;a </span>{
+    </span><span class="kw">pub fn </span>exports&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
+        store: <span class="kw">impl </span>Into&lt;StoreContextMut&lt;<span class="lifetime">'a</span>, T&gt;&gt;,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = Export&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
         <span class="self">self</span>._exports(store.into().<span class="number">0</span>)
     }
 
-    <span class="kw">fn </span>_exports&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
-        store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>StoreOpaque,
-    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = Export&lt;<span class="lifetime">&#39;a</span>&gt;&gt; + <span class="lifetime">&#39;a </span>{
+    <span class="kw">fn </span>_exports&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
+        store: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>StoreOpaque,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = Export&lt;<span class="lifetime">'a</span>&gt;&gt; + <span class="lifetime">'a </span>{
         <span class="comment">// If this is an `Instantiated` instance then all the `exports` may not
-        // be filled in. Fill them all in now if that&#39;s the case.
+        // be filled in. Fill them all in now if that's the case.
         </span><span class="kw">let </span>InstanceData { exports, id, .. } = <span class="kw-2">&amp;</span>store[<span class="self">self</span>.<span class="number">0</span>];
         <span class="kw">if </span>exports.iter().any(|e| e.is_none()) {
             <span class="kw">let </span>module = Arc::clone(store.instance(<span class="kw-2">*</span>id).module());
@@ -1287,7 +1288,7 @@
     ///
     /// # Why does `get_export` take a mutable context?
     ///
-    /// This method requires a mutable context because an instance&#39;s exports are
+    /// This method requires a mutable context because an instance's exports are
     /// lazily populated, and we cache them as they are accessed. This makes
     /// instantiating a module faster, but also means this method requires a
     /// mutable context.
@@ -1318,7 +1319,7 @@
     <span class="doccomment">/// Looks up an exported [`Func`] value by name.
     ///
     /// Returns `None` if there was no export named `name`, or if there was but
-    /// it wasn&#39;t a function.
+    /// it wasn't a function.
     ///
     /// # Panics
     ///
@@ -1332,7 +1333,7 @@
     /// This function is a convenience wrapper over [`Instance::get_func`] and
     /// [`Func::typed`]. For more information see the linked documentation.
     ///
-    /// Returns an error if `name` isn&#39;t a function export or if the export&#39;s
+    /// Returns an error if `name` isn't a function export or if the export's
     /// type did not match `Params` or `Results`
     ///
     /// # Panics
@@ -1350,15 +1351,15 @@
         <span class="kw">let </span>f = <span class="self">self
             </span>.get_export(store.as_context_mut(), name)
             .and_then(|f| f.into_func())
-            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;failed to find function export `{}`&quot;</span>, name))<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"failed to find function export `{}`"</span>, name))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(f.typed::&lt;Params, Results&gt;(store)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;failed to convert function `{}` to given type&quot;</span>, name))<span class="question-mark">?</span>)
+            .with_context(|| <span class="macro">format!</span>(<span class="string">"failed to convert function `{}` to given type"</span>, name))<span class="question-mark">?</span>)
     }
 
     <span class="doccomment">/// Looks up an exported [`Table`] value by name.
     ///
     /// Returns `None` if there was no export named `name`, or if there was but
-    /// it wasn&#39;t a table.
+    /// it wasn't a table.
     ///
     /// # Panics
     ///
@@ -1370,7 +1371,7 @@
     <span class="doccomment">/// Looks up an exported [`Memory`] value by name.
     ///
     /// Returns `None` if there was no export named `name`, or if there was but
-    /// it wasn&#39;t a memory.
+    /// it wasn't a memory.
     ///
     /// # Panics
     ///
@@ -1382,7 +1383,7 @@
     <span class="doccomment">/// Looks up an exported [`SharedMemory`] value by name.
     ///
     /// Returns `None` if there was no export named `name`, or if there was but
-    /// it wasn&#39;t a shared memory.
+    /// it wasn't a shared memory.
     ///
     /// # Panics
     ///
@@ -1399,7 +1400,7 @@
     <span class="doccomment">/// Looks up an exported [`Global`] value by name.
     ///
     /// Returns `None` if there was no export named `name`, or if there was but
-    /// it wasn&#39;t a global.
+    /// it wasn't a global.
     ///
     /// # Panics
     ///
@@ -1408,7 +1409,7 @@
         <span class="self">self</span>.get_export(store, name)<span class="question-mark">?</span>.into_global()
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>StoreOpaque) -&gt; InstanceId {
         store[<span class="self">self</span>.<span class="number">0</span>].id
     }
@@ -1445,7 +1446,7 @@
         <span class="self">self</span>.globals.reserve(raw.num_imported_globals);
     }
 
-    <span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.functions.clear();
         <span class="self">self</span>.tables.clear();
@@ -1475,7 +1476,7 @@
 
     <span class="doccomment">/// Note that this is unsafe as the validity of `item` is not verified and
     /// it contains a bunch of raw pointers.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;component-model&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">unsafe fn </span>push_export(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: <span class="kw-2">&amp;</span>wasmtime_runtime::Export) {
         <span class="kw">match </span>item {
             wasmtime_runtime::Export::Function(f) =&gt; {
@@ -1506,7 +1507,7 @@
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Imports&lt;<span class="lifetime">&#39;_</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Imports&lt;<span class="lifetime">'_</span>&gt; {
         Imports {
             tables: <span class="self">self</span>.tables.values().as_slice(),
             globals: <span class="self">self</span>.globals.values().as_slice(),
@@ -1548,7 +1549,7 @@
 
     <span class="doccomment">/// The `VMFuncRef`s for the functions in `items` that do not
     /// have a `wasm_call` trampoline. We pre-allocate and pre-patch these
-    /// `VMFuncRef`s so that we don&#39;t have to do it at
+    /// `VMFuncRef`s so that we don't have to do it at
     /// instantiation time.
     ///
     /// This is an `Arc&lt;[T]&gt;` for the same reason as `items`.
@@ -1557,7 +1558,7 @@
     _marker: std::marker::PhantomData&lt;<span class="kw">fn</span>() -&gt; T&gt;,
 }
 
-<span class="doccomment">/// InstancePre&#39;s clone does not require T: Clone
+<span class="doccomment">/// InstancePre's clone does not require T: Clone
 </span><span class="kw">impl</span>&lt;T&gt; Clone <span class="kw">for </span>InstancePre&lt;T&gt; {
     <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -1630,7 +1631,7 @@
     ///
     /// # Panics
     ///
-    /// Panics if any import closed over by this [`InstancePre`] isn&#39;t owned by
+    /// Panics if any import closed over by this [`InstancePre`] isn't owned by
     /// `store`, or if `store` has async support enabled. Additionally this
     /// function will panic if the `store` provided comes from a different
     /// [`Engine`] than the [`InstancePre`] originally came from.
@@ -1645,8 +1646,8 @@
         )<span class="question-mark">?</span>;
 
         <span class="comment">// This unsafety should be handled by the type-checking performed by the
-        // constructor of `InstancePre` to assert that all the imports we&#39;re passing
-        // in match the module we&#39;re instantiating.
+        // constructor of `InstancePre` to assert that all the imports we're passing
+        // in match the module we're instantiating.
         </span><span class="kw">unsafe </span>{ Instance::new_started(<span class="kw-2">&amp;mut </span>store, <span class="kw-2">&amp;</span><span class="self">self</span>.module, imports.as_ref()) }
     }
 
@@ -1658,10 +1659,10 @@
     ///
     /// # Panics
     ///
-    /// Panics if any import closed over by this [`InstancePre`] isn&#39;t owned by
+    /// Panics if any import closed over by this [`InstancePre`] isn't owned by
     /// `store`, or if `store` does not have async support enabled.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
-    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">&quot;async&quot;</span>)))]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    #[cfg_attr(nightlydoc, doc(cfg(feature = <span class="string">"async"</span>)))]
     </span><span class="kw">pub async fn </span>instantiate_async(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>store: <span class="kw">impl </span>AsContextMut&lt;Data = T&gt;,
@@ -1679,8 +1680,8 @@
         )<span class="question-mark">?</span>;
 
         <span class="comment">// This unsafety should be handled by the type-checking performed by the
-        // constructor of `InstancePre` to assert that all the imports we&#39;re passing
-        // in match the module we&#39;re instantiating.
+        // constructor of `InstancePre` to assert that all the imports we're passing
+        // in match the module we're instantiating.
         </span><span class="kw">unsafe </span>{ Instance::new_started_async(<span class="kw-2">&amp;mut </span>store, <span class="kw-2">&amp;</span><span class="self">self</span>.module, imports.as_ref()).<span class="kw">await </span>}
     }
 }
@@ -1702,7 +1703,7 @@
         <span class="comment">// Any linker-defined function of the `Definition::HostFunc` variant
         // will insert a function into the store automatically as part of
         // instantiation, so reserve space here to make insertion more efficient
-        // as it won&#39;t have to realloc during the instantiation.
+        // as it won't have to realloc during the instantiation.
         </span>store.store_data_mut().reserve_funcs(host_funcs);
 
         <span class="comment">// The usage of `to_extern_store_rooted` requires that the items are
@@ -1717,7 +1718,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>imports = OwnedImports::new(module);
     <span class="kw">for </span>import <span class="kw">in </span>items.iter() {
         <span class="kw">if </span>!import.comes_from_same_store(store) {
-            <span class="macro">bail!</span>(<span class="string">&quot;cross-`Store` instantiation is not currently supported&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"cross-`Store` instantiation is not currently supported"</span>);
         }
         <span class="comment">// This unsafety should be encapsulated in the constructor of
         // `InstancePre` where the `T` of the original item should match the
@@ -1746,12 +1747,12 @@
 <span class="kw">fn </span>typecheck&lt;I&gt;(
     module: <span class="kw-2">&amp;</span>Module,
     imports: <span class="kw-2">&amp;</span>[I],
-    check: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;</span>matching::MatchCx&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;</span>EntityType, <span class="kw-2">&amp;</span>I) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
+    check: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;</span>matching::MatchCx&lt;<span class="lifetime">'_</span>&gt;, <span class="kw-2">&amp;</span>EntityType, <span class="kw-2">&amp;</span>I) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>env_module = module.compiled_module().module();
     <span class="kw">let </span>expected = env_module.imports().count();
     <span class="kw">if </span>expected != imports.len() {
-        <span class="macro">bail!</span>(<span class="string">&quot;expected {} imports, found {}&quot;</span>, expected, imports.len());
+        <span class="macro">bail!</span>(<span class="string">"expected {} imports, found {}"</span>, expected, imports.len());
     }
     <span class="kw">let </span>cx = matching::MatchCx {
         signatures: module.signatures(),
@@ -1760,7 +1761,7 @@
     };
     <span class="kw">for </span>((name, field, expected_ty), actual) <span class="kw">in </span>env_module.imports().zip(imports) {
         check(<span class="kw-2">&amp;</span>cx, <span class="kw-2">&amp;</span>expected_ty, actual)
-            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;incompatible import type for `{name}::{field}`&quot;</span>))<span class="question-mark">?</span>;
+            .with_context(|| <span class="macro">format!</span>(<span class="string">"incompatible import type for `{name}::{field}`"</span>))<span class="question-mark">?</span>;
     }
     <span class="prelude-val">Ok</span>(())
 }

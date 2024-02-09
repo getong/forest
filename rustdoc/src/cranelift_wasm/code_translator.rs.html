@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-wasm-0.99.2/src/code_translator.rs`."><title>code_translator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_wasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-wasm-0.99.2/src/code_translator.rs`."><title>code_translator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_wasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -3632,24 +3633,24 @@
 //! argument.
 //!
 //! There is extra complexity associated with translation of 128-bit SIMD instructions.
-//! Wasm only considers there to be a single 128-bit vector type.  But CLIF&#39;s type system
+//! Wasm only considers there to be a single 128-bit vector type.  But CLIF's type system
 //! distinguishes different lane configurations, so considers 8X16, 16X8, 32X4 and 64X2 to be
-//! different types.  The result is that, in wasm, it&#39;s perfectly OK to take the output of (eg)
+//! different types.  The result is that, in wasm, it's perfectly OK to take the output of (eg)
 //! an `add.16x8` and use that as an operand of a `sub.32x4`, without using any cast.  But when
 //! translated into CLIF, that will cause a verifier error due to the apparent type mismatch.
 //!
 //! This file works around that problem by liberally inserting `bitcast` instructions in many
 //! places -- mostly, before the use of vector values, either as arguments to CLIF instructions
 //! or as block actual parameters.  These are no-op casts which nevertheless have different
-//! input and output types, and are used (mostly) to &quot;convert&quot; 16X8, 32X4 and 64X2-typed vectors
-//! to the &quot;canonical&quot; type, 8X16.  Hence the functions `optionally_bitcast_vector`,
+//! input and output types, and are used (mostly) to "convert" 16X8, 32X4 and 64X2-typed vectors
+//! to the "canonical" type, 8X16.  Hence the functions `optionally_bitcast_vector`,
 //! `bitcast_arguments`, `pop*_with_bitcast`, `canonicalise_then_jump`,
 //! `canonicalise_then_br{z,nz}`, `is_non_canonical_v128` and `canonicalise_v128_values`.
 //! Note that the `bitcast*` functions are occasionally used to convert to some type other than
 //! 8X16, but the `canonicalise*` functions always convert to type 8X16.
 //!
 //! Be careful when adding support for new vector instructions.  And when adding new jumps, even
-//! if they are apparently don&#39;t have any connection to vectors.  Never generate any kind of
+//! if they are apparently don't have any connection to vectors.  Never generate any kind of
 //! (inter-block) jump directly.  Instead use `canonicalise_then_jump` and
 //! `canonicalise_then_br{z,nz}`.
 //!
@@ -3673,11 +3674,11 @@
 //!
 //! For further background see also:
 //!   &lt;https://github.com/bytecodealliance/wasmtime/issues/1147&gt;
-//!     (&quot;Too many raw_bitcasts in SIMD code&quot;)
+//!     ("Too many raw_bitcasts in SIMD code")
 //!   &lt;https://github.com/bytecodealliance/cranelift/pull/1251&gt;
-//!     (&quot;Add X128 type to represent WebAssembly&#39;s V128 type&quot;)
+//!     ("Add X128 type to represent WebAssembly's V128 type")
 //!   &lt;https://github.com/bytecodealliance/cranelift/pull/1236&gt;
-//!     (&quot;Relax verification to allow I8X16 to act as a default vector type&quot;)
+//!     ("Relax verification to allow I8X16 to act as a default vector type")
 
 </span><span class="kw">mod </span>bounds_checks;
 
@@ -3722,9 +3723,9 @@
     };
 }
 
-<span class="comment">// Clippy warns about &quot;align: _&quot; but its important to document that the flags field is ignored
+<span class="comment">// Clippy warns about "align: _" but its important to document that the flags field is ignored
 </span><span class="attr">#[cfg_attr(
-    feature = <span class="string">&quot;cargo-clippy&quot;</span>,
+    feature = <span class="string">"cargo-clippy"</span>,
     allow(clippy::unneeded_field_pattern, clippy::cognitive_complexity)
 )]
 </span><span class="doccomment">/// Translates wasm operators into Cranelift IR instructions.
@@ -3790,7 +3791,7 @@
                 GlobalVariable::Memory { gv, offset, ty } =&gt; {
                     <span class="kw">let </span>addr = builder.ins().global_value(environ.pointer_type(), gv);
                     <span class="kw">let </span><span class="kw-2">mut </span>flags = ir::MemFlags::trusted();
-                    <span class="comment">// Put globals in the &quot;table&quot; abstract heap category as well.
+                    <span class="comment">// Put globals in the "table" abstract heap category as well.
                     </span>flags.set_table();
                     builder.ins().load(ty, flags, addr, offset)
                 }
@@ -3803,11 +3804,11 @@
         }
         Operator::GlobalSet { global_index } =&gt; {
             <span class="kw">match </span>state.get_global(builder.func, <span class="kw-2">*</span>global_index, environ)<span class="question-mark">? </span>{
-                GlobalVariable::Const(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;global #{} is a constant&quot;</span>, <span class="kw-2">*</span>global_index),
+                GlobalVariable::Const(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"global #{} is a constant"</span>, <span class="kw-2">*</span>global_index),
                 GlobalVariable::Memory { gv, offset, ty } =&gt; {
                     <span class="kw">let </span>addr = builder.ins().global_value(environ.pointer_type(), gv);
                     <span class="kw">let </span><span class="kw-2">mut </span>flags = ir::MemFlags::trusted();
-                    <span class="comment">// Put globals in the &quot;table&quot; abstract heap category as well.
+                    <span class="comment">// Put globals in the "table" abstract heap category as well.
                     </span>flags.set_table();
                     <span class="kw">let </span><span class="kw-2">mut </span>val = state.pop1();
                     <span class="comment">// Ensure SIMD values are cast to their default Cranelift type, I8x16.
@@ -3872,7 +3873,7 @@
          *  The `End` instruction pops the last control frame from the control stack, seals
          *  the destination block (since `br` instructions targeting it only appear inside the
          *  block and have already been translated) and modify the value stack to use the
-         *  possible `Block`&#39;s arguments values.
+         *  possible `Block`'s arguments values.
          ***********************************************************************************/
         </span>Operator::Block { blockty } =&gt; {
             <span class="kw">let </span>(params, results) = blocktype_params_results(validator, <span class="kw-2">*</span>blockty)<span class="question-mark">?</span>;
@@ -3886,7 +3887,7 @@
             canonicalise_then_jump(builder, loop_body, state.peekn(params.len()));
             state.push_loop(loop_body, next, params.len(), results.len());
 
-            <span class="comment">// Pop the initial `Block` actuals and replace them with the `Block`&#39;s
+            <span class="comment">// Pop the initial `Block` actuals and replace them with the `Block`'s
             // params since control flow joins at the top of the loop.
             </span>state.popn(params.len());
             state
@@ -3904,7 +3905,7 @@
             <span class="kw">let </span>(destination, else_data) = <span class="kw">if </span>params.clone().eq(results.clone()) {
                 <span class="comment">// It is possible there is no `else` block, so we will only
                 // allocate a block for it if/when we find the `else`. For now,
-                // we if the condition isn&#39;t true, then we jump directly to the
+                // we if the condition isn't true, then we jump directly to the
                 // destination block following the whole `if...end`. If we do end
                 // up discovering an `else`, then we will allocate a block for it
                 // and go back and patch the jump.
@@ -4022,14 +4023,14 @@
                         //
                         //     state.pushn(&amp;control_stack_frame.params);
                         //
-                        // We don&#39;t do that because they are already on the top of the stack
+                        // We don't do that because they are already on the top of the stack
                         // for us: we pushed the parameters twice when we saw the initial
-                        // `if` so that we wouldn&#39;t have to save the parameters in the
+                        // `if` so that we wouldn't have to save the parameters in the
                         // `ControlStackFrame` as another `Vec` allocation.
 
                         </span>builder.switch_to_block(else_block);
 
-                        <span class="comment">// We don&#39;t bother updating the control frame&#39;s `ElseData`
+                        <span class="comment">// We don't bother updating the control frame's `ElseData`
                         // to `WithElse` because nothing else will read it.
                     </span>}
                 }
@@ -4044,9 +4045,9 @@
 
             canonicalise_then_jump(builder, next_block, return_args);
             <span class="comment">// You might expect that if we just finished an `if` block that
-            // didn&#39;t have a corresponding `else` block, then we would clean
+            // didn't have a corresponding `else` block, then we would clean
             // up our duplicate set of parameters that we pushed earlier
-            // right here. However, we don&#39;t have to explicitly do that,
+            // right here. However, we don't have to explicitly do that,
             // since we truncate the stack back to the original height
             // below.
 
@@ -4071,7 +4072,7 @@
          * Once the destination `Block` is found, we sometimes have to declare a certain depth
          * of the stack unreachable, because some branch instructions are terminator.
          *
-         * The `br_table` case is much more complicated because Cranelift&#39;s `br_table` instruction
+         * The `br_table` case is much more complicated because Cranelift's `br_table` instruction
          * does not support jump arguments like all the other branch instructions. That is why, in
          * the case where we would use jump arguments for every other branch instruction, we
          * need to split the critical edges leaving the `br_tables` by creating one `Block` per
@@ -4079,7 +4080,7 @@
          * `Block`s contain only a jump instruction pointing to the final destination, this time with
          * jump arguments.
          *
-         * This system is also implemented in Cranelift&#39;s SSA construction algorithm, because
+         * This system is also implemented in Cranelift's SSA construction algorithm, because
          * `use_var` located in a destination `Block` of a `br_table` might trigger the addition
          * of jump arguments in each predecessor branch instruction, one of which might be a
          * `br_table`.
@@ -4145,7 +4146,7 @@
                 <span class="kw">let </span>jt = builder.create_jump_table(JumpTableData::new(block, <span class="kw-2">&amp;</span>data));
                 builder.ins().br_table(val, jt);
             } <span class="kw">else </span>{
-                <span class="comment">// Here we have jump arguments, but Cranelift&#39;s br_table doesn&#39;t support them
+                <span class="comment">// Here we have jump arguments, but Cranelift's br_table doesn't support them
                 // We then proceed to split the edges going out of the br_table
                 </span><span class="kw">let </span>return_count = jump_args_count;
                 <span class="kw">let </span><span class="kw-2">mut </span>dest_block_sequence = <span class="macro">vec!</span>[];
@@ -4210,7 +4211,7 @@
         | Operator::Delegate { .. }
         | Operator::CatchAll =&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">wasm_unsupported!</span>(
-                <span class="string">&quot;proposed exception handling operator {:?}&quot;</span>,
+                <span class="string">"proposed exception handling operator {:?}"</span>,
                 op
             ));
         }
@@ -4243,7 +4244,7 @@
                 builder.func.dfg.signatures[builder.func.dfg.ext_funcs[fref].signature]
                     .returns
                     .len(),
-                <span class="string">&quot;translate_call results should match the call signature&quot;
+                <span class="string">"translate_call results should match the call signature"
             </span>);
             state.popn(num_args);
             state.pushn(inst_results);
@@ -4253,7 +4254,7 @@
             table_index,
             table_byte: <span class="kw">_</span>,
         } =&gt; {
-            <span class="comment">// `type_index` is the index of the function&#39;s signature and
+            <span class="comment">// `type_index` is the index of the function's signature and
             // `table_index` is the index of the table to search the function
             // in.
             </span><span class="kw">let </span>(sigref, num_args) = state.get_indirect_sig(builder.func, <span class="kw-2">*</span>type_index, environ)<span class="question-mark">?</span>;
@@ -4277,7 +4278,7 @@
             <span class="macro">debug_assert_eq!</span>(
                 inst_results.len(),
                 builder.func.dfg.signatures[sigref].returns.len(),
-                <span class="string">&quot;translate_call_indirect results should match the call signature&quot;
+                <span class="string">"translate_call_indirect results should match the call signature"
             </span>);
             state.popn(num_args);
             state.pushn(inst_results);
@@ -4286,8 +4287,8 @@
          * The tail call instructions pop their arguments from the stack and
          * then permanently transfer control to their callee. The indirect
          * version requires environment support (while the direct version can
-         * optionally be hooked but doesn&#39;t require it) it interacts with the
-         * VM&#39;s runtime state via tables.
+         * optionally be hooked but doesn't require it) it interacts with the
+         * VM's runtime state via tables.
          ************************************************************************************/
         </span>Operator::ReturnCall { function_index } =&gt; {
             <span class="kw">let </span>(fref, num_args) = state.get_direct_func(builder.func, <span class="kw-2">*</span>function_index, environ)<span class="question-mark">?</span>;
@@ -4315,7 +4316,7 @@
             type_index,
             table_index,
         } =&gt; {
-            <span class="comment">// `type_index` is the index of the function&#39;s signature and
+            <span class="comment">// `type_index` is the index of the function's signature and
             // `table_index` is the index of the table to search the function
             // in.
             </span><span class="kw">let </span>(sigref, num_args) = state.get_indirect_sig(builder.func, <span class="kw-2">*</span>type_index, environ)<span class="question-mark">?</span>;
@@ -4341,7 +4342,7 @@
         }
         Operator::ReturnCallRef { type_index } =&gt; {
             <span class="comment">// Get function signature
-            // `index` is the index of the function&#39;s signature and `table_index` is the index of
+            // `index` is the index of the function's signature and `table_index` is the index of
             // the table to search the function in.
             </span><span class="kw">let </span>(sigref, num_args) = state.get_indirect_sig(builder.func, <span class="kw-2">*</span>type_index, environ)<span class="question-mark">?</span>;
             <span class="kw">let </span>callee = state.pop1();
@@ -5321,7 +5322,7 @@
             <span class="kw">let </span>extracted = builder.ins().extractlane(vector, lane.clone());
             state.push1(builder.ins().uextend(I32, extracted));
             <span class="comment">// On x86, PEXTRB zeroes the upper bits of the destination register of extractlane so
-            // uextend could be elided; for now, uextend is needed for Cranelift&#39;s type checks to
+            // uextend could be elided; for now, uextend is needed for Cranelift's type checks to
             // work.
         </span>}
         Operator::I32x4ExtractLane { lane }
@@ -5441,21 +5442,21 @@
             <span class="kw">let </span>(a, b) = state.pop2();
             <span class="kw">let </span>bitcast_a = optionally_bitcast_vector(a, type_of(op), builder);
             <span class="comment">// The spec expects to shift with `b mod lanewidth`; This is directly compatible
-            // with cranelift&#39;s instruction.
+            // with cranelift's instruction.
             </span>state.push1(builder.ins().ishl(bitcast_a, b))
         }
         Operator::I8x16ShrU | Operator::I16x8ShrU | Operator::I32x4ShrU | Operator::I64x2ShrU =&gt; {
             <span class="kw">let </span>(a, b) = state.pop2();
             <span class="kw">let </span>bitcast_a = optionally_bitcast_vector(a, type_of(op), builder);
             <span class="comment">// The spec expects to shift with `b mod lanewidth`; This is directly compatible
-            // with cranelift&#39;s instruction.
+            // with cranelift's instruction.
             </span>state.push1(builder.ins().ushr(bitcast_a, b))
         }
         Operator::I8x16ShrS | Operator::I16x8ShrS | Operator::I32x4ShrS | Operator::I64x2ShrS =&gt; {
             <span class="kw">let </span>(a, b) = state.pop2();
             <span class="kw">let </span>bitcast_a = optionally_bitcast_vector(a, type_of(op), builder);
             <span class="comment">// The spec expects to shift with `b mod lanewidth`; This is directly compatible
-            // with cranelift&#39;s instruction.
+            // with cranelift's instruction.
             </span>state.push1(builder.ins().sshr(bitcast_a, b))
         }
         Operator::V128Bitselect =&gt; {
@@ -5621,7 +5622,7 @@
         <span class="comment">// FIXME(#5913): the relaxed instructions here are translated the same
         // as the saturating instructions, even when the code generator
         // configuration allow for different semantics across hosts. On x86,
-        // however, it&#39;s theoretically possible to have a slightly more optimal
+        // however, it's theoretically possible to have a slightly more optimal
         // lowering which accounts for NaN differently, although the lowering is
         // still not trivial (e.g. one instruction). At this time the
         // more-optimal-but-still-large lowering for x86 is not implemented so
@@ -5732,7 +5733,7 @@
         }
         Operator::F32x4Ceil | Operator::F64x2Ceil =&gt; {
             <span class="comment">// This is something of a misuse of `type_of`, because that produces the return type
-            // of `op`.  In this case we want the arg type, but we know it&#39;s the same as the
+            // of `op`.  In this case we want the arg type, but we know it's the same as the
             // return type.  Same for the 3 cases below.
             </span><span class="kw">let </span>arg = pop1_with_bitcast(state, type_of(op), builder);
             state.push1(builder.ins().ceil(arg));
@@ -5841,7 +5842,7 @@
         }
         Operator::MemoryDiscard { .. } =&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">wasm_unsupported!</span>(
-                <span class="string">&quot;proposed memory-control operator {:?}&quot;</span>,
+                <span class="string">"proposed memory-control operator {:?}"</span>,
                 op
             ));
         }
@@ -5891,7 +5892,7 @@
             <span class="kw">let </span>(a, b, c) = pop3_with_bitcast(state, type_of(op), builder);
             state.push1(
                 <span class="kw">if </span>environ.relaxed_simd_deterministic() || environ.has_native_fma() {
-                    <span class="comment">// Deterministic semantics are &quot;fused multiply and add&quot;
+                    <span class="comment">// Deterministic semantics are "fused multiply and add"
                     // which the CLIF `fma` guarantees.
                     </span>builder.ins().fma(a, b, c)
                 } <span class="kw">else </span>{
@@ -5905,7 +5906,7 @@
             <span class="kw">let </span>a = builder.ins().fneg(a);
             state.push1(
                 <span class="kw">if </span>environ.relaxed_simd_deterministic() || environ.has_native_fma() {
-                    <span class="comment">// Deterministic semantics are &quot;fused multiply and add&quot;
+                    <span class="comment">// Deterministic semantics are "fused multiply and add"
                     // which the CLIF `fma` guarantees.
                     </span>builder.ins().fma(a, b, c)
                 } <span class="kw">else </span>{
@@ -6033,7 +6034,7 @@
         Operator::BrOnNonNull { relative_depth } =&gt; {
             <span class="comment">// We write this a bit differently from the spec to avoid an extra
             // block/branch and the typed accounting thereof. Instead of the
-            // spec&#39;s approach, it&#39;s described as such:
+            // spec's approach, it's described as such:
             // Peek the value val from the stack.
             // If val is ref.null ht, then: pop the value val from the stack.
             // Else: Execute the instruction (br relative_depth).
@@ -6053,7 +6054,7 @@
         }
         Operator::CallRef { type_index } =&gt; {
             <span class="comment">// Get function signature
-            // `index` is the index of the function&#39;s signature and `table_index` is the index of
+            // `index` is the index of the function's signature and `table_index` is the index of
             // the table to search the function in.
             </span><span class="kw">let </span>(sigref, num_args) = state.get_indirect_sig(builder.func, <span class="kw-2">*</span>type_index, environ)<span class="question-mark">?</span>;
             <span class="kw">let </span>callee = state.pop1();
@@ -6069,7 +6070,7 @@
             <span class="macro">debug_assert_eq!</span>(
                 inst_results.len(),
                 builder.func.dfg.signatures[sigref].returns.len(),
-                <span class="string">&quot;translate_call_ref results should match the call signature&quot;
+                <span class="string">"translate_call_ref results should match the call signature"
             </span>);
             state.popn(num_args);
             state.pushn(inst_results);
@@ -6082,14 +6083,14 @@
         }
 
         Operator::I31New | Operator::I31GetS | Operator::I31GetU =&gt; {
-            <span class="macro">unimplemented!</span>(<span class="string">&quot;GC operators not yet implemented&quot;</span>)
+            <span class="macro">unimplemented!</span>(<span class="string">"GC operators not yet implemented"</span>)
         }
     };
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="comment">// Clippy warns us of some fields we are deliberately ignoring
-</span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;cargo-clippy&quot;</span>, allow(clippy::unneeded_field_pattern))]
+</span><span class="attr">#[cfg_attr(feature = <span class="string">"cargo-clippy"</span>, allow(clippy::unneeded_field_pattern))]
 </span><span class="doccomment">/// Deals with a Wasm instruction located in an unreachable portion of the code. Most of them
 /// are dropped but special ones like `End` or `Else` signal the potential end of the unreachable
 /// portion so the translation state must be updated accordingly.
@@ -6103,8 +6104,8 @@
     <span class="macro">debug_assert!</span>(!state.reachable);
     <span class="kw">match </span><span class="kw-2">*</span>op {
         Operator::If { blockty } =&gt; {
-            <span class="comment">// Push a placeholder control stack entry. The if isn&#39;t reachable,
-            // so we don&#39;t have any branches anywhere.
+            <span class="comment">// Push a placeholder control stack entry. The if isn't reachable,
+            // so we don't have any branches anywhere.
             </span>state.push_if(
                 ir::Block::reserved_value(),
                 ElseData::NoElse {
@@ -6186,7 +6187,7 @@
                 <span class="comment">// If it is a loop we also have to seal the body loop block
                 </span>ControlStackFrame::Loop { header, .. } =&gt; {
                     builder.seal_block(header);
-                    <span class="comment">// And loops can&#39;t have branches to the end.
+                    <span class="comment">// And loops can't have branches to the end.
                     </span><span class="bool-val">false
                 </span>}
                 <span class="comment">// If we never set `consequent_ends_reachable` then that means
@@ -6222,7 +6223,7 @@
             }
         }
         <span class="kw">_ </span>=&gt; {
-            <span class="comment">// We don&#39;t translate because this is unreachable code
+            <span class="comment">// We don't translate because this is unreachable code
         </span>}
     }
 
@@ -6252,29 +6253,29 @@
     <span class="kw">let </span>index = state.pop1();
     <span class="kw">let </span>heap = state.get_heap(builder.func, memarg.memory, environ)<span class="question-mark">?</span>;
 
-    <span class="comment">// How exactly the bounds check is performed here and what it&#39;s performed
+    <span class="comment">// How exactly the bounds check is performed here and what it's performed
     // on is a bit tricky. Generally we want to rely on access violations (e.g.
-    // segfaults) to generate traps since that means we don&#39;t have to bounds
+    // segfaults) to generate traps since that means we don't have to bounds
     // check anything explicitly.
     //
-    // (1) If we don&#39;t have a guard page of unmapped memory, though, then we
-    // can&#39;t rely on this trapping behavior through segfaults. Instead we need
+    // (1) If we don't have a guard page of unmapped memory, though, then we
+    // can't rely on this trapping behavior through segfaults. Instead we need
     // to bounds-check the entire memory access here which is everything from
     // `addr32 + offset` to `addr32 + offset + width` (not inclusive). In this
-    // scenario our adjusted offset that we&#39;re checking is `memarg.offset +
+    // scenario our adjusted offset that we're checking is `memarg.offset +
     // access_size`. Note that we do saturating arithmetic here to avoid
     // overflow. THe addition here is in the 64-bit space, which means that
-    // we&#39;ll never overflow for 32-bit wasm but for 64-bit this is an issue. If
-    // our effective offset is u64::MAX though then it&#39;s impossible for for
+    // we'll never overflow for 32-bit wasm but for 64-bit this is an issue. If
+    // our effective offset is u64::MAX though then it's impossible for for
     // that to actually be a valid offset because otherwise the wasm linear
     // memory would take all of the host memory!
     //
     // (2) If we have a guard page, however, then we can perform a further
     // optimization of the generated code by only checking multiples of the
     // offset-guard size to be more CSE-friendly. Knowing that we have at least
-    // 1 page of a guard page we&#39;re then able to disregard the `width` since we
-    // know it&#39;s always less than one page. Our bounds check will be for the
-    // first byte which will either succeed and be guaranteed to fault if it&#39;s
+    // 1 page of a guard page we're then able to disregard the `width` since we
+    // know it's always less than one page. Our bounds check will be for the
+    // first byte which will either succeed and be guaranteed to fault if it's
     // actually out of bounds, or the bounds check itself will fail. In any case
     // we assert that the width is reasonably small for now so this assumption
     // can be adjusted in the future if we get larger widths.
@@ -6283,7 +6284,7 @@
     //
     //      n * offset_guard_size + y = offset
     //
-    // We&#39;ll then pass `n * offset_guard_size` as the bounds check value. If
+    // We'll then pass `n * offset_guard_size` as the bounds check value. If
     // this traps then our `offset` would have trapped anyway. If this check
     // passes we know
     //
@@ -6297,26 +6298,26 @@
     //
     //      addr32 + offset &lt; bound + offset_guard_size
     //
-    // Since we know that that guard size bytes are all unmapped we&#39;re
+    // Since we know that that guard size bytes are all unmapped we're
     // guaranteed that `offset` and the `width` bytes after it are either
-    // in-bounds or will hit the guard page, meaning we&#39;ll get the desired
+    // in-bounds or will hit the guard page, meaning we'll get the desired
     // semantics we want.
     //
     // ---
     //
     // With all that in mind remember that the goal is to bounds check as few
-    // things as possible. To facilitate this the &quot;fast path&quot; is expected to be
+    // things as possible. To facilitate this the "fast path" is expected to be
     // hit like so:
     //
-    // * For wasm32, wasmtime defaults to 4gb &quot;static&quot; memories with 2gb guard
+    // * For wasm32, wasmtime defaults to 4gb "static" memories with 2gb guard
     //   regions. This means that for all offsets &lt;=2gb, we hit the optimized
-    //   case for `heap_addr` on static memories 4gb in size in cranelift&#39;s
+    //   case for `heap_addr` on static memories 4gb in size in cranelift's
     //   legalization of `heap_addr`, eliding the bounds check entirely.
     //
     // * For wasm64 offsets &lt;=2gb will generate a single `heap_addr`
-    //   instruction, but at this time all heaps are &quot;dyanmic&quot; which means that
-    //   a single bounds check is forced. Ideally we&#39;d do better here, but
-    //   that&#39;s the current state of affairs.
+    //   instruction, but at this time all heaps are "dyanmic" which means that
+    //   a single bounds check is forced. Ideally we'd do better here, but
+    //   that's the current state of affairs.
     //
     // Basically we assume that most configurations have a guard page and most
     // offsets in `memarg` are &lt;=2gb, which means we get the fast path of one
@@ -6335,16 +6336,16 @@
             access_size,
         )<span class="question-mark">?</span>,
 
-        <span class="comment">// If the offset doesn&#39;t fit within a u32, then we can&#39;t pass it
+        <span class="comment">// If the offset doesn't fit within a u32, then we can't pass it
         // directly into `heap_addr`.
         //
-        // One reasonable question you might ask is &quot;why not?&quot;. There&#39;s no
+        // One reasonable question you might ask is "why not?". There's no
         // fundamental reason why `heap_addr` *must* take a 32-bit offset. The
-        // reason this isn&#39;t done, though, is that blindly changing the offset
+        // reason this isn't done, though, is that blindly changing the offset
         // to a 64-bit offset increases the size of the `InstructionData` enum
         // in cranelift by 8 bytes (16 to 24). This can have significant
         // performance implications so the conclusion when this was written was
-        // that we shouldn&#39;t do that.
+        // that we shouldn't do that.
         //
         // Without the ability to put the whole offset into the `heap_addr`
         // instruction we need to fold the offset into the address itself with
@@ -6356,7 +6357,7 @@
         // Once we have the effective address, offset already folded in, then
         // `heap_addr` is used to verify that the address is indeed in-bounds.
         //
-        // Note that this is generating what&#39;s likely to be at least two
+        // Note that this is generating what's likely to be at least two
         // branches, one for the overflow and one for the bounds check itself.
         // For now though that should hopefully be ok since 4gb+ offsets are
         // relatively odd/rare. In the future if needed we can look into
@@ -6382,9 +6383,9 @@
         Reachability::Reachable(a) =&gt; a,
     };
 
-    <span class="comment">// Note that we don&#39;t set `is_aligned` here, even if the load instruction&#39;s
-    // alignment immediate may says it&#39;s aligned, because WebAssembly&#39;s
-    // immediate field is just a hint, while Cranelift&#39;s aligned flag needs a
+    <span class="comment">// Note that we don't set `is_aligned` here, even if the load instruction's
+    // alignment immediate may says it's aligned, because WebAssembly's
+    // immediate field is just a hint, while Cranelift's aligned flag needs a
     // guarantee. WebAssembly memory accesses are always little-endian.
     </span><span class="kw">let </span><span class="kw-2">mut </span>flags = MemFlags::new();
     flags.set_endianness(ir::Endianness::Little);
@@ -6411,11 +6412,11 @@
     //
     // Note that with an offset&gt;0 we generate an `iadd_imm` where the result is
     // thrown away after the offset check. This may truncate the offset and the
-    // result may overflow as well, but those conditions won&#39;t affect the
+    // result may overflow as well, but those conditions won't affect the
     // alignment check itself. This can probably be optimized better and we
     // should do so in the future as well.
     </span><span class="kw">if </span>loaded_bytes &gt; <span class="number">1 </span>{
-        <span class="kw">let </span>addr = state.pop1(); <span class="comment">// &quot;peek&quot; via pop then push
+        <span class="kw">let </span>addr = state.pop1(); <span class="comment">// "peek" via pop then push
         </span>state.push1(addr);
         <span class="kw">let </span>effective_addr = <span class="kw">if </span>memarg.offset == <span class="number">0 </span>{
             addr
@@ -6458,14 +6459,14 @@
     <span class="doccomment">/// The Wasm execution state is reachable, here is a `T`.
     </span>Reachable(T),
     <span class="doccomment">/// The Wasm execution state has been determined to be statically
-    /// unreachable. It is the receiver of this value&#39;s responsibility to update
+    /// unreachable. It is the receiver of this value's responsibility to update
     /// `FuncTranslationState::reachable` as necessary.
     </span>Unreachable,
 }
 
 <span class="doccomment">/// Translate a load instruction.
 ///
-/// Returns the execution state&#39;s reachability after the load is translated.
+/// Returns the execution state's reachability after the load is translated.
 </span><span class="kw">fn </span>translate_load&lt;FE: FuncEnvironment + <span class="question-mark">?</span>Sized&gt;(
     memarg: <span class="kw-2">&amp;</span>MemArg,
     opcode: ir::Opcode,
@@ -6518,7 +6519,7 @@
         ir::Opcode::Istore16 | ir::Opcode::Sload16 | ir::Opcode::Uload16 =&gt; <span class="number">2</span>,
         ir::Opcode::Istore32 | ir::Opcode::Sload32 | ir::Opcode::Uload32 =&gt; <span class="number">4</span>,
         ir::Opcode::Store | ir::Opcode::Load =&gt; u8::try_from(ty.bytes()).unwrap(),
-        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unknown size of mem op for {:?}&quot;</span>, opcode),
+        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unknown size of mem op for {:?}"</span>, opcode),
     }
 }
 
@@ -6546,7 +6547,7 @@
         I8 | I16 | I32 | I64 =&gt; {}
         <span class="kw">_ </span>=&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">wasm_unsupported!</span>(
-                <span class="string">&quot;atomic_rmw: unsupported access type {:?}&quot;</span>,
+                <span class="string">"atomic_rmw: unsupported access type {:?}"</span>,
                 access_ty
             ))
         }
@@ -6599,7 +6600,7 @@
         I8 | I16 | I32 | I64 =&gt; {}
         <span class="kw">_ </span>=&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">wasm_unsupported!</span>(
-                <span class="string">&quot;atomic_cas: unsupported access type {:?}&quot;</span>,
+                <span class="string">"atomic_cas: unsupported access type {:?}"</span>,
                 access_ty
             ))
         }
@@ -6651,7 +6652,7 @@
         I8 | I16 | I32 | I64 =&gt; {}
         <span class="kw">_ </span>=&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">wasm_unsupported!</span>(
-                <span class="string">&quot;atomic_load: unsupported access type {:?}&quot;</span>,
+                <span class="string">"atomic_load: unsupported access type {:?}"</span>,
                 access_ty
             ))
         }
@@ -6696,7 +6697,7 @@
         I8 | I16 | I32 | I64 =&gt; {}
         <span class="kw">_ </span>=&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">wasm_unsupported!</span>(
-                <span class="string">&quot;atomic_store: unsupported access type {:?}&quot;</span>,
+                <span class="string">"atomic_store: unsupported access type {:?}"</span>,
                 access_ty
             ))
         }
@@ -7002,8 +7003,8 @@
         | Operator::F64x2RelaxedNmadd =&gt; F64X2,
 
         <span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(
-            <span class="string">&quot;Currently only SIMD instructions are mapped to their return type; the \
-             following instruction is not mapped: {:?}&quot;</span>,
+            <span class="string">"Currently only SIMD instructions are mapped to their return type; the \
+             following instruction is not mapped: {:?}"</span>,
             operator
         ),
     }
@@ -7033,17 +7034,17 @@
     }
 }
 
-<span class="doccomment">/// Cast to I8X16, any vector values in `values` that are of &quot;non-canonical&quot; type (meaning, not
+<span class="doccomment">/// Cast to I8X16, any vector values in `values` that are of "non-canonical" type (meaning, not
 /// I8X16), and return them in a slice.  A pre-scan is made to determine whether any casts are
 /// actually necessary, and if not, the original slice is returned.  Otherwise the cast values
 /// are returned in a slice that belongs to the caller-supplied `SmallVec`.
-</span><span class="kw">fn </span>canonicalise_v128_values&lt;<span class="lifetime">&#39;a</span>&gt;(
-    tmp_canonicalised: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>SmallVec&lt;[ir::Value; <span class="number">16</span>]&gt;,
+</span><span class="kw">fn </span>canonicalise_v128_values&lt;<span class="lifetime">'a</span>&gt;(
+    tmp_canonicalised: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>SmallVec&lt;[ir::Value; <span class="number">16</span>]&gt;,
     builder: <span class="kw-2">&amp;mut </span>FunctionBuilder,
-    values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ir::Value],
-) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ir::Value] {
+    values: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[ir::Value],
+) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[ir::Value] {
     <span class="macro">debug_assert!</span>(tmp_canonicalised.is_empty());
-    <span class="comment">// First figure out if any of the parameters need to be cast.  Mostly they don&#39;t need to be.
+    <span class="comment">// First figure out if any of the parameters need to be cast.  Mostly they don't need to be.
     </span><span class="kw">let </span>any_non_canonical = values
         .iter()
         .any(|v| is_non_canonical_v128(builder.func.dfg.value_type(<span class="kw-2">*</span>v)));
@@ -7051,7 +7052,7 @@
     </span><span class="kw">if </span>!any_non_canonical {
         <span class="kw">return </span>values;
     }
-    <span class="comment">// Otherwise we&#39;ll have to cast, and push the resulting `Value`s into `canonicalised`.
+    <span class="comment">// Otherwise we'll have to cast, and push the resulting `Value`s into `canonicalised`.
     </span><span class="kw">for </span>v <span class="kw">in </span>values {
         tmp_canonicalised.push(<span class="kw">if </span>is_non_canonical_v128(builder.func.dfg.value_type(<span class="kw-2">*</span>v)) {
             <span class="kw">let </span><span class="kw-2">mut </span>flags = MemFlags::new();
@@ -7065,7 +7066,7 @@
 }
 
 <span class="doccomment">/// Generate a `jump` instruction, but first cast all 128-bit vector values to I8X16 if they
-/// don&#39;t have that type.  This is done in somewhat roundabout way so as to ensure that we
+/// don't have that type.  This is done in somewhat roundabout way so as to ensure that we
 /// almost never have to do any heap allocation.
 </span><span class="kw">fn </span>canonicalise_then_jump(
     builder: <span class="kw-2">&amp;mut </span>FunctionBuilder,
@@ -7102,7 +7103,7 @@
 }
 
 <span class="doccomment">/// A helper for popping and bitcasting a single value; since SIMD values can lose their type by
-/// using v128 (i.e. CLIF&#39;s I8x16) we must re-type the values using a bitcast to avoid CLIF
+/// using v128 (i.e. CLIF's I8x16) we must re-type the values using a bitcast to avoid CLIF
 /// typing issues.
 </span><span class="kw">fn </span>pop1_with_bitcast(
     state: <span class="kw-2">&amp;mut </span>FuncTranslationState,
@@ -7113,7 +7114,7 @@
 }
 
 <span class="doccomment">/// A helper for popping and bitcasting two values; since SIMD values can lose their type by
-/// using v128 (i.e. CLIF&#39;s I8x16) we must re-type the values using a bitcast to avoid CLIF
+/// using v128 (i.e. CLIF's I8x16) we must re-type the values using a bitcast to avoid CLIF
 /// typing issues.
 </span><span class="kw">fn </span>pop2_with_bitcast(
     state: <span class="kw-2">&amp;mut </span>FuncTranslationState,
@@ -7138,12 +7139,12 @@
     (bitcast_a, bitcast_b, bitcast_c)
 }
 
-<span class="kw">fn </span>bitcast_arguments&lt;<span class="lifetime">&#39;a</span>&gt;(
+<span class="kw">fn </span>bitcast_arguments&lt;<span class="lifetime">'a</span>&gt;(
     builder: <span class="kw-2">&amp;</span>FunctionBuilder,
-    arguments: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[Value],
+    arguments: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>[Value],
     params: <span class="kw-2">&amp;</span>[ir::AbiParam],
     param_predicate: <span class="kw">impl </span>Fn(usize) -&gt; bool,
-) -&gt; Vec&lt;(Type, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value)&gt; {
+) -&gt; Vec&lt;(Type, <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>Value)&gt; {
     <span class="kw">let </span>filtered_param_types = params
         .iter()
         .enumerate()
@@ -7163,14 +7164,14 @@
             <span class="kw">let </span>arg_type = builder.func.dfg.value_type(<span class="kw-2">**</span>arg);
             <span class="macro">assert!</span>(
                 arg_type.is_vector(),
-                <span class="string">&quot;unexpected type mismatch: expected {}, argument {} was actually of type {}&quot;</span>,
+                <span class="string">"unexpected type mismatch: expected {}, argument {} was actually of type {}"</span>,
                 param_type,
                 <span class="kw-2">*</span>arg,
                 arg_type
             );
 
             <span class="comment">// This is the same check that would be done by `optionally_bitcast_vector`, except we
-            // can&#39;t take a mutable borrow of the FunctionBuilder here, so we defer inserting the
+            // can't take a mutable borrow of the FunctionBuilder here, so we defer inserting the
             // bitcast instruction to the caller.
             </span>arg_type != <span class="kw-2">*</span>param_type
         })

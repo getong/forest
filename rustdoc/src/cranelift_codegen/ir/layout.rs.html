@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/ir/layout.rs`."><title>layout.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/ir/layout.rs`."><title>layout.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1278,7 +1279,7 @@
 <span class="doccomment">/// Secondary stride used when renumbering locally.
 </span><span class="kw">const </span>MINOR_STRIDE: SequenceNumber = <span class="number">2</span>;
 
-<span class="doccomment">/// Limit on the sequence number range we&#39;ll renumber locally. If this limit is exceeded, we&#39;ll
+<span class="doccomment">/// Limit on the sequence number range we'll renumber locally. If this limit is exceeded, we'll
 /// switch to a full block renumbering.
 </span><span class="kw">const </span>LOCAL_LIMIT: SequenceNumber = <span class="number">100 </span>* MINOR_STRIDE;
 
@@ -1387,11 +1388,11 @@
             }
 
             <span class="kw">if </span>seq &gt; limit {
-                <span class="comment">// We&#39;re pushing too many instructions in front of us.
+                <span class="comment">// We're pushing too many instructions in front of us.
                 // Switch to a full block renumbering to make some space.
                 </span><span class="self">self</span>.full_block_renumber(
                     <span class="self">self</span>.inst_block(inst)
-                        .expect(<span class="string">&quot;inst must be inserted before assigning an seq&quot;</span>),
+                        .expect(<span class="string">"inst must be inserted before assigning an seq"</span>),
                 );
                 <span class="kw">return</span>;
             }
@@ -1402,7 +1403,7 @@
 
     <span class="doccomment">/// Renumber all instructions in a block.
     ///
-    /// This doesn&#39;t affect the position of anything, but it gives more room in the internal
+    /// This doesn't affect the position of anything, but it gives more room in the internal
     /// sequence numbers for inserting instructions later.
     </span><span class="kw">fn </span>full_block_renumber(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block) {
         <span class="kw">let </span>_tt = timing::layout_renumber();
@@ -1415,7 +1416,7 @@
             next_inst = <span class="self">self</span>.insts[inst].next.expand();
         }
 
-        <span class="macro">trace!</span>(<span class="string">&quot;Renumbered {} program points&quot;</span>, seq / MAJOR_STRIDE);
+        <span class="macro">trace!</span>(<span class="string">"Renumbered {} program points"</span>, seq / MAJOR_STRIDE);
     }
 }
 
@@ -1438,7 +1439,7 @@
     </span><span class="kw">pub fn </span>append_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block) {
         <span class="macro">debug_assert!</span>(
             !<span class="self">self</span>.is_block_inserted(block),
-            <span class="string">&quot;Cannot append block that is already in the layout&quot;
+            <span class="string">"Cannot append block that is already in the layout"
         </span>);
         {
             <span class="kw">let </span>node = <span class="kw-2">&amp;mut </span><span class="self">self</span>.blocks[block];
@@ -1458,11 +1459,11 @@
     </span><span class="kw">pub fn </span>insert_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block, before: Block) {
         <span class="macro">debug_assert!</span>(
             !<span class="self">self</span>.is_block_inserted(block),
-            <span class="string">&quot;Cannot insert block that is already in the layout&quot;
+            <span class="string">"Cannot insert block that is already in the layout"
         </span>);
         <span class="macro">debug_assert!</span>(
             <span class="self">self</span>.is_block_inserted(before),
-            <span class="string">&quot;block Insertion point not in the layout&quot;
+            <span class="string">"block Insertion point not in the layout"
         </span>);
         <span class="kw">let </span>after = <span class="self">self</span>.blocks[before].prev;
         {
@@ -1481,11 +1482,11 @@
     </span><span class="kw">pub fn </span>insert_block_after(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block, after: Block) {
         <span class="macro">debug_assert!</span>(
             !<span class="self">self</span>.is_block_inserted(block),
-            <span class="string">&quot;Cannot insert block that is already in the layout&quot;
+            <span class="string">"Cannot insert block that is already in the layout"
         </span>);
         <span class="macro">debug_assert!</span>(
             <span class="self">self</span>.is_block_inserted(after),
-            <span class="string">&quot;block Insertion point not in the layout&quot;
+            <span class="string">"block Insertion point not in the layout"
         </span>);
         <span class="kw">let </span>before = <span class="self">self</span>.blocks[after].next;
         {
@@ -1502,8 +1503,8 @@
 
     <span class="doccomment">/// Remove `block` from the layout.
     </span><span class="kw">pub fn </span>remove_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block) {
-        <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_block_inserted(block), <span class="string">&quot;block not in the layout&quot;</span>);
-        <span class="macro">debug_assert!</span>(<span class="self">self</span>.first_inst(block).is_none(), <span class="string">&quot;block must be empty.&quot;</span>);
+        <span class="macro">debug_assert!</span>(<span class="self">self</span>.is_block_inserted(block), <span class="string">"block not in the layout"</span>);
+        <span class="macro">debug_assert!</span>(<span class="self">self</span>.first_inst(block).is_none(), <span class="string">"block must be empty."</span>);
 
         <span class="comment">// Clear the `block` node and extract links.
         </span><span class="kw">let </span>prev;
@@ -1534,7 +1535,7 @@
         }
     }
 
-    <span class="doccomment">/// Get the function&#39;s entry block.
+    <span class="doccomment">/// Get the function's entry block.
     /// This is simply the first block in the layout order.
     </span><span class="kw">pub fn </span>entry_block(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Block&gt; {
         <span class="self">self</span>.first_block
@@ -1555,7 +1556,7 @@
         <span class="self">self</span>.blocks[block].next.expand()
     }
 
-    <span class="doccomment">/// Mark a block as &quot;cold&quot;.
+    <span class="doccomment">/// Mark a block as "cold".
     ///
     /// This will try to move it out of the ordinary path of execution
     /// when lowered to machine code.
@@ -1570,7 +1571,7 @@
 }
 
 <span class="doccomment">/// A single node in the linked-list of blocks.
-</span><span class="comment">// **Note:** Whenever you add new fields here, don&#39;t forget to update the custom serializer for `Layout` too.
+</span><span class="comment">// **Note:** Whenever you add new fields here, don't forget to update the custom serializer for `Layout` too.
 </span><span class="attr">#[derive(Clone, Debug, Default, PartialEq, Hash)]
 </span><span class="kw">struct </span>BlockNode {
     prev: PackedOption&lt;Block&gt;,
@@ -1581,12 +1582,12 @@
 }
 
 <span class="doccomment">/// Iterate over blocks in layout order. See [crate::ir::layout::Layout::blocks].
-</span><span class="kw">pub struct </span>Blocks&lt;<span class="lifetime">&#39;f</span>&gt; {
-    layout: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>Layout,
+</span><span class="kw">pub struct </span>Blocks&lt;<span class="lifetime">'f</span>&gt; {
+    layout: <span class="kw-2">&amp;</span><span class="lifetime">'f </span>Layout,
     next: <span class="prelude-ty">Option</span>&lt;Block&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>&gt; Iterator <span class="kw">for </span>Blocks&lt;<span class="lifetime">&#39;f</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; Iterator <span class="kw">for </span>Blocks&lt;<span class="lifetime">'f</span>&gt; {
     <span class="kw">type </span>Item = Block;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Block&gt; {
@@ -1601,11 +1602,11 @@
 }
 
 <span class="doccomment">/// Use a layout reference in a for loop.
-</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>&gt; IntoIterator <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>Layout {
+</span><span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; IntoIterator <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'f </span>Layout {
     <span class="kw">type </span>Item = Block;
-    <span class="kw">type </span>IntoIter = Blocks&lt;<span class="lifetime">&#39;f</span>&gt;;
+    <span class="kw">type </span>IntoIter = Blocks&lt;<span class="lifetime">'f</span>&gt;;
 
-    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; Blocks&lt;<span class="lifetime">&#39;f</span>&gt; {
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; Blocks&lt;<span class="lifetime">'f</span>&gt; {
         <span class="self">self</span>.blocks()
     }
 }
@@ -1624,7 +1625,7 @@
     </span><span class="kw">pub fn </span>pp_block(<span class="kw-2">&amp;</span><span class="self">self</span>, pp: ProgramPoint) -&gt; Block {
         <span class="kw">match </span>pp {
             ProgramPoint::Block(block) =&gt; block,
-            ProgramPoint::Inst(inst) =&gt; <span class="self">self</span>.inst_block(inst).expect(<span class="string">&quot;Program point not in layout&quot;</span>),
+            ProgramPoint::Inst(inst) =&gt; <span class="self">self</span>.inst_block(inst).expect(<span class="string">"Program point not in layout"</span>),
         }
     }
 
@@ -1633,7 +1634,7 @@
         <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.inst_block(inst), <span class="prelude-val">None</span>);
         <span class="macro">debug_assert!</span>(
             <span class="self">self</span>.is_block_inserted(block),
-            <span class="string">&quot;Cannot append instructions to block not in layout&quot;
+            <span class="string">"Cannot append instructions to block not in layout"
         </span>);
         {
             <span class="kw">let </span>block_node = <span class="kw-2">&amp;mut </span><span class="self">self</span>.blocks[block];
@@ -1653,12 +1654,12 @@
         <span class="self">self</span>.assign_inst_seq(inst);
     }
 
-    <span class="doccomment">/// Fetch a block&#39;s first instruction.
+    <span class="doccomment">/// Fetch a block's first instruction.
     </span><span class="kw">pub fn </span>first_inst(<span class="kw-2">&amp;</span><span class="self">self</span>, block: Block) -&gt; <span class="prelude-ty">Option</span>&lt;Inst&gt; {
         <span class="self">self</span>.blocks[block].first_inst.into()
     }
 
-    <span class="doccomment">/// Fetch a block&#39;s last instruction.
+    <span class="doccomment">/// Fetch a block's last instruction.
     </span><span class="kw">pub fn </span>last_inst(<span class="kw-2">&amp;</span><span class="self">self</span>, block: Block) -&gt; <span class="prelude-ty">Option</span>&lt;Inst&gt; {
         <span class="self">self</span>.blocks[block].last_inst.into()
     }
@@ -1678,7 +1679,7 @@
         <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.inst_block(inst), <span class="prelude-val">None</span>);
         <span class="kw">let </span>block = <span class="self">self
             </span>.inst_block(before)
-            .expect(<span class="string">&quot;Instruction before insertion point not in the layout&quot;</span>);
+            .expect(<span class="string">"Instruction before insertion point not in the layout"</span>);
         <span class="kw">let </span>after = <span class="self">self</span>.insts[before].prev;
         {
             <span class="kw">let </span>inst_node = <span class="kw-2">&amp;mut </span><span class="self">self</span>.insts[inst];
@@ -1696,7 +1697,7 @@
 
     <span class="doccomment">/// Remove `inst` from the layout.
     </span><span class="kw">pub fn </span>remove_inst(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inst: Inst) {
-        <span class="kw">let </span>block = <span class="self">self</span>.inst_block(inst).expect(<span class="string">&quot;Instruction already removed.&quot;</span>);
+        <span class="kw">let </span>block = <span class="self">self</span>.inst_block(inst).expect(<span class="string">"Instruction already removed."</span>);
         <span class="comment">// Clear the `inst` node and extract links.
         </span><span class="kw">let </span>prev;
         <span class="kw">let </span>next;
@@ -1753,7 +1754,7 @@
     </span><span class="kw">pub fn </span>split_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new_block: Block, before: Inst) {
         <span class="kw">let </span>old_block = <span class="self">self
             </span>.inst_block(before)
-            .expect(<span class="string">&quot;The `before` instruction must be in the layout&quot;</span>);
+            .expect(<span class="string">"The `before` instruction must be in the layout"</span>);
         <span class="macro">debug_assert!</span>(!<span class="self">self</span>.is_block_inserted(new_block));
 
         <span class="comment">// Insert new_block after old_block.
@@ -1822,13 +1823,13 @@
 }
 
 <span class="doccomment">/// Iterate over instructions in a block in layout order. See `Layout::block_insts()`.
-</span><span class="kw">pub struct </span>Insts&lt;<span class="lifetime">&#39;f</span>&gt; {
-    layout: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>Layout,
+</span><span class="kw">pub struct </span>Insts&lt;<span class="lifetime">'f</span>&gt; {
+    layout: <span class="kw-2">&amp;</span><span class="lifetime">'f </span>Layout,
     head: <span class="prelude-ty">Option</span>&lt;Inst&gt;,
     tail: <span class="prelude-ty">Option</span>&lt;Inst&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>&gt; Iterator <span class="kw">for </span>Insts&lt;<span class="lifetime">&#39;f</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; Iterator <span class="kw">for </span>Insts&lt;<span class="lifetime">'f</span>&gt; {
     <span class="kw">type </span>Item = Inst;
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Inst&gt; {
@@ -1845,7 +1846,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>&gt; DoubleEndedIterator <span class="kw">for </span>Insts&lt;<span class="lifetime">&#39;f</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; DoubleEndedIterator <span class="kw">for </span>Insts&lt;<span class="lifetime">'f</span>&gt; {
     <span class="kw">fn </span>next_back(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Inst&gt; {
         <span class="kw">let </span>rval = <span class="self">self</span>.tail;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(inst) = rval {
@@ -1862,16 +1863,16 @@
 
 <span class="doccomment">/// A custom serialize and deserialize implementation for [`Layout`].
 ///
-/// This doesn&#39;t use a derived implementation as [`Layout`] is a manual implementation of a linked
+/// This doesn't use a derived implementation as [`Layout`] is a manual implementation of a linked
 /// list. Storing it directly as a regular list saves a lot of space.
 ///
 /// The following format is used. (notated in EBNF form)
 ///
 /// ```plain
 /// data = block_data * ;
-/// block_data = &quot;block_id&quot; , &quot;cold&quot; , &quot;inst_count&quot; , ( &quot;inst_id&quot; * ) ;
+/// block_data = "block_id" , "cold" , "inst_count" , ( "inst_id" * ) ;
 /// ```
-</span><span class="attr">#[cfg(feature = <span class="string">&quot;enable-serde&quot;</span>)]
+</span><span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
 </span><span class="kw">mod </span>serde {
     <span class="kw">use </span>::serde::de::{Deserializer, Error, SeqAccess, Visitor};
     <span class="kw">use </span>::serde::ser::{SerializeSeq, Serializer};
@@ -1905,10 +1906,10 @@
         }
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>&gt; Deserialize&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for </span>Layout {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>Layout {
         <span class="kw">fn </span>deserialize&lt;D&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, D::Error&gt;
         <span class="kw">where
-            </span>D: Deserializer&lt;<span class="lifetime">&#39;de</span>&gt;,
+            </span>D: Deserializer&lt;<span class="lifetime">'de</span>&gt;,
         {
             deserializer.deserialize_seq(LayoutVisitor {
                 marker: PhantomData,
@@ -1920,16 +1921,16 @@
         marker: PhantomData&lt;<span class="kw">fn</span>() -&gt; Layout&gt;,
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>&gt; Visitor&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for </span>LayoutVisitor {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; Visitor&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>LayoutVisitor {
         <span class="kw">type </span>Value = Layout;
 
         <span class="kw">fn </span>expecting(<span class="kw-2">&amp;</span><span class="self">self</span>, formatter: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
-            <span class="macro">write!</span>(formatter, <span class="string">&quot;a `cranelift_codegen::ir::Layout`&quot;</span>)
+            <span class="macro">write!</span>(formatter, <span class="string">"a `cranelift_codegen::ir::Layout`"</span>)
         }
 
         <span class="kw">fn </span>visit_seq&lt;M&gt;(<span class="self">self</span>, <span class="kw-2">mut </span>access: M) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Value, M::Error&gt;
         <span class="kw">where
-            </span>M: SeqAccess&lt;<span class="lifetime">&#39;de</span>&gt;,
+            </span>M: SeqAccess&lt;<span class="lifetime">'de</span>&gt;,
         {
             <span class="kw">let </span><span class="kw-2">mut </span>layout = Layout::new();
 
@@ -1938,17 +1939,17 @@
 
                 <span class="kw">let </span>cold = access
                     .next_element::&lt;bool&gt;()<span class="question-mark">?
-                    </span>.ok_or_else(|| Error::missing_field(<span class="string">&quot;cold&quot;</span>))<span class="question-mark">?</span>;
+                    </span>.ok_or_else(|| Error::missing_field(<span class="string">"cold"</span>))<span class="question-mark">?</span>;
                 layout.blocks[block].cold = cold;
 
                 <span class="kw">let </span>count = access
                     .next_element::&lt;u32&gt;()<span class="question-mark">?
-                    </span>.ok_or_else(|| Error::missing_field(<span class="string">&quot;count&quot;</span>))<span class="question-mark">?</span>;
+                    </span>.ok_or_else(|| Error::missing_field(<span class="string">"count"</span>))<span class="question-mark">?</span>;
 
                 <span class="kw">for _ in </span><span class="number">0</span>..count {
                     <span class="kw">let </span>inst = access
                         .next_element::&lt;Inst&gt;()<span class="question-mark">?
-                        </span>.ok_or_else(|| Error::missing_field(<span class="string">&quot;inst&quot;</span>))<span class="question-mark">?</span>;
+                        </span>.ok_or_else(|| Error::missing_field(<span class="string">"inst"</span>))<span class="question-mark">?</span>;
                     layout.append_inst(inst, block);
                 }
             }
@@ -1967,13 +1968,13 @@
     <span class="kw">use </span>alloc::vec::Vec;
     <span class="kw">use </span>core::cmp::Ordering;
 
-    <span class="kw">struct </span>LayoutCursor&lt;<span class="lifetime">&#39;f</span>&gt; {
+    <span class="kw">struct </span>LayoutCursor&lt;<span class="lifetime">'f</span>&gt; {
         <span class="doccomment">/// Borrowed function layout. Public so it can be re-borrowed from this cursor.
-        </span><span class="kw">pub </span>layout: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span><span class="kw-2">mut </span>Layout,
+        </span><span class="kw">pub </span>layout: <span class="kw-2">&amp;</span><span class="lifetime">'f </span><span class="kw-2">mut </span>Layout,
         pos: CursorPosition,
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>&gt; Cursor <span class="kw">for </span>LayoutCursor&lt;<span class="lifetime">&#39;f</span>&gt; {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; Cursor <span class="kw">for </span>LayoutCursor&lt;<span class="lifetime">'f</span>&gt; {
         <span class="kw">fn </span>position(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CursorPosition {
             <span class="self">self</span>.pos
         }
@@ -1999,10 +2000,10 @@
         }
     }
 
-    <span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>&gt; LayoutCursor&lt;<span class="lifetime">&#39;f</span>&gt; {
+    <span class="kw">impl</span>&lt;<span class="lifetime">'f</span>&gt; LayoutCursor&lt;<span class="lifetime">'f</span>&gt; {
         <span class="doccomment">/// Create a new `LayoutCursor` for `layout`.
         /// The cursor holds a mutable reference to `layout` for its entire lifetime.
-        </span><span class="kw">pub fn </span>new(layout: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span><span class="kw-2">mut </span>Layout) -&gt; <span class="self">Self </span>{
+        </span><span class="kw">pub fn </span>new(layout: <span class="kw-2">&amp;</span><span class="lifetime">'f </span><span class="kw-2">mut </span>Layout) -&gt; <span class="self">Self </span>{
             <span class="self">Self </span>{
                 layout,
                 pos: CursorPosition::Nowhere,

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/parity-db-0.4.13/src/compress.rs`."><title>compress.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="parity_db" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/parity-db-0.4.13/src/compress.rs`."><title>compress.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="parity_db" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -261,7 +262,7 @@
 			a <span class="kw">if </span>a == CompressionType::NoCompression <span class="kw">as </span>u8 =&gt; CompressionType::NoCompression,
 			a <span class="kw">if </span>a == CompressionType::Lz4 <span class="kw">as </span>u8 =&gt; CompressionType::Lz4,
 			a <span class="kw">if </span>a == CompressionType::Snappy <span class="kw">as </span>u8 =&gt; CompressionType::Snappy,
-			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unknown compression.&quot;</span>),
+			<span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unknown compression."</span>),
 		}
 	}
 }
@@ -273,7 +274,7 @@
 			CompressionType::Lz4 =&gt; Compressor::Lz4(lz4::Lz4::new()),
 			CompressionType::Snappy =&gt; Compressor::Snappy(snappy::Snappy::new()),
 			<span class="attr">#[allow(unreachable_patterns)]
-			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Missing compression implementation.&quot;</span>),
+			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Missing compression implementation."</span>),
 		}
 	}
 }
@@ -285,7 +286,7 @@
 			Compressor::Lz4(<span class="kw">_</span>) =&gt; CompressionType::Lz4,
 			Compressor::Snappy(<span class="kw">_</span>) =&gt; CompressionType::Snappy,
 			<span class="attr">#[allow(unreachable_patterns)]
-			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Missing compression implementation.&quot;</span>),
+			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Missing compression implementation."</span>),
 		}
 	}
 }
@@ -295,9 +296,9 @@
 
 	<span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
 		<span class="kw">match </span>s.to_lowercase().as_str() {
-			<span class="string">&quot;none&quot; </span>=&gt; <span class="prelude-val">Ok</span>(CompressionType::NoCompression),
-			<span class="string">&quot;lz4&quot; </span>=&gt; <span class="prelude-val">Ok</span>(CompressionType::Lz4),
-			<span class="string">&quot;snappy&quot; </span>=&gt; <span class="prelude-val">Ok</span>(CompressionType::Snappy),
+			<span class="string">"none" </span>=&gt; <span class="prelude-val">Ok</span>(CompressionType::NoCompression),
+			<span class="string">"lz4" </span>=&gt; <span class="prelude-val">Ok</span>(CompressionType::Lz4),
+			<span class="string">"snappy" </span>=&gt; <span class="prelude-val">Ok</span>(CompressionType::Snappy),
 			<span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="kw">crate</span>::Error::Compression),
 		}
 	}
@@ -310,7 +311,7 @@
 			Compressor::Lz4(inner) =&gt; inner.compress(buf),
 			Compressor::Snappy(inner) =&gt; inner.compress(buf),
 			<span class="attr">#[allow(unreachable_patterns)]
-			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Missing compression implementation.&quot;</span>),
+			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Missing compression implementation."</span>),
 		}
 	}
 
@@ -320,7 +321,7 @@
 			Compressor::Lz4(inner) =&gt; inner.decompress(buf)<span class="question-mark">?</span>,
 			Compressor::Snappy(inner) =&gt; inner.decompress(buf)<span class="question-mark">?</span>,
 			<span class="attr">#[allow(unreachable_patterns)]
-			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;Missing compression implementation.&quot;</span>),
+			</span><span class="kw">_ </span>=&gt; <span class="macro">unimplemented!</span>(<span class="string">"Missing compression implementation."</span>),
 		})
 	}
 }
@@ -375,7 +376,7 @@
 			<span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(value.len() &lt;&lt; <span class="number">3</span>);
 			{
 				<span class="kw">let </span><span class="kw-2">mut </span>encoder = snap::write::FrameEncoder::new(<span class="kw-2">&amp;mut </span>buf);
-				encoder.write_all(value).expect(<span class="string">&quot;Expect in memory write to succeed.&quot;</span>);
+				encoder.write_all(value).expect(<span class="string">"Expect in memory write to succeed."</span>);
 			}
 			buf
 		}
@@ -411,17 +412,17 @@
 	<span class="attr">#[test]
 	</span><span class="kw">fn </span>test_compression_from_str() {
 		<span class="kw">let </span>correct_cases = [
-			(<span class="string">&quot;lz4&quot;</span>, CompressionType::Lz4),
-			(<span class="string">&quot;snappy&quot;</span>, CompressionType::Snappy),
-			(<span class="string">&quot;none&quot;</span>, CompressionType::NoCompression),
-			(<span class="string">&quot;SNAPPy&quot;</span>, CompressionType::Snappy),
+			(<span class="string">"lz4"</span>, CompressionType::Lz4),
+			(<span class="string">"snappy"</span>, CompressionType::Snappy),
+			(<span class="string">"none"</span>, CompressionType::NoCompression),
+			(<span class="string">"SNAPPy"</span>, CompressionType::Snappy),
 		];
 
 		<span class="kw">for </span>(input, expected_compression) <span class="kw">in </span>correct_cases {
 			<span class="macro">assert_eq!</span>(expected_compression, CompressionType::from_str(input).unwrap());
 		}
 
-		<span class="kw">let </span>invalid_cases = [<span class="string">&quot;lz5&quot;</span>, <span class="string">&quot;&quot;</span>, <span class="string">&quot;cthulhu&quot;</span>];
+		<span class="kw">let </span>invalid_cases = [<span class="string">"lz5"</span>, <span class="string">""</span>, <span class="string">"cthulhu"</span>];
 
 		<span class="kw">for </span>input <span class="kw">in </span>invalid_cases {
 			<span class="macro">assert!</span>(CompressionType::from_str(input).is_err());

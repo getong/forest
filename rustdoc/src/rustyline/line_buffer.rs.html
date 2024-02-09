@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rustyline-13.0.0/src/line_buffer.rs`."><title>line_buffer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rustyline" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/rustyline-13.0.0/src/line_buffer.rs`."><title>line_buffer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="rustyline" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1880,9 +1881,9 @@
 
 <span class="doccomment">/// Default maximum buffer size for the line read
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MAX_LINE: usize = <span class="number">4096</span>;
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>INDENT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;                                &quot;</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>INDENT: <span class="kw-2">&amp;</span>str = <span class="string">"                                "</span>;
 
-<span class="doccomment">/// Word&#39;s case change
+<span class="doccomment">/// Word's case change
 </span><span class="attr">#[derive(Clone, Copy)]
 </span><span class="kw">pub enum </span>WordAction {
     <span class="doccomment">/// Capitalize word
@@ -1950,10 +1951,10 @@
 </span>}
 
 <span class="kw">impl </span>fmt::Debug <span class="kw">for </span>LineBuffer {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        f.debug_struct(<span class="string">&quot;LineBuffer&quot;</span>)
-            .field(<span class="string">&quot;buf&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.buf)
-            .field(<span class="string">&quot;pos&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.pos)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        f.debug_struct(<span class="string">"LineBuffer"</span>)
+            .field(<span class="string">"buf"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.buf)
+            .field(<span class="string">"pos"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.pos)
             .finish()
     }
 }
@@ -2043,7 +2044,7 @@
     }
 
     <span class="kw">fn </span>end_of_line(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(n) = <span class="self">self</span>.buf[<span class="self">self</span>.pos..].find(<span class="string">&#39;\n&#39;</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(n) = <span class="self">self</span>.buf[<span class="self">self</span>.pos..].find(<span class="string">'\n'</span>) {
             n + <span class="self">self</span>.pos
         } <span class="kw">else </span>{
             <span class="self">self</span>.buf.len()
@@ -2051,7 +2052,7 @@
     }
 
     <span class="kw">fn </span>start_of_line(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">&#39;\n&#39;</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">'\n'</span>) {
             <span class="comment">// `i` is before the new line, e.g. at the end of the previous one.
             </span>i + <span class="number">1
         </span>} <span class="kw">else </span>{
@@ -2233,7 +2234,7 @@
     }
 
     <span class="doccomment">/// Delete the character at the right of the cursor without altering the
-    /// cursor position. Basically this is what happens with the &quot;Delete&quot;
+    /// cursor position. Basically this is what happens with the "Delete"
     /// keyboard key.
     /// Return the number of characters deleted.
     </span><span class="kw">pub fn </span>delete&lt;D: DeleteListener&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: RepeatCount, dl: <span class="kw-2">&amp;mut </span>D) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
@@ -2250,7 +2251,7 @@
     }
 
     <span class="doccomment">/// Delete the character at the left of the cursor.
-    /// Basically that is what happens with the &quot;Backspace&quot; keyboard key.
+    /// Basically that is what happens with the "Backspace" keyboard key.
     </span><span class="kw">pub fn </span>backspace&lt;D: DeleteListener&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: RepeatCount, dl: <span class="kw-2">&amp;mut </span>D) -&gt; bool {
         <span class="kw">match </span><span class="self">self</span>.prev_pos(n) {
             <span class="prelude-val">Some</span>(pos) =&gt; {
@@ -2342,23 +2343,23 @@
         }
         <span class="kw">let </span><span class="kw-2">mut </span>sow = <span class="number">0</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>gis = <span class="self">self</span>.buf[..pos].grapheme_indices(<span class="bool-val">true</span>).rev();
-        <span class="lifetime">&#39;outer</span>: <span class="kw">for _ in </span><span class="number">0</span>..n {
+        <span class="lifetime">'outer</span>: <span class="kw">for _ in </span><span class="number">0</span>..n {
             sow = <span class="number">0</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>gj = gis.next();
-            <span class="lifetime">&#39;inner</span>: <span class="kw">loop </span>{
+            <span class="lifetime">'inner</span>: <span class="kw">loop </span>{
                 <span class="kw">if let </span><span class="prelude-val">Some</span>((j, y)) = gj {
                     <span class="kw">let </span>gi = gis.next();
                     <span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw">_</span>, x)) = gi {
                         <span class="kw">if </span>is_start_of_word(word_def, x, y) {
                             sow = j;
-                            <span class="kw">break </span><span class="lifetime">&#39;inner</span>;
+                            <span class="kw">break </span><span class="lifetime">'inner</span>;
                         }
                         gj = gi;
                     } <span class="kw">else </span>{
-                        <span class="kw">break </span><span class="lifetime">&#39;outer</span>;
+                        <span class="kw">break </span><span class="lifetime">'outer</span>;
                     }
                 } <span class="kw">else </span>{
-                    <span class="kw">break </span><span class="lifetime">&#39;outer</span>;
+                    <span class="kw">break </span><span class="lifetime">'outer</span>;
                 }
             }
         }
@@ -2405,30 +2406,30 @@
         } <span class="kw">else </span>{
             <span class="prelude-val">None
         </span>};
-        <span class="lifetime">&#39;outer</span>: <span class="kw">for _ in </span><span class="number">0</span>..n {
+        <span class="lifetime">'outer</span>: <span class="kw">for _ in </span><span class="number">0</span>..n {
             wp = <span class="number">0</span>;
             gi = gis.next();
-            <span class="lifetime">&#39;inner</span>: <span class="kw">loop </span>{
+            <span class="lifetime">'inner</span>: <span class="kw">loop </span>{
                 <span class="kw">if let </span><span class="prelude-val">Some</span>((i, x)) = gi {
                     <span class="kw">let </span>gj = gis.next();
                     <span class="kw">if let </span><span class="prelude-val">Some</span>((j, y)) = gj {
                         <span class="kw">if </span>at == At::Start &amp;&amp; is_start_of_word(word_def, x, y) {
                             wp = j;
-                            <span class="kw">break </span><span class="lifetime">&#39;inner</span>;
+                            <span class="kw">break </span><span class="lifetime">'inner</span>;
                         } <span class="kw">else if </span>at != At::Start &amp;&amp; is_end_of_word(word_def, x, y) {
                             <span class="kw">if </span>word_def == Word::Emacs || at == At::AfterEnd {
                                 wp = j;
                             } <span class="kw">else </span>{
                                 wp = i;
                             }
-                            <span class="kw">break </span><span class="lifetime">&#39;inner</span>;
+                            <span class="kw">break </span><span class="lifetime">'inner</span>;
                         }
                         gi = gj;
                     } <span class="kw">else </span>{
-                        <span class="kw">break </span><span class="lifetime">&#39;outer</span>;
+                        <span class="kw">break </span><span class="lifetime">'outer</span>;
                     }
                 } <span class="kw">else </span>{
-                    <span class="kw">break </span><span class="lifetime">&#39;outer</span>;
+                    <span class="kw">break </span><span class="lifetime">'outer</span>;
                 }
             }
         }
@@ -2458,24 +2459,24 @@
 
     <span class="doccomment">/// Moves the cursor to the same column in the line above
     </span><span class="kw">pub fn </span>move_to_line_up(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: RepeatCount) -&gt; bool {
-        <span class="kw">match </span><span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">&#39;\n&#39;</span>) {
+        <span class="kw">match </span><span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">'\n'</span>) {
             <span class="prelude-val">Some</span>(off) =&gt; {
                 <span class="kw">let </span>column = <span class="self">self</span>.buf[off + <span class="number">1</span>..<span class="self">self</span>.pos].graphemes(<span class="bool-val">true</span>).count();
 
-                <span class="kw">let </span><span class="kw-2">mut </span>dest_start = <span class="self">self</span>.buf[..off].rfind(<span class="string">&#39;\n&#39;</span>).map_or(<span class="number">0</span>, |n| n + <span class="number">1</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>dest_start = <span class="self">self</span>.buf[..off].rfind(<span class="string">'\n'</span>).map_or(<span class="number">0</span>, |n| n + <span class="number">1</span>);
                 <span class="kw">let </span><span class="kw-2">mut </span>dest_end = off;
                 <span class="kw">for _ in </span><span class="number">1</span>..n {
                     <span class="kw">if </span>dest_start == <span class="number">0 </span>{
                         <span class="kw">break</span>;
                     }
                     dest_end = dest_start - <span class="number">1</span>;
-                    dest_start = <span class="self">self</span>.buf[..dest_end].rfind(<span class="string">&#39;\n&#39;</span>).map_or(<span class="number">0</span>, |n| n + <span class="number">1</span>);
+                    dest_start = <span class="self">self</span>.buf[..dest_end].rfind(<span class="string">'\n'</span>).map_or(<span class="number">0</span>, |n| n + <span class="number">1</span>);
                 }
                 <span class="kw">let </span>gidx = <span class="self">self</span>.buf[dest_start..dest_end]
                     .grapheme_indices(<span class="bool-val">true</span>)
                     .nth(column);
 
-                <span class="self">self</span>.pos = gidx.map_or(off, |(idx, <span class="kw">_</span>)| dest_start + idx); <span class="comment">// if there&#39;s no enough columns
+                <span class="self">self</span>.pos = gidx.map_or(off, |(idx, <span class="kw">_</span>)| dest_start + idx); <span class="comment">// if there's no enough columns
                 </span><span class="bool-val">true
             </span>}
             <span class="prelude-val">None </span>=&gt; <span class="bool-val">false</span>,
@@ -2486,16 +2487,16 @@
     ///
     /// Fails if the cursor is on the first line
     </span><span class="kw">fn </span>n_lines_up(<span class="kw-2">&amp;</span><span class="self">self</span>, n: RepeatCount) -&gt; <span class="prelude-ty">Option</span>&lt;(usize, usize)&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>start = <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">&#39;\n&#39;</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>start = <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">'\n'</span>) {
             off + <span class="number">1
         </span>} <span class="kw">else </span>{
             <span class="kw">return </span><span class="prelude-val">None</span>;
         };
         <span class="kw">let </span>end = <span class="self">self</span>.buf[<span class="self">self</span>.pos..]
-            .find(<span class="string">&#39;\n&#39;</span>)
+            .find(<span class="string">'\n'</span>)
             .map_or_else(|| <span class="self">self</span>.buf.len(), |x| <span class="self">self</span>.pos + x + <span class="number">1</span>);
         <span class="kw">for _ in </span><span class="number">0</span>..n {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[..start - <span class="number">1</span>].rfind(<span class="string">&#39;\n&#39;</span>) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[..start - <span class="number">1</span>].rfind(<span class="string">'\n'</span>) {
                 start = off + <span class="number">1</span>;
             } <span class="kw">else </span>{
                 start = <span class="number">0</span>;
@@ -2509,14 +2510,14 @@
     ///
     /// Fails if the cursor is on the last line
     </span><span class="kw">fn </span>n_lines_down(<span class="kw-2">&amp;</span><span class="self">self</span>, n: RepeatCount) -&gt; <span class="prelude-ty">Option</span>&lt;(usize, usize)&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>end = <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[<span class="self">self</span>.pos..].find(<span class="string">&#39;\n&#39;</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>end = <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[<span class="self">self</span>.pos..].find(<span class="string">'\n'</span>) {
             <span class="self">self</span>.pos + off + <span class="number">1
         </span>} <span class="kw">else </span>{
             <span class="kw">return </span><span class="prelude-val">None</span>;
         };
-        <span class="kw">let </span>start = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">&#39;\n&#39;</span>).unwrap_or(<span class="number">0</span>);
+        <span class="kw">let </span>start = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">'\n'</span>).unwrap_or(<span class="number">0</span>);
         <span class="kw">for _ in </span><span class="number">0</span>..n {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[end..].find(<span class="string">&#39;\n&#39;</span>) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(off) = <span class="self">self</span>.buf[end..].find(<span class="string">'\n'</span>) {
                 end = end + off + <span class="number">1</span>;
             } <span class="kw">else </span>{
                 end = <span class="self">self</span>.buf.len();
@@ -2528,13 +2529,13 @@
 
     <span class="doccomment">/// Moves the cursor to the same column in the line above
     </span><span class="kw">pub fn </span>move_to_line_down(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: RepeatCount) -&gt; bool {
-        <span class="kw">match </span><span class="self">self</span>.buf[<span class="self">self</span>.pos..].find(<span class="string">&#39;\n&#39;</span>) {
+        <span class="kw">match </span><span class="self">self</span>.buf[<span class="self">self</span>.pos..].find(<span class="string">'\n'</span>) {
             <span class="prelude-val">Some</span>(off) =&gt; {
-                <span class="kw">let </span>line_start = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">&#39;\n&#39;</span>).map_or(<span class="number">0</span>, |n| n + <span class="number">1</span>);
+                <span class="kw">let </span>line_start = <span class="self">self</span>.buf[..<span class="self">self</span>.pos].rfind(<span class="string">'\n'</span>).map_or(<span class="number">0</span>, |n| n + <span class="number">1</span>);
                 <span class="kw">let </span>column = <span class="self">self</span>.buf[line_start..<span class="self">self</span>.pos].graphemes(<span class="bool-val">true</span>).count();
                 <span class="kw">let </span><span class="kw-2">mut </span>dest_start = <span class="self">self</span>.pos + off + <span class="number">1</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>dest_end = <span class="self">self</span>.buf[dest_start..]
-                    .find(<span class="string">&#39;\n&#39;</span>)
+                    .find(<span class="string">'\n'</span>)
                     .map_or_else(|| <span class="self">self</span>.buf.len(), |v| dest_start + v);
                 <span class="kw">for _ in </span><span class="number">1</span>..n {
                     <span class="kw">if </span>dest_end == <span class="self">self</span>.buf.len() {
@@ -2542,13 +2543,13 @@
                     }
                     dest_start = dest_end + <span class="number">1</span>;
                     dest_end = <span class="self">self</span>.buf[dest_start..]
-                        .find(<span class="string">&#39;\n&#39;</span>)
+                        .find(<span class="string">'\n'</span>)
                         .map_or_else(|| <span class="self">self</span>.buf.len(), |v| dest_start + v);
                 }
                 <span class="self">self</span>.pos = <span class="self">self</span>.buf[dest_start..dest_end]
                     .grapheme_indices(<span class="bool-val">true</span>)
                     .nth(column)
-                    .map_or(dest_end, |(idx, <span class="kw">_</span>)| dest_start + idx); <span class="comment">// if there&#39;s no enough columns
+                    .map_or(dest_end, |(idx, <span class="kw">_</span>)| dest_start + idx); <span class="comment">// if there's no enough columns
                 </span><span class="macro">debug_assert!</span>(<span class="self">self</span>.pos &lt;= <span class="self">self</span>.buf.len());
                 <span class="bool-val">true
             </span>}
@@ -2771,7 +2772,7 @@
         range: Range&lt;usize&gt;,
         dir: Direction,
         dl: <span class="kw-2">&amp;mut </span>D,
-    ) -&gt; Drain&lt;<span class="lifetime">&#39;_</span>&gt; {
+    ) -&gt; Drain&lt;<span class="lifetime">'_</span>&gt; {
         dl.delete(range.start, <span class="kw-2">&amp;</span><span class="self">self</span>.buf[range.start..range.end], dir);
         <span class="self">self</span>.buf.drain(range)
     }
@@ -2984,19 +2985,19 @@
             Movement::LineDown(n) =&gt; <span class="self">self</span>.n_lines_down(n),
         };
         <span class="kw">let </span>(start, end) = pair.unwrap_or((<span class="self">self</span>.pos, <span class="self">self</span>.pos));
-        <span class="kw">let </span>start = <span class="self">self</span>.buf[..start].rfind(<span class="string">&#39;\n&#39;</span>).map_or(<span class="number">0</span>, |pos| pos + <span class="number">1</span>);
+        <span class="kw">let </span>start = <span class="self">self</span>.buf[..start].rfind(<span class="string">'\n'</span>).map_or(<span class="number">0</span>, |pos| pos + <span class="number">1</span>);
         <span class="kw">let </span>end = <span class="self">self</span>.buf[end..]
-            .rfind(<span class="string">&#39;\n&#39;</span>)
+            .rfind(<span class="string">'\n'</span>)
             .map_or_else(|| <span class="self">self</span>.buf.len(), |pos| end + pos);
         <span class="kw">let </span><span class="kw-2">mut </span>index = start;
         <span class="kw">if </span>dedent {
-            <span class="kw">for </span>line <span class="kw">in </span><span class="self">self</span>.buf[start..end].to_string().split(<span class="string">&#39;\n&#39;</span>) {
+            <span class="kw">for </span>line <span class="kw">in </span><span class="self">self</span>.buf[start..end].to_string().split(<span class="string">'\n'</span>) {
                 <span class="kw">let </span>max = line.len() - line.trim_start().len();
                 <span class="kw">let </span>deleting = min(max, amount);
                 <span class="self">self</span>.drain(index..index + deleting, Direction::default(), cl);
                 <span class="kw">if </span><span class="self">self</span>.pos &gt;= index {
                     <span class="kw">if </span><span class="self">self</span>.pos.saturating_sub(index) &lt; deleting {
-                        <span class="comment">// don&#39;t wrap into the previous line
+                        <span class="comment">// don't wrap into the previous line
                         </span><span class="self">self</span>.pos = index;
                     } <span class="kw">else </span>{
                         <span class="self">self</span>.pos -= deleting;
@@ -3005,7 +3006,7 @@
                 index += line.len() + <span class="number">1 </span>- deleting;
             }
         } <span class="kw">else </span>{
-            <span class="kw">for </span>line <span class="kw">in </span><span class="self">self</span>.buf[start..end].to_string().split(<span class="string">&#39;\n&#39;</span>) {
+            <span class="kw">for </span>line <span class="kw">in </span><span class="self">self</span>.buf[start..end].to_string().split(<span class="string">'\n'</span>) {
                 <span class="kw">for </span>off <span class="kw">in </span>(<span class="number">0</span>..amount).step_by(INDENT.len()) {
                     <span class="self">self</span>.insert_str(index, <span class="kw-2">&amp;</span>INDENT[..min(amount - off, INDENT.len())], cl);
                 }
@@ -3044,7 +3045,7 @@
     }
 }
 <span class="kw">fn </span>is_vi_word_char(grapheme: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    grapheme.chars().all(char::is_alphanumeric) || grapheme == <span class="string">&quot;_&quot;
+    grapheme.chars().all(char::is_alphanumeric) || grapheme == <span class="string">"_"
 </span>}
 <span class="kw">fn </span>is_other_char(grapheme: <span class="kw-2">&amp;</span>str) -&gt; bool {
     !(grapheme.chars().any(char::is_whitespace) || is_vi_word_char(grapheme))
@@ -3067,7 +3068,7 @@
         }
 
         <span class="kw">fn </span>assert_deleted_str_eq(<span class="kw-2">&amp;</span><span class="self">self</span>, expected: <span class="kw-2">&amp;</span>str) {
-            <span class="kw">let </span>actual = <span class="self">self</span>.deleted_str.as_ref().expect(<span class="string">&quot;no deleted string&quot;</span>);
+            <span class="kw">let </span>actual = <span class="self">self</span>.deleted_str.as_ref().expect(<span class="string">"no deleted string"</span>);
             <span class="macro">assert_eq!</span>(expected, actual)
         }
     }
@@ -3087,24 +3088,24 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>next_pos() {
-        <span class="kw">let </span>s = LineBuffer::init(<span class="string">&quot;ö̲g̈&quot;</span>, <span class="number">0</span>);
+        <span class="kw">let </span>s = LineBuffer::init(<span class="string">"ö̲g̈"</span>, <span class="number">0</span>);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.len());
         <span class="kw">let </span>pos = s.next_pos(<span class="number">1</span>);
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">4</span>), pos);
 
-        <span class="kw">let </span>s = LineBuffer::init(<span class="string">&quot;ö̲g̈&quot;</span>, <span class="number">4</span>);
+        <span class="kw">let </span>s = LineBuffer::init(<span class="string">"ö̲g̈"</span>, <span class="number">4</span>);
         <span class="kw">let </span>pos = s.next_pos(<span class="number">1</span>);
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">7</span>), pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>prev_pos() {
-        <span class="kw">let </span>s = LineBuffer::init(<span class="string">&quot;ö̲g̈&quot;</span>, <span class="number">4</span>);
+        <span class="kw">let </span>s = LineBuffer::init(<span class="string">"ö̲g̈"</span>, <span class="number">4</span>);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.len());
         <span class="kw">let </span>pos = s.prev_pos(<span class="number">1</span>);
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">0</span>), pos);
 
-        <span class="kw">let </span>s = LineBuffer::init(<span class="string">&quot;ö̲g̈&quot;</span>, <span class="number">7</span>);
+        <span class="kw">let </span>s = LineBuffer::init(<span class="string">"ö̲g̈"</span>, <span class="number">7</span>);
         <span class="kw">let </span>pos = s.prev_pos(<span class="number">1</span>);
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="number">4</span>), pos);
     }
@@ -3112,69 +3113,69 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>insert() {
         <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::with_capacity(MAX_LINE);
-        <span class="kw">let </span>push = s.insert(<span class="string">&#39;α&#39;</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;α&quot;</span>, s.buf);
+        <span class="kw">let </span>push = s.insert(<span class="string">'α'</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener).unwrap();
+        <span class="macro">assert_eq!</span>(<span class="string">"α"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
         <span class="macro">assert!</span>(push);
 
-        <span class="kw">let </span>push = s.insert(<span class="string">&#39;ß&#39;</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß&quot;</span>, s.buf);
+        <span class="kw">let </span>push = s.insert(<span class="string">'ß'</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener).unwrap();
+        <span class="macro">assert_eq!</span>(<span class="string">"αß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
         <span class="macro">assert!</span>(push);
 
         s.pos = <span class="number">0</span>;
-        <span class="kw">let </span>push = s.insert(<span class="string">&#39;γ&#39;</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;γαß&quot;</span>, s.buf);
+        <span class="kw">let </span>push = s.insert(<span class="string">'γ'</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener).unwrap();
+        <span class="macro">assert_eq!</span>(<span class="string">"γαß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
         <span class="macro">assert!</span>(!push);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>yank_after() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αß&quot;</span>, <span class="number">2</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αß"</span>, <span class="number">2</span>);
         s.move_forward(<span class="number">1</span>);
-        <span class="kw">let </span>ok = s.yank(<span class="string">&quot;γδε&quot;</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span>ok = s.yank(<span class="string">"γδε"</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener);
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="bool-val">true</span>), ok);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αßγδε&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αßγδε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">10</span>, s.pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>yank_before() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αε&quot;</span>, <span class="number">2</span>);
-        <span class="kw">let </span>ok = s.yank(<span class="string">&quot;ßγδ&quot;</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αε"</span>, <span class="number">2</span>);
+        <span class="kw">let </span>ok = s.yank(<span class="string">"ßγδ"</span>, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener);
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="bool-val">false</span>), ok);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αßγδε&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αßγδε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">8</span>, s.pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>moves() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αß&quot;</span>, <span class="number">4</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αß"</span>, <span class="number">4</span>);
         <span class="kw">let </span>ok = s.move_backward(<span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
         <span class="macro">assert!</span>(ok);
 
         <span class="kw">let </span>ok = s.move_forward(<span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
         <span class="macro">assert!</span>(ok);
 
         <span class="kw">let </span>ok = s.move_home();
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, s.pos);
         <span class="macro">assert!</span>(ok);
 
         <span class="kw">let </span>ok = s.move_end();
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
         <span class="macro">assert!</span>(ok);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_home_end_multiline() {
-        <span class="kw">let </span>text = <span class="string">&quot;αa\nsdf ßc\nasdf&quot;</span>;
+        <span class="kw">let </span>text = <span class="string">"αa\nsdf ßc\nasdf"</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(text, <span class="number">7</span>);
         <span class="kw">let </span>ok = s.move_home();
         <span class="macro">assert_eq!</span>(text, s.buf);
@@ -3199,7 +3200,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_buffer_multiline() {
-        <span class="kw">let </span>text = <span class="string">&quot;αa\nsdf ßc\nasdf&quot;</span>;
+        <span class="kw">let </span>text = <span class="string">"αa\nsdf ßc\nasdf"</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(text, <span class="number">7</span>);
         <span class="kw">let </span>ok = s.move_buffer_start();
         <span class="macro">assert_eq!</span>(text, s.buf);
@@ -3224,7 +3225,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_grapheme() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;ag̈&quot;</span>, <span class="number">4</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"ag̈"</span>, <span class="number">4</span>);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.len());
         <span class="kw">let </span>ok = s.move_backward(<span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
@@ -3238,59 +3239,59 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>delete() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αß&quot;</span>, <span class="number">2</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αß"</span>, <span class="number">2</span>);
         <span class="kw">let </span>chars = s.delete(<span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;α&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"α"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
-        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="string">&quot;ß&quot;</span>.to_owned()), chars);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="string">"ß"</span>.to_owned()), chars);
 
         <span class="kw">let </span>ok = s.backspace(<span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">""</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;α&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"α"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>kill() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">6</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">6</span>);
         <span class="kw">let </span>ok = s.kill_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αßγ&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αßγ"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;δε&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"δε"</span>);
 
         s.pos = <span class="number">4</span>;
         <span class="kw">let </span>ok = s.discard_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;γ&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"γ"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;αß&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"αß"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>kill_multiline() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αß\nγδ 12\nε f4&quot;</span>, <span class="number">7</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αß\nγδ 12\nε f4"</span>, <span class="number">7</span>);
 
         <span class="kw">let </span>ok = s.kill_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß\nγ\nε f4&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß\nγ\nε f4"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;δ 12&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"δ 12"</span>);
 
         <span class="kw">let </span>ok = s.kill_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß\nγε f4&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß\nγε f4"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;\n&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"\n"</span>);
 
         <span class="kw">let </span>ok = s.kill_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß\nγ&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß\nγ"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ε f4&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"ε f4"</span>);
 
         <span class="kw">let </span>ok = s.kill_line(<span class="kw-2">&amp;mut </span>cl);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
@@ -3300,25 +3301,25 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>discard_multiline() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αß\nc γδε&quot;</span>, <span class="number">9</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αß\nc γδε"</span>, <span class="number">9</span>);
 
         <span class="kw">let </span>ok = s.discard_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αß\nδε&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αß\nδε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">5</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;c γ&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"c γ"</span>);
 
         <span class="kw">let </span>ok = s.discard_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αßδε&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"αßδε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;\n&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"\n"</span>);
 
         <span class="kw">let </span>ok = s.discard_line(<span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;δε&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"δε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;αß&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"αß"</span>);
 
         <span class="kw">let </span>ok = s.discard_line(<span class="kw-2">&amp;mut </span>cl);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, s.pos);
@@ -3327,40 +3328,40 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>transpose() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;aßc&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"aßc"</span>, <span class="number">1</span>);
         <span class="kw">let </span>ok = s.transpose_chars(<span class="kw-2">&amp;mut </span>NoListener);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;ßac&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"ßac"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">3</span>, s.pos);
         <span class="macro">assert!</span>(ok);
 
-        s.buf = String::from(<span class="string">&quot;aßc&quot;</span>);
+        s.buf = String::from(<span class="string">"aßc"</span>);
         s.pos = <span class="number">3</span>;
         <span class="kw">let </span>ok = s.transpose_chars(<span class="kw-2">&amp;mut </span>NoListener);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;acß&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"acß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
         <span class="macro">assert!</span>(ok);
 
-        s.buf = String::from(<span class="string">&quot;aßc&quot;</span>);
+        s.buf = String::from(<span class="string">"aßc"</span>);
         s.pos = <span class="number">4</span>;
         <span class="kw">let </span>ok = s.transpose_chars(<span class="kw-2">&amp;mut </span>NoListener);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;acß&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"acß"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
         <span class="macro">assert!</span>(ok);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_prev_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ß  c&quot;</span>, <span class="number">6</span>); <span class="comment">// before &#39;c&#39;
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ß  c"</span>, <span class="number">6</span>); <span class="comment">// before 'c'
         </span><span class="kw">let </span>ok = s.move_to_prev_word(Word::Emacs, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a ß  c&quot;</span>, s.buf);
-        <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos); <span class="comment">// before &#39;ß&#39;
+        <span class="macro">assert_eq!</span>(<span class="string">"a ß  c"</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos); <span class="comment">// before 'ß'
         </span><span class="macro">assert!</span>(ok);
 
-        <span class="macro">assert!</span>(s.move_end()); <span class="comment">// after &#39;c&#39;
+        <span class="macro">assert!</span>(s.move_end()); <span class="comment">// after 'c'
         </span><span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
         <span class="kw">let </span>ok = s.move_to_prev_word(Word::Emacs, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
-        <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos); <span class="comment">// before &#39;c&#39;
+        <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos); <span class="comment">// before 'c'
 
         </span><span class="kw">let </span>ok = s.move_to_prev_word(Word::Emacs, <span class="number">2</span>);
         <span class="macro">assert!</span>(ok);
@@ -3369,7 +3370,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_prev_vi_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;alpha ,beta/rho; mu&quot;</span>, <span class="number">19</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"alpha ,beta/rho; mu"</span>, <span class="number">19</span>);
         <span class="kw">let </span>ok = s.move_to_prev_word(Word::Vi, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">17</span>, s.pos);
@@ -3397,7 +3398,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_prev_big_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;alpha ,beta/rho; mu&quot;</span>, <span class="number">19</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"alpha ,beta/rho; mu"</span>, <span class="number">19</span>);
         <span class="kw">let </span>ok = s.move_to_prev_word(Word::Big, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">17</span>, s.pos);
@@ -3413,31 +3414,31 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_forward() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">2</span>);
-        <span class="kw">let </span>ok = s.move_to(CharSearch::ForwardBefore(<span class="string">&#39;ε&#39;</span>), <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">2</span>);
+        <span class="kw">let </span>ok = s.move_to(CharSearch::ForwardBefore(<span class="string">'ε'</span>), <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">2</span>);
-        <span class="kw">let </span>ok = s.move_to(CharSearch::Forward(<span class="string">&#39;ε&#39;</span>), <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">2</span>);
+        <span class="kw">let </span>ok = s.move_to(CharSearch::Forward(<span class="string">'ε'</span>), <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">8</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">2</span>);
-        <span class="kw">let </span>ok = s.move_to(CharSearch::Forward(<span class="string">&#39;ε&#39;</span>), <span class="number">10</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">2</span>);
+        <span class="kw">let </span>ok = s.move_to(CharSearch::Forward(<span class="string">'ε'</span>), <span class="number">10</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">8</span>, s.pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_backward() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">8</span>);
-        <span class="kw">let </span>ok = s.move_to(CharSearch::BackwardAfter(<span class="string">&#39;ß&#39;</span>), <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">8</span>);
+        <span class="kw">let </span>ok = s.move_to(CharSearch::BackwardAfter(<span class="string">'ß'</span>), <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">8</span>);
-        <span class="kw">let </span>ok = s.move_to(CharSearch::Backward(<span class="string">&#39;ß&#39;</span>), <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">8</span>);
+        <span class="kw">let </span>ok = s.move_to(CharSearch::Backward(<span class="string">'ß'</span>), <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
     }
@@ -3445,48 +3446,48 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>delete_prev_word() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ß  c&quot;</span>, <span class="number">6</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ß  c"</span>, <span class="number">6</span>);
         <span class="kw">let </span>ok = s.delete_prev_word(Word::Big, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ß  &quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"ß  "</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_next_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ß  c&quot;</span>, <span class="number">1</span>); <span class="comment">// after &#39;a&#39;
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ß  c"</span>, <span class="number">1</span>); <span class="comment">// after 'a'
         </span><span class="kw">let </span>ok = s.move_to_next_word(At::AfterEnd, Word::Emacs, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a ß  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a ß  c"</span>, s.buf);
         <span class="macro">assert!</span>(ok);
-        <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos); <span class="comment">// after &#39;ß&#39;
+        <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos); <span class="comment">// after 'ß'
 
         </span><span class="kw">let </span>ok = s.move_to_next_word(At::AfterEnd, Word::Emacs, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
-        <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos); <span class="comment">// after &#39;c&#39;
+        <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos); <span class="comment">// after 'c'
 
         </span>s.move_home();
         <span class="kw">let </span>ok = s.move_to_next_word(At::AfterEnd, Word::Emacs, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
-        <span class="macro">assert_eq!</span>(<span class="number">1</span>, s.pos); <span class="comment">// after &#39;a&#39;
+        <span class="macro">assert_eq!</span>(<span class="number">1</span>, s.pos); <span class="comment">// after 'a'
 
         </span><span class="kw">let </span>ok = s.move_to_next_word(At::AfterEnd, Word::Emacs, <span class="number">2</span>);
         <span class="macro">assert!</span>(ok);
-        <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos); <span class="comment">// after &#39;c&#39;
+        <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos); <span class="comment">// after 'c'
     </span>}
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_end_of_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ßeta  c&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ßeta  c"</span>, <span class="number">1</span>);
         <span class="kw">let </span>ok = s.move_to_next_word(At::BeforeEnd, Word::Vi, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a ßeta  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a ßeta  c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos);
         <span class="macro">assert!</span>(ok);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_end_of_vi_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;alpha ,beta/rho; mu&quot;</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"alpha ,beta/rho; mu"</span>, <span class="number">0</span>);
         <span class="kw">let </span>ok = s.move_to_next_word(At::BeforeEnd, Word::Vi, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
@@ -3514,7 +3515,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_end_of_big_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;alpha ,beta/rho; mu&quot;</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"alpha ,beta/rho; mu"</span>, <span class="number">0</span>);
         <span class="kw">let </span>ok = s.move_to_next_word(At::BeforeEnd, Word::Big, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
@@ -3530,16 +3531,16 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_start_of_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ß  c&quot;</span>, <span class="number">2</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ß  c"</span>, <span class="number">2</span>);
         <span class="kw">let </span>ok = s.move_to_next_word(At::Start, Word::Emacs, <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a ß  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a ß  c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos);
         <span class="macro">assert!</span>(ok);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_start_of_vi_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;alpha ,beta/rho; mu&quot;</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"alpha ,beta/rho; mu"</span>, <span class="number">0</span>);
         <span class="kw">let </span>ok = s.move_to_next_word(At::Start, Word::Vi, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos);
@@ -3567,7 +3568,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_to_start_of_big_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;alpha ,beta/rho; mu&quot;</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"alpha ,beta/rho; mu"</span>, <span class="number">0</span>);
         <span class="kw">let </span>ok = s.move_to_next_word(At::Start, Word::Big, <span class="number">1</span>);
         <span class="macro">assert!</span>(ok);
         <span class="macro">assert_eq!</span>(<span class="number">6</span>, s.pos);
@@ -3584,113 +3585,113 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>delete_word() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ß  c&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ß  c"</span>, <span class="number">1</span>);
         <span class="kw">let </span>ok = s.delete_word(At::AfterEnd, Word::Emacs, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a  c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot; ß&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">" ß"</span>);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;test&quot;</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"test"</span>, <span class="number">0</span>);
         <span class="kw">let </span>ok = s.delete_word(At::AfterEnd, Word::Vi, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">""</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">0</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;test&quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"test"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>delete_til_start_of_word() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ß  c&quot;</span>, <span class="number">2</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ß  c"</span>, <span class="number">2</span>);
         <span class="kw">let </span>ok = s.delete_word(At::Start, Word::Emacs, <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ß  &quot;</span>);
+        cl.assert_deleted_str_eq(<span class="string">"ß  "</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>delete_to_forward() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">2</span>);
-        <span class="kw">let </span>ok = s.delete_to(CharSearch::ForwardBefore(<span class="string">&#39;ε&#39;</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">2</span>);
+        <span class="kw">let </span>ok = s.delete_to(CharSearch::ForwardBefore(<span class="string">'ε'</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ßγδ&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αε&quot;</span>, s.buf);
+        cl.assert_deleted_str_eq(<span class="string">"ßγδ"</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"αε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">2</span>);
-        <span class="kw">let </span>ok = s.delete_to(CharSearch::Forward(<span class="string">&#39;ε&#39;</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">2</span>);
+        <span class="kw">let </span>ok = s.delete_to(CharSearch::Forward(<span class="string">'ε'</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ßγδε&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;α&quot;</span>, s.buf);
+        cl.assert_deleted_str_eq(<span class="string">"ßγδε"</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"α"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>delete_to_backward() {
         <span class="kw">let </span><span class="kw-2">mut </span>cl = Listener::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">8</span>);
-        <span class="kw">let </span>ok = s.delete_to(CharSearch::BackwardAfter(<span class="string">&#39;α&#39;</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">8</span>);
+        <span class="kw">let </span>ok = s.delete_to(CharSearch::BackwardAfter(<span class="string">'α'</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ßγδ&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αε&quot;</span>, s.buf);
+        cl.assert_deleted_str_eq(<span class="string">"ßγδ"</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"αε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;αßγδε&quot;</span>, <span class="number">8</span>);
-        <span class="kw">let </span>ok = s.delete_to(CharSearch::Backward(<span class="string">&#39;ß&#39;</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"αßγδε"</span>, <span class="number">8</span>);
+        <span class="kw">let </span>ok = s.delete_to(CharSearch::Backward(<span class="string">'ß'</span>), <span class="number">1</span>, <span class="kw-2">&amp;mut </span>cl);
         <span class="macro">assert!</span>(ok);
-        cl.assert_deleted_str_eq(<span class="string">&quot;ßγδ&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;αε&quot;</span>, s.buf);
+        cl.assert_deleted_str_eq(<span class="string">"ßγδ"</span>);
+        <span class="macro">assert_eq!</span>(<span class="string">"αε"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">2</span>, s.pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>edit_word() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ßeta  c&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ßeta  c"</span>, <span class="number">1</span>);
         <span class="macro">assert!</span>(s.edit_word(WordAction::Uppercase, <span class="kw-2">&amp;mut </span>NoListener));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a SSETA  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a SSETA  c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ßetA  c&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ßetA  c"</span>, <span class="number">1</span>);
         <span class="macro">assert!</span>(s.edit_word(WordAction::Lowercase, <span class="kw-2">&amp;mut </span>NoListener));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a ßeta  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a ßeta  c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;a ßETA  c&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"a ßETA  c"</span>, <span class="number">1</span>);
         <span class="macro">assert!</span>(s.edit_word(WordAction::Capitalize, <span class="kw-2">&amp;mut </span>NoListener));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;a SSeta  c&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"a SSeta  c"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">7</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;test&quot;</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"test"</span>, <span class="number">1</span>);
         <span class="macro">assert!</span>(s.edit_word(WordAction::Capitalize, <span class="kw-2">&amp;mut </span>NoListener));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;tEst&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"tEst"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">4</span>, s.pos);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>transpose_words() {
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;ßeta / δelta__&quot;</span>, <span class="number">15</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"ßeta / δelta__"</span>, <span class="number">15</span>);
         <span class="macro">assert!</span>(s.transpose_words(<span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;δelta__ / ßeta&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"δelta__ / ßeta"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">16</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;ßeta / δelta&quot;</span>, <span class="number">14</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"ßeta / δelta"</span>, <span class="number">14</span>);
         <span class="macro">assert!</span>(s.transpose_words(<span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener));
-        <span class="macro">assert_eq!</span>(<span class="string">&quot;δelta / ßeta&quot;</span>, s.buf);
+        <span class="macro">assert_eq!</span>(<span class="string">"δelta / ßeta"</span>, s.buf);
         <span class="macro">assert_eq!</span>(<span class="number">14</span>, s.pos);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot; / δelta&quot;</span>, <span class="number">8</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">" / δelta"</span>, <span class="number">8</span>);
         <span class="macro">assert!</span>(!s.transpose_words(<span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener));
 
-        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">&quot;ßeta / __&quot;</span>, <span class="number">9</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(<span class="string">"ßeta / __"</span>, <span class="number">9</span>);
         <span class="macro">assert!</span>(!s.transpose_words(<span class="number">1</span>, <span class="kw-2">&amp;mut </span>NoListener));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>move_by_line() {
-        <span class="kw">let </span>text = <span class="string">&quot;aa123\nsdf bc\nasdf&quot;</span>;
+        <span class="kw">let </span>text = <span class="string">"aa123\nsdf bc\nasdf"</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>s = LineBuffer::init(text, <span class="number">14</span>);
         <span class="comment">// move up
         </span><span class="kw">let </span>ok = s.move_to_line_up(<span class="number">1</span>);

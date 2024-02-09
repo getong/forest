@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-resolver-0.24.0/src/caching_client.rs`."><title>caching_client.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hickory_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hickory-resolver-0.24.0/src/caching_client.rs`."><title>caching_client.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hickory_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1093,7 +1094,7 @@
 <span class="kw">const </span>MAX_QUERY_DEPTH: u8 = <span class="number">8</span>; <span class="comment">// arbitrarily chosen number...
 
 </span><span class="kw">static </span>LOCALHOST: Lazy&lt;RData&gt; =
-    Lazy::new(|| RData::PTR(PTR(Name::from_ascii(<span class="string">&quot;localhost.&quot;</span>).unwrap())));
+    Lazy::new(|| RData::PTR(PTR(Name::from_ascii(<span class="string">"localhost."</span>).unwrap())));
 <span class="kw">static </span>LOCALHOST_V4: Lazy&lt;RData&gt; = Lazy::new(|| RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)));
 <span class="kw">static </span>LOCALHOST_V6: Lazy&lt;RData&gt; = Lazy::new(|| RData::AAAA(AAAA::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)));
 
@@ -1121,7 +1122,7 @@
 </span><span class="kw">pub struct </span>CachingClient&lt;C, E&gt;
 <span class="kw">where
     </span>C: DnsHandle&lt;Error = E&gt;,
-    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">&#39;static</span>,
+    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">'static</span>,
 {
     lru: DnsLru,
     client: C,
@@ -1131,8 +1132,8 @@
 
 <span class="kw">impl</span>&lt;C, E&gt; CachingClient&lt;C, E&gt;
 <span class="kw">where
-    </span>C: DnsHandle&lt;Error = E&gt; + Send + <span class="lifetime">&#39;static</span>,
-    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">&#39;static</span>,
+    </span>C: DnsHandle&lt;Error = E&gt; + Send + <span class="lifetime">'static</span>,
+    E: Into&lt;ResolveError&gt; + From&lt;ProtoError&gt; + Error + Clone + Send + Unpin + <span class="lifetime">'static</span>,
 {
     <span class="attr">#[doc(hidden)]
     </span><span class="kw">pub fn </span>new(max_size: usize, client: C, preserve_intermediates: bool) -&gt; <span class="self">Self </span>{
@@ -1206,11 +1207,11 @@
                     } <span class="comment">// Are there any other types we can use?
                 </span>},
                 <span class="comment">// when mdns is enabled we will follow a standard query path
-                </span><span class="attr">#[cfg(feature = <span class="string">&quot;mdns&quot;</span>)]
+                </span><span class="attr">#[cfg(feature = <span class="string">"mdns"</span>)]
                 </span>ResolverUsage::LinkLocal =&gt; (),
                 <span class="comment">// TODO: this requires additional config, as Kubernetes and other systems misuse the .local. zone.
-                // when mdns is not enabled we will return errors on LinkLocal (&quot;*.local.&quot;) names
-                </span><span class="attr">#[cfg(not(feature = <span class="string">&quot;mdns&quot;</span>))]
+                // when mdns is not enabled we will return errors on LinkLocal ("*.local.") names
+                </span><span class="attr">#[cfg(not(feature = <span class="string">"mdns"</span>))]
                 </span>ResolverUsage::LinkLocal =&gt; (),
                 ResolverUsage::NxDomain =&gt; {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(ResolveError::nx_error(
@@ -1249,7 +1250,7 @@
         };
 
         <span class="comment">// TODO: take all records and cache them?
-        //  if it&#39;s DNSSEC they must be signed, otherwise?
+        //  if it's DNSSEC they must be signed, otherwise?
         </span><span class="kw">let </span>records: <span class="prelude-ty">Result</span>&lt;Records, ResolveError&gt; = <span class="kw">match </span>response_message {
             <span class="comment">// this is the only cacheable form
             </span><span class="prelude-val">Err</span>(ResolveError {
@@ -1440,7 +1441,7 @@
                     <span class="comment">// TODO: disable name validation with ResolverOpts? glibc feature...
                     // restrict to the RData type requested
                     </span><span class="kw">if </span>query.query_class() == r.dns_class() {
-                        <span class="comment">// standard evaluation, it&#39;s an any type or it&#39;s the requested type and the search_name matches
+                        <span class="comment">// standard evaluation, it's an any type or it's the requested type and the search_name matches
                         </span><span class="attr">#[allow(clippy::suspicious_operation_groupings)]
                         </span><span class="kw">if </span>(query.query_type().is_any() || query.query_type() == r.record_type())
                             &amp;&amp; (search_name.as_ref() == r.name() || query.name() == r.name())
@@ -1452,8 +1453,8 @@
                         </span><span class="kw">if </span>client.preserve_intermediates &amp;&amp; r.record_type() == RecordType::CNAME {
                             <span class="kw">return </span><span class="prelude-val">Some</span>((r, ttl));
                         }
-                        <span class="comment">// srv evaluation, it&#39;s an srv lookup and the srv_search_name/target matches this name
-                        //    and it&#39;s an IP
+                        <span class="comment">// srv evaluation, it's an srv lookup and the srv_search_name/target matches this name
+                        //    and it's an IP
                         </span><span class="kw">if </span>query.query_type().is_srv()
                             &amp;&amp; r.record_type().is_ip_addr()
                             &amp;&amp; search_name.as_ref() == r.name()
@@ -1486,7 +1487,7 @@
         };
 
         <span class="comment">// TODO: for SRV records we *could* do an implicit lookup, but, this requires knowing the type of IP desired
-        //    for now, we&#39;ll make the API require the user to perform a follow up to the lookups.
+        //    for now, we'll make the API require the user to perform a follow up to the lookups.
         // It was a CNAME, but not included in the request...
         </span><span class="kw">if </span>was_cname &amp;&amp; client.query_depth.load(Ordering::Acquire) &lt; MAX_QUERY_DEPTH {
             <span class="kw">let </span>next_query = Query::query(search_name, query.query_type());
@@ -1586,7 +1587,7 @@
             <span class="macro">assert_eq!</span>(<span class="kw-2">**</span>query, Query::new());
             <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>negative_ttl, <span class="prelude-val">None</span>);
         } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;wrong error received&quot;</span>)
+            <span class="macro">panic!</span>(<span class="string">"wrong error received"</span>)
         }
     }
 
@@ -1666,13 +1667,13 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>cname_message() -&gt; <span class="prelude-ty">Result</span>&lt;DnsResponse, ResolveError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>message = Message::new();
         message.add_query(Query::query(
-            Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             RecordType::A,
         ));
         message.insert_answers(<span class="macro">vec!</span>[Record::from_rdata(
-            Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             <span class="number">86400</span>,
-            RData::CNAME(CNAME(Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap())),
+            RData::CNAME(CNAME(Name::from_str(<span class="string">"actual.example.com."</span>).unwrap())),
         )]);
         <span class="prelude-val">Ok</span>(DnsResponse::from_message(message).unwrap())
     }
@@ -1681,17 +1682,17 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>srv_message() -&gt; <span class="prelude-ty">Result</span>&lt;DnsResponse, ResolveError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>message = Message::new();
         message.add_query(Query::query(
-            Name::from_str(<span class="string">&quot;_443._tcp.www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"_443._tcp.www.example.com."</span>).unwrap(),
             RecordType::SRV,
         ));
         message.insert_answers(<span class="macro">vec!</span>[Record::from_rdata(
-            Name::from_str(<span class="string">&quot;_443._tcp.www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"_443._tcp.www.example.com."</span>).unwrap(),
             <span class="number">86400</span>,
             RData::SRV(SRV::new(
                 <span class="number">1</span>,
                 <span class="number">2</span>,
                 <span class="number">443</span>,
-                Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             )),
         )]);
         <span class="prelude-val">Ok</span>(DnsResponse::from_message(message).unwrap())
@@ -1701,13 +1702,13 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ns_message() -&gt; <span class="prelude-ty">Result</span>&lt;DnsResponse, ResolveError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>message = Message::new();
         message.add_query(Query::query(
-            Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             RecordType::NS,
         ));
         message.insert_answers(<span class="macro">vec!</span>[Record::from_rdata(
-            Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             <span class="number">86400</span>,
-            RData::NS(NS(Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap())),
+            RData::NS(NS(Name::from_str(<span class="string">"www.example.com."</span>).unwrap())),
         )]);
         <span class="prelude-val">Ok</span>(DnsResponse::from_message(message).unwrap())
     }
@@ -1715,22 +1716,22 @@
     <span class="kw">fn </span>no_recursion_on_query_test(query_type: RecordType) {
         <span class="kw">let </span>cache = DnsLru::new(<span class="number">1</span>, dns_lru::TtlConfig::default());
 
-        <span class="comment">// the cname should succeed, we shouldn&#39;t query again after that, which would cause an error...
+        <span class="comment">// the cname should succeed, we shouldn't query again after that, which would cause an error...
         </span><span class="kw">let </span>client = mock(<span class="macro">vec!</span>[error(), cname_message()]);
         <span class="kw">let </span>client = CachingClient::with_cache(cache, client, <span class="bool-val">false</span>);
 
         <span class="kw">let </span>ips = block_on(CachingClient::inner_lookup(
-            Query::query(Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(), query_type),
+            Query::query(Name::from_str(<span class="string">"www.example.com."</span>).unwrap(), query_type),
             DnsRequestOptions::default(),
             client,
             <span class="macro">vec!</span>[],
         ))
-        .expect(<span class="string">&quot;lookup failed&quot;</span>);
+        .expect(<span class="string">"lookup failed"</span>);
 
         <span class="macro">assert_eq!</span>(
             ips.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
             <span class="macro">vec!</span>[RData::CNAME(CNAME(
-                Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap()
+                Name::from_str(<span class="string">"actual.example.com."</span>).unwrap()
             ))]
         );
     }
@@ -1749,20 +1750,20 @@
     </span><span class="kw">fn </span>test_non_recursive_srv_query() {
         <span class="kw">let </span>cache = DnsLru::new(<span class="number">1</span>, dns_lru::TtlConfig::default());
 
-        <span class="comment">// the cname should succeed, we shouldn&#39;t query again after that, which would cause an error...
+        <span class="comment">// the cname should succeed, we shouldn't query again after that, which would cause an error...
         </span><span class="kw">let </span>client = mock(<span class="macro">vec!</span>[error(), srv_message()]);
         <span class="kw">let </span>client = CachingClient::with_cache(cache, client, <span class="bool-val">false</span>);
 
         <span class="kw">let </span>ips = block_on(CachingClient::inner_lookup(
             Query::query(
-                Name::from_str(<span class="string">&quot;_443._tcp.www.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"_443._tcp.www.example.com."</span>).unwrap(),
                 RecordType::SRV,
             ),
             DnsRequestOptions::default(),
             client,
             <span class="macro">vec!</span>[],
         ))
-        .expect(<span class="string">&quot;lookup failed&quot;</span>);
+        .expect(<span class="string">"lookup failed"</span>);
 
         <span class="macro">assert_eq!</span>(
             ips.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
@@ -1770,7 +1771,7 @@
                 <span class="number">1</span>,
                 <span class="number">2</span>,
                 <span class="number">443</span>,
-                Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             ))]
         );
     }
@@ -1781,18 +1782,18 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>message = srv_message().unwrap().into_message();
         message.add_answer(Record::from_rdata(
-            Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             <span class="number">86400</span>,
-            RData::CNAME(CNAME(Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap())),
+            RData::CNAME(CNAME(Name::from_str(<span class="string">"actual.example.com."</span>).unwrap())),
         ));
         message.insert_additionals(<span class="macro">vec!</span>[
             Record::from_rdata(
-                Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"actual.example.com."</span>).unwrap(),
                 <span class="number">86400</span>,
                 RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             ),
             Record::from_rdata(
-                Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"actual.example.com."</span>).unwrap(),
                 <span class="number">86400</span>,
                 RData::AAAA(AAAA::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             ),
@@ -1806,14 +1807,14 @@
 
         <span class="kw">let </span>ips = block_on(CachingClient::inner_lookup(
             Query::query(
-                Name::from_str(<span class="string">&quot;_443._tcp.www.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"_443._tcp.www.example.com."</span>).unwrap(),
                 RecordType::SRV,
             ),
             DnsRequestOptions::default(),
             client,
             <span class="macro">vec!</span>[],
         ))
-        .expect(<span class="string">&quot;lookup failed&quot;</span>);
+        .expect(<span class="string">"lookup failed"</span>);
 
         <span class="macro">assert_eq!</span>(
             ips.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
@@ -1822,7 +1823,7 @@
                     <span class="number">1</span>,
                     <span class="number">2</span>,
                     <span class="number">443</span>,
-                    Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+                    Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
                 )),
                 RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
                 RData::AAAA(AAAA::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
@@ -1837,14 +1838,14 @@
 
     //     let mut message = Message::new();
     //     message.add_answer(Record::from_rdata(
-    //         Name::from_str(&quot;www.example.com.&quot;).unwrap(),
+    //         Name::from_str("www.example.com.").unwrap(),
     //         86400,
     //         RecordType::CNAME,
-    //         RData::CNAME(Name::from_str(&quot;actual.example.com.&quot;).unwrap()),
+    //         RData::CNAME(Name::from_str("actual.example.com.").unwrap()),
     //     ));
     //     message.insert_additionals(vec![
     //         Record::from_rdata(
-    //             Name::from_str(&quot;actual.example.com.&quot;).unwrap(),
+    //             Name::from_str("actual.example.com.").unwrap(),
     //             86400,
     //             RecordType::A,
     //             RData::A(Ipv4Addr::new(127, 0, 0, 1)),
@@ -1855,14 +1856,14 @@
 
     //     let ips = QueryState::lookup(
     //         Query::query(
-    //             Name::from_str(&quot;_443._tcp.www.example.com.&quot;).unwrap(),
+    //             Name::from_str("_443._tcp.www.example.com.").unwrap(),
     //             RecordType::SRV,
     //         ),
     //         Default::default(),
     //         &amp;mut client,
     //         cache.clone(),
     //     ).wait()
-    //         .expect(&quot;lookup failed&quot;);
+    //         .expect("lookup failed");
 
     //     assert_eq!(
     //         ips.iter().cloned().collect::&lt;Vec&lt;_&gt;&gt;(),
@@ -1871,7 +1872,7 @@
     //                 1,
     //                 2,
     //                 443,
-    //                 Name::from_str(&quot;www.example.com.&quot;).unwrap(),
+    //                 Name::from_str("www.example.com.").unwrap(),
     //             )),
     //             RData::A(Ipv4Addr::new(127, 0, 0, 1)),
     //             //RData::AAAA(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
@@ -1885,18 +1886,18 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>message = ns_message().unwrap().into_message();
         message.add_answer(Record::from_rdata(
-            Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.com."</span>).unwrap(),
             <span class="number">86400</span>,
-            RData::CNAME(CNAME(Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap())),
+            RData::CNAME(CNAME(Name::from_str(<span class="string">"actual.example.com."</span>).unwrap())),
         ));
         message.insert_additionals(<span class="macro">vec!</span>[
             Record::from_rdata(
-                Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"actual.example.com."</span>).unwrap(),
                 <span class="number">86400</span>,
                 RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             ),
             Record::from_rdata(
-                Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap(),
+                Name::from_str(<span class="string">"actual.example.com."</span>).unwrap(),
                 <span class="number">86400</span>,
                 RData::AAAA(AAAA::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             ),
@@ -1909,17 +1910,17 @@
         <span class="kw">let </span>client = CachingClient::with_cache(cache, client, <span class="bool-val">false</span>);
 
         <span class="kw">let </span>ips = block_on(CachingClient::inner_lookup(
-            Query::query(Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap(), RecordType::NS),
+            Query::query(Name::from_str(<span class="string">"www.example.com."</span>).unwrap(), RecordType::NS),
             DnsRequestOptions::default(),
             client,
             <span class="macro">vec!</span>[],
         ))
-        .expect(<span class="string">&quot;lookup failed&quot;</span>);
+        .expect(<span class="string">"lookup failed"</span>);
 
         <span class="macro">assert_eq!</span>(
             ips.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
             <span class="macro">vec!</span>[
-                RData::NS(NS(Name::from_str(<span class="string">&quot;www.example.com.&quot;</span>).unwrap())),
+                RData::NS(NS(Name::from_str(<span class="string">"www.example.com."</span>).unwrap())),
                 RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
                 RData::AAAA(AAAA::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
             ]
@@ -1933,12 +1934,12 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>message = Message::new();
         message.insert_answers(<span class="macro">vec!</span>[Record::from_rdata(
-            Name::from_str(<span class="string">&quot;ttl.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"ttl.example.com."</span>).unwrap(),
             first,
-            RData::CNAME(CNAME(Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap())),
+            RData::CNAME(CNAME(Name::from_str(<span class="string">"actual.example.com."</span>).unwrap())),
         )]);
         message.insert_additionals(<span class="macro">vec!</span>[Record::from_rdata(
-            Name::from_str(<span class="string">&quot;actual.example.com.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"actual.example.com."</span>).unwrap(),
             second,
             RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
         )]);
@@ -1947,7 +1948,7 @@
             <span class="kw-2">&amp;mut </span>client,
             DnsRequestOptions::default(),
             <span class="bool-val">false</span>,
-            <span class="kw-2">&amp;</span>Query::query(Name::from_str(<span class="string">&quot;ttl.example.com.&quot;</span>).unwrap(), RecordType::A),
+            <span class="kw-2">&amp;</span>Query::query(Name::from_str(<span class="string">"ttl.example.com."</span>).unwrap(), RecordType::A),
             DnsResponse::from_message(message).unwrap(),
             <span class="macro">vec!</span>[],
         );
@@ -1961,10 +1962,10 @@
                     <span class="macro">assert_eq!</span>(ttl, <span class="kw-2">&amp;</span><span class="number">1</span>);
                 }
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;records don&#39;t exist&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">"records don't exist"</span>);
             }
         } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;error getting records&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"error getting records"</span>);
         }
     }
 
@@ -1981,9 +1982,9 @@
         <span class="kw">let </span><span class="kw-2">mut </span>client = CachingClient::with_cache(cache, client, <span class="bool-val">false</span>);
 
         {
-            <span class="kw">let </span>query = Query::query(Name::from_ascii(<span class="string">&quot;localhost.&quot;</span>).unwrap(), RecordType::A);
+            <span class="kw">let </span>query = Query::query(Name::from_ascii(<span class="string">"localhost."</span>).unwrap(), RecordType::A);
             <span class="kw">let </span>lookup = block_on(client.lookup(query.clone(), DnsRequestOptions::default()))
-                .expect(<span class="string">&quot;should have returned localhost&quot;</span>);
+                .expect(<span class="string">"should have returned localhost"</span>);
             <span class="macro">assert_eq!</span>(lookup.query(), <span class="kw-2">&amp;</span>query);
             <span class="macro">assert_eq!</span>(
                 lookup.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
@@ -1992,9 +1993,9 @@
         }
 
         {
-            <span class="kw">let </span>query = Query::query(Name::from_ascii(<span class="string">&quot;localhost.&quot;</span>).unwrap(), RecordType::AAAA);
+            <span class="kw">let </span>query = Query::query(Name::from_ascii(<span class="string">"localhost."</span>).unwrap(), RecordType::AAAA);
             <span class="kw">let </span>lookup = block_on(client.lookup(query.clone(), DnsRequestOptions::default()))
-                .expect(<span class="string">&quot;should have returned localhost&quot;</span>);
+                .expect(<span class="string">"should have returned localhost"</span>);
             <span class="macro">assert_eq!</span>(lookup.query(), <span class="kw-2">&amp;</span>query);
             <span class="macro">assert_eq!</span>(
                 lookup.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
@@ -2005,7 +2006,7 @@
         {
             <span class="kw">let </span>query = Query::query(Name::from(Ipv4Addr::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)), RecordType::PTR);
             <span class="kw">let </span>lookup = block_on(client.lookup(query.clone(), DnsRequestOptions::default()))
-                .expect(<span class="string">&quot;should have returned localhost&quot;</span>);
+                .expect(<span class="string">"should have returned localhost"</span>);
             <span class="macro">assert_eq!</span>(lookup.query(), <span class="kw-2">&amp;</span>query);
             <span class="macro">assert_eq!</span>(
                 lookup.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
@@ -2019,7 +2020,7 @@
                 RecordType::PTR,
             );
             <span class="kw">let </span>lookup = block_on(client.lookup(query.clone(), DnsRequestOptions::default()))
-                .expect(<span class="string">&quot;should have returned localhost&quot;</span>);
+                .expect(<span class="string">"should have returned localhost"</span>);
             <span class="macro">assert_eq!</span>(lookup.query(), <span class="kw-2">&amp;</span>query);
             <span class="macro">assert_eq!</span>(
                 lookup.iter().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
@@ -2028,7 +2029,7 @@
         }
 
         <span class="macro">assert!</span>(block_on(client.lookup(
-            Query::query(Name::from_ascii(<span class="string">&quot;localhost.&quot;</span>).unwrap(), RecordType::MX),
+            Query::query(Name::from_ascii(<span class="string">"localhost."</span>).unwrap(), RecordType::MX),
             DnsRequestOptions::default()
         ))
         .is_err());
@@ -2057,7 +2058,7 @@
 
         <span class="macro">assert!</span>(block_on(client.lookup(
             Query::query(
-                Name::from_ascii(<span class="string">&quot;horrible.invalid.&quot;</span>).unwrap(),
+                Name::from_ascii(<span class="string">"horrible.invalid."</span>).unwrap(),
                 RecordType::A,
             ),
             DnsRequestOptions::default()
@@ -2071,11 +2072,11 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>message = srv_message().unwrap().into_message();
         message.add_query(Query::query(
-            Name::from_ascii(<span class="string">&quot;www.example.local.&quot;</span>).unwrap(),
+            Name::from_ascii(<span class="string">"www.example.local."</span>).unwrap(),
             RecordType::A,
         ));
         message.add_answer(Record::from_rdata(
-            Name::from_str(<span class="string">&quot;www.example.local.&quot;</span>).unwrap(),
+            Name::from_str(<span class="string">"www.example.local."</span>).unwrap(),
             <span class="number">86400</span>,
             RData::A(A::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
         ));
@@ -2088,7 +2089,7 @@
 
         <span class="macro">assert!</span>(block_on(client.lookup(
             Query::query(
-                Name::from_ascii(<span class="string">&quot;www.example.local.&quot;</span>).unwrap(),
+                Name::from_ascii(<span class="string">"www.example.local."</span>).unwrap(),
                 RecordType::A,
             ),
             DnsRequestOptions::default()

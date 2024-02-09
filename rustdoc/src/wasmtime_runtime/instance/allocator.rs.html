@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance/allocator.rs`."><title>allocator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance/allocator.rs`."><title>allocator.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -432,27 +433,27 @@
 <span class="kw">mod </span>on_demand;
 <span class="kw">pub use </span><span class="self">self</span>::on_demand::OnDemandInstanceAllocator;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;pooling-allocator&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pooling-allocator"</span>)]
 </span><span class="kw">mod </span>pooling;
-<span class="attr">#[cfg(feature = <span class="string">&quot;pooling-allocator&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"pooling-allocator"</span>)]
 </span><span class="kw">pub use </span><span class="self">self</span>::pooling::{InstanceLimits, PoolingInstanceAllocator, PoolingInstanceAllocatorConfig};
 
 <span class="doccomment">/// Represents a request for a new runtime instance.
-</span><span class="kw">pub struct </span>InstanceAllocationRequest&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>InstanceAllocationRequest&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// The info related to the compiled version of this module,
     /// needed for instantiation: function metadata, JIT code
     /// addresses, precomputed images for lazy memory and table
     /// initialization, and the like. This Arc is cloned and held for
     /// the lifetime of the instance.
-    </span><span class="kw">pub </span>runtime_info: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Arc&lt;<span class="kw">dyn </span>ModuleRuntimeInfo&gt;,
+    </span><span class="kw">pub </span>runtime_info: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Arc&lt;<span class="kw">dyn </span>ModuleRuntimeInfo&gt;,
 
     <span class="doccomment">/// The imports to use for the instantiation.
-    </span><span class="kw">pub </span>imports: Imports&lt;<span class="lifetime">&#39;a</span>&gt;,
+    </span><span class="kw">pub </span>imports: Imports&lt;<span class="lifetime">'a</span>&gt;,
 
     <span class="doccomment">/// The host state to associate with the instance.
     </span><span class="kw">pub </span>host_state: Box&lt;<span class="kw">dyn </span>Any + Send + Sync&gt;,
 
-    <span class="doccomment">/// A pointer to the &quot;store&quot; for this instance to be allocated. The store
+    <span class="doccomment">/// A pointer to the "store" for this instance to be allocated. The store
     /// correlates with the `Store` in wasmtime itself, and lots of contextual
     /// information about the execution of wasm can be learned through the store.
     ///
@@ -502,7 +503,7 @@
 ///
 /// # Safety
 ///
-/// This trait is unsafe as it requires knowledge of Wasmtime&#39;s runtime internals to implement correctly.
+/// This trait is unsafe as it requires knowledge of Wasmtime's runtime internals to implement correctly.
 </span><span class="kw">pub unsafe trait </span>InstanceAllocator {
     <span class="doccomment">/// Validates that a module is supported by the allocator.
     </span><span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>, module: <span class="kw-2">&amp;</span>Module, offsets: <span class="kw-2">&amp;</span>VMOffsets&lt;HostPtr&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -597,7 +598,7 @@
     </span><span class="kw">fn </span>deallocate_tables(<span class="kw-2">&amp;</span><span class="self">self</span>, index: usize, tables: <span class="kw-2">&amp;mut </span>PrimaryMap&lt;DefinedTableIndex, Table&gt;);
 
     <span class="doccomment">/// Allocates a fiber stack for calling async functions on.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">fn </span>allocate_fiber_stack(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;wasmtime_fiber::FiberStack&gt;;
 
     <span class="doccomment">/// Deallocates a fiber stack that was previously allocated with `allocate_fiber_stack`.
@@ -605,7 +606,7 @@
     /// # Safety
     ///
     /// The provided stack is required to have been allocated with `allocate_fiber_stack`.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;async&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span><span class="kw">unsafe fn </span>deallocate_fiber_stack(<span class="kw-2">&amp;</span><span class="self">self</span>, stack: <span class="kw-2">&amp;</span>wasmtime_fiber::FiberStack);
 
     <span class="doccomment">/// Purges all lingering resources related to `module` from within this
@@ -623,7 +624,7 @@
 
             init.offset
                 .checked_add(val)
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;element segment global base overflows&quot;</span>))
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"element segment global base overflows"</span>))
         }
         <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(init.offset),
     }
@@ -641,7 +642,7 @@
                 <span class="comment">// Initializer is in bounds
             </span>}
             <span class="kw">_ </span>=&gt; {
-                <span class="macro">bail!</span>(<span class="string">&quot;table out of bounds: elements segment does not fit&quot;</span>)
+                <span class="macro">bail!</span>(<span class="string">"table out of bounds: elements segment does not fit"</span>)
             }
         }
     }
@@ -663,10 +664,10 @@
         }
     }
 
-    <span class="comment">// Note: if the module&#39;s table initializer state is in
+    <span class="comment">// Note: if the module's table initializer state is in
     // FuncTable mode, we will lazily initialize tables based on
     // any statically-precomputed image of FuncIndexes, but there
-    // may still be &quot;leftover segments&quot; that could not be
+    // may still be "leftover segments" that could not be
     // incorporated. So we have a unified handler here that
     // iterates over all segments (Segments mode) or leftover
     // segments (FuncTable mode) to initialize.
@@ -701,7 +702,7 @@
 
             init.offset
                 .checked_add(val)
-                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;data segment global base overflows&quot;</span>))
+                .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"data segment global base overflows"</span>))
         }
         <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(init.offset),
     }
@@ -723,7 +724,7 @@
                 <span class="comment">// Initializer is in bounds
             </span>}
             <span class="kw">_ </span>=&gt; {
-                <span class="macro">bail!</span>(<span class="string">&quot;memory out of bounds: data segment does not fit&quot;</span>)
+                <span class="macro">bail!</span>(<span class="string">"memory out of bounds: data segment does not fit"</span>)
             }
         }
     }
@@ -763,7 +764,7 @@
         },
         |instance, memory_index, init| {
             <span class="comment">// If this initializer applies to a defined memory but that memory
-            // doesn&#39;t need initialization, due to something like copy-on-write
+            // doesn't need initialization, due to something like copy-on-write
             // pre-initializing it via mmap magic, then this initializer can be
             // skipped entirely.
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(memory_index) = module.defined_memory_index(memory_index) {

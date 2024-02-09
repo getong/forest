@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-core-0.41.2/src/transport.rs`."><title>transport.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-core-0.41.2/src/transport.rs`."><title>transport.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="libp2p_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -569,7 +570,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2017-2018 Parity Technologies (UK) Ltd.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the &quot;Software&quot;),
+// copy of this software and associated documentation files (the "Software"),
 // to deal in the Software without restriction, including without limitation
 // the rights to use, copy, modify, merge, publish, distribute, sublicense,
 // and/or sell copies of the Software, and to permit persons to whom the
@@ -578,7 +579,7 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -722,7 +723,7 @@
     /// an [`TransportEvent::AddressExpired`] event yet.
     </span><span class="kw">fn </span>poll(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; Poll&lt;TransportEvent&lt;<span class="self">Self</span>::ListenerUpgrade, <span class="self">Self</span>::Error&gt;&gt;;
 
     <span class="doccomment">/// Performs a transport-specific mapping of an address `observed` by a remote onto a
@@ -746,9 +747,9 @@
     <span class="doccomment">/// Boxes the transport, including custom transport errors.
     </span><span class="kw">fn </span>boxed(<span class="self">self</span>) -&gt; boxed::Boxed&lt;<span class="self">Self</span>::Output&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>: Sized + Send + Unpin + <span class="lifetime">&#39;static</span>,
-        <span class="self">Self</span>::Dial: Send + <span class="lifetime">&#39;static</span>,
-        <span class="self">Self</span>::ListenerUpgrade: Send + <span class="lifetime">&#39;static</span>,
+        </span><span class="self">Self</span>: Sized + Send + Unpin + <span class="lifetime">'static</span>,
+        <span class="self">Self</span>::Dial: Send + <span class="lifetime">'static</span>,
+        <span class="self">Self</span>::ListenerUpgrade: Send + <span class="lifetime">'static</span>,
         <span class="self">Self</span>::Error: Send + Sync,
     {
         boxed::boxed(<span class="self">self</span>)
@@ -781,7 +782,7 @@
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
         U: Transport,
-        &lt;U <span class="kw">as </span>Transport&gt;::Error: <span class="lifetime">&#39;static</span>,
+        &lt;U <span class="kw">as </span>Transport&gt;::Error: <span class="lifetime">'static</span>,
     {
         OrTransport::new(<span class="self">self</span>, other)
     }
@@ -798,7 +799,7 @@
         </span><span class="self">Self</span>: Sized,
         C: FnOnce(<span class="self">Self</span>::Output, ConnectedPoint) -&gt; F,
         F: TryFuture&lt;<span class="prelude-val">Ok </span>= O&gt;,
-        &lt;F <span class="kw">as </span>TryFuture&gt;::Error: Error + <span class="lifetime">&#39;static</span>,
+        &lt;F <span class="kw">as </span>TryFuture&gt;::Error: Error + <span class="lifetime">'static</span>,
     {
         and_then::AndThen::new(<span class="self">self</span>, f)
     }
@@ -807,7 +808,7 @@
     </span><span class="kw">fn </span>upgrade(<span class="self">self</span>, version: upgrade::Version) -&gt; upgrade::Builder&lt;<span class="self">Self</span>&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
-        <span class="self">Self</span>::Error: <span class="lifetime">&#39;static</span>,
+        <span class="self">Self</span>::Error: <span class="lifetime">'static</span>,
     {
         upgrade::Builder::new(<span class="self">self</span>, version)
     }
@@ -825,8 +826,8 @@
 }
 
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>ListenerId {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">"{}"</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
@@ -879,7 +880,7 @@
 
 <span class="kw">impl</span>&lt;TUpgr, TErr&gt; TransportEvent&lt;TUpgr, TErr&gt; {
     <span class="doccomment">/// In case this [`TransportEvent`] is an upgrade, apply the given function
-    /// to the upgrade and produce another transport event based the the function&#39;s result.
+    /// to the upgrade and produce another transport event based the the function's result.
     </span><span class="kw">pub fn </span>map_upgrade&lt;U&gt;(<span class="self">self</span>, map: <span class="kw">impl </span>FnOnce(TUpgr) -&gt; U) -&gt; TransportEvent&lt;U, TErr&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             TransportEvent::Incoming {
@@ -922,7 +923,7 @@
 
     <span class="doccomment">/// In case this [`TransportEvent`] is an [`ListenerError`](TransportEvent::ListenerError),
     /// or [`ListenerClosed`](TransportEvent::ListenerClosed) apply the given function to the
-    /// error and produce another transport event based on the function&#39;s result.
+    /// error and produce another transport event based on the function's result.
     </span><span class="kw">pub fn </span>map_err&lt;E&gt;(<span class="self">self</span>, map_err: <span class="kw">impl </span>FnOnce(TErr) -&gt; E) -&gt; TransportEvent&lt;TUpgr, E&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             TransportEvent::Incoming {
@@ -1040,45 +1041,45 @@
 }
 
 <span class="kw">impl</span>&lt;TUpgr, TErr: fmt::Debug&gt; fmt::Debug <span class="kw">for </span>TransportEvent&lt;TUpgr, TErr&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             TransportEvent::NewAddress {
                 listener_id,
                 listen_addr,
             } =&gt; f
-                .debug_struct(<span class="string">&quot;TransportEvent::NewAddress&quot;</span>)
-                .field(<span class="string">&quot;listener_id&quot;</span>, listener_id)
-                .field(<span class="string">&quot;listen_addr&quot;</span>, listen_addr)
+                .debug_struct(<span class="string">"TransportEvent::NewAddress"</span>)
+                .field(<span class="string">"listener_id"</span>, listener_id)
+                .field(<span class="string">"listen_addr"</span>, listen_addr)
                 .finish(),
             TransportEvent::AddressExpired {
                 listener_id,
                 listen_addr,
             } =&gt; f
-                .debug_struct(<span class="string">&quot;TransportEvent::AddressExpired&quot;</span>)
-                .field(<span class="string">&quot;listener_id&quot;</span>, listener_id)
-                .field(<span class="string">&quot;listen_addr&quot;</span>, listen_addr)
+                .debug_struct(<span class="string">"TransportEvent::AddressExpired"</span>)
+                .field(<span class="string">"listener_id"</span>, listener_id)
+                .field(<span class="string">"listen_addr"</span>, listen_addr)
                 .finish(),
             TransportEvent::Incoming {
                 listener_id,
                 local_addr,
                 ..
             } =&gt; f
-                .debug_struct(<span class="string">&quot;TransportEvent::Incoming&quot;</span>)
-                .field(<span class="string">&quot;listener_id&quot;</span>, listener_id)
-                .field(<span class="string">&quot;local_addr&quot;</span>, local_addr)
+                .debug_struct(<span class="string">"TransportEvent::Incoming"</span>)
+                .field(<span class="string">"listener_id"</span>, listener_id)
+                .field(<span class="string">"local_addr"</span>, local_addr)
                 .finish(),
             TransportEvent::ListenerClosed {
                 listener_id,
                 reason,
             } =&gt; f
-                .debug_struct(<span class="string">&quot;TransportEvent::Closed&quot;</span>)
-                .field(<span class="string">&quot;listener_id&quot;</span>, listener_id)
-                .field(<span class="string">&quot;reason&quot;</span>, reason)
+                .debug_struct(<span class="string">"TransportEvent::Closed"</span>)
+                .field(<span class="string">"listener_id"</span>, listener_id)
+                .field(<span class="string">"reason"</span>, reason)
                 .finish(),
             TransportEvent::ListenerError { listener_id, error } =&gt; f
-                .debug_struct(<span class="string">&quot;TransportEvent::ListenerError&quot;</span>)
-                .field(<span class="string">&quot;listener_id&quot;</span>, listener_id)
-                .field(<span class="string">&quot;error&quot;</span>, error)
+                .debug_struct(<span class="string">"TransportEvent::ListenerError"</span>)
+                .field(<span class="string">"listener_id"</span>, listener_id)
+                .field(<span class="string">"error"</span>, error)
                 .finish(),
         }
     }
@@ -1113,10 +1114,10 @@
 <span class="kw">where
     </span>TErr: fmt::Display,
 {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
             TransportError::MultiaddrNotSupported(addr) =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;Multiaddr is not supported: {addr}&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"Multiaddr is not supported: {addr}"</span>)
             }
             TransportError::Other(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
         }
@@ -1125,9 +1126,9 @@
 
 <span class="kw">impl</span>&lt;TErr&gt; Error <span class="kw">for </span>TransportError&lt;TErr&gt;
 <span class="kw">where
-    </span>TErr: Error + <span class="lifetime">&#39;static</span>,
+    </span>TErr: Error + <span class="lifetime">'static</span>,
 {
-    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Error + <span class="lifetime">&#39;static</span>)&gt; {
+    <span class="kw">fn </span>source(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(<span class="kw">dyn </span>Error + <span class="lifetime">'static</span>)&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             TransportError::MultiaddrNotSupported(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
             TransportError::Other(err) =&gt; <span class="prelude-val">Some</span>(err),

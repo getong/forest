@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/storage-proofs-core-16.1.0/src/merkle/proof.rs`."><title>proof.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="storage_proofs_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/storage-proofs-core-16.1.0/src/merkle/proof.rs`."><title>proof.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="storage_proofs_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -984,9 +985,9 @@
 <span class="doccomment">/// Trait to abstract over the concept of Merkle Proof.
 </span><span class="kw">pub trait </span>MerkleProofTrait: Clone + Serialize + DeserializeOwned + Debug + Sync + Send {
     <span class="kw">type </span>Hasher: Hasher;
-    <span class="kw">type </span>Arity: <span class="lifetime">&#39;static </span>+ PoseidonArity;
-    <span class="kw">type </span>SubTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity;
-    <span class="kw">type </span>TopTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity;
+    <span class="kw">type </span>Arity: <span class="lifetime">'static </span>+ PoseidonArity;
+    <span class="kw">type </span>SubTreeArity: <span class="lifetime">'static </span>+ PoseidonArity;
+    <span class="kw">type </span>TopTreeArity: <span class="lifetime">'static </span>+ PoseidonArity;
 
     <span class="doccomment">/// Try to convert a merkletree proof into this structure.
     </span><span class="kw">fn </span>try_from_proof(
@@ -1031,7 +1032,7 @@
     <span class="doccomment">/// Validates the MerkleProof and that it corresponds to the supplied node.
     ///
     /// TODO: audit performance and usage in case verification is
-    /// unnecessary based on how it&#39;s used.
+    /// unnecessary based on how it's used.
     </span><span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>, node: usize) -&gt; bool {
         <span class="kw">if </span>!<span class="self">self</span>.verify() {
             <span class="kw">return </span><span class="bool-val">false</span>;
@@ -1135,8 +1136,8 @@
 <span class="attr">#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>InclusionPath&lt;H: Hasher, Arity: PoseidonArity&gt; {
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>path: Vec&lt;PathElement&lt;H, Arity&gt;&gt;,
 }
@@ -1170,7 +1171,7 @@
         <span class="self">self</span>.path.is_empty()
     }
 
-    <span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter&lt;<span class="lifetime">&#39;_</span>, PathElement&lt;H, Arity&gt;&gt; {
+    <span class="kw">pub fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter&lt;<span class="lifetime">'_</span>, PathElement&lt;H, Arity&gt;&gt; {
         <span class="self">self</span>.path.iter()
     }
 
@@ -1185,8 +1186,8 @@
 <span class="attr">#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>PathElement&lt;H: Hasher, Arity: PoseidonArity&gt; {
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>hashes: Vec&lt;H::Domain&gt;,
     index: usize,
@@ -1214,17 +1215,17 @@
     TopTreeArity: PoseidonArity = U0,
 &gt; {
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>data: ProofData&lt;H, BaseArity, SubTreeArity, TopTreeArity&gt;,
 }
 
 <span class="kw">impl</span>&lt;
         H: Hasher,
-        Arity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
-        SubTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
-        TopTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
+        Arity: <span class="lifetime">'static </span>+ PoseidonArity,
+        SubTreeArity: <span class="lifetime">'static </span>+ PoseidonArity,
+        TopTreeArity: <span class="lifetime">'static </span>+ PoseidonArity,
     &gt; MerkleProofTrait <span class="kw">for </span>MerkleProof&lt;H, Arity, SubTreeArity, TopTreeArity&gt;
 {
     <span class="kw">type </span>Hasher = H;
@@ -1282,27 +1283,27 @@
     TopTreeArity: PoseidonArity,
 &gt; {
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>Single(SingleProof&lt;H, BaseArity&gt;),
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>Sub(SubProof&lt;H, BaseArity, SubTreeArity&gt;),
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>Top(TopProof&lt;H, BaseArity, SubTreeArity, TopTreeArity&gt;),
 }
 
 <span class="kw">impl</span>&lt;
         H: Hasher,
-        Arity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
-        SubTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
-        TopTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
+        Arity: <span class="lifetime">'static </span>+ PoseidonArity,
+        SubTreeArity: <span class="lifetime">'static </span>+ PoseidonArity,
+        TopTreeArity: <span class="lifetime">'static </span>+ PoseidonArity,
     &gt; Default <span class="kw">for </span>ProofData&lt;H, Arity, SubTreeArity, TopTreeArity&gt;
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
@@ -1314,20 +1315,20 @@
 </span><span class="kw">struct </span>SingleProof&lt;H: Hasher, Arity: PoseidonArity&gt; {
     <span class="doccomment">/// Root of the merkle tree.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>root: H::Domain,
     <span class="doccomment">/// The original leaf data for this prof.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>leaf: H::Domain,
     <span class="doccomment">/// The path from leaf to root.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>path: InclusionPath&lt;H, Arity&gt;,
 }
@@ -1341,25 +1342,25 @@
 <span class="attr">#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 </span><span class="kw">struct </span>SubProof&lt;H: Hasher, BaseArity: PoseidonArity, SubTreeArity: PoseidonArity&gt; {
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>base_proof: InclusionPath&lt;H, BaseArity&gt;,
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>sub_proof: InclusionPath&lt;H, SubTreeArity&gt;,
     <span class="doccomment">/// Root of the merkle tree.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>root: H::Domain,
     <span class="doccomment">/// The original leaf data for this prof.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>leaf: H::Domain,
 }
@@ -1390,30 +1391,30 @@
     TopTreeArity: PoseidonArity,
 &gt; {
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>base_proof: InclusionPath&lt;H, BaseArity&gt;,
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>sub_proof: InclusionPath&lt;H, SubTreeArity&gt;,
     <span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>top_proof: InclusionPath&lt;H, TopTreeArity&gt;,
     <span class="doccomment">/// Root of the merkle tree.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>root: H::Domain,
     <span class="doccomment">/// The original leaf data for this prof.
     </span><span class="attr">#[serde(bound(
-        serialize = <span class="string">&quot;H::Domain: Serialize&quot;</span>,
-        deserialize = <span class="string">&quot;H::Domain: Deserialize&lt;&#39;de&gt;&quot;
+        serialize = <span class="string">"H::Domain: Serialize"</span>,
+        deserialize = <span class="string">"H::Domain: Deserialize&lt;'de&gt;"
     </span>))]
     </span>leaf: H::Domain,
 }
@@ -1478,7 +1479,7 @@
                 }),
             }
         } <span class="kw">else if </span>TopTreeArity::to_usize() == <span class="number">0 </span>{
-            <span class="kw">let </span>sub_elem = path.pop().expect(<span class="string">&quot;path should not be empty&quot;</span>);
+            <span class="kw">let </span>sub_elem = path.pop().expect(<span class="string">"path should not be empty"</span>);
             <span class="kw">let </span>base_path = path.into_iter().map(PathElement::from).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
             MerkleProof {
                 data: ProofData::Sub(SubProof {
@@ -1489,8 +1490,8 @@
                 }),
             }
         } <span class="kw">else </span>{
-            <span class="kw">let </span>top_elem = path.pop().expect(<span class="string">&quot;path should not be empty&quot;</span>);
-            <span class="kw">let </span>sub_elem = path.pop().expect(<span class="string">&quot;path should not be empty&quot;</span>);
+            <span class="kw">let </span>top_elem = path.pop().expect(<span class="string">"path should not be empty"</span>);
+            <span class="kw">let </span>sub_elem = path.pop().expect(<span class="string">"path should not be empty"</span>);
             <span class="kw">let </span>base_path = path.into_iter().map(PathElement::from).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
             MerkleProof {
                 data: ProofData::Top(TopProof {
@@ -1522,7 +1523,7 @@
     SingleProof::new(path, root, leaf)
 }
 
-<span class="doccomment">/// &#39;lemma_start_index&#39; is required because sub/top proofs start at
+<span class="doccomment">/// 'lemma_start_index' is required because sub/top proofs start at
 /// index 0 and base proofs start at index 1 (skipping the leaf at the
 /// front)
 </span><span class="kw">fn </span>extract_path&lt;H: Hasher, Arity: PoseidonArity&gt;(
@@ -1543,7 +1544,7 @@
     path.into()
 }
 
-<span class="kw">impl</span>&lt;H: Hasher, Arity: <span class="lifetime">&#39;static </span>+ PoseidonArity&gt; SingleProof&lt;H, Arity&gt; {
+<span class="kw">impl</span>&lt;H: Hasher, Arity: <span class="lifetime">'static </span>+ PoseidonArity&gt; SingleProof&lt;H, Arity&gt; {
     <span class="kw">fn </span>try_from_proof(p: merkletree::proof::Proof&lt;&lt;H <span class="kw">as </span>Hasher&gt;::Domain, Arity&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(proof_to_single(<span class="kw-2">&amp;</span>p, <span class="number">1</span>, <span class="prelude-val">None</span>))
     }
@@ -1577,19 +1578,19 @@
     }
 }
 
-<span class="kw">impl</span>&lt;H: Hasher, Arity: <span class="lifetime">&#39;static </span>+ PoseidonArity, SubTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity&gt;
+<span class="kw">impl</span>&lt;H: Hasher, Arity: <span class="lifetime">'static </span>+ PoseidonArity, SubTreeArity: <span class="lifetime">'static </span>+ PoseidonArity&gt;
     SubProof&lt;H, Arity, SubTreeArity&gt;
 {
     <span class="kw">fn </span>try_from_proof(p: merkletree::proof::Proof&lt;&lt;H <span class="kw">as </span>Hasher&gt;::Domain, Arity&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             p.sub_layer_nodes() == SubTreeArity::to_usize(),
-            <span class="string">&quot;sub arity mismatch&quot;
+            <span class="string">"sub arity mismatch"
         </span>);
         <span class="macro">ensure!</span>(
             p.sub_tree_proof.is_some(),
-            <span class="string">&quot;Cannot generate sub proof without a base-proof&quot;
+            <span class="string">"Cannot generate sub proof without a base-proof"
         </span>);
-        <span class="kw">let </span>base_p = p.sub_tree_proof.as_ref().expect(<span class="string">&quot;proof as_ref failure&quot;</span>);
+        <span class="kw">let </span>base_p = p.sub_tree_proof.as_ref().expect(<span class="string">"proof as_ref failure"</span>);
 
         <span class="comment">// Generate SubProof
         </span><span class="kw">let </span>root = p.root();
@@ -1641,35 +1642,35 @@
 
 <span class="kw">impl</span>&lt;
         H: Hasher,
-        Arity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
-        SubTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
-        TopTreeArity: <span class="lifetime">&#39;static </span>+ PoseidonArity,
+        Arity: <span class="lifetime">'static </span>+ PoseidonArity,
+        SubTreeArity: <span class="lifetime">'static </span>+ PoseidonArity,
+        TopTreeArity: <span class="lifetime">'static </span>+ PoseidonArity,
     &gt; TopProof&lt;H, Arity, SubTreeArity, TopTreeArity&gt;
 {
     <span class="kw">fn </span>try_from_proof(p: merkletree::proof::Proof&lt;&lt;H <span class="kw">as </span>Hasher&gt;::Domain, Arity&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             p.top_layer_nodes() == TopTreeArity::to_usize(),
-            <span class="string">&quot;top arity mismatch&quot;
+            <span class="string">"top arity mismatch"
         </span>);
         <span class="macro">ensure!</span>(
             p.sub_layer_nodes() == SubTreeArity::to_usize(),
-            <span class="string">&quot;sub arity mismatch&quot;
+            <span class="string">"sub arity mismatch"
         </span>);
 
         <span class="macro">ensure!</span>(
             p.sub_tree_proof.is_some(),
-            <span class="string">&quot;Cannot generate top proof without a sub-proof&quot;
+            <span class="string">"Cannot generate top proof without a sub-proof"
         </span>);
-        <span class="kw">let </span>sub_p = p.sub_tree_proof.as_ref().expect(<span class="string">&quot;proofs as ref failure&quot;</span>);
+        <span class="kw">let </span>sub_p = p.sub_tree_proof.as_ref().expect(<span class="string">"proofs as ref failure"</span>);
 
         <span class="macro">ensure!</span>(
             sub_p.sub_tree_proof.is_some(),
-            <span class="string">&quot;Cannot generate top proof without a base-proof&quot;
+            <span class="string">"Cannot generate top proof without a base-proof"
         </span>);
         <span class="kw">let </span>base_p = sub_p
             .sub_tree_proof
             .as_ref()
-            .expect(<span class="string">&quot;proofs as ref failure&quot;</span>);
+            .expect(<span class="string">"proofs as ref failure"</span>);
 
         <span class="kw">let </span>root = p.root();
         <span class="kw">let </span>leaf = base_p.item();
@@ -1741,7 +1742,7 @@
         generate_tree, get_base_tree_count, DiskStore, MerkleTreeTrait, MerkleTreeWrapper,
     };
 
-    <span class="kw">fn </span>merklepath&lt;Tree: <span class="lifetime">&#39;static </span>+ MerkleTreeTrait&gt;() {
+    <span class="kw">fn </span>merklepath&lt;Tree: <span class="lifetime">'static </span>+ MerkleTreeTrait&gt;() {
         <span class="kw">let </span>node_size = <span class="number">32</span>;
         <span class="kw">let </span>nodes = <span class="number">64 </span>* get_base_tree_count::&lt;Tree&gt;();
 
@@ -1749,18 +1750,18 @@
         <span class="kw">let </span>(data, tree) = generate_tree::&lt;Tree, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>rng, nodes, <span class="prelude-val">None</span>);
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..nodes {
-            <span class="kw">let </span>proof = tree.gen_proof(i).expect(<span class="string">&quot;gen_proof failure&quot;</span>);
+            <span class="kw">let </span>proof = tree.gen_proof(i).expect(<span class="string">"gen_proof failure"</span>);
 
-            <span class="macro">assert!</span>(proof.verify(), <span class="string">&quot;failed to validate&quot;</span>);
+            <span class="macro">assert!</span>(proof.verify(), <span class="string">"failed to validate"</span>);
 
-            <span class="macro">assert!</span>(proof.validate(i), <span class="string">&quot;failed to validate valid merkle path&quot;</span>);
+            <span class="macro">assert!</span>(proof.validate(i), <span class="string">"failed to validate valid merkle path"</span>);
             <span class="kw">let </span>data_slice = <span class="kw-2">&amp;</span>data[i * node_size..(i + <span class="number">1</span>) * node_size].to_vec();
             <span class="macro">assert!</span>(
                 proof.validate_data(
                     &lt;Tree::Hasher <span class="kw">as </span>Hasher&gt;::Domain::try_from_bytes(data_slice)
-                        .expect(<span class="string">&quot;try from bytes failure&quot;</span>)
+                        .expect(<span class="string">"try from bytes failure"</span>)
                 ),
-                <span class="string">&quot;failed to validate valid data&quot;
+                <span class="string">"failed to validate valid data"
             </span>);
         }
     }

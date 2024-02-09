@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/unwind.rs`."><title>unwind.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/unwind.rs`."><title>unwind.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -184,25 +185,25 @@
 
 </span><span class="kw">use </span><span class="kw">crate</span>::machinst::RealReg;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;enable-serde&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
 </span><span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;unwind&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"unwind"</span>)]
 </span><span class="kw">pub mod </span>systemv;
 
-<span class="attr">#[cfg(feature = <span class="string">&quot;unwind&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"unwind"</span>)]
 </span><span class="kw">pub mod </span>winx64;
 
 <span class="doccomment">/// Represents unwind information for a single function.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 #[non_exhaustive]
 </span><span class="kw">pub enum </span>UnwindInfo {
     <span class="doccomment">/// Windows x64 ABI unwind information.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;unwind&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"unwind"</span>)]
     </span>WindowsX64(winx64::UnwindInfo),
     <span class="doccomment">/// System V ABI unwind information.
-    </span><span class="attr">#[cfg(feature = <span class="string">&quot;unwind&quot;</span>)]
+    </span><span class="attr">#[cfg(feature = <span class="string">"unwind"</span>)]
     </span>SystemV(systemv::UnwindInfo),
 }
 
@@ -211,7 +212,7 @@
 ///
 /// VCode backends always emit unwind info that is relative to a frame
 /// pointer, because we are planning to allow for dynamic frame allocation,
-/// and because it makes the design quite a lot simpler in general: we don&#39;t
+/// and because it makes the design quite a lot simpler in general: we don't
 /// have to be precise about SP adjustments throughout the body of the function.
 ///
 /// We include only unwind info for prologues at this time. Note that unwind
@@ -220,7 +221,7 @@
 /// if one wishes to instruction-step through the epilogue and see a backtrace
 /// at every point. This is not necessary for correct operation otherwise and so
 /// we simplify the world a bit by omitting epilogue information. (Note that
-/// some platforms also don&#39;t require or have a way to describe unwind
+/// some platforms also don't require or have a way to describe unwind
 /// information for epilogues at all: for example, on Windows, the `UNWIND_INFO`
 /// format only stores information for the function prologue.)
 ///
@@ -245,7 +246,7 @@
 ///   function       | clobbered callee-save registers              |
 ///                  | ...                                          |
 ///   start of   --&gt; +----------------------------------------------+
-///   clobbers       | (rest of function&#39;s frame, irrelevant here)  |
+///   clobbers       | (rest of function's frame, irrelevant here)  |
 ///                  | ...                                          |
 ///   SP in this --&gt; +----------------------------------------------+
 ///   function
@@ -263,8 +264,8 @@
 /// we need some information to determine where the current stack frame is
 /// relative to SP or FP. When the `PushFrameRegs` occurs, we need to know how
 /// much SP was decremented by, so we can allow the unwinder to continue to find
-/// the caller&#39;s frame. When we define the new frame, we need to know where FP
-/// is in relation to &quot;SP at call&quot; and also &quot;start of clobbers&quot;, because
+/// the caller's frame. When we define the new frame, we need to know where FP
+/// is in relation to "SP at call" and also "start of clobbers", because
 /// different unwind formats define one or the other of those as the anchor by
 /// which we define the frame. Finally, when registers are saved, we need to
 /// know which ones, and where.
@@ -274,15 +275,15 @@
 ///
 /// - Windows unwind information defines a frame that must start below the
 ///   clobber area, because all clobber-save offsets are non-negative. We set it
-///   at the &quot;start of clobbers&quot; in the figure above. The `UNWIND_INFO` contains
-///   a &quot;frame pointer offset&quot; field; when we define the new frame, the frame is
+///   at the "start of clobbers" in the figure above. The `UNWIND_INFO` contains
+///   a "frame pointer offset" field; when we define the new frame, the frame is
 ///   understood to be the value of FP (`RBP`) *minus* this offset. In other
 ///   words, the FP is *at the frame pointer offset* relative to the
-///   start-of-clobber-frame. We use the &quot;FP offset down to clobber area&quot; offset
+///   start-of-clobber-frame. We use the "FP offset down to clobber area" offset
 ///   to generate this info.
 ///
 /// - System V unwind information defines a frame in terms of the CFA
-///   (call-frame address), which is equal to the &quot;SP at call&quot; above. SysV
+///   (call-frame address), which is equal to the "SP at call" above. SysV
 ///   allows negative offsets, so there is no issue defining clobber-save
 ///   locations in terms of CFA. The format allows us to define CFA flexibly in
 ///   terms of any register plus an offset; we define it in terms of FP plus
@@ -310,23 +311,23 @@
 /// ...
 /// ```
 </span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = <span class="string">&quot;enable-serde&quot;</span>, derive(Serialize, Deserialize))]
+#[cfg_attr(feature = <span class="string">"enable-serde"</span>, derive(Serialize, Deserialize))]
 </span><span class="kw">pub enum </span>UnwindInst {
     <span class="doccomment">/// The frame-pointer register for this architecture has just been pushed to
     /// the stack (and on architectures where return-addresses are not pushed by
     /// hardware, the link register as well). The FP has not been set to this
     /// frame yet. The current location of SP is such that
     /// `offset_upward_to_caller_sp` is the distance to SP-at-callsite (our
-    /// caller&#39;s frame).
+    /// caller's frame).
     </span>PushFrameRegs {
         <span class="doccomment">/// The offset from the current SP (after push) to the SP at
-        /// caller&#39;s callsite.
+        /// caller's callsite.
         </span>offset_upward_to_caller_sp: u32,
     },
     <span class="doccomment">/// The frame-pointer register for this architecture has just been
     /// set to the current stack location. We wish to define a new
     /// frame that is anchored on this new FP value. Offsets are provided
-    /// upward to the caller&#39;s stack frame and downward toward the clobber
+    /// upward to the caller's stack frame and downward toward the clobber
     /// area. We expect this pseudo-op to come after `PushFrameRegs`.
     </span>DefineNewFrame {
         <span class="doccomment">/// The offset from the current SP and FP value upward to the value of
@@ -349,7 +350,7 @@
     /// that the value of `reg` is saved on the stack at address `FP -
     /// offset_downward_to_clobbers + clobber_offset`.
     </span>SaveReg {
-        <span class="doccomment">/// The offset from the start of the clobber area to this register&#39;s
+        <span class="doccomment">/// The offset from the start of the clobber area to this register's
         /// stack location.
         </span>clobber_offset: u32,
         <span class="doccomment">/// The saved register.

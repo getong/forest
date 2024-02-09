@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ec-gpu-gen-0.7.0/src/threadpool.rs`."><title>threadpool.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ec_gpu_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ec-gpu-gen-0.7.0/src/threadpool.rs`."><title>threadpool.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ec_gpu_gen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -177,22 +178,22 @@
 
 <span class="doccomment">/// The number of threads the thread pool should use.
 ///
-/// By default it&#39;s equal to the number of CPUs, but it can be changed with the
+/// By default it's equal to the number of CPUs, but it can be changed with the
 /// `EC_GPU_NUM_THREADS` environment variable.
 </span><span class="kw">static </span>NUM_THREADS: Lazy&lt;usize&gt; = Lazy::new(read_num_threads);
 
 <span class="doccomment">/// The thread pool that is used for the computations.
 ///
-/// By default, it&#39;s size is equal to the number of CPUs. It can be set to a different value with
+/// By default, it's size is equal to the number of CPUs. It can be set to a different value with
 /// the `EC_GPU_NUM_THREADS` environment variable.
 </span><span class="kw">pub static </span>THREAD_POOL: Lazy&lt;Pool&gt; = Lazy::new(|| Pool::new(<span class="kw-2">*</span>NUM_THREADS));
 
 <span class="doccomment">/// Returns the number of threads.
 ///
-/// The number can be set with the `EC_GPU_NUM_THREADS` environment variable. If it isn&#39;t set, it
+/// The number can be set with the `EC_GPU_NUM_THREADS` environment variable. If it isn't set, it
 /// defaults to the number of CPUs the system has.
 </span><span class="kw">fn </span>read_num_threads() -&gt; usize {
-    env::var(<span class="string">&quot;EC_GPU_NUM_THREADS&quot;</span>)
+    env::var(<span class="string">"EC_GPU_NUM_THREADS"</span>)
         .ok()
         .and_then(|num| num.parse::&lt;usize&gt;().ok())
         .unwrap_or_else(num_cpus::get)
@@ -218,19 +219,19 @@
     <span class="doccomment">/// Executes a function in a thread and returns a [`Waiter`] immediately.
     </span><span class="kw">pub fn </span>compute&lt;F, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; Waiter&lt;R&gt;
     <span class="kw">where
-        </span>F: FnOnce() -&gt; R + Send + <span class="lifetime">&#39;static</span>,
-        R: Send + <span class="lifetime">&#39;static</span>,
+        </span>F: FnOnce() -&gt; R + Send + <span class="lifetime">'static</span>,
+        R: Send + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>(sender, receiver) = bounded(<span class="number">1</span>);
 
         THREAD_POOL.spawn(<span class="kw">move </span>|| {
             <span class="kw">let </span>res = f();
             <span class="comment">// Best effort. We run it in a separate thread, so the receiver might not exist
-            // anymore, but that&#39;s OK. It only means that we are not interested in the result.
+            // anymore, but that's OK. It only means that we are not interested in the result.
             // A message is logged though, as concurrency issues are hard to debug and this might
             // help in such cases.
             </span><span class="kw">if let </span><span class="prelude-val">Err</span>(SendError(<span class="kw">_</span>)) = sender.send(res) {
-                <span class="macro">trace!</span>(<span class="string">&quot;Cannot send result&quot;</span>);
+                <span class="macro">trace!</span>(<span class="string">"Cannot send result"</span>);
             }
         });
 
@@ -241,9 +242,9 @@
     ///
     /// The function gets the [`yastl::Scope`] as well as the `chunk_size` as parameters. THe
     /// `chunk_size` is number of elements per thread.
-    </span><span class="kw">pub fn </span>scope&lt;<span class="lifetime">&#39;a</span>, F, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, elements: usize, f: F) -&gt; R
+    </span><span class="kw">pub fn </span>scope&lt;<span class="lifetime">'a</span>, F, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, elements: usize, f: F) -&gt; R
     <span class="kw">where
-        </span>F: FnOnce(<span class="kw-2">&amp;</span>yastl::Scope&lt;<span class="lifetime">&#39;a</span>&gt;, usize) -&gt; R,
+        </span>F: FnOnce(<span class="kw-2">&amp;</span>yastl::Scope&lt;<span class="lifetime">'a</span>&gt;, usize) -&gt; R,
     {
         <span class="kw">let </span>chunk_size = <span class="kw">if </span>elements &lt; <span class="kw-2">*</span>NUM_THREADS {
             <span class="number">1
@@ -255,9 +256,9 @@
     }
 
     <span class="doccomment">/// Executes the passed in function, and returns the result once it is finished.
-    </span><span class="kw">pub fn </span>scoped&lt;<span class="lifetime">&#39;a</span>, F, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; R
+    </span><span class="kw">pub fn </span>scoped&lt;<span class="lifetime">'a</span>, F, R&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; R
     <span class="kw">where
-        </span>F: FnOnce(<span class="kw-2">&amp;</span>yastl::Scope&lt;<span class="lifetime">&#39;a</span>&gt;) -&gt; R,
+        </span>F: FnOnce(<span class="kw-2">&amp;</span>yastl::Scope&lt;<span class="lifetime">'a</span>&gt;) -&gt; R,
     {
         <span class="kw">let </span>(sender, receiver) = bounded(<span class="number">1</span>);
         THREAD_POOL.scoped(|s| {
@@ -319,19 +320,19 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_read_num_threads() {
         <span class="kw">let </span>num_cpus = num_cpus::get();
-        temp_env::with_var(<span class="string">&quot;EC_GPU_NUM_THREADS&quot;</span>, <span class="prelude-val">None</span>::&lt;<span class="kw-2">&amp;</span>str&gt;, || {
+        temp_env::with_var(<span class="string">"EC_GPU_NUM_THREADS"</span>, <span class="prelude-val">None</span>::&lt;<span class="kw-2">&amp;</span>str&gt;, || {
             <span class="macro">assert_eq!</span>(
                 read_num_threads(),
                 num_cpus,
-                <span class="string">&quot;By default the number of threads matches the number of CPUs.&quot;
+                <span class="string">"By default the number of threads matches the number of CPUs."
             </span>);
         });
 
-        temp_env::with_var(<span class="string">&quot;EC_GPU_NUM_THREADS&quot;</span>, <span class="prelude-val">Some</span>(<span class="string">&quot;1234&quot;</span>), || {
+        temp_env::with_var(<span class="string">"EC_GPU_NUM_THREADS"</span>, <span class="prelude-val">Some</span>(<span class="string">"1234"</span>), || {
             <span class="macro">assert_eq!</span>(
                 read_num_threads(),
                 <span class="number">1234</span>,
-                <span class="string">&quot;Number of threads matches the environment variable.&quot;
+                <span class="string">"Number of threads matches the environment variable."
             </span>);
         });
     }

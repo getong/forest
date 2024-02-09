@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-cranelift-12.0.2/src/func_environ.rs`."><title>func_environ.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_cranelift" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-cranelift-12.0.2/src/func_environ.rs`."><title>func_environ.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_cranelift" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -2482,10 +2483,10 @@
 <span class="macro">wasmtime_environ::foreach_builtin_function!</span>(declare_function_signatures);
 
 <span class="doccomment">/// The `FuncEnvironment` implementation for use by the `ModuleEnvironment`.
-</span><span class="kw">pub struct </span>FuncEnvironment&lt;<span class="lifetime">&#39;module_environment</span>&gt; {
-    isa: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>(<span class="kw">dyn </span>TargetIsa + <span class="lifetime">&#39;module_environment</span>),
-    module: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>Module,
-    types: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>ModuleTypes,
+</span><span class="kw">pub struct </span>FuncEnvironment&lt;<span class="lifetime">'module_environment</span>&gt; {
+    isa: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>(<span class="kw">dyn </span>TargetIsa + <span class="lifetime">'module_environment</span>),
+    module: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>Module,
+    types: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>ModuleTypes,
 
     <span class="doccomment">/// Heaps implementing WebAssembly linear memories.
     </span>heaps: PrimaryMap&lt;Heap, HeapData&gt;,
@@ -2499,16 +2500,16 @@
     <span class="doccomment">/// Offsets to struct fields accessed by JIT code.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) offsets: VMOffsets&lt;u8&gt;,
 
-    tunables: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>Tunables,
+    tunables: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>Tunables,
 
     <span class="doccomment">/// A function-local variable which stores the cached value of the amount of
-    /// fuel remaining to execute. If used this is modified frequently so it&#39;s
+    /// fuel remaining to execute. If used this is modified frequently so it's
     /// stored locally as a variable instead of always referenced from the field
     /// in `*const VMRuntimeLimits`
     </span>fuel_var: cranelift_frontend::Variable,
 
     <span class="doccomment">/// A function-local variable which caches the value of `*const
-    /// VMRuntimeLimits` for this function&#39;s vmctx argument. This pointer is stored
+    /// VMRuntimeLimits` for this function's vmctx argument. This pointer is stored
     /// in the vmctx itself, but never changes for the lifetime of the function,
     /// so if we load it up front we can continue to use it throughout.
     </span>vmruntime_limits_ptr: cranelift_frontend::Variable,
@@ -2521,20 +2522,20 @@
     <span class="doccomment">/// A cached pointer to the per-Engine epoch counter, when
     /// performing epoch-based interruption. Initialized in the
     /// function prologue. We prefer to use a variable here rather
-    /// than reload on each check because it&#39;s better to let the
+    /// than reload on each check because it's better to let the
     /// regalloc keep it in a register if able; if not, it can always
-    /// spill, and this isn&#39;t any worse than reloading each time.
+    /// spill, and this isn't any worse than reloading each time.
     </span>epoch_ptr_var: cranelift_frontend::Variable,
 
     fuel_consumed: i64,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;module_environment</span>&gt; FuncEnvironment&lt;<span class="lifetime">&#39;module_environment</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'module_environment</span>&gt; FuncEnvironment&lt;<span class="lifetime">'module_environment</span>&gt; {
     <span class="kw">pub fn </span>new(
-        isa: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>(<span class="kw">dyn </span>TargetIsa + <span class="lifetime">&#39;module_environment</span>),
-        translation: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>ModuleTranslation&lt;<span class="lifetime">&#39;module_environment</span>&gt;,
-        types: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>ModuleTypes,
-        tunables: <span class="kw-2">&amp;</span><span class="lifetime">&#39;module_environment </span>Tunables,
+        isa: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>(<span class="kw">dyn </span>TargetIsa + <span class="lifetime">'module_environment</span>),
+        translation: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>ModuleTranslation&lt;<span class="lifetime">'module_environment</span>&gt;,
+        types: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>ModuleTypes,
+        tunables: <span class="kw-2">&amp;</span><span class="lifetime">'module_environment </span>Tunables,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>builtin_function_signatures = BuiltinFunctionSignatures::new(
             isa.pointer_type(),
@@ -2624,7 +2625,7 @@
                 memory_index.index(),
                 BuiltinFunctionIndex::memory_atomic_wait64(),
             ),
-            x =&gt; <span class="macro">panic!</span>(<span class="string">&quot;get_memory_atomic_wait unsupported type: {:?}&quot;</span>, x),
+            x =&gt; <span class="macro">panic!</span>(<span class="string">"get_memory_atomic_wait unsupported type: {:?}"</span>, x),
         }
     }
 
@@ -2646,10 +2647,10 @@
     /// and address of the loaded function.
     </span><span class="kw">fn </span>translate_load_builtin_function_address(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        pos: <span class="kw-2">&amp;mut </span>FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        pos: <span class="kw-2">&amp;mut </span>FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         callee_func_idx: BuiltinFunctionIndex,
     ) -&gt; (ir::Value, ir::Value) {
-        <span class="comment">// We use an indirect call so that we don&#39;t have to patch the code at runtime.
+        <span class="comment">// We use an indirect call so that we don't have to patch the code at runtime.
         </span><span class="kw">let </span>pointer_type = <span class="self">self</span>.pointer_type();
         <span class="kw">let </span>vmctx = <span class="self">self</span>.vmctx(<span class="kw-2">&amp;mut </span>pos.func);
         <span class="kw">let </span>base = pos.ins().global_value(pointer_type, vmctx);
@@ -2669,7 +2670,7 @@
         (base, func_addr)
     }
 
-    <span class="doccomment">/// Generate code to increment or decrement the given `externref`&#39;s
+    <span class="doccomment">/// Generate code to increment or decrement the given `externref`'s
     /// reference count.
     ///
     /// The new reference count is returned.
@@ -2683,7 +2684,7 @@
 
         <span class="kw">let </span>pointer_type = <span class="self">self</span>.pointer_type();
 
-        <span class="comment">// If this changes that&#39;s ok, the `atomic_rmw` below just needs to be
+        <span class="comment">// If this changes that's ok, the `atomic_rmw` below just needs to be
         // preceded with an add instruction of `externref` and the offset.
         </span><span class="macro">assert_eq!</span>(<span class="self">self</span>.offsets.vm_extern_data_ref_count(), <span class="number">0</span>);
         <span class="kw">let </span>delta = builder.ins().iconst(pointer_type, delta);
@@ -2718,7 +2719,7 @@
         }
     }
 
-    <span class="kw">fn </span>declare_vmruntime_limits_ptr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>declare_vmruntime_limits_ptr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="comment">// We load the `*const VMRuntimeLimits` value stored within vmctx at the
         // head of the function and reuse the same value across the entire
         // function. This is possible since we know that the pointer never
@@ -2734,7 +2735,7 @@
         builder.def_var(<span class="self">self</span>.vmruntime_limits_ptr, interrupt_ptr);
     }
 
-    <span class="kw">fn </span>fuel_function_entry(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>fuel_function_entry(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="comment">// On function entry we load the amount of fuel into a function-local
         // `self.fuel_var` to make fuel modifications fast locally. This cache
         // is then periodically flushed to the Store-defined location in
@@ -2744,7 +2745,7 @@
         <span class="self">self</span>.fuel_check(builder);
     }
 
-    <span class="kw">fn </span>fuel_function_exit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>fuel_function_exit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="comment">// On exiting the function we need to be sure to save the fuel we have
         // cached locally in `self.fuel_var` back into the Store-defined
         // location.
@@ -2753,24 +2754,24 @@
 
     <span class="kw">fn </span>fuel_before_op(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        op: <span class="kw-2">&amp;</span>Operator&lt;<span class="lifetime">&#39;_</span>&gt;,
-        builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;,
+        op: <span class="kw-2">&amp;</span>Operator&lt;<span class="lifetime">'_</span>&gt;,
+        builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;,
         reachable: bool,
     ) {
         <span class="kw">if </span>!reachable {
-            <span class="comment">// In unreachable code we shouldn&#39;t have any leftover fuel we
-            // haven&#39;t accounted for since the reason for us to become
+            <span class="comment">// In unreachable code we shouldn't have any leftover fuel we
+            // haven't accounted for since the reason for us to become
             // unreachable should have already added it to `self.fuel_var`.
             </span><span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.fuel_consumed, <span class="number">0</span>);
             <span class="kw">return</span>;
         }
 
         <span class="self">self</span>.fuel_consumed += <span class="kw">match </span>op {
-            <span class="comment">// Nop and drop generate no code, so don&#39;t consume fuel for them.
+            <span class="comment">// Nop and drop generate no code, so don't consume fuel for them.
             </span>Operator::Nop | Operator::Drop =&gt; <span class="number">0</span>,
 
             <span class="comment">// Control flow may create branches, but is generally cheap and
-            // free, so don&#39;t consume fuel. Note the lack of `if` since some
+            // free, so don't consume fuel. Note the lack of `if` since some
             // cost is incurred with the conditional check.
             </span>Operator::Block { .. }
             | Operator::Loop { .. }
@@ -2786,7 +2787,7 @@
         <span class="kw">match </span>op {
             <span class="comment">// Exiting a function (via a return or unreachable) or otherwise
             // entering a different function (via a call) means that we need to
-            // update the fuel consumption in `VMRuntimeLimits` because we&#39;re
+            // update the fuel consumption in `VMRuntimeLimits` because we're
             // about to move control out of this function itself and the fuel
             // may need to be read.
             //
@@ -2807,14 +2808,14 @@
             // update the fuel variable on entry.
             </span>Operator::Loop { .. }
 
-            <span class="comment">// Entering into an `if` block means that the edge we take isn&#39;t
+            <span class="comment">// Entering into an `if` block means that the edge we take isn't
             // known until runtime, so we need to update our fuel consumption
             // before we take the branch.
             </span>| Operator::If { .. }
 
-            <span class="comment">// Control-flow instructions mean that we&#39;re moving to the end/exit
+            <span class="comment">// Control-flow instructions mean that we're moving to the end/exit
             // of a block somewhere else. That means we need to update the fuel
-            // counter since we&#39;re effectively terminating our basic block.
+            // counter since we're effectively terminating our basic block.
             </span>| Operator::Br { .. }
             | Operator::BrIf { .. }
             | Operator::BrTable { .. }
@@ -2825,7 +2826,7 @@
             // executed so far.
             </span>| Operator::End
 
-            <span class="comment">// This is similar to `end`, except that it&#39;s only the terminator
+            <span class="comment">// This is similar to `end`, except that it's only the terminator
             // for an `if` block. The same reasoning applies though in that we
             // are terminating a basic block and need to update the fuel
             // variable.
@@ -2836,23 +2837,23 @@
             //
             // Note that we generally ignore instructions which may trap and
             // therefore result in exiting a block early. Current usage of fuel
-            // means that it&#39;s not too important to account for a precise amount
-            // of fuel consumed but rather &quot;close to the actual amount&quot; is good
-            // enough. For 100% precise counting, however, we&#39;d probably need to
+            // means that it's not too important to account for a precise amount
+            // of fuel consumed but rather "close to the actual amount" is good
+            // enough. For 100% precise counting, however, we'd probably need to
             // not only increment but also save the fuel amount more often
             // around trapping instructions. (see the `unreachable` instruction
             // case above)
             //
             // Note that `Block` is specifically omitted from incrementing the
             // fuel variable. Control flow entering a `block` is unconditional
-            // which means it&#39;s effectively executing straight-line code. We&#39;ll
-            // update the counter when exiting a block, but we shouldn&#39;t need to
+            // which means it's effectively executing straight-line code. We'll
+            // update the counter when exiting a block, but we shouldn't need to
             // do so upon entering a block.
             </span><span class="kw">_ </span>=&gt; {}
         }
     }
 
-    <span class="kw">fn </span>fuel_after_op(<span class="kw-2">&amp;mut </span><span class="self">self</span>, op: <span class="kw-2">&amp;</span>Operator&lt;<span class="lifetime">&#39;_</span>&gt;, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>fuel_after_op(<span class="kw-2">&amp;mut </span><span class="self">self</span>, op: <span class="kw-2">&amp;</span>Operator&lt;<span class="lifetime">'_</span>&gt;, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="comment">// After a function call we need to reload our fuel value since the
         // function may have changed it.
         </span><span class="kw">match </span>op {
@@ -2865,7 +2866,7 @@
 
     <span class="doccomment">/// Adds `self.fuel_consumed` to the `fuel_var`, zero-ing out the amount of
     /// fuel consumed at that point.
-    </span><span class="kw">fn </span>fuel_increment_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    </span><span class="kw">fn </span>fuel_increment_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span>consumption = mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.fuel_consumed, <span class="number">0</span>);
         <span class="kw">if </span>consumption == <span class="number">0 </span>{
             <span class="kw">return</span>;
@@ -2877,7 +2878,7 @@
     }
 
     <span class="doccomment">/// Loads the fuel consumption value from `VMRuntimeLimits` into `self.fuel_var`
-    </span><span class="kw">fn </span>fuel_load_into_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    </span><span class="kw">fn </span>fuel_load_into_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span>(addr, offset) = <span class="self">self</span>.fuel_addr_offset(builder);
         <span class="kw">let </span>fuel = builder
             .ins()
@@ -2887,7 +2888,7 @@
 
     <span class="doccomment">/// Stores the fuel consumption value from `self.fuel_var` into
     /// `VMRuntimeLimits`.
-    </span><span class="kw">fn </span>fuel_save_from_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    </span><span class="kw">fn </span>fuel_save_from_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span>(addr, offset) = <span class="self">self</span>.fuel_addr_offset(builder);
         <span class="kw">let </span>fuel_consumed = builder.use_var(<span class="self">self</span>.fuel_var);
         builder
@@ -2899,7 +2900,7 @@
     /// `VMRuntimeLimits`, used to perform loads/stores later.
     </span><span class="kw">fn </span>fuel_addr_offset(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;,
+        builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; (ir::Value, ir::immediates::Offset32) {
         (
             builder.use_var(<span class="self">self</span>.vmruntime_limits_ptr),
@@ -2907,7 +2908,7 @@
         )
     }
 
-    <span class="doccomment">/// Checks the amount of remaining, and if we&#39;ve run out of fuel we call
+    <span class="doccomment">/// Checks the amount of remaining, and if we've run out of fuel we call
     /// the out-of-fuel function.
     </span><span class="kw">fn </span>fuel_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder) {
         <span class="self">self</span>.fuel_increment_var(builder);
@@ -2932,7 +2933,7 @@
 
         <span class="comment">// If we ran out of gas then we call our out-of-gas intrinsic and it
         // figures out what to do. Note that this may raise a trap, or do
-        // something like yield to an async runtime. In either case we don&#39;t
+        // something like yield to an async runtime. In either case we don't
         // assume what happens and handle the case the intrinsic returns.
         //
         // Note that we save/reload fuel around this since the out-of-gas
@@ -2954,7 +2955,7 @@
         builder.switch_to_block(continuation_block);
     }
 
-    <span class="kw">fn </span>epoch_function_entry(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>epoch_function_entry(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         builder.declare_var(<span class="self">self</span>.epoch_deadline_var, ir::types::I64);
         <span class="self">self</span>.epoch_load_deadline_into_var(builder);
         builder.declare_var(<span class="self">self</span>.epoch_ptr_var, <span class="self">self</span>.pointer_type());
@@ -2962,17 +2963,17 @@
         builder.def_var(<span class="self">self</span>.epoch_ptr_var, epoch_ptr);
 
         <span class="comment">// We must check for an epoch change when entering a
-        // function. Why? Why aren&#39;t checks at loops sufficient to
+        // function. Why? Why aren't checks at loops sufficient to
         // bound runtime to O(|static program size|)?
         //
-        // The reason is that one can construct a &quot;zip-bomb-like&quot;
+        // The reason is that one can construct a "zip-bomb-like"
         // program with exponential-in-program-size runtime, with no
         // backedges (loops), by building a tree of function calls: f0
         // calls f1 ten times, f1 calls f2 ten times, etc. E.g., nine
         // levels of this yields a billion function calls with no
-        // backedges. So we can&#39;t do checks only at backedges.
+        // backedges. So we can't do checks only at backedges.
         //
-        // In this &quot;call-tree&quot; scenario, and in fact in any program
+        // In this "call-tree" scenario, and in fact in any program
         // that uses calls as a sort of control flow to try to evade
         // backedge checks, a check at every function entry is
         // sufficient. Then, combined with checks at every backedge
@@ -2981,7 +2982,7 @@
         </span><span class="self">self</span>.epoch_check(builder);
     }
 
-    <span class="kw">fn </span>epoch_ptr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; ir::Value {
+    <span class="kw">fn </span>epoch_ptr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) -&gt; ir::Value {
         <span class="kw">let </span>vmctx = <span class="self">self</span>.vmctx(builder.func);
         <span class="kw">let </span>pointer_type = <span class="self">self</span>.pointer_type();
         <span class="kw">let </span>base = builder.ins().global_value(pointer_type, vmctx);
@@ -2992,7 +2993,7 @@
         epoch_ptr
     }
 
-    <span class="kw">fn </span>epoch_load_current(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; ir::Value {
+    <span class="kw">fn </span>epoch_load_current(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) -&gt; ir::Value {
         <span class="kw">let </span>addr = builder.use_var(<span class="self">self</span>.epoch_ptr_var);
         builder.ins().load(
             ir::types::I64,
@@ -3002,7 +3003,7 @@
         )
     }
 
-    <span class="kw">fn </span>epoch_load_deadline_into_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>epoch_load_deadline_into_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span>interrupts = builder.use_var(<span class="self">self</span>.vmruntime_limits_ptr);
         <span class="kw">let </span>deadline =
             builder.ins().load(
@@ -3016,7 +3017,7 @@
         builder.def_var(<span class="self">self</span>.epoch_deadline_var, deadline);
     }
 
-    <span class="kw">fn </span>epoch_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;_</span>&gt;) {
+    <span class="kw">fn </span>epoch_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder&lt;<span class="lifetime">'_</span>&gt;) {
         <span class="kw">let </span>new_epoch_block = builder.create_block();
         <span class="kw">let </span>new_epoch_doublecheck_block = builder.create_block();
         <span class="kw">let </span>continuation_block = builder.create_block();
@@ -3027,7 +3028,7 @@
         <span class="comment">// Load new epoch and check against cached deadline. The
         // deadline may be out of date if it was updated (within
         // another yield) during some function that we called; this is
-        // fine, as we&#39;ll reload it and check again before yielding in
+        // fine, as we'll reload it and check again before yielding in
         // the cold path.
         </span><span class="kw">let </span>cur_epoch_value = <span class="self">self</span>.epoch_load_current(builder);
         <span class="kw">let </span>cmp = builder.ins().icmp(
@@ -3040,7 +3041,7 @@
             .brif(cmp, new_epoch_block, <span class="kw-2">&amp;</span>[], continuation_block, <span class="kw-2">&amp;</span>[]);
         builder.seal_block(new_epoch_block);
 
-        <span class="comment">// In the &quot;new epoch block&quot;, we&#39;ve noticed that the epoch has
+        <span class="comment">// In the "new epoch block", we've noticed that the epoch has
         // exceeded our cached deadline. However the real deadline may
         // have been moved in the meantime. We keep the cached value
         // in a register to speed the checks in the common case
@@ -3070,7 +3071,7 @@
             <span class="kw-2">&amp;mut </span>builder.cursor(),
             BuiltinFunctionIndex::new_epoch(),
         );
-        <span class="comment">// new_epoch() returns the new deadline, so we don&#39;t have to
+        <span class="comment">// new_epoch() returns the new deadline, so we don't have to
         // reload it.
         </span><span class="kw">let </span>call = builder
             .ins()
@@ -3093,7 +3094,7 @@
 
     <span class="kw">fn </span>cast_pointer_to_memory_index(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         val: ir::Value,
         index: MemoryIndex,
     ) -&gt; ir::Value {
@@ -3111,9 +3112,9 @@
         } <span class="kw">else </span>{
             <span class="comment">// Note that we `sextend` instead of the probably expected
             // `uextend`. This function is only used within the contexts of
-            // `memory.size` and `memory.grow` where we&#39;re working with units of
+            // `memory.size` and `memory.grow` where we're working with units of
             // pages instead of actual bytes, so we know that the upper bit is
-            // always cleared for &quot;valid values&quot;. The one case we care about
+            // always cleared for "valid values". The one case we care about
             // sextend would be when the return value of `memory.grow` is `-1`,
             // in which case we want to copy the sign bit.
             //
@@ -3126,7 +3127,7 @@
 
     <span class="kw">fn </span>cast_memory_index_to_i64(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        pos: <span class="kw-2">&amp;mut </span>FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        pos: <span class="kw-2">&amp;mut </span>FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         val: ir::Value,
         index: MemoryIndex,
     ) -&gt; ir::Value {
@@ -3153,7 +3154,7 @@
         </span><span class="kw">let </span>table_entry_addr = builder.ins().table_addr(pointer_type, table, index, <span class="number">0</span>);
         <span class="kw">let </span>flags = ir::MemFlags::trusted().with_table();
         <span class="kw">let </span>value = builder.ins().load(pointer_type, flags, table_entry_addr, <span class="number">0</span>);
-        <span class="comment">// Mask off the &quot;initialized bit&quot;. See documentation on
+        <span class="comment">// Mask off the "initialized bit". See documentation on
         // FUNCREF_INIT_BIT in crates/environ/src/ref_bits.rs for more
         // details.
         </span><span class="kw">let </span>value_masked = builder
@@ -3191,17 +3192,17 @@
     }
 }
 
-<span class="kw">struct </span>Call&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;func</span>, <span class="lifetime">&#39;module_env</span>&gt; {
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;func</span>&gt;,
-    env: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FuncEnvironment&lt;<span class="lifetime">&#39;module_env</span>&gt;,
+<span class="kw">struct </span>Call&lt;<span class="lifetime">'a</span>, <span class="lifetime">'func</span>, <span class="lifetime">'module_env</span>&gt; {
+    builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FunctionBuilder&lt;<span class="lifetime">'func</span>&gt;,
+    env: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FuncEnvironment&lt;<span class="lifetime">'module_env</span>&gt;,
     tail: bool,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;func</span>, <span class="lifetime">&#39;module_env</span>&gt; Call&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;func</span>, <span class="lifetime">&#39;module_env</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="lifetime">'func</span>, <span class="lifetime">'module_env</span>&gt; Call&lt;<span class="lifetime">'a</span>, <span class="lifetime">'func</span>, <span class="lifetime">'module_env</span>&gt; {
     <span class="doccomment">/// Create a new `Call` site that will do regular, non-tail calls.
     </span><span class="kw">pub fn </span>new(
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;func</span>&gt;,
-        env: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FuncEnvironment&lt;<span class="lifetime">&#39;module_env</span>&gt;,
+        builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FunctionBuilder&lt;<span class="lifetime">'func</span>&gt;,
+        env: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FuncEnvironment&lt;<span class="lifetime">'module_env</span>&gt;,
     ) -&gt; <span class="self">Self </span>{
         Call {
             builder,
@@ -3212,8 +3213,8 @@
 
     <span class="doccomment">/// Create a new `Call` site that will perform tail calls.
     </span><span class="kw">pub fn </span>new_tail(
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FunctionBuilder&lt;<span class="lifetime">&#39;func</span>&gt;,
-        env: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FuncEnvironment&lt;<span class="lifetime">&#39;module_env</span>&gt;,
+        builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FunctionBuilder&lt;<span class="lifetime">'func</span>&gt;,
+        env: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>FuncEnvironment&lt;<span class="lifetime">'module_env</span>&gt;,
     ) -&gt; <span class="self">Self </span>{
         Call {
             builder,
@@ -3253,7 +3254,7 @@
         }
 
         <span class="comment">// Handle direct calls to imported functions. We use an indirect call
-        // so that we don&#39;t have to patch the code at runtime.
+        // so that we don't have to patch the code at runtime.
         </span><span class="kw">let </span>pointer_type = <span class="self">self</span>.env.pointer_type();
         <span class="kw">let </span>sig_ref = <span class="self">self</span>.builder.func.dfg.ext_funcs[callee].signature;
         <span class="kw">let </span>vmctx = <span class="self">self</span>.env.vmctx(<span class="self">self</span>.builder.func);
@@ -3373,7 +3374,7 @@
         // `callee` is a null reference or not. In some situations it can be
         // statically known here that `callee` cannot be null in which case this
         // null check can be elided. This requires feeding type information from
-        // wasmparser&#39;s validator into this function, however, which is not
+        // wasmparser's validator into this function, however, which is not
         // easily done at this time.
         </span><span class="self">self</span>.builder
             .ins()
@@ -3386,7 +3387,7 @@
     ///
     /// It gets the function address, sets relevant flags, and passes the
     /// special callee/caller vmctxs. It is used by both call_indirect (which
-    /// checks the signature) and call_ref (which doesn&#39;t).
+    /// checks the signature) and call_ref (which doesn't).
     </span><span class="kw">fn </span>unchecked_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         sig_ref: ir::SigRef,
@@ -3451,13 +3452,13 @@
     }
 }
 
-<span class="kw">impl </span>TypeConvert <span class="kw">for </span>FuncEnvironment&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">impl </span>TypeConvert <span class="kw">for </span>FuncEnvironment&lt;<span class="lifetime">'_</span>&gt; {
     <span class="kw">fn </span>lookup_heap_type(<span class="kw-2">&amp;</span><span class="self">self</span>, ty: TypeIndex) -&gt; WasmHeapType {
         <span class="self">self</span>.module.lookup_heap_type(ty)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;module_environment</span>&gt; TargetEnvironment <span class="kw">for </span>FuncEnvironment&lt;<span class="lifetime">&#39;module_environment</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'module_environment</span>&gt; TargetEnvironment <span class="kw">for </span>FuncEnvironment&lt;<span class="lifetime">'module_environment</span>&gt; {
     <span class="kw">fn </span>target_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TargetFrontendConfig {
         <span class="self">self</span>.isa.frontend_config()
     }
@@ -3471,7 +3472,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;module_environment</span>&gt; cranelift_wasm::FuncEnvironment <span class="kw">for </span>FuncEnvironment&lt;<span class="lifetime">&#39;module_environment</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'module_environment</span>&gt; cranelift_wasm::FuncEnvironment <span class="kw">for </span>FuncEnvironment&lt;<span class="lifetime">'module_environment</span>&gt; {
     <span class="kw">fn </span>heaps(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>PrimaryMap&lt;Heap, HeapData&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.heaps
     }
@@ -3550,7 +3551,7 @@
 
     <span class="kw">fn </span>translate_table_grow(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         table_index: TableIndex,
         _table: ir::Table,
         delta: ir::Value,
@@ -3687,7 +3688,7 @@
 
                 <span class="comment">// If `next != end`, then:
                 //
-                // * increment this reference&#39;s ref count,
+                // * increment this reference's ref count,
                 // * store the reference into the bump table at `*next`,
                 // * and finally increment the `next` bump finger.
                 </span>builder.switch_to_block(no_gc_block);
@@ -3731,7 +3732,7 @@
             WasmHeapType::Func | WasmHeapType::TypedFunc(<span class="kw">_</span>) =&gt; <span class="kw">match </span>plan.style {
                 TableStyle::CallerChecksSignature =&gt; {
                     <span class="kw">let </span>table_entry_addr = builder.ins().table_addr(pointer_type, table, index, <span class="number">0</span>);
-                    <span class="comment">// Set the &quot;initialized bit&quot;. See doc-comment on
+                    <span class="comment">// Set the "initialized bit". See doc-comment on
                     // `FUNCREF_INIT_BIT` in
                     // crates/environ/src/ref_bits.rs for details.
                     </span><span class="kw">let </span>value_with_init_bit = builder
@@ -3763,7 +3764,7 @@
                 //
                 // This write barrier is responsible for ensuring that:
                 //
-                // 1. The value&#39;s ref count is incremented now that the
+                // 1. The value's ref count is incremented now that the
                 //    table is holding onto it. This is required for memory safety.
                 //
                 // 2. The old table element, if any, has its ref count
@@ -3771,7 +3772,7 @@
                 //    ref count reaches zero. This is not required for memory
                 //    safety, but is required to avoid leaks. Furthermore, the
                 //    destructor might GC or touch this table, so we must only
-                //    drop the old table element *after* we&#39;ve replaced it with
+                //    drop the old table element *after* we've replaced it with
                 //    the new `value`!
 
                 </span>builder.ensure_inserted_block();
@@ -3789,14 +3790,14 @@
 
                 <span class="comment">// Calculate the table address of the current element and do
                 // bounds checks. This is the first thing we do, because we
-                // don&#39;t want to modify any ref counts if this `table.set` is
+                // don't want to modify any ref counts if this `table.set` is
                 // going to trap.
                 </span><span class="kw">let </span>table_entry_addr = builder.ins().table_addr(pointer_type, table, index, <span class="number">0</span>);
 
-                <span class="comment">// If value is not null, increment `value`&#39;s ref count.
+                <span class="comment">// If value is not null, increment `value`'s ref count.
                 //
                 // This has to come *before* decrementing the current table
-                // element&#39;s ref count, because it might reach ref count == zero,
+                // element's ref count, because it might reach ref count == zero,
                 // causing us to deallocate the current table element. However,
                 // if `value` *is* the current table element (and therefore this
                 // whole `table.set` is a no-op), then we would incorrectly
@@ -3880,7 +3881,7 @@
 
     <span class="kw">fn </span>translate_table_fill(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         table_index: TableIndex,
         dst: ir::Value,
         val: ir::Value,
@@ -3947,7 +3948,7 @@
 
     <span class="kw">fn </span>translate_ref_func(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         func_index: FuncIndex,
     ) -&gt; WasmResult&lt;ir::Value&gt; {
         <span class="kw">let </span>func_index = pos.ins().iconst(I32, func_index.as_u32() <span class="kw">as </span>i64);
@@ -3964,13 +3965,13 @@
 
     <span class="kw">fn </span>translate_custom_global_get(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         index: cranelift_wasm::GlobalIndex,
     ) -&gt; WasmResult&lt;ir::Value&gt; {
         <span class="macro">debug_assert_eq!</span>(
             <span class="self">self</span>.module.globals[index].wasm_ty,
             WasmType::Ref(WasmRefType::EXTERNREF),
-            <span class="string">&quot;We only use GlobalVariable::Custom for externref&quot;
+            <span class="string">"We only use GlobalVariable::Custom for externref"
         </span>);
 
         <span class="kw">let </span>builtin_index = BuiltinFunctionIndex::externref_global_get();
@@ -3991,14 +3992,14 @@
 
     <span class="kw">fn </span>translate_custom_global_set(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: cranelift_codegen::cursor::FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         index: cranelift_wasm::GlobalIndex,
         value: ir::Value,
     ) -&gt; WasmResult&lt;()&gt; {
         <span class="macro">debug_assert_eq!</span>(
             <span class="self">self</span>.module.globals[index].wasm_ty,
             WasmType::Ref(WasmRefType::EXTERNREF),
-            <span class="string">&quot;We only use GlobalVariable::Custom for externref&quot;
+            <span class="string">"We only use GlobalVariable::Custom for externref"
         </span>);
 
         <span class="kw">let </span>builtin_index = BuiltinFunctionIndex::externref_global_set();
@@ -4025,7 +4026,7 @@
             .minimum
             .checked_mul(u64::from(WASM_PAGE_SIZE))
             .unwrap_or_else(|| {
-                <span class="comment">// The only valid Wasm memory size that won&#39;t fit in a 64-bit
+                <span class="comment">// The only valid Wasm memory size that won't fit in a 64-bit
                 // integer is the maximum memory64 size (2^64) which is one
                 // larger than `u64::MAX` (2^64 - 1). In this case, just say the
                 // minimum heap size is `u64::MAX`.
@@ -4078,7 +4079,7 @@
             }
         };
 
-        <span class="comment">// If we have a declared maximum, we can make this a &quot;static&quot; heap, which is
+        <span class="comment">// If we have a declared maximum, we can make this a "static" heap, which is
         // allocated up front and never moved.
         </span><span class="kw">let </span>(offset_guard_size, heap_style, readonly_base) = <span class="kw">match </span><span class="self">self</span>.module.memory_plans[index] {
             MemoryPlan {
@@ -4149,7 +4150,7 @@
             }) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(GlobalVariable::Custom),
 
             <span class="comment">// Funcrefs are represented as pointers which survive for the
-            // entire lifetime of the `Store` so there&#39;s no need for barriers.
+            // entire lifetime of the `Store` so there's no need for barriers.
             // This means that they can fall through to memory as well.
             </span>WasmType::Ref(WasmRefType {
                 heap_type: WasmHeapType::Func | WasmHeapType::TypedFunc(<span class="kw">_</span>),
@@ -4204,12 +4205,12 @@
             // object-link-time, just after all functions are compiled.
             //
             // This flag is set to `true` for functions defined in the object
-            // we&#39;ll be defining in this compilation unit, or everything local
+            // we'll be defining in this compilation unit, or everything local
             // to the wasm module. This means that between functions in a wasm
-            // module there&#39;s relative calls encoded. All calls external to a
+            // module there's relative calls encoded. All calls external to a
             // wasm module (e.g. imports or libcalls) are either encoded through
             // the `VMContext` as relative jumps (hence no relocations) or
-            // they&#39;re libcalls with absolute relocations.
+            // they're libcalls with absolute relocations.
             </span>colocated: <span class="self">self</span>.module.defined_func_index(index).is_some(),
         }))
     }
@@ -4299,7 +4300,7 @@
 
     <span class="kw">fn </span>translate_memory_grow(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         index: MemoryIndex,
         _heap: Heap,
         val: ir::Value,
@@ -4325,7 +4326,7 @@
 
     <span class="kw">fn </span>translate_memory_size(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        <span class="kw-2">mut </span>pos: FuncCursor&lt;<span class="lifetime">&#39;_</span>&gt;,
+        <span class="kw-2">mut </span>pos: FuncCursor&lt;<span class="lifetime">'_</span>&gt;,
         index: MemoryIndex,
         _heap: Heap,
     ) -&gt; WasmResult&lt;ir::Value&gt; {
@@ -4416,9 +4417,9 @@
         <span class="kw">let </span>func_sig = <span class="self">self</span>.builtin_function_signatures.memory_copy(<span class="kw-2">&amp;mut </span>pos.func);
         <span class="kw">let </span>dst = <span class="self">self</span>.cast_memory_index_to_i64(<span class="kw-2">&amp;mut </span>pos, dst, dst_index);
         <span class="kw">let </span>src = <span class="self">self</span>.cast_memory_index_to_i64(<span class="kw-2">&amp;mut </span>pos, src, src_index);
-        <span class="comment">// The length is 32-bit if either memory is 32-bit, but if they&#39;re both
-        // 64-bit then it&#39;s 64-bit. Our intrinsic takes a 64-bit length for
-        // compatibility across all memories, so make sure that it&#39;s cast
+        <span class="comment">// The length is 32-bit if either memory is 32-bit, but if they're both
+        // 64-bit then it's 64-bit. Our intrinsic takes a 64-bit length for
+        // compatibility across all memories, so make sure that it's cast
         // correctly here (this is a bit special so no generic helper unlike for
         // `dst`/`src` above)
         </span><span class="kw">let </span>len = <span class="kw">if </span><span class="self">self</span>.memory_index_type(dst_index) == I64
@@ -4643,7 +4644,7 @@
 
     <span class="kw">fn </span>translate_loop_header(<span class="kw-2">&amp;mut </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span>FunctionBuilder) -&gt; WasmResult&lt;()&gt; {
         <span class="comment">// Additionally if enabled check how much fuel we have remaining to see
-        // if we&#39;ve run out by this point.
+        // if we've run out by this point.
         </span><span class="kw">if </span><span class="self">self</span>.tunables.consume_fuel {
             <span class="self">self</span>.fuel_check(builder);
         }
