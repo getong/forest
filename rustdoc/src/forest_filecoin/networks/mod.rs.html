@@ -426,13 +426,19 @@
 <a href="#425" id="425">425</a>
 <a href="#426" id="426">426</a>
 <a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::{fmt::Display, str::FromStr};
 
+<span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actors_shared::v10::runtime::Policy;
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>libp2p::Multiaddr;
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -594,15 +600,8 @@
 <span class="attr">#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(derive_quickcheck_arbitrary::Arbitrary))]
 </span><span class="kw">pub struct </span>HeightInfo {
-    <span class="kw">pub </span>height: Height,
     <span class="kw">pub </span>epoch: ChainEpoch,
     <span class="kw">pub </span>bundle: <span class="prelude-ty">Option</span>&lt;Cid&gt;,
-}
-
-<span class="kw">pub fn </span>sort_by_epoch(height_info_slice: <span class="kw-2">&amp;</span>[HeightInfo]) -&gt; Vec&lt;HeightInfo&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>height_info_vec = height_info_slice.to_vec();
-    height_info_vec.sort_by(|a, b| a.epoch.cmp(<span class="kw-2">&amp;</span>b.epoch));
-    height_info_vec
 }
 
 <span class="attr">#[derive(Clone)]
@@ -628,7 +627,7 @@
     <span class="kw">pub </span>bootstrap_peers: Vec&lt;Multiaddr&gt;,
     <span class="kw">pub </span>block_delay_secs: u32,
     <span class="kw">pub </span>propagation_delay_secs: u32,
-    <span class="kw">pub </span>height_infos: Vec&lt;HeightInfo&gt;,
+    <span class="kw">pub </span>height_infos: HashMap&lt;Height, HeightInfo&gt;,
     <span class="attr">#[cfg_attr(test, arbitrary(gen(|_g| Policy::mainnet())))]
     #[serde(default = <span class="string">"default_policy"</span>)]
     </span><span class="kw">pub </span>policy: Policy,
@@ -644,7 +643,7 @@
             bootstrap_peers: DEFAULT_BOOTSTRAP.clone(),
             block_delay_secs: EPOCH_DURATION_SECONDS <span class="kw">as </span>u32,
             propagation_delay_secs: <span class="number">10</span>,
-            height_infos: HEIGHT_INFOS.to_vec(),
+            height_infos: HEIGHT_INFOS.clone(),
             policy: Policy::mainnet(),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
         }
@@ -658,7 +657,7 @@
             bootstrap_peers: DEFAULT_BOOTSTRAP.clone(),
             block_delay_secs: EPOCH_DURATION_SECONDS <span class="kw">as </span>u32,
             propagation_delay_secs: <span class="number">10</span>,
-            height_infos: HEIGHT_INFOS.to_vec(),
+            height_infos: HEIGHT_INFOS.clone(),
             policy: Policy::calibnet(),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
         }
@@ -690,7 +689,7 @@
             bootstrap_peers: Vec::new(),
             block_delay_secs: <span class="number">4</span>,
             propagation_delay_secs: <span class="number">1</span>,
-            height_infos: HEIGHT_INFOS.to_vec(),
+            height_infos: HEIGHT_INFOS.clone(),
             policy,
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
         }
@@ -705,7 +704,7 @@
             bootstrap_peers: DEFAULT_BOOTSTRAP.clone(),
             block_delay_secs: EPOCH_DURATION_SECONDS <span class="kw">as </span>u32,
             propagation_delay_secs: <span class="number">6</span>,
-            height_infos: HEIGHT_INFOS.to_vec(),
+            height_infos: HEIGHT_INFOS.clone(),
             policy: <span class="macro">make_butterfly_policy!</span>(v10),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
         }
@@ -724,11 +723,13 @@
     }
 
     <span class="kw">pub fn </span>network_version(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: ChainEpoch) -&gt; NetworkVersion {
-        <span class="kw">let </span>height = sort_by_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>.height_infos)
+        <span class="kw">let </span>height = <span class="self">self
+            </span>.height_infos
             .iter()
+            .sorted_by_key(|(<span class="kw">_</span>, info)| info.epoch)
             .rev()
-            .find(|info| epoch &gt; info.epoch)
-            .map(|info| info.height)
+            .find(|(<span class="kw">_</span>, info)| epoch &gt; info.epoch)
+            .map(|(height, <span class="kw">_</span>)| <span class="kw-2">*</span>height)
             .unwrap_or(Height::Breeze);
 
         From::from(height)
@@ -757,10 +758,17 @@
     }
 
     <span class="kw">pub fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, height: Height) -&gt; ChainEpoch {
-        sort_by_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>.height_infos)
+        <span class="self">self</span>.height_infos
             .iter()
-            .find(|info| height == info.height)
-            .map(|info| info.epoch)
+            .sorted_by_key(|(<span class="kw">_</span>, info)| info.epoch)
+            .rev()
+            .find_map(|(infos_height, info)| {
+                <span class="kw">if </span><span class="kw-2">*</span>infos_height == height {
+                    <span class="prelude-val">Some</span>(info.epoch)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
+            })
             .unwrap_or(<span class="number">0</span>)
     }
 
@@ -806,12 +814,12 @@
 
 <span class="attr">#[allow(dead_code)]
 </span><span class="kw">fn </span>get_upgrade_epoch_by_height&lt;<span class="lifetime">'a</span>&gt;(
-    <span class="kw-2">mut </span>height_infos: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>HeightInfo&gt;,
+    <span class="kw-2">mut </span>height_infos: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>(Height, HeightInfo)&gt;,
     height: Height,
 ) -&gt; <span class="prelude-ty">Option</span>&lt;ChainEpoch&gt; {
-    height_infos.find_map(|i| {
-        <span class="kw">if </span>i.height == height {
-            <span class="prelude-val">Some</span>(i.epoch)
+    height_infos.find_map(|(infos_height, info)| {
+        <span class="kw">if </span><span class="kw-2">*</span>infos_height == height {
+            <span class="prelude-val">Some</span>(info.epoch)
         } <span class="kw">else </span>{
             <span class="prelude-val">None
         </span>}
