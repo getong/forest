@@ -181,6 +181,7 @@
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
 <a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -225,22 +226,23 @@
         </span>D: de::Deserializer&lt;<span class="lifetime">'de</span>&gt;,
     {
         <span class="kw">let </span>bytes: Cow&lt;<span class="lifetime">'de</span>, [u8]&gt; = strict_bytes::Deserialize::deserialize(deserializer)<span class="question-mark">?</span>;
-        <span class="kw">if </span>bytes.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(de::Error::custom(<span class="string">"Cannot deserialize empty bytes"</span>));
+        <span class="kw">match </span>bytes.split_first() {
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(de::Error::custom(<span class="string">"Cannot deserialize empty bytes"</span>)),
+            <span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>sig_byte, rest)) =&gt; {
+                <span class="comment">// Remove signature type byte
+                </span><span class="kw">let </span>sig_type = SignatureType::from_u8(sig_byte).ok_or_else(|| {
+                    de::Error::custom(<span class="macro">format!</span>(
+                        <span class="string">"Invalid signature type byte (must be 1, 2 or 3), was {}"</span>,
+                        sig_byte
+                    ))
+                })<span class="question-mark">?</span>;
+
+                <span class="prelude-val">Ok</span>(Signature {
+                    bytes: rest.to_vec(),
+                    sig_type,
+                })
+            }
         }
-
-        <span class="comment">// Remove signature type byte
-        </span><span class="kw">let </span>sig_type = SignatureType::from_u8(bytes[<span class="number">0</span>]).ok_or_else(|| {
-            de::Error::custom(<span class="macro">format!</span>(
-                <span class="string">"Invalid signature type byte (must be 1, 2 or 3), was {}"</span>,
-                bytes[<span class="number">0</span>]
-            ))
-        })<span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(Signature {
-            bytes: bytes[<span class="number">1</span>..].to_vec(),
-            sig_type,
-        })
     }
 }
 
