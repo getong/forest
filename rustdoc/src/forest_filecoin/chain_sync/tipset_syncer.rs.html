@@ -1598,6 +1598,12 @@
 <a href="#1597" id="1597">1597</a>
 <a href="#1598" id="1598">1598</a>
 <a href="#1599" id="1599">1599</a>
+<a href="#1600" id="1600">1600</a>
+<a href="#1601" id="1601">1601</a>
+<a href="#1602" id="1602">1602</a>
+<a href="#1603" id="1603">1603</a>
+<a href="#1604" id="1604">1604</a>
+<a href="#1605" id="1605">1605</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2436,7 +2442,10 @@
             </span><span class="kw">break</span>;
         }
         <span class="comment">// Attempt to load the parent tipset from local store
-        </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(tipset) = chain_store.load_required_tipset(oldest_parent.parents()) {
+        </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(tipset) = chain_store
+            .chain_index
+            .load_required_tipset(oldest_parent.parents())
+        {
             parent_blocks.extend(tipset.cids());
             parent_tipsets.push(tipset);
             <span class="kw">continue</span>;
@@ -2475,8 +2484,9 @@
             .chain_exchange_headers(<span class="prelude-val">None</span>, oldest_tipset.parents(), FORK_LENGTH_THRESHOLD)
             .<span class="kw">await
             </span>.map_err(TipsetRangeSyncerError::NetworkTipsetQueryFailed)<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>potential_common_ancestor =
-            chain_store.load_required_tipset(current_head.parents())<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>potential_common_ancestor = chain_store
+            .chain_index
+            .load_required_tipset(current_head.parents())<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>fork_length = <span class="number">1</span>;
         <span class="kw">while </span>i &lt; fork_tipsets.len() {
@@ -2511,8 +2521,9 @@
                 </span><span class="kw">if </span>i == (fork_tipsets.len() - <span class="number">1</span>) {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ChainForkLengthExceedsFinalityThreshold);
                 }
-                potential_common_ancestor =
-                    chain_store.load_required_tipset(potential_common_ancestor.parents())<span class="question-mark">?</span>;
+                potential_common_ancestor = chain_store
+                    .chain_index
+                    .load_required_tipset(potential_common_ancestor.parents())<span class="question-mark">?</span>;
             }
         }
     }
@@ -2787,6 +2798,7 @@
     block_timestamp_checks(header).map_err(|e| (<span class="kw-2">*</span>block_cid, e))<span class="question-mark">?</span>;
 
     <span class="kw">let </span>base_tipset = chain_store
+        .chain_index
         .load_required_tipset(<span class="kw-2">&amp;</span>header.parents)
         <span class="comment">// The parent tipset will always be there when calling validate_block
         // as part of the sync_tipset_range flow because all of the headers in the range

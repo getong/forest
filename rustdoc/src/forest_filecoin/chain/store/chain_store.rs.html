@@ -571,9 +571,6 @@
 <a href="#570" id="570">570</a>
 <a href="#571" id="571">571</a>
 <a href="#572" id="572">572</a>
-<a href="#573" id="573">573</a>
-<a href="#574" id="574">574</a>
-<a href="#575" id="575">575</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -748,13 +745,14 @@
 
     <span class="doccomment">/// Returns the currently tracked heaviest tipset.
     </span><span class="kw">pub fn </span>heaviest_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;Tipset&gt; {
-        <span class="self">self</span>.load_required_tipset(
-            <span class="kw-2">&amp;</span><span class="self">self
-                </span>.settings
-                .require_obj::&lt;TipsetKey&gt;(HEAD_KEY)
-                .expect(<span class="string">"failed to load heaviest tipset"</span>),
-        )
-        .expect(<span class="string">"failed to load heaviest tipset"</span>)
+        <span class="self">self</span>.chain_index
+            .load_required_tipset(
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.settings
+                    .require_obj::&lt;TipsetKey&gt;(HEAD_KEY)
+                    .expect(<span class="string">"failed to load heaviest tipset"</span>),
+            )
+            .expect(<span class="string">"failed to load heaviest tipset"</span>)
     }
 
     <span class="doccomment">/// Returns a reference to the publisher of head changes.
@@ -768,22 +766,18 @@
     }
 
     <span class="doccomment">/// Returns Tipset from key-value store from provided CIDs
-    </span><span class="attr">#[tracing::instrument(skip_all)]
-    </span><span class="kw">pub fn </span>load_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;, Error&gt; {
-        <span class="kw">if </span>tsk.cids.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">self</span>.heaviest_tipset()));
-        }
-        <span class="self">self</span>.chain_index.load_tipset(tsk)
-    }
-
-    <span class="doccomment">/// Returns Tipset from key-value store from provided CIDs.
+    /// or falls back to the heaviest tipset when no CIDs are provided.
     /// This calls fails if the tipset is missing or invalid.
     </span><span class="attr">#[tracing::instrument(skip_all)]
-    </span><span class="kw">pub fn </span>load_required_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Tipset&gt;, Error&gt; {
-        <span class="kw">if </span>tsk.cids.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.heaviest_tipset());
+    </span><span class="kw">pub fn </span>load_required_tipset_with_fallback(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        tsk_opt: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;TipsetKey&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Tipset&gt;, Error&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(tsk) = tsk_opt {
+            <span class="self">self</span>.chain_index.load_required_tipset(tsk)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.heaviest_tipset())
         }
-        <span class="self">self</span>.chain_index.load_required_tipset(tsk)
     }
 
     <span class="doccomment">/// Determines if provided tipset is heavier than existing known heaviest

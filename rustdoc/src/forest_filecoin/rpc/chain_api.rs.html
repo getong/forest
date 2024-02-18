@@ -376,8 +376,6 @@
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -387,11 +385,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::ChainMessage;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiMessage, ApiReceipt};
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
-    chain_api::<span class="kw-2">*</span>,
-    data_types::{BlockMessages, RPCState},
-};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{chain_api::<span class="kw-2">*</span>, data_types::<span class="kw-2">*</span>};
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::utils::io::VoidAsyncWriter;
@@ -514,7 +508,7 @@
         epoch,
         recent_roots,
         output_path,
-        tipset_keys: tsk,
+        tipset_keys: ApiTipsetKey(tsk),
         skip_checksum,
         dry_run,
     }): Params&lt;ChainExportParams&gt;,
@@ -539,7 +533,7 @@
         </span>))<span class="question-mark">?</span>;
     }
 
-    <span class="kw">let </span>head = data.chain_store.load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>head = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>start_ts =
         data.chain_store
             .chain_index
@@ -623,12 +617,12 @@
 
 <span class="kw">pub async fn </span>chain_get_tipset_by_height&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((height, tsk))): Params&lt;LotusJson&lt;(ChainEpoch, TipsetKey)&gt;&gt;,
+    Params(LotusJson((height, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(ChainEpoch, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Tipset&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>tss = data
         .state_manager
         .chain_store()
@@ -665,12 +659,12 @@
 
 <span class="kw">pub async fn </span>chain_get_tipset&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((tsk,))): Params&lt;LotusJson&lt;(TipsetKey,)&gt;&gt;,
+    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Tipset&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>ts).clone().into())
 }
 
@@ -678,12 +672,12 @@
 // https://github.com/filecoin-project/lotus/blob/v1.23.0/node/impl/full/chain.go#L321
 </span><span class="kw">pub async fn </span>chain_set_head&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((tsk,))): Params&lt;LotusJson&lt;(TipsetKey,)&gt;&gt;,
+    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), JsonRpcError&gt; {
     <span class="kw">let </span>new_head = data
         .state_manager
         .chain_store()
-        .load_required_tipset(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>current = data.state_manager.chain_store().heaviest_tipset();
     <span class="kw">while </span>current.epoch() &gt;= new_head.epoch() {
         <span class="kw">for </span>cid <span class="kw">in </span>current.key().cids.clone() {
@@ -695,6 +689,7 @@
         current = data
             .state_manager
             .chain_store()
+            .chain_index
             .load_required_tipset(parents)<span class="question-mark">?</span>;
     }
     data.state_manager
@@ -715,6 +710,7 @@
         current = data
             .state_manager
             .chain_store()
+            .chain_index
             .load_required_tipset(parents)<span class="question-mark">?</span>;
 
         min_base_fee = min_base_fee.min(current.block_headers().first().parent_base_fee.to_owned());
