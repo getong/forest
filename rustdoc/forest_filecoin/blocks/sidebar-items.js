@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["block","election_proof","gossip_block","header","ticket","tipset","vrf_proof"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["block","election_proof","gossip_block","header","tests","ticket","tipset","vrf_proof"]};
