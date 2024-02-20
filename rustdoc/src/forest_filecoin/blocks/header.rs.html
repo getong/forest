@@ -354,6 +354,9 @@
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -445,10 +448,14 @@
         <span class="kw">let </span>(cb_epoch, curr_beacon) = b_schedule
             .beacon_for_epoch(<span class="self">self</span>.epoch)
             .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?</span>;
+        <span class="macro">tracing::debug!</span>(
+            <span class="string">"beacon network at {}: {:?}, is_chained: {}"</span>,
+            <span class="self">self</span>.epoch,
+            curr_beacon.network(),
+            curr_beacon.network().is_chained()
+        );
         <span class="comment">// Before quicknet upgrade, we had "chained" beacons, and so required two entries at a fork
-        // See &lt;https://github.com/filecoin-project/lotus/pull/11572/files#diff-587eaf0df6b60dbf741d19bbe39439f6f48ffe171e82a71c76b82484ba48f386R53&gt;
-        // for not using `if curr_beacon.network().is_chained()`
-        </span><span class="kw">if </span>network_version &lt;= NetworkVersion::V21 {
+        </span><span class="kw">if </span>curr_beacon.network().is_chained() {
             <span class="kw">let </span>(pb_epoch, <span class="kw">_</span>) = b_schedule
                 .beacon_for_epoch(parent_epoch)
                 .map_err(|e| Error::Validation(e.to_string()))<span class="question-mark">?</span>;
@@ -481,9 +488,8 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="comment">// See &lt;https://github.com/filecoin-project/lotus/pull/11572/files#diff-587eaf0df6b60dbf741d19bbe39439f6f48ffe171e82a71c76b82484ba48f386R83&gt;
-        // for not using `if curr_beacon.network().is_chained() &amp;&amp; prev_entry.round() == 0`
-        </span><span class="kw">if </span>network_version &lt;= NetworkVersion::V21 &amp;&amp; prev_entry.round() == <span class="number">0 </span>{
+        <span class="comment">// We skip verifying the genesis entry when randomness is "chained".
+        </span><span class="kw">if </span>curr_beacon.network().is_chained() &amp;&amp; prev_entry.round() == <span class="number">0 </span>{
             <span class="comment">// This basically means that the drand entry of the first non-genesis tipset isn't verified IF we are starting on Drand mainnet (the "chained" drand)
             // Networks that start on drand quicknet, or other unchained randomness sources, will still verify it
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
