@@ -408,6 +408,22 @@
 <a href="#407" id="407">407</a>
 <a href="#408" id="408">408</a>
 <a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -433,6 +449,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{Multiaddr, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::utils::net::global_http_client;
+<span class="kw">use </span>base64::prelude::{Engine, BASE64_STANDARD};
 <span class="kw">use </span>jsonrpc_v2::{Id, RequestObject, V2};
 <span class="kw">use </span>serde::Deserialize;
 <span class="kw">use </span>tracing::debug;
@@ -562,13 +579,17 @@
 
         <span class="macro">debug!</span>(<span class="string">"Using JSON-RPC v2 WS URL: {}"</span>, <span class="kw-2">&amp;</span>api_url);
 
+        <span class="comment">// A 16 byte key (base64 encoded) is expected for `Sec-WebSocket-Key` during a websocket handshake
+        // See 5. in https://datatracker.ietf.org/doc/html/rfc6455#section-4.2.1
+        </span><span class="kw">let </span>key = BASE64_STANDARD.encode(<span class="string">b"TheGreatOldOnes."</span>);
+
         <span class="kw">let </span>request = tungstenite::http::Request::builder()
             .method(<span class="string">"GET"</span>)
             .uri(api_url.to_string())
             .header(<span class="string">"Host"</span>, api_url.host)
             .header(<span class="string">"Upgrade"</span>, <span class="string">"websocket"</span>)
             .header(<span class="string">"Connection"</span>, <span class="string">"upgrade"</span>)
-            .header(<span class="string">"Sec-Websocket-Key"</span>, <span class="string">"key123"</span>)
+            .header(<span class="string">"Sec-Websocket-Key"</span>, key)
             .header(<span class="string">"Sec-Websocket-Version"</span>, <span class="string">"13"</span>)
             .body(())
             .map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_REQUEST)<span class="question-mark">?</span>;
@@ -579,17 +600,24 @@
 
         write.send(WsMessage::Binary(payload)).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = read.next().<span class="kw">await </span>{
-            <span class="kw">let </span>data = message<span class="question-mark">?</span>.into_data();
-            <span class="kw">let </span>rpc_res: JsonRpcResponse&lt;T::LotusJson&gt; =
-                serde_json::from_slice(<span class="kw-2">&amp;</span>data).map_err(|<span class="kw">_</span>| JsonRpcError::PARSE_ERROR)<span class="question-mark">?</span>;
+        <span class="kw">match </span>tokio::time::timeout(req.timeout, read.next()).<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(v) =&gt; {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = v {
+                    <span class="kw">let </span>data = message<span class="question-mark">?</span>.into_data();
+                    <span class="kw">let </span>rpc_res: JsonRpcResponse&lt;T::LotusJson&gt; =
+                        serde_json::from_slice(<span class="kw-2">&amp;</span>data).map_err(|<span class="kw">_</span>| JsonRpcError::PARSE_ERROR)<span class="question-mark">?</span>;
 
-            <span class="kw">match </span>rpc_res {
-                JsonRpcResponse::Result { result, .. } =&gt; <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(result)),
-                JsonRpcResponse::Error { error, .. } =&gt; <span class="prelude-val">Err</span>(error),
+                    <span class="kw">match </span>rpc_res {
+                        JsonRpcResponse::Result { result, .. } =&gt; {
+                            <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(result))
+                        }
+                        JsonRpcResponse::Error { error, .. } =&gt; <span class="prelude-val">Err</span>(error),
+                    }
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(JsonRpcError::INVALID_REQUEST)
+                }
             }
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Err</span>(JsonRpcError::INVALID_REQUEST)
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(JsonRpcError::TIMED_OUT),
         }
     }
 }
@@ -628,6 +656,10 @@
     <span class="kw">pub const </span>INVALID_PARAMS: JsonRpcError = JsonRpcError {
         code: -<span class="number">32602</span>,
         message: Cow::Borrowed(<span class="string">"Invalid method parameter(s)."</span>),
+    };
+    <span class="kw">pub const </span>TIMED_OUT: JsonRpcError = JsonRpcError {
+        code: <span class="number">0</span>,
+        message: Cow::Borrowed(<span class="string">"Operation timed out."</span>),
     };
 }
 

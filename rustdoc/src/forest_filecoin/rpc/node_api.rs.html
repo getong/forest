@@ -56,15 +56,22 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
 </span><span class="kw">use </span>std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{data_types::RPCState, node_api::NodeStatusResult};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
+    data_types::{Data, RPCState},
+    node_api::NodeStatusResult,
+};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError};
 
 <span class="kw">pub async fn </span>node_status&lt;DB: Blockstore&gt;(
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
@@ -79,9 +86,10 @@
     <span class="kw">let </span>behind = <span class="kw">if </span>ts &lt;= cur_duration_secs + <span class="number">1 </span>{
         cur_duration_secs.saturating_sub(ts)
     } <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(JsonRpcError::from(
-            <span class="string">"System time should not be behind tipset timestamp, please sync the system clock."</span>,
-        ));
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(
+            <span class="string">"System time should not be behind tipset timestamp, please sync the system clock."
+        </span>)
+        .into());
     };
 
     <span class="kw">let </span>chain_finality = data.state_manager.chain_config().policy.chain_finality;

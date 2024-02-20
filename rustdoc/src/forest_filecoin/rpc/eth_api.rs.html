@@ -143,6 +143,10 @@
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -154,12 +158,17 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::{index::ResolveNullTipset, ChainStore};
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::FrozenCidVec;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{data_types::RPCState, eth_api::BigInt <span class="kw">as </span>EthBigInt, eth_api::<span class="kw-2">*</span>};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
+    data_types::{Data, RPCState},
+    eth_api::BigInt <span class="kw">as </span>EthBigInt,
+    eth_api::<span class="kw-2">*</span>,
+};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{clock::ChainEpoch, state_tree::StateTree};
 
-<span class="kw">use </span>anyhow::bail;
+<span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>jsonrpsee::types::Params;
 <span class="kw">use </span>num_bigint::BigInt;
 <span class="kw">use </span>num_traits::Zero <span class="kw">as _</span>;
 
@@ -219,9 +228,12 @@
 }
 
 <span class="kw">pub async fn </span>eth_get_balance&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, block_param))): Params&lt;LotusJson&lt;(Address, BlockNumberOrHash)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;EthBigInt, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((address, block_param)): LotusJson&lt;(Address, BlockNumberOrHash)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>fil_addr = address.to_filecoin_address()<span class="question-mark">?</span>;
 
     <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>data.chain_store, block_param)<span class="question-mark">?</span>;
@@ -229,12 +241,8 @@
     <span class="kw">let </span>state = StateTree::new_from_root(data.state_manager.blockstore_owned(), ts.parent_state())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>actor = state
-        .get_actor(<span class="kw-2">&amp;</span>fil_addr)
-        .map_err(|_e| JsonRpcError::Provided {
-            code: http::StatusCode::SERVICE_UNAVAILABLE.as_u16() <span class="kw">as _</span>,
-            message: <span class="string">"Failed to retrieve actor"</span>,
-        })<span class="question-mark">?
-        </span>.ok_or(JsonRpcError::INTERNAL_ERROR)<span class="question-mark">?</span>;
+        .get_actor(<span class="kw-2">&amp;</span>fil_addr)<span class="question-mark">?
+        </span>.context(<span class="string">"Failed to retrieve actor"</span>)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(EthBigInt(actor.balance.atto().clone()))
 }

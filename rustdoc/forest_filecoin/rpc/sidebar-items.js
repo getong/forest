@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["start_rpc"],"mod":["auth_api","beacon_api","chain_api","common_api","eth_api","gas_api","mpool_api","net_api","node_api","rpc_http_handler","rpc_util","rpc_ws_handler","state_api","sync_api","wallet_api"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_RESPONSE_BODY_SIZE"],"fn":["register_methods","start_rpc"],"mod":["auth_api","auth_layer","beacon_api","chain_api","common_api","error","eth_api","gas_api","mpool_api","net_api","node_api","state_api","sync_api","wallet_api"],"struct":["PerConnection"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MappedMutexGuard","Mutex","MutexGuard","MutexLockFuture","OwnedMutexGuard","OwnedMutexLockFuture"]};
+window.SIDEBAR_ITEMS = {"struct":["BiLock","BiLockAcquire","BiLockGuard","MappedMutexGuard","Mutex","MutexGuard","MutexLockFuture","OwnedMutexGuard","OwnedMutexLockFuture","ReuniteError"]};

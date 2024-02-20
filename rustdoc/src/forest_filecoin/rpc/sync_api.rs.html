@@ -194,32 +194,40 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
 </span><span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncState;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{RPCState, RPCSyncState};
-<span class="kw">use </span>cid::Cid;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{Data, RPCState, RPCSyncState};
+
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>jsonrpsee::types::Params;
 <span class="kw">use </span>nonempty::nonempty;
 <span class="kw">use </span>parking_lot::RwLock;
 
 <span class="doccomment">/// Checks if a given block is marked as bad.
 </span><span class="kw">pub async fn </span>sync_check_bad&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid,)) = params.parse()<span class="question-mark">?</span>;
+
     <span class="prelude-val">Ok</span>(data.bad_blocks.peek(<span class="kw-2">&amp;</span>cid).unwrap_or_default())
 }
 
 <span class="doccomment">/// Marks a block as bad, meaning it will never be synced.
 </span><span class="kw">pub async fn </span>sync_mark_bad&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid,)) = params.parse()<span class="question-mark">?</span>;
+
     data.bad_blocks
         .put(cid, <span class="string">"Marked bad manually through RPC API"</span>.to_string());
     <span class="prelude-val">Ok</span>(())
@@ -254,8 +262,7 @@
     <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
     <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
     <span class="kw">use </span><span class="kw">crate</span>::utils::encoding::from_slice_with_fallback;
-    <span class="kw">use </span>cid::Cid;
-    <span class="kw">use </span>serde_json::from_str;
+    <span class="kw">use </span>jsonrpsee::types::params::Params;
     <span class="kw">use </span>tokio::{sync::RwLock, task::JoinSet};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -338,23 +345,20 @@
     </span><span class="kw">async fn </span>set_check_bad() {
         <span class="kw">let </span>(state, <span class="kw">_</span>) = state_setup();
 
-        <span class="kw">let </span>cid = from_str::&lt;LotusJson&lt;Cid&gt;&gt;(
-            <span class="string">r#"{"/":"bafy2bzacea3wsdh6y3a36tb3skempjoxqpuyompjbmfeyf34fi3uy6uue42v4"}"#</span>,
-        )
-        .unwrap()
-        .into_inner();
-        <span class="kw">match </span>sync_check_bad(Data(state.clone()), Params(LotusJson((cid,)))).<span class="kw">await </span>{
+        <span class="kw">let </span>cid = <span class="string">r#"[{"/":"bafy2bzacea3wsdh6y3a36tb3skempjoxqpuyompjbmfeyf34fi3uy6uue42v4"}]"#</span>;
+
+        <span class="kw">match </span>sync_check_bad(Params::new(<span class="prelude-val">Some</span>(cid)), Arc::new(state.clone())).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(reason) =&gt; <span class="macro">assert_eq!</span>(reason, <span class="string">""</span>),
             <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
         }
 
         <span class="comment">// Mark that block as bad manually and check again to verify
         </span><span class="macro">assert!</span>(
-            sync_mark_bad(Data(state.clone()), Params(LotusJson((cid,))))
+            sync_mark_bad(Params::new(<span class="prelude-val">Some</span>(cid)), Arc::new(state.clone()))
                 .<span class="kw">await
                 </span>.is_ok()
         );
-        <span class="kw">match </span>sync_check_bad(Data(state), Params(LotusJson((cid,)))).<span class="kw">await </span>{
+        <span class="kw">match </span>sync_check_bad(Params::new(<span class="prelude-val">Some</span>(cid)), Arc::new(state.clone())).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(reason) =&gt; <span class="macro">assert_eq!</span>(reason, <span class="string">"Marked bad manually through RPC API"</span>),
             <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
         }
@@ -366,7 +370,7 @@
 
         <span class="kw">let </span>st_copy = state.sync_state.clone();
 
-        <span class="kw">match </span>sync_state(Data(state.clone())).<span class="kw">await </span>{
+        <span class="kw">match </span>sync_state(Arc::new(state.clone())).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(ret) =&gt; <span class="macro">assert_eq!</span>(
                 ret.active_syncs,
                 <span class="macro">nonempty!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]
@@ -378,7 +382,7 @@
         </span>st_copy.write().set_stage(SyncStage::Messages);
         st_copy.write().set_epoch(<span class="number">4</span>);
 
-        <span class="kw">match </span>sync_state(Data(state.clone())).<span class="kw">await </span>{
+        <span class="kw">match </span>sync_state(Arc::new(state.clone())).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(ret) =&gt; {
                 <span class="macro">assert_eq!</span>(
                     ret.active_syncs,

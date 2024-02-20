@@ -718,10 +718,6 @@
 <a href="#717" id="717">717</a>
 <a href="#718" id="718">718</a>
 <a href="#719" id="719">719</a>
-<a href="#720" id="720">720</a>
-<a href="#721" id="721">721</a>
-<a href="#722" id="722">722</a>
-<a href="#723" id="723">723</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1066,25 +1062,21 @@
     <span class="comment">// Start services
     </span><span class="kw">if </span>config.client.enable_rpc {
         <span class="kw">let </span>keystore_rpc = Arc::clone(<span class="kw-2">&amp;</span>keystore);
-        <span class="kw">let </span>rpc_listen = tokio::net::TcpListener::bind(config.client.rpc_address)
-            .<span class="kw">await
-            </span>.context(<span class="macro">format!</span>(
-                <span class="string">"could not bind to rpc address {}"</span>,
-                config.client.rpc_address
-            ))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>rpc_state_manager = Arc::clone(<span class="kw-2">&amp;</span>state_manager);
         <span class="kw">let </span>rpc_chain_store = Arc::clone(<span class="kw-2">&amp;</span>chain_store);
+        <span class="kw">let </span>rpc_address = config.client.rpc_address;
+
+        <span class="macro">info!</span>(<span class="string">"JSON-RPC endpoint will listen at {rpc_address}"</span>);
+        <span class="kw">let </span>beacon = Arc::new(
+            rpc_state_manager
+                .chain_config()
+                .get_beacon_schedule(chain_store.genesis_block_header().timestamp),
+        );
 
         services.spawn(<span class="kw">async move </span>{
-            <span class="macro">info!</span>(<span class="string">"JSON-RPC endpoint started at {}"</span>, config.client.rpc_address);
-            <span class="kw">let </span>beacon = Arc::new(
-                rpc_state_manager
-                    .chain_config()
-                    .get_beacon_schedule(chain_store.genesis_block_header().timestamp),
-            );
             start_rpc(
-                Arc::new(RPCState {
+                RPCState {
                     state_manager: Arc::clone(<span class="kw-2">&amp;</span>rpc_state_manager),
                     keystore: keystore_rpc,
                     mpool,
@@ -1095,8 +1087,8 @@
                     start_time,
                     beacon,
                     chain_store: rpc_chain_store,
-                }),
-                rpc_listen,
+                },
+                rpc_address,
                 FOREST_VERSION_STRING.as_str(),
                 shutdown_send,
             )

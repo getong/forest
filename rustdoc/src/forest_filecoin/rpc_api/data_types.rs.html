@@ -974,6 +974,27 @@
 <a href="#973" id="973">973</a>
 <a href="#974" id="974">974</a>
 <a href="#975" id="975">975</a>
+<a href="#976" id="976">976</a>
+<a href="#977" id="977">977</a>
+<a href="#978" id="978">978</a>
+<a href="#979" id="979">979</a>
+<a href="#980" id="980">980</a>
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a>
+<a href="#985" id="985">985</a>
+<a href="#986" id="986">986</a>
+<a href="#987" id="987">987</a>
+<a href="#988" id="988">988</a>
+<a href="#989" id="989">989</a>
+<a href="#990" id="990">990</a>
+<a href="#991" id="991">991</a>
+<a href="#992" id="992">992</a>
+<a href="#993" id="993">993</a>
+<a href="#994" id="994">994</a>
+<a href="#995" id="995">995</a>
+<a href="#996" id="996">996</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1017,7 +1038,6 @@
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::BitField;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::{BytesDe, RawBytes};
-<span class="kw">use </span>jsonrpc_v2::{MapRouter <span class="kw">as </span>JsonRpcMapRouter, Server <span class="kw">as </span>JsonRpcServer};
 <span class="kw">use </span>libipld_core::ipld::Ipld;
 <span class="kw">use </span>libp2p::PeerId;
 <span class="kw">use </span>nonempty::NonEmpty;
@@ -1026,6 +1046,8 @@
 <span class="kw">use </span>serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 <span class="kw">use </span>serde_json::Value;
 <span class="kw">use </span>tokio::sync::RwLock;
+
+<span class="kw">pub type </span>Data&lt;T&gt; = Arc&lt;Arc&lt;T&gt;&gt;;
 
 <span class="doccomment">/// This is where you store persistent data, or at least access to stateful
 /// data.
@@ -1045,7 +1067,7 @@
     <span class="kw">pub </span>beacon: Arc&lt;BeaconSchedule&gt;,
 }
 
-<span class="attr">#[derive(Debug, Serialize, Deserialize)]
+<span class="attr">#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>RPCSyncState {
     <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
@@ -1053,8 +1075,6 @@
 }
 
 <span class="macro">lotus_json_with_self!</span>(RPCSyncState);
-
-<span class="kw">pub type </span>JsonRpcServerState = Arc&lt;JsonRpcServer&lt;JsonRpcMapRouter&gt;&gt;;
 
 <span class="comment">// Chain API
 </span><span class="attr">#[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -1085,6 +1105,28 @@
     <span class="kw">pub </span>state: DealState,
 }
 
+<span class="comment">// TODO: remove Clone. Tracking issue: https://github.com/ChainSafe/fil-actor-states/issues/255
+</span><span class="kw">impl </span>Clone <span class="kw">for </span>MarketDeal {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            proposal: DealProposal {
+                piece_cid: <span class="self">self</span>.proposal.piece_cid,
+                piece_size: <span class="self">self</span>.proposal.piece_size,
+                verified_deal: <span class="self">self</span>.proposal.verified_deal,
+                client: <span class="self">self</span>.proposal.client,
+                provider: <span class="self">self</span>.proposal.provider,
+                label: <span class="self">self</span>.proposal.label.clone(),
+                start_epoch: <span class="self">self</span>.proposal.start_epoch,
+                end_epoch: <span class="self">self</span>.proposal.end_epoch,
+                storage_price_per_epoch: <span class="self">self</span>.proposal.storage_price_per_epoch.clone(),
+                provider_collateral: <span class="self">self</span>.proposal.provider_collateral.clone(),
+                client_collateral: <span class="self">self</span>.proposal.client_collateral.clone(),
+            },
+            state: DealState { ..<span class="self">self</span>.state },
+        }
+    }
+}
+
 <span class="attr">#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>MessageLookup {
@@ -1102,7 +1144,7 @@
 <span class="macro">lotus_json_with_self!</span>(MessageLookup);
 
 <span class="comment">// Net API
-</span><span class="attr">#[derive(Serialize, Deserialize)]
+</span><span class="attr">#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>AddrInfo {
     <span class="attr">#[serde(rename = <span class="string">"ID"</span>)]
@@ -1692,7 +1734,7 @@
 }
 
 <span class="macro">lotus_json_with_self!</span>(ApiDeadline);
-<span class="attr">#[derive(Serialize, Deserialize)]
+<span class="attr">#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>ApiInvocResult {
     <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]

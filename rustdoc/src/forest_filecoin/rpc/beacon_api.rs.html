@@ -22,23 +22,35 @@
 <a href="#21" id="21">21</a>
 <a href="#22" id="22">22</a>
 <a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use crate</span>::{
-    beacon::BeaconEntry, lotus_json::LotusJson, rpc_api::data_types::RPCState,
+</span><span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use crate</span>::{
+    beacon::BeaconEntry,
+    lotus_json::LotusJson,
+    rpc_api::data_types::{Data, RPCState},
     shim::clock::ChainEpoch,
 };
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>jsonrpsee::types::Params;
 
 <span class="doccomment">/// `BeaconGetEntry` returns the beacon entry for the given Filecoin epoch. If
 /// the entry has not yet been produced, the call will block until the entry
 /// becomes available
 </span><span class="kw">pub async fn </span>beacon_get_entry&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params((first,)): Params&lt;(ChainEpoch,)&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;BeaconEntry&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>(first,): (ChainEpoch,) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>(<span class="kw">_</span>, beacon) = data.beacon.beacon_for_epoch(first)<span class="question-mark">?</span>;
     <span class="kw">let </span>rr =
         beacon.max_beacon_round_for_epoch(data.state_manager.get_network_version(first), first);

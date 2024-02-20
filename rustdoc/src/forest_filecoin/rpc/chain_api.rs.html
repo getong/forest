@@ -376,6 +376,36 @@
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -385,44 +415,55 @@
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::ChainMessage;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{chain_api::<span class="kw-2">*</span>, data_types::<span class="kw-2">*</span>};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiMessage, ApiReceipt};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
+    chain_api::<span class="kw-2">*</span>,
+    data_types::{ApiTipsetKey, BlockMessages, Data, RPCState},
+};
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::utils::io::VoidAsyncWriter;
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_amt::Amtv0 <span class="kw">as </span>Amt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
 <span class="kw">use </span>hex::ToHex;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>jsonrpsee::types::error::ErrorObjectOwned;
+<span class="kw">use </span>jsonrpsee::types::Params;
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>sha2::Sha256;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="kw">pub async fn </span>chain_get_message&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((msg_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Message&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((msg_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>chain_message: ChainMessage = data
         .state_manager
         .blockstore()
         .get_cbor(<span class="kw-2">&amp;</span>msg_cid)<span class="question-mark">?
-        </span>.ok_or_else(|| <span class="macro">format!</span>(<span class="string">"can't find message with cid {msg_cid}"</span>))<span class="question-mark">?</span>;
+        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find message with cid {msg_cid}"</span>))<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(LotusJson(<span class="kw">match </span>chain_message {
         ChainMessage::Signed(m) =&gt; m.into_message(),
         ChainMessage::Unsigned(m) =&gt; m,
     }))
 }
 
-<span class="kw">pub async fn </span>chain_get_parent_message&lt;DB: Blockstore&gt;(
+<span class="kw">pub async fn </span>chain_get_parent_messages&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((block_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiMessage&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((block_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>block_header: CachingBlockHeader = store
         .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
-        </span>.ok_or_else(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
+        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
     <span class="kw">if </span>block_header.epoch == <span class="number">0 </span>{
         <span class="prelude-val">Ok</span>(LotusJson(<span class="macro">vec!</span>[]))
     } <span class="kw">else </span>{
@@ -433,13 +474,15 @@
 }
 
 <span class="kw">pub async fn </span>chain_get_parent_receipts&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((block_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiReceipt&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((block_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>block_header: CachingBlockHeader = store
         .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
-        </span>.ok_or_else(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
+        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>receipts = Vec::new();
     <span class="kw">if </span>block_header.epoch == <span class="number">0 </span>{
         <span class="kw">return </span><span class="prelude-val">Ok</span>(LotusJson(<span class="macro">vec!</span>[]));
@@ -448,13 +491,15 @@
     <span class="comment">// Try Receipt_v4 first. (Receipt_v4 and Receipt_v3 are identical, use v4 here)
     </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(amt) =
         Amt::&lt;fvm_shared4::receipt::Receipt, <span class="kw">_</span>&gt;::load(<span class="kw-2">&amp;</span>block_header.message_receipts, store)
-            .map_err(|<span class="kw">_</span>| JsonRpcError::Full {
-                code: <span class="number">1</span>,
-                message: <span class="macro">format!</span>(
-                    <span class="string">"failed to root: ipld: could not find {}"</span>,
-                    block_header.message_receipts
-                ),
-                data: <span class="prelude-val">None</span>,
+            .map_err(|<span class="kw">_</span>| {
+                ErrorObjectOwned::owned::&lt;()&gt;(
+                    <span class="number">1</span>,
+                    <span class="macro">format!</span>(
+                        <span class="string">"failed to root: ipld: could not find {}"</span>,
+                        block_header.message_receipts
+                    ),
+                    <span class="prelude-val">None</span>,
+                )
             })
     {
         amt.for_each(|<span class="kw">_</span>, receipt| {
@@ -470,13 +515,15 @@
         <span class="comment">// Fallback to Receipt_v2.
         </span><span class="kw">let </span>amt =
             Amt::&lt;fvm_shared2::receipt::Receipt, <span class="kw">_</span>&gt;::load(<span class="kw-2">&amp;</span>block_header.message_receipts, store)
-                .map_err(|<span class="kw">_</span>| JsonRpcError::Full {
-                    code: <span class="number">1</span>,
-                    message: <span class="macro">format!</span>(
-                        <span class="string">"failed to root: ipld: could not find {}"</span>,
-                        block_header.message_receipts
-                    ),
-                    data: <span class="prelude-val">None</span>,
+                .map_err(|<span class="kw">_</span>| {
+                    ErrorObjectOwned::owned::&lt;()&gt;(
+                        <span class="number">1</span>,
+                        <span class="macro">format!</span>(
+                            <span class="string">"failed to root: ipld: could not find {}"</span>,
+                            block_header.message_receipts
+                        ),
+                        <span class="prelude-val">None</span>,
+                    )
                 })<span class="question-mark">?</span>;
         amt.for_each(|<span class="kw">_</span>, receipt| {
             receipts.push(ApiReceipt {
@@ -493,9 +540,11 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>chain_get_messages_in_tipset&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((tsk,))): Params&lt;LotusJson&lt;(TipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiMessage&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((tsk,)): LotusJson&lt;(TipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>store = data.chain_store.blockstore();
     <span class="kw">let </span>tipset = Tipset::load_required(store, <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>messages = load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>;
@@ -503,34 +552,34 @@
 }
 
 <span class="kw">pub async fn </span>chain_export&lt;DB&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(ChainExportParams {
+) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;String&gt;, JsonRpcError&gt;
+<span class="kw">where
+    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
+{
+    <span class="kw">let </span>ChainExportParams {
         epoch,
         recent_roots,
         output_path,
         tipset_keys: ApiTipsetKey(tsk),
         skip_checksum,
         dry_run,
-    }): Params&lt;ChainExportParams&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;String&gt;, JsonRpcError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
+    }: ChainExportParams = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">static </span>LOCK: Lazy&lt;Mutex&lt;()&gt;&gt; = Lazy::new(|| Mutex::new(()));
 
     <span class="kw">let </span>_locked = LOCK.try_lock();
     <span class="kw">if </span>_locked.is_err() {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(JsonRpcError::Provided {
-            code: http::StatusCode::SERVICE_UNAVAILABLE.as_u16() <span class="kw">as _</span>,
-            message: <span class="string">"Another chain export job is still in progress"</span>,
-        });
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"Another chain export job is still in progress"</span>).into());
     }
 
     <span class="kw">let </span>chain_finality = data.state_manager.chain_config().policy.chain_finality;
     <span class="kw">if </span>recent_roots &lt; chain_finality {
-        <span class="prelude-val">Err</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="macro">format!</span>(
             <span class="string">"recent-stateroots must be greater than {chain_finality}"
-        </span>))<span class="question-mark">?</span>;
+        </span>))
+        .into());
     }
 
     <span class="kw">let </span>head = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
@@ -562,38 +611,44 @@
         .<span class="kw">await
     </span>} {
         <span class="prelude-val">Ok</span>(checksum_opt) =&gt; <span class="prelude-val">Ok</span>(checksum_opt.map(|hash| hash.encode_hex())),
-        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(JsonRpcError::from(e)),
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(e).into()),
     }
 }
 
 <span class="kw">pub async fn </span>chain_read_obj&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((obj_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;u8&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((obj_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>bytes = data
         .state_manager
         .blockstore()
         .get(<span class="kw-2">&amp;</span>obj_cid)<span class="question-mark">?
-        </span>.ok_or(<span class="string">"can't find object with that cid"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"can't find object with that cid"</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(LotusJson(bytes))
 }
 
 <span class="kw">pub async fn </span>chain_has_obj&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((obj_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;bool, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((obj_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="prelude-val">Ok</span>(data.state_manager.blockstore().get(<span class="kw-2">&amp;</span>obj_cid)<span class="question-mark">?</span>.is_some())
 }
 
 <span class="kw">pub async fn </span>chain_get_block_messages&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((blk_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;BlockMessages, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((blk_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>blk: CachingBlockHeader = data
         .state_manager
         .blockstore()
         .get_cbor(<span class="kw-2">&amp;</span>blk_cid)<span class="question-mark">?
-        </span>.ok_or(<span class="string">"can't find block with that cid"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"can't find block with that cid"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>blk_msgs = <span class="kw-2">&amp;</span>blk.messages;
     <span class="kw">let </span>(unsigned_cids, signed_cids) =
         <span class="kw">crate</span>::chain::read_msg_cids(data.state_manager.blockstore(), blk_msgs)<span class="question-mark">?</span>;
@@ -616,9 +671,12 @@
 }
 
 <span class="kw">pub async fn </span>chain_get_tipset_by_height&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((height, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(ChainEpoch, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Tipset&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((height, ApiTipsetKey(tsk))): LotusJson&lt;(ChainEpoch, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
@@ -646,21 +704,25 @@
 }
 
 <span class="kw">pub async fn </span>chain_get_block&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((blk_cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;CachingBlockHeader&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((blk_cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>blk: CachingBlockHeader = data
         .state_manager
         .blockstore()
         .get_cbor(<span class="kw-2">&amp;</span>blk_cid)<span class="question-mark">?
-        </span>.ok_or(<span class="string">"can't find BlockHeader with that cid"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"can't find BlockHeader with that cid"</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(blk.into())
 }
 
 <span class="kw">pub async fn </span>chain_get_tipset&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Tipset&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
@@ -671,9 +733,11 @@
 <span class="comment">// This is basically a port of the reference implementation at
 // https://github.com/filecoin-project/lotus/blob/v1.23.0/node/impl/full/chain.go#L321
 </span><span class="kw">pub async fn </span>chain_set_head&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>new_head = data
         .state_manager
         .chain_store()
@@ -699,9 +763,11 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>chain_get_min_base_fee&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params((basefee_lookback,)): Params&lt;(u32,)&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
+    <span class="kw">let </span>(basefee_lookback,): (u32,) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span><span class="kw-2">mut </span>current = data.state_manager.chain_store().heaviest_tipset();
     <span class="kw">let </span><span class="kw-2">mut </span>min_base_fee = current.block_headers().first().parent_base_fee.clone();
 
@@ -719,19 +785,13 @@
     <span class="prelude-val">Ok</span>(min_base_fee.atto().to_string())
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>chain_notify&lt;DB: Blockstore&gt;(
-    _data: Data&lt;RPCState&lt;DB&gt;&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), JsonRpcError&gt; {
-    <span class="prelude-val">Err</span>(JsonRpcError::METHOD_NOT_FOUND)
-}
-
 <span class="kw">fn </span>load_api_messages_from_tipset(
     store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore,
     tipset: <span class="kw-2">&amp;</span>Tipset,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ApiMessage&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>full_tipset = tipset
         .fill_from_blockstore(store)
-        .ok_or_else(|| <span class="macro">anyhow::anyhow!</span>(<span class="string">"Failed to load full tipset"</span>))<span class="question-mark">?</span>;
+        .context(<span class="string">"Failed to load full tipset"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>blocks = full_tipset.into_blocks();
     <span class="kw">let </span><span class="kw-2">mut </span>messages = <span class="macro">vec!</span>[];
     <span class="kw">let </span><span class="kw-2">mut </span>seen = CidHashSet::default();

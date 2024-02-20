@@ -43,15 +43,14 @@
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
 <a href="#44" id="44">44</a>
-<a href="#45" id="45">45</a>
-<a href="#46" id="46">46</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{APIVersion, RPCState, Version};
+</span><span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{APIVersion, RPCState, Version};
+
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError};
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>semver::Version <span class="kw">as </span>SemVer;
 <span class="kw">use </span>tokio::sync::mpsc::Sender;
@@ -61,14 +60,11 @@
 <span class="kw">static </span>SESSION_UUID: Lazy&lt;Uuid&gt; = Lazy::new(Uuid::new_v4);
 
 <span class="doccomment">/// The session UUID uniquely identifies the API node.
-</span><span class="kw">pub async fn </span>session() -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
+</span><span class="kw">pub fn </span>session() -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
     <span class="prelude-val">Ok</span>(SESSION_UUID.to_string())
 }
 
-<span class="kw">pub async fn </span>version(
-    block_delay: u64,
-    forest_version: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-) -&gt; <span class="prelude-ty">Result</span>&lt;APIVersion, JsonRpcError&gt; {
+<span class="kw">pub fn </span>version(block_delay: u64, forest_version: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;APIVersion, JsonRpcError&gt; {
     <span class="kw">let </span>v = SemVer::parse(forest_version).unwrap();
     <span class="prelude-val">Ok</span>(APIVersion {
         version: forest_version.to_string(),
@@ -80,14 +76,14 @@
 <span class="kw">pub async fn </span>shutdown(shutdown_send: Sender&lt;()&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), JsonRpcError&gt; {
     <span class="comment">// Trigger graceful shutdown
     </span><span class="kw">if let </span><span class="prelude-val">Err</span>(err) = shutdown_send.send(()).<span class="kw">await </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(JsonRpcError::from(err));
+        <span class="kw">return </span><span class="prelude-val">Err</span>(err.into());
     }
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// gets start time from network
-</span><span class="kw">pub async fn </span>start_time&lt;DB: Blockstore&gt;(
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+</span><span class="kw">pub fn </span>start_time&lt;DB: Blockstore&gt;(
+    data: <span class="kw-2">&amp;</span>RPCState&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;chrono::DateTime&lt;chrono::Utc&gt;, JsonRpcError&gt; {
     <span class="prelude-val">Ok</span>(data.start_time)
 }

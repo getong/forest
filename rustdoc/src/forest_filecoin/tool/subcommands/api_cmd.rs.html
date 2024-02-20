@@ -1045,6 +1045,12 @@
 <a href="#1044" id="1044">1044</a>
 <a href="#1045" id="1045">1045</a>
 <a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
+<a href="#1052" id="1052">1052</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1065,6 +1071,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
 <span class="kw">use </span><span class="kw">crate</span>::networks::NetworkChain;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::start_rpc;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{MessageFilter, MessageLookup};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::eth_api::Address <span class="kw">as </span>EthAddress;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::{data_types::RPCState, eth_api::<span class="kw-2">*</span>};
@@ -1174,9 +1181,15 @@
                 data_dir,
                 auto_download_snapshot,
             } =&gt; {
-                start_offline_server(snapshot_file, chain, port, data_dir, auto_download_snapshot)
-                    .<span class="kw">await</span><span class="question-mark">?
-            </span>}
+                start_offline_server(
+                    snapshot_file,
+                    chain,
+                    port,
+                    data_dir.clone(),
+                    auto_download_snapshot,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            }
             <span class="self">Self</span>::Compare {
                 forest,
                 lotus,
@@ -1921,7 +1934,7 @@
         state_manager.chain_config().clone(),
         <span class="kw-2">&amp;mut </span>JoinSet::new(),
     )<span class="question-mark">?</span>;
-    <span class="kw">let </span>rpc_state = Arc::new(RPCState {
+    <span class="kw">let </span>rpc_state = RPCState {
         state_manager,
         keystore: Arc::new(RwLock::new(KeyStore::new(KeyStoreConfig::Memory)<span class="question-mark">?</span>)),
         mpool: Arc::new(message_pool),
@@ -1932,30 +1945,29 @@
         start_time: chrono::Utc::now(),
         chain_store,
         beacon,
-    });
+    };
     rpc_state.sync_state.write().set_stage(SyncStage::Idle);
     start_offline_rpc(rpc_state, rpc_port).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Cleanup offline RPC resources
+    <span class="comment">// TODO: this should more be done in a script
+    // Cleanup offline RPC resources
     </span>std::fs::remove_file(<span class="kw-2">&amp;</span>snapshot_path)<span class="question-mark">?</span>;
     std::fs::remove_dir_all(<span class="kw-2">&amp;</span>db_path)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub async fn </span>start_offline_rpc&lt;DB&gt;(state: Arc&lt;RPCState&lt;DB&gt;&gt;, rpc_port: u16) -&gt; anyhow::Result&lt;()&gt;
+<span class="kw">pub async fn </span>start_offline_rpc&lt;DB&gt;(state: RPCState&lt;DB&gt;, rpc_port: u16) -&gt; anyhow::Result&lt;()&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="macro">info!</span>(<span class="string">"Starting offline RPC Server"</span>);
     <span class="kw">let </span>rpc_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), rpc_port);
-    <span class="kw">let </span>rpc_endpoint = tokio::net::TcpListener::bind(rpc_address)
-        .<span class="kw">await
-        </span>.context(<span class="macro">format!</span>(<span class="string">"could not bind to rpc address {}"</span>, rpc_address))<span class="question-mark">?</span>;
     <span class="kw">let </span>forest_version = FOREST_VERSION_STRING.as_str();
     <span class="kw">let </span>(shutdown_send, <span class="kw-2">mut </span>shutdown_recv) = mpsc::channel(<span class="number">1</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>terminate = signal(SignalKind::terminate())<span class="question-mark">?</span>;
+
     <span class="kw">let </span>result = <span class="macro">tokio::select! </span>{
-        ret = <span class="kw">crate</span>::rpc::start_rpc(state, rpc_endpoint, forest_version, shutdown_send) =&gt; ret,
+        ret = start_rpc(state, rpc_address, forest_version, shutdown_send) =&gt; ret,
         <span class="kw">_ </span>= ctrl_c() =&gt; {
             <span class="macro">info!</span>(<span class="string">"Keyboard interrupt."</span>);
             <span class="prelude-val">Ok</span>(())

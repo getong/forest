@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["auth_verify","check_permissions"],"struct":["AuthLayer","AuthMiddleware"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["rpc_http_handler","rpc_v0_http_handler"]};

@@ -891,6 +891,84 @@
 <a href="#890" id="890">890</a>
 <a href="#891" id="891">891</a>
 <a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
+<a href="#967" id="967">967</a>
+<a href="#968" id="968">968</a>
+<a href="#969" id="969">969</a>
+<a href="#970" id="970">970</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -899,9 +977,14 @@
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
+    ApiActorState, ApiDeadline, ApiInvocResult, ApiTipsetKey, CirculatingSupply, Data, MarketDeal,
+    MessageFilter, MessageLookup, MinerSectors, MiningBaseInfo, RPCState, SectorOnChainInfo,
+    Transaction,
+};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
-    address::Address, clock::ChainEpoch, econ::TokenAmount, executor::Receipt, message::Message,
+    address::Address, clock::ChainEpoch, econ::TokenAmount, executor::Receipt,
     state_tree::ActorState, version::NetworkVersion,
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
@@ -910,6 +993,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::car_stream::{CarBlock, CarWriter};
 <span class="kw">use </span>ahash::{HashMap, HashMapExt};
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actor_interface::miner::DeadlineInfo;
 <span class="kw">use </span>fil_actor_interface::{
@@ -921,7 +1005,7 @@
 <span class="kw">use </span>futures::StreamExt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::{CborStore, DAG_CBOR};
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>jsonrpsee::types::Params;
 <span class="kw">use </span>libipld_core::ipld::Ipld;
 <span class="kw">use </span>nonempty::nonempty;
 <span class="kw">use </span>num_bigint::BigInt;
@@ -933,11 +1017,11 @@
 <span class="kw">type </span>RandomnessParams = (i64, ChainEpoch, Vec&lt;u8&gt;, ApiTipsetKey);
 
 <span class="kw">pub async fn </span>miner_get_base_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, epoch, ApiTipsetKey(tsk)))): Params&lt;
-        LotusJson&lt;(Address, ChainEpoch, ApiTipsetKey)&gt;,
-    &gt;,
-) -&gt; anyhow::Result&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;MiningBaseInfo&gt;&gt;&gt; {
+) -&gt; anyhow::Result&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;MiningBaseInfo&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((address, epoch, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
@@ -946,13 +1030,15 @@
     data.state_manager
         .miner_get_base_info(data.state_manager.beacon_schedule(), ts, address, epoch)
         .<span class="kw">await
-        </span>.map(|info| info.into())
-}
+        </span>.map(|info| <span class="prelude-val">Ok</span>(LotusJson(info)))<span class="question-mark">?
+</span>}
 <span class="doccomment">/// runs the given message and returns its result without any persisted changes.
 </span><span class="kw">pub async fn </span>state_call&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((message, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Message, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((message, ApiTipsetKey(key))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = data
         .state_manager
@@ -966,9 +1052,11 @@
 <span class="doccomment">/// returns the result of executing the indicated message, assuming it was
 /// executed in the indicated tipset.
 </span><span class="kw">pub async fn </span>state_replay&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Cid, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;InvocResult, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid, ApiTipsetKey(key))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = data
         .state_manager
@@ -996,9 +1084,11 @@
 }
 
 <span class="kw">pub async fn </span>state_get_network_version&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkVersion, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(data.state_manager.get_network_version(ts.epoch()))
 }
@@ -1006,12 +1096,14 @@
 <span class="doccomment">/// gets the public key address of the given ID address
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateAccountKey&gt;
 </span><span class="kw">pub async fn </span>state_account_key&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, tipset_keys))): Params&lt;LotusJson&lt;(Address, TipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Address&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
+    <span class="kw">let </span>LotusJson((address, tipset_keys)): LotusJson&lt;(Address, TipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="prelude-val">Ok</span>(LotusJson(
         data.state_manager
             .resolve_to_deterministic_address(
@@ -1025,12 +1117,14 @@
 <span class="doccomment">/// retrieves the ID address of the given address
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateLookupID&gt;
 </span><span class="kw">pub async fn </span>state_lookup_id&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, tipset_keys))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Address&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
+    <span class="kw">let </span>LotusJson((address, tipset_keys)): LotusJson&lt;(Address, ApiTipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .chain_store
         .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tipset_keys.<span class="number">0</span>)<span class="question-mark">?</span>;
@@ -1042,9 +1136,12 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>state_get_actor&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;ActorState&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>state = data.state_manager.get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state());
     state.map(Into::into).map_err(|e| e.into())
@@ -1053,9 +1150,12 @@
 <span class="doccomment">/// looks up the Escrow and Locked balances of the given address in the Storage
 /// Market
 </span><span class="kw">pub async fn </span>state_market_balance&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MarketBalance, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
@@ -1066,14 +1166,16 @@
 }
 
 <span class="kw">pub async fn </span>state_market_deals&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;String, MarketDeal&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Market actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Market actor address could not be resolved"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>market_state =
         market::State::load(data.state_manager.blockstore(), actor.code, actor.state)<span class="question-mark">?</span>;
 
@@ -1101,9 +1203,12 @@
 
 <span class="doccomment">/// looks up the miner info of the given address.
 </span><span class="kw">pub async fn </span>state_miner_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;MinerInfo&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
@@ -1112,16 +1217,19 @@
 }
 
 <span class="kw">pub async fn </span>state_miner_active_sectors&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((miner, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;SectorOnChainInfo&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((miner, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>bs = data.state_manager.blockstore();
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>miner, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>miner_state = miner::State::load(bs, actor.code, actor.state)<span class="question-mark">?</span>;
 
     <span class="comment">// Collect active sectors from each partition in each deadline.
@@ -1144,16 +1252,19 @@
 
 <span class="comment">// Returns the number of sectors in a miner's sector set and proving set
 </span><span class="kw">pub async fn </span>state_miner_sector_count&lt;DB: Blockstore&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((miner, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;MinerSectors&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((miner, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>bs = data.state_manager.blockstore();
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>miner, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>miner_state = miner::State::load(bs, actor.code, actor.state)<span class="question-mark">?</span>;
 
     <span class="comment">// Collect live, active and faulty sectors count from each partition in each deadline.
@@ -1177,9 +1288,12 @@
 
 <span class="doccomment">/// looks up the miner power of the given address.
 </span><span class="kw">pub async fn </span>state_miner_power&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;MinerPower&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
@@ -1192,15 +1306,18 @@
 }
 
 <span class="kw">pub async fn </span>state_miner_deadlines&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiDeadline&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>res = Vec::new();
@@ -1215,15 +1332,18 @@
 }
 
 <span class="kw">pub async fn </span>state_miner_proving_deadline&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;DeadlineInfo&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Miner actor address could not be resolved"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(LotusJson(state.deadline_info(policy, ts.epoch())))
@@ -1231,9 +1351,12 @@
 
 <span class="doccomment">/// looks up the miner power of the given address.
 </span><span class="kw">pub async fn </span>state_miner_faults&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;BitField&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
@@ -1246,9 +1369,12 @@
 }
 
 <span class="kw">pub async fn </span>state_miner_recoveries&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((miner, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;BitField&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((miner, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
@@ -1262,9 +1388,11 @@
 
 <span class="doccomment">/// returns the message receipt for the given message
 </span><span class="kw">pub async fn </span>state_get_receipt&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid, ApiTipsetKey(key)))): Params&lt;LotusJson&lt;(Cid, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Receipt&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid, ApiTipsetKey(key))): LotusJson&lt;(Cid, ApiTipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = data
         .state_manager
@@ -1278,13 +1406,15 @@
 <span class="doccomment">/// looks back in the chain for a message. If not found, it blocks until the
 /// message arrives on chain, and gets to the indicated confidence depth.
 </span><span class="kw">pub async fn </span>state_wait_msg&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid, confidence))): Params&lt;LotusJson&lt;(Cid, i64)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MessageLookup, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid, confidence)): LotusJson&lt;(Cid, i64)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>(tipset, receipt) = state_manager.wait_for_message(cid, confidence).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>tipset = tipset.ok_or(<span class="string">"wait for msg returned empty tuple"</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>receipt = receipt.ok_or(<span class="string">"wait for msg returned empty receipt"</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>tipset = tipset.context(<span class="string">"wait for msg returned empty tuple"</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>receipt = receipt.context(<span class="string">"wait for msg returned empty receipt"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>ipld = receipt.return_data().deserialize().unwrap_or(Ipld::Null);
 
     <span class="prelude-val">Ok</span>(MessageLookup {
@@ -1299,9 +1429,11 @@
 <span class="doccomment">/// Searches for a message in the chain, and returns its receipt and the tipset where it was executed.
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateSearchMsg&gt;
 </span><span class="kw">pub async fn </span>state_search_msg&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid,))): Params&lt;LotusJson&lt;(Cid,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MessageLookup, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>(tipset, receipt) = state_manager
         .search_for_message(<span class="prelude-val">None</span>, cid, <span class="prelude-val">None</span>)
@@ -1322,9 +1454,11 @@
 <span class="doccomment">/// Looks back up to limit epochs in the chain for a message, and returns its receipt and the tipset where it was executed.
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateSearchMsgLimited&gt;
 </span><span class="kw">pub async fn </span>state_search_msg_limited&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((cid, look_back_limit))): Params&lt;LotusJson&lt;(Cid, i64)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MessageLookup, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((cid, look_back_limit)): LotusJson&lt;(Cid, i64)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>(tipset, receipt) = state_manager
         .search_for_message(<span class="prelude-val">None</span>, cid, <span class="prelude-val">Some</span>(look_back_limit))
@@ -1359,9 +1493,11 @@
 /// from the mainline blockchain, (2) fetching historical state-trees to verify past versions of the
 /// consensus rules.
 </span><span class="kw">pub async fn </span>state_fetch_root&lt;DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((root_cid, save_to_file))): Params&lt;LotusJson&lt;(Cid, <span class="prelude-ty">Option</span>&lt;PathBuf&gt;)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((root_cid, save_to_file)): LotusJson&lt;(Cid, <span class="prelude-ty">Option</span>&lt;PathBuf&gt;)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>network_send = data.network_send.clone();
     <span class="kw">let </span>db = data.chain_store.db.clone();
     drop(data);
@@ -1519,11 +1655,13 @@
 
 <span class="doccomment">/// Get randomness from tickets
 </span><span class="kw">pub async fn </span>state_get_randomness_from_tickets&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((personalization, rand_epoch, entropy, ApiTipsetKey(tsk)))): Params&lt;
-        LotusJson&lt;RandomnessParams&gt;,
-    &gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;u8&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((personalization, rand_epoch, entropy, ApiTipsetKey(tsk))): LotusJson&lt;
+        RandomnessParams,
+    &gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = state_manager
         .chain_store()
@@ -1544,11 +1682,13 @@
 
 <span class="doccomment">/// Get randomness from beacon
 </span><span class="kw">pub async fn </span>state_get_randomness_from_beacon&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((personalization, rand_epoch, entropy, ApiTipsetKey(tsk)))): Params&lt;
-        LotusJson&lt;RandomnessParams&gt;,
-    &gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;u8&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((personalization, rand_epoch, entropy, ApiTipsetKey(tsk))): LotusJson&lt;
+        RandomnessParams,
+    &gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = state_manager
         .chain_store()
@@ -1569,19 +1709,21 @@
 
 <span class="doccomment">/// Get read state
 </span><span class="kw">pub async fn </span>state_read_state&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;ApiActorState&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Actor address could not be resolved"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>blk = data
         .state_manager
         .blockstore()
         .get(<span class="kw-2">&amp;</span>actor.state)<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Failed to get block from blockstore"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Failed to get block from blockstore"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>state = fvm_ipld_encoding::from_slice::&lt;Vec&lt;Cid&gt;&gt;(<span class="kw-2">&amp;</span>blk)<span class="question-mark">?</span>[<span class="number">0</span>];
 
     <span class="prelude-val">Ok</span>(LotusJson(ApiActorState::new(
@@ -1592,9 +1734,11 @@
 }
 
 <span class="kw">pub async fn </span>state_circulating_supply&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>height = ts.epoch();
@@ -1612,16 +1756,18 @@
 }
 
 <span class="kw">pub async fn </span>msig_get_available_balance&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>height = ts.epoch();
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"MultiSig actor not found"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"MultiSig actor not found"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>actor_balance = TokenAmount::from(<span class="kw-2">&amp;</span>actor.balance);
     <span class="kw">let </span>ms = multisig::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
     <span class="kw">let </span>locked_balance = ms.locked_balance(height)<span class="question-mark">?</span>.into();
@@ -1630,15 +1776,17 @@
 }
 
 <span class="kw">pub async fn </span>msig_get_pending&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Transaction&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"MultiSig actor not found"</span>)<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"MultiSig actor not found"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>ms = multisig::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
     <span class="kw">let </span>txns = ms
         .get_pending_txn(store)<span class="question-mark">?
@@ -1658,11 +1806,12 @@
 
 <span class="doccomment">/// Get state sector info using sector no
 </span><span class="kw">pub async fn </span>state_sector_get_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, sector_no, ApiTipsetKey(tsk)))): Params&lt;
-        LotusJson&lt;(Address, u64, ApiTipsetKey)&gt;,
-    &gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;SectorOnChainInfo&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, sector_no, ApiTipsetKey(tsk))): LotusJson&lt;(Address, u64, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(LotusJson(
@@ -1671,14 +1820,16 @@
             </span>.into_iter()
             .find(|info| info.sector_number == sector_no)
             .map(SectorOnChainInfo::from)
-            .ok_or(<span class="macro">format!</span>(<span class="string">"Info for sector number {sector_no} not found"</span>))<span class="question-mark">?</span>,
+            .context(<span class="macro">format!</span>(<span class="string">"Info for sector number {sector_no} not found"</span>))<span class="question-mark">?</span>,
     ))
 }
 
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_verified_client_status&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((addr, ApiTipsetKey(tsk)))): Params&lt;LotusJson&lt;(Address, ApiTipsetKey)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;BigInt&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>status = data.state_manager.verified_client_status(<span class="kw-2">&amp;</span>addr, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(status.into())
@@ -1687,9 +1838,11 @@
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_vm_circulating_supply_internal&lt;
     DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 &gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;CirculatingSupply&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(data.state_manager.chain_config());
@@ -1703,17 +1856,18 @@
 
 <span class="doccomment">/// Looks back and returns all messages with a matching to or from address, stopping at the given height.
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_list_messages&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((from_to, tsk, max_height))): Params&lt;
-        LotusJson&lt;(MessageFilter, ApiTipsetKey, i64)&gt;,
-    &gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Cid&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((from_to, tsk, max_height)): LotusJson&lt;(MessageFilter, ApiTipsetKey, i64)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .chain_store
         .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk.<span class="number">0</span>)<span class="question-mark">?</span>;
 
     <span class="kw">if </span>from_to.is_empty() {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"must specify at least To or From in message filter"</span>.into());
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"must specify at least To or From in message filter"</span>).into());
     } <span class="kw">else if let </span><span class="prelude-val">Some</span>(to) = from_to.to {
         <span class="comment">// this is following lotus logic, it probably should be `if let` instead of `else if let`
         // see &lt;https://github.com/ChainSafe/forest/pull/3827#discussion_r1462691005&gt;
@@ -1753,7 +1907,7 @@
             .chain_store()
             .chain_index
             .load_tipset(cur_ts.parents())<span class="question-mark">?
-            </span>.ok_or(<span class="string">"failed to load next tipset"</span>)<span class="question-mark">?</span>;
+            </span>.context(<span class="string">"failed to load next tipset"</span>)<span class="question-mark">?</span>;
         cur_ts = next;
     }
 
@@ -1761,9 +1915,11 @@
 }
 
 <span class="kw">pub async fn </span>state_list_miners&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Address&gt;&gt;, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
@@ -1772,7 +1928,7 @@
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Power actor not found"</span>.to_string())<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Power actor not found"</span>.to_string())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>state = power::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
     <span class="kw">let </span>miners = state

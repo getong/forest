@@ -160,6 +160,16 @@
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2023 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -168,38 +178,41 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::SignedMessage;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::shim::{
-    address::{Address, Protocol},
-    message::Message,
-};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ApiTipsetKey, Data, MessageSendSpec, RPCState};
+<span class="kw">use </span><span class="kw">crate</span>::shim::{address::Protocol, message::Message};
 
 <span class="kw">use </span>ahash::{HashSet, HashSetExt};
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpc_v2::{Data, Error <span class="kw">as </span>JsonRpcError, Params};
+<span class="kw">use </span>jsonrpsee::types::Params;
 
 <span class="kw">use </span><span class="kw">super</span>::gas_api::estimate_message_gas;
 
 <span class="doccomment">/// Gets next nonce for the specified sender.
 </span><span class="kw">pub async fn </span>mpool_get_nonce&lt;DB&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((address,))): Params&lt;LotusJson&lt;(Address,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;u64, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
+    <span class="kw">let </span>LotusJson((address,)) = params.parse()<span class="question-mark">?</span>;
+
     <span class="prelude-val">Ok</span>(data.mpool.get_sequence(<span class="kw-2">&amp;</span>address)<span class="question-mark">?</span>)
 }
 
 <span class="doccomment">/// Return `Vec` of pending messages in `mpool`
 </span><span class="kw">pub async fn </span>mpool_pending&lt;DB&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((ApiTipsetKey(tsk),))): Params&lt;LotusJson&lt;(ApiTipsetKey,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;SignedMessage&gt;&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
+    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span><span class="kw-2">mut </span>ts = data
         .state_manager
         .chain_store()
@@ -262,12 +275,14 @@
 
 <span class="doccomment">/// Add `SignedMessage` to `mpool`, return message CID
 </span><span class="kw">pub async fn </span>mpool_push&lt;DB&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((signed_message,))): Params&lt;LotusJson&lt;(SignedMessage,)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Cid&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
+    <span class="kw">let </span>LotusJson((signed_message,)) = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>cid = data.mpool.as_ref().push(signed_message).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(cid.into())
@@ -275,12 +290,14 @@
 
 <span class="doccomment">/// Sign given `UnsignedMessage` and add it to `mpool`, return `SignedMessage`
 </span><span class="kw">pub async fn </span>mpool_push_message&lt;DB&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Data&lt;RPCState&lt;DB&gt;&gt;,
-    Params(LotusJson((umsg, spec))): Params&lt;LotusJson&lt;(Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;)&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;SignedMessage&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
+    <span class="kw">let </span>LotusJson((umsg, spec)): LotusJson&lt;(Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;)&gt; = params.parse()<span class="question-mark">?</span>;
+
     <span class="kw">let </span>from = umsg.from;
 
     <span class="kw">let </span><span class="kw-2">mut </span>keystore = data.keystore.as_ref().write().<span class="kw">await</span>;
@@ -291,13 +308,16 @@
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">if </span>umsg.sequence != <span class="number">0 </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(
-            <span class="string">"Expected nonce for MpoolPushMessage is 0, and will be calculated for you."</span>.into(),
-        );
+        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(
+            <span class="string">"Expected nonce for MpoolPushMessage is 0, and will be calculated for you"
+        </span>)
+        .into());
     }
     <span class="kw">let </span><span class="kw-2">mut </span>umsg = estimate_message_gas::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, umsg, spec, Default::default()).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">if </span>umsg.gas_premium &gt; umsg.gas_fee_cap {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"After estimation, gas premium is greater than gas fee cap"</span>.into());
+        <span class="kw">return </span><span class="prelude-val">Err</span>(
+            <span class="macro">anyhow::anyhow!</span>(<span class="string">"After estimation, gas premium is greater than gas fee cap"</span>).into(),
+        );
     }
 
     <span class="kw">if </span>from.protocol() == Protocol::ID {
