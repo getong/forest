@@ -126,11 +126,10 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span>tracing::{info, trace};
+</span><span class="kw">use </span>tracing::{debug, info, trace};
 
 <span class="kw">use crate</span>::{
     libp2p::Keypair,
@@ -143,7 +142,7 @@
 <span class="doccomment">/// Returns the libp2p key-pair for the node, generating a new one if it doesn't exist
 /// in the data directory.
 </span><span class="kw">pub fn </span>get_or_create_keypair(data_dir: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;Keypair&gt; {
-    <span class="kw">match </span>get_keypair(data_dir) {
+    <span class="kw">match </span>get_keypair(<span class="kw-2">&amp;</span>data_dir.join(KEYPAIR_FILE)) {
         <span class="prelude-val">Some</span>(keypair) =&gt; <span class="prelude-val">Ok</span>(keypair),
         <span class="prelude-val">None </span>=&gt; create_and_save_keypair(data_dir),
     }
@@ -172,9 +171,8 @@
 }
 
 <span class="comment">// Fetch key-pair from disk, returning none if it cannot be decoded.
-</span><span class="kw">fn </span>get_keypair(data_dir: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Option</span>&lt;Keypair&gt; {
-    <span class="kw">let </span>path_to_file = data_dir.join(KEYPAIR_FILE);
-    <span class="kw">match </span>read_file_to_vec(<span class="kw-2">&amp;</span>path_to_file) {
+</span><span class="kw">pub fn </span>get_keypair(path_to_file: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Option</span>&lt;Keypair&gt; {
+    <span class="kw">match </span>read_file_to_vec(path_to_file) {
         <span class="prelude-val">Err</span>(e) =&gt; {
             <span class="macro">info!</span>(<span class="string">"Networking keystore not found!"</span>);
             <span class="macro">trace!</span>(<span class="string">"Error {e}"</span>);
@@ -182,7 +180,7 @@
         </span>}
         <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>vec) =&gt; <span class="kw">match </span><span class="kw">crate</span>::libp2p::ed25519::Keypair::try_from_bytes(<span class="kw-2">&amp;mut </span>vec) {
             <span class="prelude-val">Ok</span>(kp) =&gt; {
-                <span class="macro">info!</span>(<span class="string">"Recovered libp2p keypair from {}"</span>, path_to_file.display());
+                <span class="macro">debug!</span>(<span class="string">"Recovered libp2p keypair from {}"</span>, path_to_file.display());
                 <span class="prelude-val">Some</span>(kp.into())
             }
             <span class="prelude-val">Err</span>(e) =&gt; {
