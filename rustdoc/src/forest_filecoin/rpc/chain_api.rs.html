@@ -699,8 +699,6 @@
 <a href="#698" id="698">698</a>
 <a href="#699" id="699">699</a>
 <a href="#700" id="700">700</a>
-<a href="#701" id="701">701</a>
-<a href="#702" id="702">702</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -878,7 +876,7 @@
         .into());
     }
 
-    <span class="kw">let </span>head = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>head = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>start_ts =
         data.chain_store
             .chain_index
@@ -1000,12 +998,10 @@
     to: <span class="kw-2">&amp;</span>TipsetKey,
 ) -&gt; anyhow::Result&lt;Vec&lt;PathChange&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>to_revert = chain_store
-        <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/3974
-        //                  refactor this method
-        </span>.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(from.clone()))
+        .load_required_tipset_or_heaviest(from)
         .context(<span class="string">"couldn't load `from`"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>to_apply = chain_store
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(to.clone()))
+        .load_required_tipset_or_heaviest(to)
         .context(<span class="string">"couldn't load `to`"</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>all_reverts = <span class="macro">vec!</span>[];
@@ -1016,13 +1012,13 @@
     </span><span class="kw">while </span>to_revert != to_apply {
         <span class="kw">if </span>to_revert.epoch() &gt; to_apply.epoch() {
             <span class="kw">let </span>next = chain_store
-                .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(to_revert.parents().clone()))
+                .load_required_tipset_or_heaviest(to_revert.parents())
                 .context(<span class="string">"couldn't load ancestor of `from`"</span>)<span class="question-mark">?</span>;
             all_reverts.push(to_revert);
             to_revert = next;
         } <span class="kw">else </span>{
             <span class="kw">let </span>next = chain_store
-                .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(to_apply.parents().clone()))
+                .load_required_tipset_or_heaviest(to_apply.parents())
                 .context(<span class="string">"couldn't load ancestor of `to`"</span>)<span class="question-mark">?</span>;
             all_applies.push(to_apply);
             to_apply = next;
@@ -1045,7 +1041,7 @@
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>tss = data
         .state_manager
         .chain_store()
@@ -1091,7 +1087,7 @@
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>ts).clone().into())
 }
 
@@ -1106,7 +1102,7 @@
     <span class="kw">let </span>new_head = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>current = data.state_manager.chain_store().heaviest_tipset();
     <span class="kw">while </span>current.epoch() &gt;= new_head.epoch() {
         <span class="kw">for </span>cid <span class="kw">in </span>current.key().cids.clone() {

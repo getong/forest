@@ -972,8 +972,6 @@
 <a href="#971" id="971">971</a>
 <a href="#972" id="972">972</a>
 <a href="#973" id="973">973</a>
-<a href="#974" id="974">974</a>
-<a href="#975" id="975">975</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1030,7 +1028,7 @@
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     data.state_manager
         .miner_get_base_info(data.state_manager.beacon_schedule(), ts, address, epoch)
@@ -1048,7 +1046,7 @@
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
     <span class="comment">// Handle expensive fork error?
     // TODO(elmattic): https://github.com/ChainSafe/forest/issues/3733
     </span><span class="prelude-val">Ok</span>(state_manager.call(<span class="kw-2">&amp;</span>message, <span class="prelude-val">Some</span>(tipset))<span class="question-mark">?</span>)
@@ -1066,7 +1064,7 @@
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
     <span class="kw">let </span>(msg, ret) = state_manager.replay(<span class="kw-2">&amp;</span>tipset, cid).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(InvocResult {
@@ -1094,7 +1092,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkVersion, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(data.state_manager.get_network_version(ts.epoch()))
 }
 
@@ -1132,7 +1130,7 @@
 
     <span class="kw">let </span>ts = data
         .chain_store
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tipset_keys.<span class="number">0</span>)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tipset_keys.<span class="number">0</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>ret = data
         .state_manager
         .lookup_id(<span class="kw-2">&amp;</span>address, ts.as_ref())<span class="question-mark">?
@@ -1147,7 +1145,7 @@
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>state = data.state_manager.get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state());
     state.map(Into::into).map_err(|e| e.into())
 }
@@ -1164,7 +1162,7 @@
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
     data.state_manager
         .market_balance(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>tipset)
         .map_err(|e| e.into())
@@ -1176,7 +1174,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;String, MarketDeal&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
@@ -1217,7 +1215,7 @@
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(LotusJson(data.state_manager.miner_info(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>))
 }
 
@@ -1229,7 +1227,7 @@
         params.parse()<span class="question-mark">?</span>;
 
     <span class="kw">let </span>bs = data.state_manager.blockstore();
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
@@ -1264,7 +1262,7 @@
         params.parse()<span class="question-mark">?</span>;
 
     <span class="kw">let </span>bs = data.state_manager.blockstore();
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
@@ -1302,7 +1300,7 @@
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
 
     data.state_manager
         .miner_power(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>tipset)
@@ -1317,7 +1315,7 @@
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
@@ -1343,7 +1341,7 @@
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>data.state_manager.chain_config().policy;
     <span class="kw">let </span>actor = data
         .state_manager
@@ -1365,7 +1363,7 @@
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
 
     data.state_manager
         .miner_faults(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)
@@ -1383,7 +1381,7 @@
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     data.state_manager
         .miner_recoveries(<span class="kw-2">&amp;</span>miner, <span class="kw-2">&amp;</span>ts)
@@ -1402,7 +1400,7 @@
     <span class="kw">let </span>tipset = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
     state_manager
         .get_receipt(tipset, cid)
         .map(|s| s.into())
@@ -1670,7 +1668,7 @@
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>chain_config = state_manager.chain_config();
     <span class="kw">let </span>chain_index = <span class="kw-2">&amp;</span>data.chain_store.chain_index;
     <span class="kw">let </span>beacon = state_manager.beacon_schedule();
@@ -1697,7 +1695,7 @@
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>tipset = state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>chain_config = state_manager.chain_config();
     <span class="kw">let </span>chain_index = <span class="kw-2">&amp;</span>data.chain_store.chain_index;
     <span class="kw">let </span>beacon = state_manager.beacon_schedule();
@@ -1719,7 +1717,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;ApiActorState&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
@@ -1744,7 +1742,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>height = ts.epoch();
 
@@ -1766,7 +1764,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>height = ts.epoch();
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>actor = data
@@ -1786,7 +1784,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Transaction&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>actor = data
         .state_manager
@@ -1817,7 +1815,7 @@
     <span class="kw">let </span>LotusJson((addr, sector_no, ApiTipsetKey(tsk))): LotusJson&lt;(Address, u64, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(LotusJson(
         data.state_manager
@@ -1835,7 +1833,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;BigInt&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>status = data.state_manager.verified_client_status(<span class="kw-2">&amp;</span>addr, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(status.into())
 }
@@ -1848,7 +1846,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;CirculatingSupply&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(data.state_manager.chain_config());
 
@@ -1867,9 +1865,7 @@
     <span class="kw">let </span>LotusJson((from_to, tsk, max_height)): LotusJson&lt;(MessageFilter, ApiTipsetKey, i64)&gt; =
         params.parse()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>ts = data
-        .chain_store
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk.<span class="number">0</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk.<span class="number">0</span>)<span class="question-mark">?</span>;
 
     <span class="kw">if </span>from_to.is_empty() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorObject::owned(
@@ -1933,7 +1929,7 @@
     <span class="kw">let </span>ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_with_fallback(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>store = data.state_manager.blockstore();
     <span class="kw">let </span>actor = data
         .state_manager
