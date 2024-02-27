@@ -455,7 +455,7 @@ OPTIONS:
 </span><span class="kw">pub struct </span>CliOpts {
     <span class="doccomment">/// A TOML file containing relevant configurations
     </span><span class="attr">#[arg(short, long)]
-    </span><span class="kw">pub </span>config: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    </span><span class="kw">pub </span>config: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     <span class="doccomment">/// The genesis CAR file
     </span><span class="attr">#[arg(short, long)]
     </span><span class="kw">pub </span>genesis: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -566,7 +566,7 @@ OPTIONS:
 
 <span class="kw">impl </span>CliOpts {
     <span class="kw">pub fn </span>to_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(Config, <span class="prelude-ty">Option</span>&lt;ConfigPath&gt;), anyhow::Error&gt; {
-        <span class="kw">let </span>(path, <span class="kw-2">mut </span>cfg) = read_config(<span class="kw-2">&amp;</span><span class="self">self</span>.config, <span class="kw-2">&amp;</span><span class="self">self</span>.chain)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(path, <span class="kw-2">mut </span>cfg) = read_config(<span class="self">self</span>.config.as_ref(), <span class="self">self</span>.chain.clone())<span class="question-mark">?</span>;
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(genesis_file) = <span class="kw-2">&amp;</span><span class="self">self</span>.genesis {
             cfg.client.genesis_file = <span class="prelude-val">Some</span>(genesis_file.to_owned());
@@ -665,9 +665,9 @@ OPTIONS:
     }
 }
 
-<span class="kw">pub fn </span>find_config_path(config: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;ConfigPath&gt; {
+<span class="kw">pub fn </span>find_config_path(config: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>PathBuf&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;ConfigPath&gt; {
     <span class="kw">if let </span><span class="prelude-val">Some</span>(s) = config {
-        <span class="kw">return </span><span class="prelude-val">Some</span>(ConfigPath::Cli(PathBuf::from(s)));
+        <span class="kw">return </span><span class="prelude-val">Some</span>(ConfigPath::Cli(s.to_owned()));
     }
     <span class="kw">if let </span><span class="prelude-val">Ok</span>(s) = std::env::var(<span class="string">"FOREST_CONFIG_PATH"</span>) {
         <span class="kw">return </span><span class="prelude-val">Some</span>(ConfigPath::Env(PathBuf::from(s)));

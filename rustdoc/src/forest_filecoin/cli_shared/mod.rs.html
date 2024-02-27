@@ -83,7 +83,6 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -106,8 +105,8 @@
 }
 
 <span class="kw">pub fn </span>read_config(
-    config_path_opt: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;String&gt;,
-    chain_opt: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;NetworkChain&gt;,
+    config_path_opt: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>PathBuf&gt;,
+    chain_opt: <span class="prelude-ty">Option</span>&lt;NetworkChain&gt;,
 ) -&gt; anyhow::Result&lt;(<span class="prelude-ty">Option</span>&lt;ConfigPath&gt;, Config)&gt; {
     <span class="kw">let </span>(path, <span class="kw-2">mut </span>config) = <span class="kw">match </span>find_config_path(config_path_opt) {
         <span class="prelude-val">Some</span>(path) =&gt; {
@@ -119,7 +118,7 @@
         <span class="prelude-val">None </span>=&gt; (<span class="prelude-val">None</span>, Config::default()),
     };
     <span class="kw">if let </span><span class="prelude-val">Some</span>(chain) = chain_opt {
-        config.chain = chain.clone();
+        config.chain = chain;
     }
     <span class="prelude-val">Ok</span>((path, config))
 }
@@ -130,7 +129,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>read_config_default() {
-        <span class="kw">let </span>(config_path, config) = read_config(<span class="kw-2">&amp;</span><span class="prelude-val">None</span>, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>).unwrap();
+        <span class="kw">let </span>(config_path, config) = read_config(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>).unwrap();
 
         <span class="macro">assert!</span>(config_path.is_none());
         <span class="macro">assert_eq!</span>(config.chain, NetworkChain::Mainnet);
@@ -138,7 +137,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>read_config_calibnet_override() {
-        <span class="kw">let </span>(config_path, config) = read_config(<span class="kw-2">&amp;</span><span class="prelude-val">None</span>, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(NetworkChain::Calibnet)).unwrap();
+        <span class="kw">let </span>(config_path, config) = read_config(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(NetworkChain::Calibnet)).unwrap();
 
         <span class="macro">assert!</span>(config_path.is_none());
         <span class="macro">assert_eq!</span>(config.chain, NetworkChain::Calibnet);
@@ -146,7 +145,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>read_config_butterflynet_override() {
-        <span class="kw">let </span>(config_path, config) = read_config(<span class="kw-2">&amp;</span><span class="prelude-val">None</span>, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(NetworkChain::Butterflynet)).unwrap();
+        <span class="kw">let </span>(config_path, config) = read_config(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(NetworkChain::Butterflynet)).unwrap();
 
         <span class="macro">assert!</span>(config_path.is_none());
         <span class="macro">assert_eq!</span>(config.chain, NetworkChain::Butterflynet);
@@ -159,8 +158,7 @@
         <span class="kw">let </span>serialized_config = toml::to_string(<span class="kw-2">&amp;</span>default_config).unwrap();
         std::fs::write(path.clone(), serialized_config).unwrap();
 
-        <span class="kw">let </span>(config_path, config) =
-            read_config(<span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(path.to_str().unwrap().into()), <span class="kw-2">&amp;</span><span class="prelude-val">None</span>).unwrap();
+        <span class="kw">let </span>(config_path, config) = read_config(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>path), <span class="prelude-val">None</span>).unwrap();
 
         <span class="macro">assert_eq!</span>(config_path.unwrap(), ConfigPath::Cli(path));
         <span class="macro">assert_eq!</span>(config.chain, NetworkChain::Mainnet);
