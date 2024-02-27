@@ -103,6 +103,51 @@ fn main() -> Result<(), Box<dyn Error>> {
         }),
     )?;
 
+    let tuple_impls2_rs = PathBuf::from(env::var("OUT_DIR")?).join("tuple_impls2.rs");
+    let mut impls2 = vec![];
+
+    for num_tuples in 0..=12 {
+        let (ty_params, _) = vars(num_tuples);
+        let arity = ty_params.len();
+        let ixs = 0..arity;
+
+        impls2.push(parse_quote! {
+            #[automatically_derived]
+            impl<'de, F, Fut, T, #(#ty_params,)*> GetReturningSignature<#arity, (#(#ty_params,)*)> for F
+            where
+                F: FnOnce(#(#ty_params,)*) -> Fut,
+                Fut: Future<Output = Result<T, Error>>,
+                #(#ty_params: JsonSchema + Deserialize<'de>,)*
+                T: JsonSchema + Deserialize<'de>,
+            {
+                fn get_returning_signature(
+                    param_names: [&str; #arity],
+                    return_name: &str,
+                    calling_convention: ParamStructure,
+                    gen: &mut SchemaGenerator,
+                ) -> Signature {
+                    Signature {
+                        params: Params::new([
+                            #(content_descriptor::<#ty_params>(param_names[#ixs], gen),)*
+                        ])
+                        .unwrap(),
+                        calling_convention,
+                        return_type: Some(content_descriptor::<T>(return_name, gen)),
+                    }
+                }
+            }
+        });
+    }
+
+    std::fs::write(
+        tuple_impls2_rs,
+        prettyplease::unparse(&syn::File {
+            shebang: None,
+            attrs: Vec::new(),
+            items: impls2.into_iter().map(syn::Item::Impl).collect(),
+        }),
+    )?;
+
     Ok(())
 }
 

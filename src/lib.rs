@@ -3,7 +3,9 @@ mod jsonrpc_types;
 #[allow(unused)]
 mod openrpc_types;
 
-use std::{any::Any, collections::BTreeMap};
+mod lib2;
+
+use std::{any::Any, collections::BTreeMap, convert::Infallible};
 
 use itertools::Itertools as _;
 use jsonrpc_types::{Error, Request, RequestParameters, Response};
@@ -11,6 +13,13 @@ use openrpc_types::{ContentDescriptor, ParamListError, ParamStructure, Params};
 use schemars::{gen::SchemaGenerator, JsonSchema};
 use serde::Deserialize;
 use serde_json::{json, Value};
+
+pub struct SelfDescribingService<T> {
+    service: T,
+    params: Params,
+    calling_convention: ParamStructure,
+    return_type: Option<ContentDescriptor>,
+}
 
 include!(concat!(env!("OUT_DIR"), "/tuple_impls.rs"));
 

@@ -77,6 +77,12 @@ pub struct Params {
 pub struct ParamListError(String);
 
 impl Params {
+    pub fn empty() -> Self {
+        Self::default()
+    }
+    pub fn just(param: ContentDescriptor) -> Self {
+        Self { inner: vec![param] }
+    }
     pub fn new(
         params: impl IntoIterator<Item = ContentDescriptor>,
     ) -> Result<Self, ParamListError> {
