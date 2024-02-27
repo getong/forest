@@ -18,6 +18,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["argon2",["",[],["algorithm.rs","blake2b_long.rs","block.rs","error.rs","lib.rs","params.rs","version.rs"]]],\
 ["arrayref",["",[],["lib.rs"]]],\
 ["arrayvec",["",[],["array_string.rs","arrayvec.rs","arrayvec_impl.rs","char.rs","errors.rs","lib.rs","utils.rs"]]],\
+["asn1_der",["",[["typed",[],["boolean.rs","integer.rs","mod.rs","null.rs","octet_string.rs","sequence.rs","utf8_string.rs"]]],["data.rs","der.rs","error.rs","lib.rs"]]],\
 ["async_channel",["",[],["lib.rs"]]],\
 ["async_compression",["",[["codec",[["zstd",[],["decoder.rs","encoder.rs","mod.rs"]]],["mod.rs"]],["tokio",[["bufread",[["generic",[],["decoder.rs","encoder.rs","mod.rs"]],["macros",[],["decoder.rs","encoder.rs","mod.rs"]]],["mod.rs"]],["write",[["generic",[],["decoder.rs","encoder.rs","mod.rs"]],["macros",[],["decoder.rs","encoder.rs","mod.rs"]]],["buf_write.rs","buf_writer.rs","mod.rs"]]],["mod.rs"]]],["lib.rs","macros.rs","unshared.rs","util.rs","zstd.rs"]]],\
 ["async_fs",["",[],["lib.rs"]]],\
@@ -33,6 +34,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["axum_core",["",[["ext_traits",[],["mod.rs","request.rs","request_parts.rs"]],["extract",[],["default_body_limit.rs","from_ref.rs","mod.rs","rejection.rs","request_parts.rs","tuple.rs"]],["response",[],["append_headers.rs","into_response.rs","into_response_parts.rs","mod.rs"]]],["body.rs","error.rs","lib.rs","macros.rs"]]],\
 ["backoff",["",[],["backoff.rs","clock.rs","default.rs","error.rs","exponential.rs","future.rs","lib.rs","retry.rs"]]],\
 ["backtrace",["",[["backtrace",[],["libunwind.rs","mod.rs"]],["symbolize",[["gimli",[],["elf.rs","libs_dl_iterate_phdr.rs","mmap_unix.rs","parse_running_mmaps_unix.rs","stash.rs"]]],["gimli.rs","mod.rs"]]],["capture.rs","lib.rs","print.rs","types.rs"]]],\
+["base16ct",["",[],["display.rs","error.rs","lib.rs","lower.rs","mixed.rs","upper.rs"]]],\
 ["base64",["",[["engine",[["general_purpose",[],["decode.rs","decode_suffix.rs","mod.rs"]]],["mod.rs"]],["read",[],["decoder.rs","mod.rs"]],["write",[],["encoder.rs","encoder_string_writer.rs","mod.rs"]]],["alphabet.rs","chunked_encoder.rs","decode.rs","display.rs","encode.rs","lib.rs","prelude.rs"]]],\
 ["base64ct",["",[["alphabet",[],["bcrypt.rs","crypt.rs","shacrypt.rs","standard.rs","url.rs"]]],["alphabet.rs","decoder.rs","encoder.rs","encoding.rs","errors.rs","lib.rs","line_ending.rs"]]],\
 ["base_x",["",[],["alphabet.rs","bigint.rs","decoder.rs","encoder.rs","lib.rs"]]],\
@@ -90,6 +92,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["console",["",[],["ansi.rs","common_term.rs","kb.rs","lib.rs","term.rs","unix_term.rs","utils.rs"]]],\
 ["console_api",["",[["generated",[],["rs.tokio.console.async_ops.rs","rs.tokio.console.common.rs","rs.tokio.console.instrument.rs","rs.tokio.console.resources.rs","rs.tokio.console.tasks.rs","rs.tokio.console.trace.rs"]]],["async_ops.rs","common.rs","instrument.rs","lib.rs","resources.rs","tasks.rs","trace.rs"]]],\
 ["console_subscriber",["",[["aggregator",[],["id_data.rs","mod.rs","shrink.rs"]]],["attribute.rs","builder.rs","callsites.rs","lib.rs","record.rs","stack.rs","stats.rs","sync.rs","visitors.rs"]]],\
+["const_oid",["",[],["arcs.rs","checked.rs","encoder.rs","error.rs","lib.rs","parser.rs"]]],\
 ["constant_time_eq",["",[],["lib.rs"]]],\
 ["convert_case",["",[],["case.rs","converter.rs","lib.rs","pattern.rs","segmentation.rs"]]],\
 ["core2",["",[["io",[],["cursor.rs","error.rs","impls.rs","mod.rs","traits.rs","util.rs"]]],["error.rs","lib.rs"]]],\
@@ -112,6 +115,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["crossbeam_queue",["",[],["array_queue.rs","lib.rs","seg_queue.rs"]]],\
 ["crossbeam_utils",["",[["atomic",[],["atomic_cell.rs","consume.rs","mod.rs","seq_lock.rs"]],["sync",[],["mod.rs","once_lock.rs","parker.rs","sharded_lock.rs","wait_group.rs"]]],["backoff.rs","cache_padded.rs","lib.rs","thread.rs"]]],\
 ["crunchy",["",[],["lib.rs"]]],\
+["crypto_bigint",["",[["limb",[],["add.rs","bit_and.rs","bit_not.rs","bit_or.rs","bit_xor.rs","bits.rs","cmp.rs","encoding.rs","from.rs","mul.rs","neg.rs","rand.rs","shl.rs","shr.rs","sub.rs"]],["uint",[["modular",[["constant_mod",[],["const_add.rs","const_inv.rs","const_mul.rs","const_neg.rs","const_pow.rs","const_sub.rs","macros.rs"]],["runtime_mod",[],["runtime_add.rs","runtime_inv.rs","runtime_mul.rs","runtime_neg.rs","runtime_pow.rs","runtime_sub.rs"]]],["add.rs","constant_mod.rs","div_by_2.rs","inv.rs","mul.rs","pow.rs","reduction.rs","runtime_mod.rs","sub.rs"]]],["add.rs","add_mod.rs","array.rs","bit_and.rs","bit_not.rs","bit_or.rs","bit_xor.rs","bits.rs","cmp.rs","concat.rs","div.rs","div_limb.rs","encoding.rs","from.rs","inv_mod.rs","macros.rs","modular.rs","mul.rs","mul_mod.rs","neg.rs","neg_mod.rs","rand.rs","resize.rs","shl.rs","shr.rs","split.rs","sqrt.rs","sub.rs","sub_mod.rs"]]],["array.rs","checked.rs","ct_choice.rs","lib.rs","limb.rs","macros.rs","non_zero.rs","traits.rs","uint.rs","wrapping.rs"]]],\
 ["crypto_common",["",[],["lib.rs"]]],\
 ["crypto_secretbox",["",[],["lib.rs"]]],\
 ["cs_serde_bytes",["",[],["bytebuf.rs","bytes.rs","de.rs","lib.rs","ser.rs"]]],\
@@ -125,6 +129,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["data_encoding_macro_internal",["",[],["lib.rs"]]],\
 ["debugid",["",[],["lib.rs"]]],\
 ["deprecate_until",["",[],["lib.rs"]]],\
+["der",["",[["asn1",[["integer",[],["int.rs","uint.rs"]]],["any.rs","bit_string.rs","bmp_string.rs","boolean.rs","choice.rs","context_specific.rs","generalized_time.rs","ia5_string.rs","integer.rs","internal_macros.rs","null.rs","octet_string.rs","oid.rs","optional.rs","printable_string.rs","sequence.rs","sequence_of.rs","set_of.rs","teletex_string.rs","utc_time.rs","utf8_string.rs","videotex_string.rs"]],["reader",[],["nested.rs","pem.rs","slice.rs"]],["tag",[],["class.rs","mode.rs","number.rs"]],["writer",[],["pem.rs","slice.rs"]]],["arrayvec.rs","asn1.rs","bytes_owned.rs","bytes_ref.rs","datetime.rs","decode.rs","document.rs","encode.rs","encode_ref.rs","error.rs","header.rs","length.rs","lib.rs","ord.rs","reader.rs","referenced.rs","str_owned.rs","str_ref.rs","tag.rs","writer.rs"]]],\
 ["deranged",["",[],["lib.rs","traits.rs","unsafe_wrapper.rs"]]],\
 ["derive_arbitrary",["",[],["container_attributes.rs","field_attributes.rs","lib.rs"]]],\
 ["derive_more",["",[],["add_assign_like.rs","add_helpers.rs","add_like.rs","as_mut.rs","as_ref.rs","constructor.rs","deref.rs","deref_mut.rs","display.rs","error.rs","from.rs","from_str.rs","index.rs","index_mut.rs","into.rs","into_iterator.rs","is_variant.rs","lib.rs","mul_assign_like.rs","mul_helpers.rs","mul_like.rs","not_like.rs","parsing.rs","sum_like.rs","try_into.rs","unwrap.rs","utils.rs"]]],\
@@ -137,9 +142,11 @@ var srcIndex = new Map(JSON.parse('[\
 ["dtoa",["",[],["diyfp.rs","dtoa.rs","lib.rs"]]],\
 ["ec_gpu",["",[],["lib.rs"]]],\
 ["ec_gpu_gen",["",[],["error.rs","fft_cpu.rs","lib.rs","multiexp_cpu.rs","source.rs","threadpool.rs"]]],\
+["ecdsa",["",[],["der.rs","hazmat.rs","lib.rs","normalized.rs","recovery.rs","signing.rs","verifying.rs"]]],\
 ["ed25519",["",[],["hex.rs","lib.rs"]]],\
 ["ed25519_dalek",["",[],["constants.rs","errors.rs","hazmat.rs","lib.rs","signature.rs","signing.rs","verifying.rs"]]],\
 ["either",["",[],["iterator.rs","lib.rs"]]],\
+["elliptic_curve",["",[["point",[],["non_identity.rs"]],["scalar",[],["blinded.rs","nonzero.rs","primitive.rs"]],["secret_key",[],["pkcs8.rs"]]],["arithmetic.rs","error.rs","field.rs","lib.rs","ops.rs","point.rs","public_key.rs","scalar.rs","sec1.rs","secret_key.rs","weierstrass.rs"]]],\
 ["embedded_io",["",[["adapters",[],["mod.rs"]]],["blocking.rs","fmt.rs","lib.rs"]]],\
 ["encoding_rs",["",[],["ascii.rs","big5.rs","data.rs","euc_jp.rs","euc_kr.rs","gb18030.rs","handles.rs","iso_2022_jp.rs","lib.rs","macros.rs","mem.rs","replacement.rs","shift_jis.rs","single_byte.rs","utf_16.rs","utf_8.rs","variant.rs","x_user_defined.rs"]]],\
 ["endian_type",["",[],["lib.rs"]]],\
@@ -314,7 +321,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["libp2p_dns",["",[],["lib.rs"]]],\
 ["libp2p_gossipsub",["",[["generated",[["compat",[],["mod.rs","pb.rs"]],["gossipsub",[],["mod.rs","pb.rs"]]]],["peer_score",[],["params.rs"]]],["backoff.rs","behaviour.rs","config.rs","error.rs","gossip_promises.rs","handler.rs","lib.rs","mcache.rs","metrics.rs","peer_score.rs","protocol.rs","rpc_proto.rs","subscription_filter.rs","time_cache.rs","topic.rs","transform.rs","types.rs"]]],\
 ["libp2p_identify",["",[["generated",[],["structs.rs"]]],["behaviour.rs","handler.rs","lib.rs","protocol.rs"]]],\
-["libp2p_identity",["",[["generated",[],["keys_proto.rs"]]],["ed25519.rs","error.rs","keypair.rs","lib.rs","peer_id.rs"]]],\
+["libp2p_identity",["",[["generated",[],["keys_proto.rs"]]],["ecdsa.rs","ed25519.rs","error.rs","keypair.rs","lib.rs","peer_id.rs","rsa.rs","secp256k1.rs"]]],\
 ["libp2p_kad",["",[["generated",[["dht",[],["mod.rs","pb.rs"]]]],["kbucket",[],["bucket.rs","entry.rs","key.rs"]],["query",[["peers",[["closest",[],["disjoint.rs"]]],["closest.rs","fixed.rs"]]],["peers.rs"]],["record",[["store",[],["memory.rs"]]],["store.rs"]]],["addresses.rs","behaviour.rs","handler.rs","jobs.rs","kbucket.rs","lib.rs","protocol.rs","query.rs","record.rs"]]],\
 ["libp2p_mdns",["",[["behaviour",[["iface",[],["dns.rs","query.rs"]]],["iface.rs","socket.rs","timer.rs"]]],["behaviour.rs","lib.rs"]]],\
 ["libp2p_metrics",["",[],["bandwidth.rs","gossipsub.rs","identify.rs","kad.rs","lib.rs","ping.rs","protocol_stack.rs","swarm.rs"]]],\
@@ -392,6 +399,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["openssl_probe",["",[],["lib.rs"]]],\
 ["option_ext",["",[],["impl.rs","lib.rs"]]],\
 ["overload",["",[],["assignment.rs","binary.rs","lib.rs","unary.rs"]]],\
+["p256",["",[["arithmetic",[["field",[],["field64.rs"]],["scalar",[],["scalar64.rs"]]],["field.rs","scalar.rs","util.rs"]]],["arithmetic.rs","ecdsa.rs","lib.rs"]]],\
 ["pairing",["",[],["lib.rs"]]],\
 ["papergrid",["",[["ansi",[],["ansi_buf.rs","ansi_str.rs","mod.rs"]],["config",[["compact",[],["mod.rs"]],["spanned",[],["borders_config.rs","entity_map.rs","mod.rs","offset.rs"]]],["alignment.rs","border.rs","borders.rs","entity.rs","formatting.rs","horizontal_line.rs","indent.rs","mod.rs","position.rs","sides.rs","vertical_line.rs"]],["dimension",[],["compact.rs","mod.rs","spanned.rs","spanned_vec_records.rs"]],["grid",[],["compact.rs","iterable.rs","mod.rs","peekable.rs"]],["records",[["vec_records",[],["cell.rs","cell_info.rs","mod.rs"]]],["exact_records.rs","into_records.rs","iter_records.rs","mod.rs","peekable_records.rs"]],["util",[],["mod.rs","string.rs"]]],["colors.rs","lib.rs"]]],\
 ["parity_db",["",[["btree",[],["btree.rs","iter.rs","mod.rs","node.rs"]]],["column.rs","compress.rs","db.rs","display.rs","error.rs","file.rs","hash.rs","index.rs","lib.rs","log.rs","migration.rs","options.rs","parking_lot.rs","stats.rs","table.rs"]]],\
@@ -404,6 +412,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["pathdiff",["",[],["lib.rs"]]],\
 ["pathfinding",["",[["directed",[],["astar.rs","bfs.rs","count_paths.rs","cycle_detection.rs","dfs.rs","dijkstra.rs","edmonds_karp.rs","fringe.rs","idastar.rs","iddfs.rs","mod.rs","strongly_connected_components.rs","topological_sort.rs","yen.rs"]],["undirected",[],["connected_components.rs","kruskal.rs","mod.rs"]]],["grid.rs","kuhn_munkres.rs","lib.rs","matrix.rs","utils.rs"]]],\
 ["pem",["",[],["errors.rs","lib.rs","parser.rs"]]],\
+["pem_rfc7468",["",[],["decoder.rs","encoder.rs","error.rs","grammar.rs","lib.rs"]]],\
 ["percent_encoding",["",[],["lib.rs"]]],\
 ["petgraph",["",[["algo",[],["astar.rs","bellman_ford.rs","dijkstra.rs","dominators.rs","feedback_arc_set.rs","floyd_warshall.rs","isomorphism.rs","k_shortest_path.rs","matching.rs","mod.rs","simple_paths.rs","tred.rs"]],["graph_impl",[["stable_graph",[],["mod.rs"]]],["frozen.rs","mod.rs"]],["visit",[],["dfsvisit.rs","filter.rs","macros.rs","mod.rs","reversed.rs","traversal.rs"]]],["adj.rs","csr.rs","data.rs","dot.rs","graphmap.rs","iter_format.rs","iter_utils.rs","lib.rs","macros.rs","matrix_graph.rs","operator.rs","prelude.rs","scored.rs","traits_graph.rs","unionfind.rs","util.rs"]]],\
 ["phf",["",[],["lib.rs","map.rs","ordered_map.rs","ordered_set.rs","set.rs"]]],\
@@ -415,6 +424,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["pin_project_lite",["",[],["lib.rs"]]],\
 ["pin_utils",["",[],["lib.rs","projection.rs","stack_pin.rs"]]],\
 ["piper",["",[],["lib.rs"]]],\
+["pkcs8",["",[],["error.rs","lib.rs","private_key_info.rs","traits.rs","version.rs"]]],\
 ["pollster",["",[],["lib.rs"]]],\
 ["poly1305",["",[["backend",[["avx2",[],["helpers.rs"]]],["autodetect.rs","avx2.rs","soft.rs"]]],["backend.rs","lib.rs"]]],\
 ["portable_atomic",["",[["gen",[],["utils.rs"]],["imp",[["atomic128",[["detect",[],["x86_64.rs"]]],["x86_64.rs"]],["fallback",[],["mod.rs","outline_atomics.rs","seq_lock.rs","utils.rs"]]],["core_atomic.rs","mod.rs","x86.rs"]]],["cfgs.rs","lib.rs","utils.rs"]]],\
@@ -423,6 +433,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["powerfmt",["",[],["buf.rs","ext.rs","lib.rs","smart_display.rs","smart_display_impls.rs"]]],\
 ["ppv_lite86",["",[["x86_64",[],["mod.rs","sse2.rs"]]],["lib.rs","soft.rs","types.rs"]]],\
 ["pretty_assertions",["",[],["lib.rs","printer.rs"]]],\
+["primeorder",["",[],["affine.rs","field.rs","lib.rs","point_arithmetic.rs","projective.rs"]]],\
 ["primitive_types",["",[],["lib.rs"]]],\
 ["proc_macro2",["",[],["detection.rs","extra.rs","fallback.rs","lib.rs","location.rs","marker.rs","parse.rs","rcvec.rs","wrapper.rs"]]],\
 ["proc_macro_error",["",[["imp",[],["fallback.rs"]]],["diagnostic.rs","dummy.rs","lib.rs","macros.rs","sealed.rs"]]],\
@@ -458,6 +469,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["replace_with",["",[],["lib.rs"]]],\
 ["reqwest",["",[["async_impl",[],["body.rs","client.rs","decoder.rs","mod.rs","request.rs","response.rs","upgrade.rs"]],["dns",[],["gai.rs","mod.rs","resolve.rs"]]],["connect.rs","error.rs","into_url.rs","lib.rs","proxy.rs","redirect.rs","response.rs","tls.rs","util.rs"]]],\
 ["resolv_conf",["",[],["config.rs","grammar.rs","ip.rs","lib.rs"]]],\
+["rfc6979",["",[],["ct_cmp.rs","lib.rs"]]],\
 ["ring",["",[["aead",[["gcm",[],["gcm_nohw.rs"]]],["aes.rs","aes_gcm.rs","block.rs","chacha.rs","chacha20_poly1305.rs","chacha20_poly1305_openssh.rs","gcm.rs","less_safe_key.rs","nonce.rs","opening_key.rs","poly1305.rs","quic.rs","sealing_key.rs","shift.rs","unbound_key.rs"]],["arithmetic",[["bigint",[],["boxed_limbs.rs","modulus.rs","private_exponent.rs"]]],["bigint.rs","constant.rs","montgomery.rs","n0.rs"]],["cpu",[],["intel.rs"]],["digest",[],["sha1.rs","sha2.rs"]],["ec",[["curve25519",[["ed25519",[],["signing.rs","verification.rs"]]],["ed25519.rs","ops.rs","scalar.rs","x25519.rs"]],["suite_b",[["ecdsa",[],["digest_scalar.rs","signing.rs","verification.rs"]],["ops",[],["elem.rs","p256.rs","p384.rs"]]],["curve.rs","ecdh.rs","ecdsa.rs","ops.rs","private_key.rs","public_key.rs"]]],["curve25519.rs","keys.rs","suite_b.rs"]],["io",[],["der.rs","der_writer.rs","positive.rs","writer.rs"]],["polyfill",[],["array_flat_map.rs","array_flatten.rs","array_split_map.rs","leading_zeros_skipped.rs","unwrap_const.rs"]],["rsa",[["padding",[],["pkcs1.rs","pss.rs"]]],["keypair.rs","keypair_components.rs","padding.rs","public_exponent.rs","public_key.rs","public_key_components.rs","public_modulus.rs","verification.rs"]]],["aead.rs","agreement.rs","arithmetic.rs","bits.rs","bssl.rs","c.rs","constant_time.rs","cpu.rs","debug.rs","digest.rs","ec.rs","endian.rs","error.rs","hkdf.rs","hmac.rs","io.rs","lib.rs","limb.rs","pbkdf2.rs","pkcs8.rs","polyfill.rs","prefixed.rs","rand.rs","rsa.rs","signature.rs","test.rs"]]],\
 ["rlimit",["",[["resource",[],["generated.rs","mod.rs"]]],["bindings.rs","lib.rs","proc_limits.rs","tools.rs","unix.rs","windows.rs"]]],\
 ["rlp",["",[],["error.rs","impls.rs","lib.rs","rlpin.rs","stream.rs","traits.rs"]]],\
@@ -482,6 +494,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["salsa20",["",[],["lib.rs","xsalsa.rs"]]],\
 ["same_file",["",[],["lib.rs","unix.rs"]]],\
 ["scopeguard",["",[],["lib.rs"]]],\
+["sec1",["",[],["error.rs","lib.rs","parameters.rs","point.rs","private_key.rs","traits.rs"]]],\
 ["semver",["",[],["backport.rs","display.rs","error.rs","eval.rs","identifier.rs","impls.rs","lib.rs","parse.rs"]]],\
 ["send_wrapper",["",[],["lib.rs"]]],\
 ["serde",["",[["de",[],["format.rs","ignored_any.rs","impls.rs","mod.rs","seed.rs","size_hint.rs","value.rs"]],["private",[],["de.rs","doc.rs","mod.rs","ser.rs"]],["ser",[],["fmt.rs","impls.rs","impossible.rs","mod.rs"]]],["integer128.rs","lib.rs","macros.rs"]]],\
@@ -506,7 +519,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["shared_memory",["",[],["error.rs","lib.rs","unix.rs"]]],\
 ["shell_words",["",[],["lib.rs"]]],\
 ["signal_hook_registry",["",[],["half_lock.rs","lib.rs"]]],\
-["signature",["",[],["encoding.rs","error.rs","hazmat.rs","keypair.rs","lib.rs","signer.rs","verifier.rs"]]],\
+["signature",["",[],["encoding.rs","error.rs","hazmat.rs","keypair.rs","lib.rs","prehash_signature.rs","signer.rs","verifier.rs"]]],\
 ["simba",["",[["scalar",[],["complex.rs","field.rs","mod.rs","real.rs","subset.rs"]],["simd",[],["auto_simd_impl.rs","mod.rs","simd_bool.rs","simd_complex.rs","simd_option.rs","simd_partial_ord.rs","simd_real.rs","simd_signed.rs","simd_value.rs","wide_simd_impl.rs"]]],["lib.rs"]]],\
 ["similar",["",[["algorithms",[],["capture.rs","compact.rs","hook.rs","lcs.rs","mod.rs","myers.rs","patience.rs","replace.rs","utils.rs"]],["text",[],["abstraction.rs","mod.rs","utils.rs"]]],["common.rs","iter.rs","lib.rs","types.rs","udiff.rs","utils.rs"]]],\
 ["simple_asn1",["",[],["lib.rs"]]],\
@@ -521,6 +534,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["socket2",["",[["sys",[],["unix.rs"]]],["lib.rs","sockaddr.rs","socket.rs","sockref.rs"]]],\
 ["soketto",["",[["handshake",[],["client.rs","http.rs","server.rs"]]],["base.rs","connection.rs","data.rs","extension.rs","handshake.rs","lib.rs"]]],\
 ["spin",["",[["mutex",[],["spin.rs"]]],["barrier.rs","lazy.rs","lib.rs","mutex.rs","once.rs","relax.rs","rwlock.rs"]]],\
+["spki",["",[],["algorithm.rs","error.rs","lib.rs","spki.rs","traits.rs"]]],\
 ["sptr",["",[],["lib.rs"]]],\
 ["stable_deref_trait",["",[],["lib.rs"]]],\
 ["stacker",["",[],["lib.rs"]]],\

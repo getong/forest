@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["KeyType","ParseError"],"mod":["ed25519"],"struct":["DecodingError","Keypair","OtherVariantError","PeerId","PublicKey","SigningError"]};
+window.SIDEBAR_ITEMS = {"enum":["KeyType","ParseError"],"mod":["ecdsa","ed25519","rsa","secp256k1"],"struct":["DecodingError","Keypair","OtherVariantError","PeerId","PublicKey","SigningError"]};
