@@ -103,7 +103,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }),
     )?;
 
-    let tuple_impls2_rs = PathBuf::from(env::var("OUT_DIR")?).join("tuple_impls2.rs");
+    let tuple_impls2_rs =
+        PathBuf::from(env::var("OUT_DIR")?).join("impl_get_returning_signature.rs");
     let mut impls2 = vec![];
 
     for num_tuples in 0..=12 {
