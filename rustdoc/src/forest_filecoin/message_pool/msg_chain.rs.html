@@ -568,6 +568,8 @@
 <a href="#567" id="567">567</a>
 <a href="#568" id="568">568</a>
 <a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -770,9 +772,10 @@
         <span class="kw">let </span><span class="kw-2">mut </span>i = chain_node.msgs.len() <span class="kw">as </span>i64 - <span class="number">1</span>;
 
         <span class="kw">while </span>i &gt;= <span class="number">0 </span>&amp;&amp; (chain_node.gas_limit &gt; gas_limit || (chain_node.gas_perf &lt; <span class="number">0.0</span>)) {
-            <span class="kw">let </span>gas_reward = get_gas_reward(<span class="kw-2">&amp;</span>chain_node.msgs[i <span class="kw">as </span>usize], base_fee);
+            <span class="kw">let </span>msg = <span class="kw-2">&amp;</span>chain_node.msgs[i <span class="kw">as </span>usize];
+            <span class="kw">let </span>gas_reward = get_gas_reward(msg, base_fee);
             chain_node.gas_reward -= gas_reward;
-            chain_node.gas_limit -= chain_node.msgs[i <span class="kw">as </span>usize].gas_limit();
+            chain_node.gas_limit -= msg.gas_limit();
             <span class="kw">if </span>chain_node.gas_limit &gt; <span class="number">0 </span>{
                 chain_node.gas_perf = get_gas_perf(<span class="kw-2">&amp;</span>chain_node.gas_reward, chain_node.gas_limit);
                 <span class="kw">if </span>chain_node.bp != <span class="number">0.0 </span>{
@@ -967,8 +970,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>rewards = Vec::with_capacity(msgs.len());
 
-    <span class="kw">while </span>i &lt; msgs.len() {
-        <span class="kw">let </span>m = <span class="kw-2">&amp;</span>msgs[i];
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(m) = msgs.get(i) {
         <span class="kw">if </span>m.sequence() &lt; cur_seq {
             <span class="macro">warn!</span>(
                 <span class="string">"encountered message from actor {} with nonce {} less than the current nonce {}"</span>,
@@ -1024,13 +1026,13 @@
     <span class="kw">let </span><span class="kw-2">mut </span>cur_chain = MsgChainNode::default();
     <span class="kw">let </span><span class="kw-2">mut </span>node_vec = <span class="macro">vec!</span>[];
 
-    <span class="kw">let </span>new_chain = |m: SignedMessage, i: usize| -&gt; MsgChainNode {
+    <span class="kw">let </span>new_chain = |m: SignedMessage, reward: <span class="kw-2">&amp;</span>TokenAmount| -&gt; MsgChainNode {
         <span class="kw">let </span>gl = m.gas_limit();
         MsgChainNode {
             msgs: <span class="macro">vec!</span>[m],
-            gas_reward: rewards[i].clone(),
+            gas_reward: reward.clone(),
             gas_limit: gl,
-            gas_perf: get_gas_perf(<span class="kw-2">&amp;</span>rewards[i], gl),
+            gas_perf: get_gas_perf(reward, gl),
             eff_perf: <span class="number">0.0</span>,
             bp: <span class="number">0.0</span>,
             parent_offset: <span class="number">0.0</span>,
@@ -1043,13 +1045,13 @@
 
     <span class="comment">// creates msg chain nodes in chunks based on gas_perf obtained from the current
     // chain's gas limit.
-    </span><span class="kw">for </span>(i, m) <span class="kw">in </span>msgs.into_iter().enumerate() {
+    </span><span class="kw">for </span>(i, (m, reward)) <span class="kw">in </span>msgs.into_iter().zip(rewards.iter()).enumerate() {
         <span class="kw">if </span>i == <span class="number">0 </span>{
-            cur_chain = new_chain(m, i);
+            cur_chain = new_chain(m, reward);
             <span class="kw">continue</span>;
         }
 
-        <span class="kw">let </span>gas_reward = cur_chain.gas_reward.clone() + <span class="kw-2">&amp;</span>rewards[i];
+        <span class="kw">let </span>gas_reward = cur_chain.gas_reward.clone() + reward;
         <span class="kw">let </span>gas_limit = cur_chain.gas_limit + m.gas_limit();
         <span class="kw">let </span>gas_perf = get_gas_perf(<span class="kw-2">&amp;</span>gas_reward, gas_limit);
 
@@ -1057,7 +1059,7 @@
         // then make a new chain
         </span><span class="kw">if </span>gas_perf &lt; cur_chain.gas_perf {
             chains.push_with(cur_chain, <span class="kw-2">&amp;mut </span>node_vec);
-            cur_chain = new_chain(m, i);
+            cur_chain = new_chain(m, reward);
         } <span class="kw">else </span>{
             cur_chain.msgs.push(m);
             cur_chain.gas_reward = gas_reward;
@@ -1108,24 +1110,26 @@
         chains.drop_invalid(<span class="kw-2">&amp;mut </span>node_vec);
     }
 
-    <span class="comment">// link next pointers
-    </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..node_vec.len() - <span class="number">1 </span>{
-        <span class="kw">let </span>k1 = node_vec.get(i).unwrap();
-        <span class="kw">let </span>k2 = node_vec.get(i + <span class="number">1</span>);
-        <span class="kw">let </span>n1 = chains.get_mut(<span class="kw-2">*</span>k1).unwrap();
-        n1.next = k2.cloned();
-    }
+    <span class="kw">if </span>node_vec.len() &gt; <span class="number">1 </span>{
+        <span class="kw">for </span>(<span class="kw-2">&amp;</span>k1, <span class="kw-2">&amp;</span>k2) <span class="kw">in </span>node_vec.iter().zip(node_vec.iter().skip(<span class="number">1</span>)) {
+            <span class="comment">// link next pointers
+            </span><span class="kw">let </span>n1 = chains
+                .get_mut(k1)
+                .ok_or_else(|| Error::Other(<span class="macro">format!</span>(<span class="string">"{k1:?} should present in `chains`"</span>)))<span class="question-mark">?</span>;
+            n1.next = <span class="prelude-val">Some</span>(k2);
+            <span class="comment">// Should we link or clear n1.prev as well?
 
-    <span class="comment">// link prev pointers
-    </span><span class="kw">for </span>i <span class="kw">in </span>(<span class="number">0</span>..node_vec.len() - <span class="number">1</span>).rev() {
-        <span class="kw">let </span>k1 = node_vec.get(i);
-        <span class="kw">let </span>k2 = node_vec.get(i + <span class="number">1</span>).unwrap();
-        <span class="kw">let </span>n2 = chains.get_mut(<span class="kw-2">*</span>k2).unwrap();
-        n2.prev = k1.cloned();
+            // link prev pointers
+            </span><span class="kw">let </span>n2 = chains
+                .get_mut(k2)
+                .ok_or_else(|| Error::Other(<span class="macro">format!</span>(<span class="string">"{k2:?} should present in `chains`"</span>)))<span class="question-mark">?</span>;
+            n2.prev = <span class="prelude-val">Some</span>(k1);
+            <span class="comment">// Should we link or clear n2.next as well?
+        </span>}
     }
 
     <span class="comment">// Update the main chain key_vec with this node_vec
-    </span>chains.key_vec.extend(node_vec.iter());
+    </span>chains.key_vec.extend(node_vec);
 
     <span class="prelude-val">Ok</span>(())
 }
