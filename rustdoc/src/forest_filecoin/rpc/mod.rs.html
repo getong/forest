@@ -274,6 +274,17 @@
 <a href="#273" id="273">273</a>
 <a href="#274" id="274">274</a>
 <a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -281,6 +292,7 @@
 <span class="kw">mod </span>auth_layer;
 <span class="kw">mod </span>beacon_api;
 <span class="kw">mod </span>chain_api;
+<span class="kw">mod </span>channel;
 <span class="kw">mod </span>common_api;
 <span class="kw">mod </span>error;
 <span class="kw">mod </span>eth_api;
@@ -298,6 +310,8 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::key_management::KeyStore;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::auth_layer::AuthLayer;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::channel::RpcModule <span class="kw">as </span>FilRpcModule;
+<span class="kw">pub use </span><span class="kw">crate</span>::rpc::channel::CANCEL_METHOD_NAME;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{
     beacon_api::beacon_get_entry,
     common_api::{session, shutdown, start_time, version},
@@ -352,6 +366,14 @@
         forest_version,
         shutdown_send,
     )<span class="question-mark">?</span>;
+
+    <span class="kw">let </span><span class="kw-2">mut </span>pubsub_module = FilRpcModule::default();
+
+    pubsub_module.register_channel(<span class="string">"Filecoin.ChainNotify"</span>, {
+        <span class="kw">let </span>state_clone = state.clone();
+        <span class="kw">move </span>|params| chain_api::chain_notify(params, <span class="kw-2">&amp;</span>state_clone)
+    })<span class="question-mark">?</span>;
+    module.merge(pubsub_module)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>(stop_handle, _handle) = stop_channel();
 
