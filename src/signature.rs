@@ -37,7 +37,7 @@ impl Signature {
 ///
 /// # Panics
 /// - Implementations may panic if argument ordering is incorrect
-trait GetReturningSignature<const ARITY: usize, Args> {
+pub trait GetReturningSignature<const ARITY: usize, Args> {
     fn get_returning_signature(
         param_names: [&str; ARITY],
         return_name: &str,
