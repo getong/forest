@@ -3,6 +3,7 @@ mod jsonrpc_types;
 #[allow(unused)]
 mod openrpc_types;
 
+mod axum_like;
 mod into_rpc_service;
 mod parser;
 mod signature;

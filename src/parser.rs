@@ -45,10 +45,7 @@ enum ParserInner {
 
 impl Drop for Parser<'_> {
     fn drop(&mut self) {
-        if self.has_errored {
-            return;
-        }
-        if !std::thread::panicking() {
+        if !std::thread::panicking() && !self.has_errored {
             assert!(
                 self.call_count >= self.argument_names.len(),
                 "`Parser` has unhandled parameters - did you forget to call `parse`?"
