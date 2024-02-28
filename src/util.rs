@@ -53,3 +53,12 @@ pub trait Optional<'de>: Deserialize<'de> {
 }
 
 impl<'de, T> Optional<'de> for T where T: Deserialize<'de> {}
+
+#[cfg(test)]
+macro_rules! from_value {
+    ($tt:tt) => {
+        serde_json::from_value(serde_json::json!($tt)).unwrap()
+    };
+}
+#[cfg(test)]
+pub(crate) use from_value;

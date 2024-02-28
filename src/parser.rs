@@ -18,7 +18,7 @@ pub fn check_args<const N: usize>(names: [&str; N], optional: [bool; N]) {
     for (ix, (left, right)) in optional.into_iter().tuple_windows().enumerate() {
         if left && !right {
             panic!(
-                "mandatory param {} follows optional param {} at index {}",
+                "mandatory param `{}` follows optional param `{}` at index {}",
                 names[ix + 1],
                 names[ix],
                 ix
@@ -245,12 +245,7 @@ impl<'a> From<ParseError<'a>> for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    macro_rules! from_value {
-        ($tt:tt) => {
-            serde_json::from_value(serde_json::json!($tt)).unwrap()
-        };
-    }
+    use crate::util::from_value;
 
     #[test]
     fn optional() {
