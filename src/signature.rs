@@ -57,4 +57,4 @@ fn content_descriptor<'de, T: JsonSchema + Deserialize<'de>>(
     }
 }
 
-include!(concat!(env!("OUT_DIR"), "/impl_get_returning_signature.rs"));
+include!(concat!(env!("OUT_DIR"), "/signature.rs"));
