@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ManyCar"]};
+window.SIDEBAR_ITEMS = {"struct":["ManyCar","WithHeaviestEpoch"]};
