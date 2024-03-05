@@ -12,10 +12,14 @@ mod signature;
 mod towery;
 mod util;
 
+use std::{future::Future, sync::Arc};
+
+use futures::future::BoxFuture;
 use into_rpc_service::IntoRpcService;
 use openrpc_types::{ContentDescriptor, Method, ParamStructure};
 use parser::Parser;
 use schemars::{gen::SchemaGenerator, JsonSchema};
+use serde::{Deserialize, Serialize};
 use signature::{GetReturningSignature, Signature};
 
 use crate::util::Optional;
@@ -44,21 +48,130 @@ struct WrappedModule<Ctx> {
     methods: Vec<Method>,
 }
 
-impl<BS> WrappedModule<MyCtx<BS>>
+impl<Ctx> WrappedModule<Ctx>
+// where
+//     BS: Blockstore + Send + Sync + 'static,
+{
+    // fn serve0(&mut self) {
+    //     let method_name = "concat";
+    //     let calling_convention = ParamStructure::ByPosition;
+    //     let param_names = ["lhs", "rhs"];
+    //     let ret_name = "ret";
+    //     type T0 = String;
+    //     type T1 = String;
+    //     type R = String;
+
+    //     self.inner
+    //         .register_async_method(method_name, move |params, ctx| async move {
+    //             let params = params
+    //                 .as_str()
+    //                 .map(serde_json::from_str)
+    //                 .transpose()
+    //                 .map_err(|e| error2error(jsonrpc_types::Error::invalid_params(e, None)))?;
+    //             let mut parser =
+    //                 Parser::new(params, &param_names, calling_convention).map_err(error2error)?;
+    //             concat(
+    //                 &ctx,
+    //                 parser.parse().map_err(error2error)?,
+    //                 parser.parse().map_err(error2error)?,
+    //             )
+    //             .await
+    //         })
+    //         .unwrap();
+    //     let method = Method {
+    //         name: String::from(method_name),
+    //         params: openrpc_types::Params::new([
+    //             ContentDescriptor {
+    //                 name: String::from(param_names[0]),
+    //                 schema: T0::json_schema(&mut self.schema_generator),
+    //                 required: T0::optional(),
+    //             },
+    //             ContentDescriptor {
+    //                 name: String::from(param_names[1]),
+    //                 schema: T1::json_schema(&mut self.schema_generator),
+    //                 required: T1::optional(),
+    //             },
+    //         ])
+    //         .unwrap(),
+    //         param_structure: calling_convention,
+    //         result: Some(ContentDescriptor {
+    //             name: String::from(ret_name),
+    //             schema: R::json_schema(&mut self.schema_generator),
+    //             required: R::optional(),
+    //         }),
+    //     };
+    //     self.methods.push(method);
+    // }
+    fn serve1<const ARITY: usize, F, Args, Fut, R>(
+        &mut self,
+        method_name: &'static str, // parity...
+        calling_convention: ParamStructure,
+        param_names: [&'static str; ARITY],
+        f: F,
+    ) where
+        F: Wrap<ARITY, Args, Ctx, Fut, R>,
+        Ctx: Send + Sync + 'static,
+    {
+        self.inner
+            .register_async_method(method_name, f.wrap(param_names, calling_convention))
+            .unwrap();
+    }
+}
+
+fn test<BS>(wrapped: &mut WrappedModule<MyCtx<BS>>)
 where
     BS: Blockstore + Send + Sync + 'static,
 {
-    fn serve0(&mut self) {
-        let method_name = "concat";
-        let calling_convention = ParamStructure::ByPosition;
-        let param_names = ["lhs", "rhs"];
-        let ret_name = "ret";
-        type T0 = String;
-        type T1 = String;
-        type R = String;
+    wrapped.serve1("concat", ParamStructure::Either, ["lhs", "rhs"], concat);
+}
 
-        self.inner
-            .register_async_method(method_name, move |params, ctx| async move {
+// pub fn register_async_method<R, Fun, Fut>(
+//     &mut self,
+//     method_name: &'static str,
+//     callback: Fun,
+// ) -> Result<&mut MethodCallback, RegisterMethodError>
+// where
+//     R: IntoResponse + 'static,
+//     Fut: Future<Output = R> + Send,
+//     Fun: (Fn(Params<'static>, Arc<Context>) -> Fut) + Clone + Send + Sync + 'static,
+
+trait Wrap<const ARITY: usize, Args, Ctx, Fut, R> {
+    type Future: Future<Output = Result<serde_json::Value, jsonrpsee::types::ErrorObjectOwned>>
+        + Send;
+    fn wrap(
+        self,
+        param_names: [&'static str; ARITY],
+        calling_convention: ParamStructure,
+    ) -> impl (Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future)
+           + Clone
+           + Send
+           + Sync
+           + 'static;
+}
+
+impl<F, T0, T1, Ctx, Fut, R> Wrap<2, (T0, T1), Ctx, Fut, R> for F
+where
+    F: Fn(&Ctx, T0, T1) -> Fut + Clone + Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T0: for<'de> Deserialize<'de>,
+    T1: for<'de> Deserialize<'de>,
+    Fut: Future<Output = Result<R, jsonrpsee::types::ErrorObjectOwned>> + Send + Sync + 'static,
+    R: Serialize,
+{
+    type Future = BoxFuture<'static, Result<serde_json::Value, jsonrpsee::types::ErrorObjectOwned>>;
+
+    fn wrap(
+        self,
+        param_names: [&'static str; 2],
+        calling_convention: ParamStructure,
+    ) -> impl (Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future)
+           + Clone
+           + Send
+           + Sync
+           + 'static {
+        move |params, ctx| {
+            let f = self.clone();
+            Box::pin(async move {
                 let params = params
                     .as_str()
                     .map(serde_json::from_str)
@@ -66,37 +179,18 @@ where
                     .map_err(|e| error2error(jsonrpc_types::Error::invalid_params(e, None)))?;
                 let mut parser =
                     Parser::new(params, &param_names, calling_convention).map_err(error2error)?;
-                concat(
-                    &ctx,
-                    parser.parse().map_err(error2error)?,
-                    parser.parse().map_err(error2error)?,
-                )
-                .await
+
+                let t0 = parser.parse().map_err(error2error)?;
+                let t1 = parser.parse().map_err(error2error)?;
+                match f(&ctx, t0, t1).await {
+                    Ok(it) => match serde_json::to_value(it) {
+                        Ok(it) => Ok(it),
+                        Err(e) => Err(error2error(jsonrpc_types::Error::internal_error(e, None))),
+                    },
+                    Err(e) => Err(e),
+                }
             })
-            .unwrap();
-        let method = Method {
-            name: String::from(method_name),
-            params: openrpc_types::Params::new([
-                ContentDescriptor {
-                    name: String::from(param_names[0]),
-                    schema: T0::json_schema(&mut self.schema_generator),
-                    required: T0::optional(),
-                },
-                ContentDescriptor {
-                    name: String::from(param_names[1]),
-                    schema: T1::json_schema(&mut self.schema_generator),
-                    required: T1::optional(),
-                },
-            ])
-            .unwrap(),
-            param_structure: calling_convention,
-            result: Some(ContentDescriptor {
-                name: String::from(ret_name),
-                schema: R::json_schema(&mut self.schema_generator),
-                required: R::optional(),
-            }),
-        };
-        self.methods.push(method);
+        }
     }
 }
 
