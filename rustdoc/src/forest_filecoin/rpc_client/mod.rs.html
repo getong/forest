@@ -450,7 +450,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::utils::net::global_http_client;
 <span class="kw">use </span>base64::prelude::{Engine, BASE64_STANDARD};
-<span class="kw">use </span>jsonrpc_v2::{Id, RequestObject, V2};
+<span class="kw">use </span>jsonrpsee::types::{params::TwoPointZero, Id, Request};
 <span class="kw">use </span>serde::Deserialize;
 <span class="kw">use </span>tracing::debug;
 
@@ -518,11 +518,9 @@
     }
 
     <span class="kw">pub async fn </span>call&lt;T: HasLotusJson&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, req: RpcRequest&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
-        <span class="kw">let </span>rpc_req = RequestObject::request()
-            .with_method(req.method_name)
-            .with_params(req.params)
-            .with_id(<span class="number">0</span>)
-            .finish();
+        <span class="kw">let </span>params = serde_json::value::to_raw_value(<span class="kw-2">&amp;</span>req.params)
+            .map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_PARAMS)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rpc_req = Request::new(req.method_name.into(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>params), Id::Number(<span class="number">0</span>));
 
         <span class="kw">let </span>api_url = multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr, req.rpc_endpoint).to_string();
 
@@ -558,7 +556,9 @@
                 message: Cow::Owned(response.text().<span class="kw">await</span><span class="question-mark">?</span>),
             });
         }
-        <span class="kw">let </span>rpc_res: JsonRpcResponse&lt;T::LotusJson&gt; = response.json().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>json = response.bytes().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>rpc_res: JsonRpcResponse&lt;T::LotusJson&gt; =
+            serde_json::from_slice(<span class="kw-2">&amp;</span>json).map_err(|<span class="kw">_</span>| JsonRpcError::PARSE_ERROR)<span class="question-mark">?</span>;
 
         <span class="kw">match </span>rpc_res {
             JsonRpcResponse::Result { result, .. } =&gt; <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(result)),
@@ -567,11 +567,9 @@
     }
 
     <span class="kw">pub async fn </span>ws_call&lt;T: HasLotusJson&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, req: RpcRequest&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
-        <span class="kw">let </span>rpc_req = RequestObject::request()
-            .with_method(req.method_name)
-            .with_params(req.params)
-            .with_id(<span class="number">0</span>)
-            .finish();
+        <span class="kw">let </span>params = serde_json::value::to_raw_value(<span class="kw-2">&amp;</span>req.params)
+            .map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_PARAMS)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rpc_req = Request::new(req.method_name.into(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>params), Id::Number(<span class="number">0</span>));
 
         <span class="kw">let </span>payload = serde_json::to_vec(<span class="kw-2">&amp;</span>rpc_req).map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_REQUEST)<span class="question-mark">?</span>;
 
@@ -702,16 +700,18 @@
 
 <span class="attr">#[derive(Deserialize)]
 #[serde(untagged)]
-</span><span class="kw">pub enum </span>JsonRpcResponse&lt;R&gt; {
+</span><span class="kw">pub enum </span>JsonRpcResponse&lt;<span class="lifetime">'a</span>, R&gt; {
     <span class="prelude-ty">Result </span>{
-        jsonrpc: V2,
+        jsonrpc: TwoPointZero,
         result: R,
-        id: Id,
+        <span class="attr">#[serde(borrow)]
+        </span>id: Id&lt;<span class="lifetime">'a</span>&gt;,
     },
     Error {
-        jsonrpc: V2,
+        jsonrpc: TwoPointZero,
         error: JsonRpcError,
-        id: Id,
+        <span class="attr">#[serde(borrow)]
+        </span>id: Id&lt;<span class="lifetime">'a</span>&gt;,
     },
 }
 

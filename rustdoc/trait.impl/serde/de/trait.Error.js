@@ -1,7 +1,6 @@
 (function() {var implementors = {
 "bincode":[["impl <a class=\"trait\" href=\"serde/de/trait.Error.html\" title=\"trait serde::de::Error\">Error</a> for <a class=\"type\" href=\"bincode/type.Error.html\" title=\"type bincode::Error\">Error</a>"]],
 "config":[["impl <a class=\"trait\" href=\"serde/de/trait.Error.html\" title=\"trait serde::de::Error\">Error</a> for <a class=\"enum\" href=\"config/enum.ConfigError.html\" title=\"enum config::ConfigError\">ConfigError</a>"]],
-"erased_serde":[["impl <a class=\"trait\" href=\"serde/de/trait.Error.html\" title=\"trait serde::de::Error\">Error</a> for <a class=\"struct\" href=\"erased_serde/struct.Error.html\" title=\"struct erased_serde::Error\">Error</a>"]],
 "fvm_ipld_encoding":[],
 "libipld_core":[["impl <a class=\"trait\" href=\"serde/de/trait.Error.html\" title=\"trait serde::de::Error\">Error</a> for <a class=\"struct\" href=\"libipld_core/error/struct.SerdeError.html\" title=\"struct libipld_core::error::SerdeError\">SerdeError</a>"]],
 "postcard":[["impl <a class=\"trait\" href=\"serde/de/trait.Error.html\" title=\"trait serde::de::Error\">Error</a> for <a class=\"enum\" href=\"postcard/enum.Error.html\" title=\"enum postcard::Error\">Error</a>"]],

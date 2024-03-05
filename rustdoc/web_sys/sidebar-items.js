@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["BinaryType"],"fn":["window"],"struct":["AddEventListenerOptions","Blob","CloseEvent","CloseEventInit","Document","Element","ErrorEvent","Event","EventTarget","FileReader","History","HtmlElement","HtmlHeadElement","Location","MessageEvent","Node","ProgressEvent","WebSocket","Window"]};

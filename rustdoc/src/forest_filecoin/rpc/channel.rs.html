@@ -408,6 +408,9 @@
 <a href="#407" id="407">407</a>
 <a href="#408" id="408">408</a>
 <a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="doccomment">//! Subscription related types and traits for server implementations.
@@ -470,13 +473,15 @@
 //!         │                                 └────────────────────────────────┘  │
 //! ```
 
-</span><span class="kw">use </span>jsonrpsee::core::server::helpers::{MethodResponse, MethodResponseResult, MethodSink};
-<span class="kw">use </span>jsonrpsee::server::{
-    IntoSubscriptionCloseResponse, MethodCallback, Methods, RegisterMethodError,
+</span><span class="kw">use </span>ahash::HashMap;
+<span class="kw">use </span>jsonrpsee::{
+    server::{
+        IntoSubscriptionCloseResponse, MethodCallback, Methods, RegisterMethodError,
+        ResponsePayload,
+    },
+    types::{error::ErrorCode, ErrorObjectOwned, Id, Params},
+    MethodResponse, MethodSink,
 };
-<span class="kw">use </span>jsonrpsee::types::{error::ErrorCode, ErrorObjectOwned, Id, Params, ResponsePayload};
-
-<span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>std::sync::atomic::{AtomicU64, Ordering};
 <span class="kw">use </span>std::sync::Arc;
@@ -529,7 +534,7 @@
         <span class="kw">let </span>id = <span class="self">self</span>.id.clone();
         <span class="kw">let </span>response = MethodResponse::subscription_response(
             <span class="self">self</span>.id,
-            ResponsePayload::result_borrowed(<span class="kw-2">&amp;</span>channel_id),
+            ResponsePayload::success_borrowed(<span class="kw-2">&amp;</span>channel_id),
             <span class="self">self</span>.inner.max_response_size() <span class="kw">as </span>usize,
         );
         <span class="kw">let </span>success = response.is_success();
@@ -541,12 +546,12 @@
         // The same message is sent twice here because one is sent directly to the transport layer and
         // the other one is sent internally to accept the subscription.
         </span><span class="self">self</span>.inner
-            .send(response.result.clone())
+            .send(response.to_result())
             .<span class="kw">await
             </span>.map_err(|e| e.to_string())<span class="question-mark">?</span>;
         <span class="self">self</span>.subscribe
             .send(response)
-            .map_err(|e| <span class="macro">format!</span>(<span class="string">"accept error: {}"</span>, e.result))<span class="question-mark">?</span>;
+            .map_err(|e| <span class="macro">format!</span>(<span class="string">"accept error: {}"</span>, e.as_result()))<span class="question-mark">?</span>;
 
         <span class="kw">if </span>success {
             <span class="kw">let </span>(_tx, rx) = mpsc::channel(<span class="number">1</span>);
@@ -637,19 +642,20 @@
     <span class="prelude-val">Ok</span>(msg)
 }
 
-<span class="kw">fn </span>close_payload(channel_id: ChannelId) -&gt; String {
-    <span class="macro">format!</span>(
-        <span class="string">r#"{{"jsonrpc":"2.0","method":"xrpc.ch.close","params":[{}]}}"#</span>,
-        channel_id
-    )
+<span class="kw">fn </span>close_payload(channel_id: ChannelId) -&gt; serde_json::Value {
+    <span class="macro">serde_json::json!</span>({
+        <span class="string">"jsonrpc"</span>:<span class="string">"2.0"</span>,
+        <span class="string">"method"</span>:<span class="string">"xrpc.ch.close"</span>,
+        <span class="string">"params"</span>:[channel_id]
+    })
 }
 
 <span class="kw">fn </span>close_channel_response(channel_id: ChannelId) -&gt; MethodResponse {
-    MethodResponse {
-        result: close_payload(channel_id),
-        success_or_error: MethodResponseResult::Success,
-        is_subscription: <span class="bool-val">false</span>,
-    }
+    MethodResponse::response(
+        Id::Null,
+        ResponsePayload::success(close_payload(channel_id)),
+        <span class="number">1024</span>,
+    )
 }
 
 <span class="attr">#[derive(Debug, Clone)]
@@ -696,7 +702,7 @@
                         <span class="kw">match </span>result {
                             <span class="prelude-val">Ok</span>(channel_id) =&gt; {
                                 <span class="kw">let </span>resp = close_channel_response(channel_id);
-                                <span class="macro">tracing::debug!</span>(<span class="string">"Sending close message: {:?}"</span>, resp.result);
+                                <span class="macro">tracing::debug!</span>(<span class="string">"Sending close message: {}"</span>, resp.as_result());
                                 resp
                             }
                             <span class="prelude-val">Err</span>(e) =&gt; {
@@ -753,7 +759,7 @@
                                         }
                                     }
                                     <span class="prelude-val">Err</span>(RecvError::Closed) =&gt; {
-                                        <span class="kw">let _ </span>= sink.send(close_payload(sink.channel_id())).<span class="kw">await</span>;
+                                        <span class="kw">let _ </span>= sink.send(close_payload(sink.channel_id()).to_string()).<span class="kw">await</span>;
                                         <span class="kw">break</span>;
                                     }
                                     <span class="prelude-val">Err</span>(RecvError::Lagged(<span class="kw">_</span>)) =&gt; {

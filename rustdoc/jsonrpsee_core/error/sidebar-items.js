@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["GenericTransportError","RegisterMethodError"],"struct":["StringError"]};
+window.SIDEBAR_ITEMS = {"enum":["RegisterMethodError"],"struct":["StringError"]};

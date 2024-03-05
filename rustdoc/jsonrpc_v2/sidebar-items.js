@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"attr":["jsonrpc_v2_method"],"enum":["Error","Id","RequestKind","ResponseObject","ResponseObjects"],"mod":["exp"],"struct":["BoxedHandler","Data","MapRouter","Method","NotificationBuilder","Params","RequestBuilder","RequestObject","Server","ServerBuilder"],"trait":["ErrorLike","FromRequest","Router"]};
