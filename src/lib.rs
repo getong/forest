@@ -13,9 +13,101 @@ mod towery;
 mod util;
 
 use into_rpc_service::IntoRpcService;
-use openrpc_types::ParamStructure;
-use schemars::gen::SchemaGenerator;
+use openrpc_types::{ContentDescriptor, Method, ParamStructure};
+use parser::Parser;
+use schemars::{gen::SchemaGenerator, JsonSchema};
 use signature::{GetReturningSignature, Signature};
+
+use crate::util::Optional;
+
+struct MyCtx<BS> {
+    db: BS,
+}
+
+struct MyBlockstore {}
+
+trait Blockstore {}
+impl Blockstore for MyBlockstore {}
+impl<T> Blockstore for &T where T: Blockstore {}
+
+async fn concat<BS: Blockstore>(
+    _ctx: &MyCtx<BS>,
+    lhs: String,
+    rhs: String,
+) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
+    Ok(lhs + &rhs)
+}
+
+struct WrappedModule<Ctx> {
+    inner: jsonrpsee::server::RpcModule<Ctx>,
+    schema_generator: SchemaGenerator,
+    methods: Vec<Method>,
+}
+
+impl<BS> WrappedModule<MyCtx<BS>>
+where
+    BS: Blockstore + Send + Sync + 'static,
+{
+    fn serve0(&mut self) {
+        let method_name = "concat";
+        let calling_convention = ParamStructure::ByPosition;
+        let param_names = ["lhs", "rhs"];
+        let ret_name = "ret";
+        type T0 = String;
+        type T1 = String;
+        type R = String;
+
+        self.inner
+            .register_async_method(method_name, move |params, ctx| async move {
+                let params = params
+                    .as_str()
+                    .map(serde_json::from_str)
+                    .transpose()
+                    .map_err(|e| error2error(jsonrpc_types::Error::invalid_params(e, None)))?;
+                let mut parser =
+                    Parser::new(params, &param_names, calling_convention).map_err(error2error)?;
+                concat(
+                    &ctx,
+                    parser.parse().map_err(error2error)?,
+                    parser.parse().map_err(error2error)?,
+                )
+                .await
+            })
+            .unwrap();
+        let method = Method {
+            name: String::from(method_name),
+            params: openrpc_types::Params::new([
+                ContentDescriptor {
+                    name: String::from(param_names[0]),
+                    schema: T0::json_schema(&mut self.schema_generator),
+                    required: T0::optional(),
+                },
+                ContentDescriptor {
+                    name: String::from(param_names[1]),
+                    schema: T1::json_schema(&mut self.schema_generator),
+                    required: T1::optional(),
+                },
+            ])
+            .unwrap(),
+            param_structure: calling_convention,
+            result: Some(ContentDescriptor {
+                name: String::from(ret_name),
+                schema: R::json_schema(&mut self.schema_generator),
+                required: R::optional(),
+            }),
+        };
+        self.methods.push(method);
+    }
+}
+
+fn error2error(ours: jsonrpc_types::Error) -> jsonrpsee::types::ErrorObjectOwned {
+    let jsonrpc_types::Error {
+        code,
+        message,
+        data,
+    } = ours;
+    jsonrpsee::types::ErrorObject::owned(code as i32, message, data)
+}
 
 fn signature_and_service<const ARITY: usize, Handler, Args>(
     handler: Handler,
