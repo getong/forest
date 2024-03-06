@@ -53,6 +53,12 @@ struct Concat {
     left: String,
     right: String,
     result: String,
+    info: NestedInfo,
+}
+#[derive(Serialize, Deserialize, JsonSchema)]
+struct NestedInfo {
+    x: usize,
+    y: usize,
 }
 
 async fn concat(
@@ -65,19 +71,21 @@ async fn concat(
         left,
         right,
         result,
+        info: NestedInfo { x: 1, y: 2 },
     })
 }
 
 fn main() {
-    let calling_convention = ParamStructure::Either;
-
-    let mut module = SelfDescribingModule::new(MyCtx {
-        blockstore: MyBlockstore::default(),
-    });
+    let mut module = SelfDescribingModule::new(
+        MyCtx {
+            blockstore: MyBlockstore::default(),
+        },
+        ParamStructure::Either,
+    );
     module
-        .serve("count", calling_convention, [], count)
-        .serve("increment", calling_convention, ["amount"], increment)
-        .serve("concat", calling_convention, ["left", "right"], concat);
+        .serve("count", [], count)
+        .serve("increment", ["amount"], increment)
+        .serve("concat", ["left", "right"], concat);
     let (_module, doc) = module.finish();
     println!("{:#}", serde_json::to_value(doc).unwrap());
 }

@@ -16,7 +16,11 @@ use itertools::Itertools as _;
 use openrpc_types::{ContentDescriptor, Method, ParamStructure};
 use parser::Parser;
 use pin_project_lite::pin_project;
-use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
+use schemars::{
+    gen::{SchemaGenerator, SchemaSettings},
+    schema::Schema,
+    JsonSchema,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -25,21 +29,22 @@ use crate::util::Optional;
 pub struct SelfDescribingModule<Ctx> {
     inner: jsonrpsee::server::RpcModule<Ctx>,
     schema_generator: SchemaGenerator,
+    calling_convention: ParamStructure,
     methods: Vec<Method>,
 }
 
 impl<Ctx> SelfDescribingModule<Ctx> {
-    pub fn new(ctx: Ctx) -> Self {
+    pub fn new(ctx: Ctx, calling_convention: ParamStructure) -> Self {
         Self {
             inner: jsonrpsee::server::RpcModule::new(ctx),
-            schema_generator: SchemaGenerator::default(),
+            schema_generator: SchemaGenerator::new(SchemaSettings::openapi3()),
+            calling_convention,
             methods: vec![],
         }
     }
     pub fn serve<const ARITY: usize, F, Args, R>(
         &mut self,
         method_name: &'static str,
-        calling_convention: ParamStructure,
         param_names: [&'static str; ARITY],
         f: F,
     ) -> &mut Self
@@ -50,7 +55,7 @@ impl<Ctx> SelfDescribingModule<Ctx> {
         R: JsonSchema + for<'de> Deserialize<'de>,
     {
         self.inner
-            .register_async_method(method_name, f.wrap(param_names, calling_convention))
+            .register_async_method(method_name, f.wrap(param_names, self.calling_convention))
             .unwrap();
         self.methods.push(Method {
             name: String::from(method_name),
@@ -65,7 +70,7 @@ impl<Ctx> SelfDescribingModule<Ctx> {
                     }),
             )
             .unwrap(),
-            param_structure: calling_convention,
+            param_structure: self.calling_convention,
             result: Some(ContentDescriptor {
                 name: format!("{}-result", method_name),
                 schema: R::json_schema(&mut self.schema_generator),
@@ -79,6 +84,7 @@ impl<Ctx> SelfDescribingModule<Ctx> {
             inner,
             mut schema_generator,
             methods,
+            calling_convention: _,
         } = self;
         (
             inner,
