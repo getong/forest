@@ -1601,9 +1601,6 @@
 <a href="#1600" id="1600">1600</a>
 <a href="#1601" id="1601">1601</a>
 <a href="#1602" id="1602">1602</a>
-<a href="#1603" id="1603">1603</a>
-<a href="#1604" id="1604">1604</a>
-<a href="#1605" id="1605">1605</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2181,7 +2178,8 @@
 
 <span class="attr">#[derive(Debug, Copy, Clone)]
 </span><span class="kw">enum </span>InvalidBlockStrategy {
-    Strict,
+    <span class="attr">#[allow(dead_code)]
+    </span>Strict,
     Forgiving,
 }
 
@@ -2377,7 +2375,7 @@
         <span class="kw-2">&amp;</span>bad_block_cache,
         parent_tipsets,
         <span class="kw-2">&amp;</span>genesis,
-        InvalidBlockStrategy::Strict,
+        InvalidBlockStrategy::Forgiving,
     )
     .<span class="kw">await
     </span>{
@@ -2597,22 +2595,18 @@
     }
 
     <span class="comment">// Tipsets in `batch` are already in chronological order
-    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(head) = batch.last() {
-        <span class="kw">let </span>epoch = head.epoch();
-        <span class="kw">let </span>len = batch.len();
-
-        <span class="macro">debug!</span>(<span class="string">"ChainExchange message sync tipsets: epoch: {epoch}, len: {len}"</span>);
-
+    </span><span class="kw">if </span>!batch.is_empty() {
         <span class="kw">let </span>compacted_messages = network
-            .chain_exchange_messages(<span class="prelude-val">None</span>, head.key(), len <span class="kw">as </span>u64)
+            .chain_exchange_messages(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>batch)
             .<span class="kw">await
             </span>.map_err(TipsetRangeSyncerError::NetworkMessageQueryFailed)<span class="question-mark">?</span>;
 
         <span class="comment">// inflate our tipsets with the messages from the wire format
+        // Note: compacted_messages.len() can be not equal to batch.len()
         </span>compacted_messages
             .into_iter()
+            .zip(batch.iter().rev())
             .rev()
-            .zip(batch.iter())
             .map(|(messages, tipset)| {
                 <span class="kw">let </span>bundle = TipsetBundle {
                     blocks: tipset.block_headers().iter().cloned().collect_vec(),

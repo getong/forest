@@ -509,6 +509,54 @@
 <a href="#508" id="508">508</a>
 <a href="#509" id="509">509</a>
 <a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -606,11 +654,16 @@
         });
     }
 
-    <span class="doccomment">/// Return first finishing `Ok` future else return `None` if all jobs failed
-    </span><span class="kw">pub async fn </span>get_ok(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+    <span class="doccomment">/// Return first finishing `Ok` future that passes validation else return `None` if all jobs failed
+    </span><span class="kw">pub async fn </span>get_ok_validated&lt;F&gt;(<span class="kw-2">mut </span><span class="self">self</span>, validate: F) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt;
+    <span class="kw">where
+        </span>F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool,
+    {
         <span class="kw">while let </span><span class="prelude-val">Some</span>(result) = <span class="self">self</span>.tasks.join_next().<span class="kw">await </span>{
             <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(value)) = result {
-                <span class="kw">return </span><span class="prelude-val">Some</span>(value);
+                <span class="kw">if </span>validate(<span class="kw-2">&amp;</span>value) {
+                    <span class="kw">return </span><span class="prelude-val">Some</span>(value);
+                }
             }
         }
         <span class="comment">// So far every task have failed
@@ -648,7 +701,7 @@
         tsk: <span class="kw-2">&amp;</span>TipsetKey,
         count: u64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Arc&lt;Tipset&gt;&gt;, String&gt; {
-        <span class="self">self</span>.handle_chain_exchange_request(peer_id, tsk, count, HEADERS)
+        <span class="self">self</span>.handle_chain_exchange_request(peer_id, tsk, count, HEADERS, |<span class="kw">_</span>| <span class="bool-val">true</span>)
             .<span class="kw">await
     </span>}
     <span class="doccomment">/// Send a `chain_exchange` request for only messages (ignore block
@@ -657,11 +710,40 @@
     </span><span class="kw">pub async fn </span>chain_exchange_messages(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         peer_id: <span class="prelude-ty">Option</span>&lt;PeerId&gt;,
-        tsk: <span class="kw-2">&amp;</span>TipsetKey,
-        count: u64,
+        tipsets: <span class="kw-2">&amp;</span>[Arc&lt;Tipset&gt;],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;CompactedMessages&gt;, String&gt; {
-        <span class="self">self</span>.handle_chain_exchange_request(peer_id, tsk, count, MESSAGES)
-            .<span class="kw">await
+        <span class="kw">let </span>head = tipsets
+            .last()
+            .ok_or_else(|| <span class="string">"tipsets cannot be empty"</span>.to_owned())<span class="question-mark">?</span>;
+        <span class="kw">let </span>tsk = head.key();
+        <span class="macro">tracing::debug!</span>(
+            <span class="string">"ChainExchange message sync tipsets: epoch: {}, len: {}"</span>,
+            head.epoch(),
+            tipsets.len()
+        );
+        <span class="self">self</span>.handle_chain_exchange_request(
+            peer_id,
+            tsk,
+            tipsets.len() <span class="kw">as _</span>,
+            MESSAGES,
+            |compacted_messages_vec: <span class="kw-2">&amp;</span>Vec&lt;CompactedMessages&gt;| {
+                <span class="kw">for </span>(msg, ts ) <span class="kw">in </span>compacted_messages_vec.iter().zip(tipsets.iter().rev()) {
+                    <span class="kw">let </span>header_len = ts.block_headers().len();
+                    <span class="kw">if </span>header_len != msg.bls_msg_includes.len()
+                        || header_len != msg.secp_msg_includes.len()
+                    {
+                        <span class="macro">tracing::warn!</span>(
+                            <span class="string">"header_len: {header_len}, msg.bls_msg_includes.len(): {}, msg.secp_msg_includes.len(): {}"</span>,
+                            msg.bls_msg_includes.len(),
+                            msg.secp_msg_includes.len()
+                        );
+                        <span class="kw">return </span><span class="bool-val">false</span>;
+                    }
+                }
+                <span class="bool-val">true
+            </span>},
+        )
+        .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Send a `chain_exchange` request for a single full tipset (includes
@@ -673,7 +755,7 @@
         tsk: <span class="kw-2">&amp;</span>TipsetKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;FullTipset, String&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>fts = <span class="self">self
-            </span>.handle_chain_exchange_request(peer_id, tsk, <span class="number">1</span>, HEADERS | MESSAGES)
+            </span>.handle_chain_exchange_request(peer_id, tsk, <span class="number">1</span>, HEADERS | MESSAGES, |<span class="kw">_</span>| <span class="bool-val">true</span>)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">if </span>fts.len() != <span class="number">1 </span>{
@@ -728,15 +810,17 @@
 
     <span class="doccomment">/// Helper function to handle the peer retrieval if no peer supplied as well
     /// as the logging and updating of the peer info in the `PeerManager`.
-    </span><span class="kw">async fn </span>handle_chain_exchange_request&lt;T&gt;(
+    </span><span class="kw">async fn </span>handle_chain_exchange_request&lt;T, F&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         peer_id: <span class="prelude-ty">Option</span>&lt;PeerId&gt;,
         tsk: <span class="kw-2">&amp;</span>TipsetKey,
         request_len: u64,
         options: u64,
+        validate: F,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;T&gt;, String&gt;
     <span class="kw">where
         </span>T: TryFrom&lt;TipsetBundle, Error = String&gt; + Send + Sync + <span class="lifetime">'static</span>,
+        F: Fn(<span class="kw-2">&amp;</span>Vec&lt;T&gt;) -&gt; bool,
     {
         <span class="kw">let </span>request = ChainExchangeRequest {
             start: NonEmpty::from_vec(tsk.cids.clone().into_iter().collect())
@@ -813,7 +897,10 @@
                     message
                 };
 
-                <span class="kw">let </span>v = batch.get_ok().<span class="kw">await</span>.ok_or_else(make_failure_message)<span class="question-mark">?</span>;
+                <span class="kw">let </span>v = batch
+                    .get_ok_validated(validate)
+                    .<span class="kw">await
+                    </span>.ok_or_else(make_failure_message)<span class="question-mark">?</span>;
                 <span class="macro">debug!</span>(<span class="string">"Succeed: handle_chain_exchange_request"</span>);
                 v
             }
@@ -932,6 +1019,15 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="kw">use </span>std::sync::atomic::{AtomicBool, AtomicUsize};
+
+    <span class="kw">impl</span>&lt;T&gt; RaceBatch&lt;T&gt;
+    <span class="kw">where
+        </span>T: Send + <span class="lifetime">'static</span>,
+    {
+        <span class="kw">pub async fn </span>get_ok(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+            <span class="self">self</span>.get_ok_validated(|<span class="kw">_</span>| <span class="bool-val">true</span>).<span class="kw">await
+        </span>}
+    }
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>race_batch_ok() {
