@@ -12,14 +12,23 @@ mod signature;
 mod towery;
 mod util;
 
-use std::{future::Future, sync::Arc};
+use std::{
+    future::{ready, Future, Ready},
+    marker::PhantomData,
+    pin::Pin,
+    sync::Arc,
+    task::{ready, Context, Poll},
+};
 
-use futures::future::BoxFuture;
+use dyn_clone::DynClone;
+use futures::future::{BoxFuture, Either};
 use into_rpc_service::IntoRpcService;
 use openrpc_types::{ContentDescriptor, Method, ParamStructure};
 use parser::Parser;
+use pin_project_lite::pin_project;
 use schemars::{gen::SchemaGenerator, JsonSchema};
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use signature::{GetReturningSignature, Signature};
 
 use crate::util::Optional;
@@ -34,8 +43,8 @@ trait Blockstore {}
 impl Blockstore for MyBlockstore {}
 impl<T> Blockstore for &T where T: Blockstore {}
 
-async fn concat<BS: Blockstore>(
-    _ctx: &MyCtx<BS>,
+async fn concat(
+    _ctx: Arc<MyCtx<impl Blockstore>>, // TODO(aatifsyed): take &MyCtx<BS> here
     lhs: String,
     rhs: String,
 ) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
@@ -102,14 +111,14 @@ impl<Ctx> WrappedModule<Ctx>
     //     };
     //     self.methods.push(method);
     // }
-    fn serve1<const ARITY: usize, F, Args, Fut, R>(
+    fn serve1<const ARITY: usize, F, Args, R>(
         &mut self,
         method_name: &'static str, // parity...
         calling_convention: ParamStructure,
         param_names: [&'static str; ARITY],
         f: F,
     ) where
-        F: Wrap<ARITY, Args, Ctx, Fut, R>,
+        F: Wrap<ARITY, Ctx, Args, R>,
         Ctx: Send + Sync + 'static,
     {
         self.inner
@@ -135,64 +144,158 @@ where
 //     Fut: Future<Output = R> + Send,
 //     Fun: (Fn(Params<'static>, Arc<Context>) -> Fut) + Clone + Send + Sync + 'static,
 
-trait Wrap<const ARITY: usize, Args, Ctx, Fut, R> {
+trait Wrap<const ARITY: usize, Ctx, Args, R> {
     type Future: Future<Output = Result<serde_json::Value, jsonrpsee::types::ErrorObjectOwned>>
         + Send;
     fn wrap(
         self,
         param_names: [&'static str; ARITY],
         calling_convention: ParamStructure,
-    ) -> impl (Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future)
-           + Clone
+    ) -> impl Clone
            + Send
            + Sync
-           + 'static;
+           + 'static
+           + Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future;
 }
 
-impl<F, T0, T1, Ctx, Fut, R> Wrap<2, (T0, T1), Ctx, Fut, R> for F
+impl<F, T0, T1, Ctx, Fut, R> Wrap<2, Ctx, (T0, T1), R> for F
 where
-    F: Fn(&Ctx, T0, T1) -> Fut + Clone + Send + Sync + 'static,
+    F: Clone + Send + Sync + 'static + Fn(Arc<Ctx>, T0, T1) -> Fut,
     Ctx: Send + Sync + 'static,
-    T0: for<'de> Deserialize<'de>,
-    T1: for<'de> Deserialize<'de>,
+    T0: for<'de> Deserialize<'de> + Clone,
+    T1: for<'de> Deserialize<'de> + Clone,
     Fut: Future<Output = Result<R, jsonrpsee::types::ErrorObjectOwned>> + Send + Sync + 'static,
     R: Serialize,
 {
-    type Future = BoxFuture<'static, Result<serde_json::Value, jsonrpsee::types::ErrorObjectOwned>>;
+    type Future = Either<
+        Ready<Result<Value, jsonrpsee::types::ErrorObjectOwned>>,
+        AndThenDeserializeResponse<Fut>,
+    >;
 
     fn wrap(
         self,
         param_names: [&'static str; 2],
         calling_convention: ParamStructure,
-    ) -> impl (Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future)
-           + Clone
+    ) -> impl Clone
            + Send
            + Sync
-           + 'static {
+           + 'static
+           + Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future {
         move |params, ctx| {
-            let f = self.clone();
-            Box::pin(async move {
-                let params = params
-                    .as_str()
-                    .map(serde_json::from_str)
-                    .transpose()
-                    .map_err(|e| error2error(jsonrpc_types::Error::invalid_params(e, None)))?;
-                let mut parser =
-                    Parser::new(params, &param_names, calling_convention).map_err(error2error)?;
-
-                let t0 = parser.parse().map_err(error2error)?;
-                let t1 = parser.parse().map_err(error2error)?;
-                match f(&ctx, t0, t1).await {
-                    Ok(it) => match serde_json::to_value(it) {
-                        Ok(it) => Ok(it),
-                        Err(e) => Err(error2error(jsonrpc_types::Error::internal_error(e, None))),
-                    },
-                    Err(e) => Err(e),
+            let params = match params.as_str().map(serde_json::from_str).transpose() {
+                Ok(it) => it,
+                Err(e) => {
+                    return Either::Left(ready(Err(error2error(
+                        jsonrpc_types::Error::invalid_params(e, None),
+                    ))))
                 }
+            };
+            let mut parser = match Parser::new(params, &param_names, calling_convention) {
+                Ok(it) => it,
+                Err(e) => return Either::Left(ready(Err(error2error(e)))),
+            };
+
+            let t0 = match parser.parse() {
+                Ok(it) => it,
+                Err(e) => return Either::Left(ready(Err(error2error(e)))),
+            };
+            let t1 = match parser.parse() {
+                Ok(it) => it,
+                Err(e) => return Either::Left(ready(Err(error2error(e)))),
+            };
+            Either::Right(AndThenDeserializeResponse {
+                inner: self(ctx, t0, t1),
             })
         }
     }
 }
+
+pin_project! {
+    #[derive(Clone)]
+    pub struct AndThenDeserializeResponse<F> {
+        #[pin]
+        inner: F
+    }
+}
+
+// I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee,
+// I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee,
+// I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee,
+// I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee,
+// I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee,
+// I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee, I love jsonrpsee.
+
+impl<R, F> Future for AndThenDeserializeResponse<F>
+where
+    F: Future<Output = Result<R, jsonrpsee::types::ErrorObjectOwned>>,
+    R: Serialize,
+{
+    type Output = Result<Value, jsonrpsee::types::ErrorObjectOwned>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        Poll::Ready(
+            serde_json::to_value(ready!(self.project().inner.poll(cx))?)
+                .map_err(|e| {
+                    jsonrpc_types::Error::internal_error(
+                        "error deserializing return value for handler",
+                        json!({
+                            "type": std::any::type_name::<R>(),
+                            "error": e.to_string()
+                        }),
+                    )
+                })
+                .map_err(error2error),
+        )
+    }
+}
+
+// type BoxCloneFuture<T> = Pin<Box<dyn CloneFuture<Output = T> + Send>>;
+
+// trait CloneFuture: Future + DynClone {}
+// impl<T> CloneFuture for T where T: Future + DynClone {}
+
+// impl<F, T0, T1, Ctx, Fut, R> Wrap<2, (T0, T1), Ctx, Fut, R> for F
+// where
+//     F: Fn(&Ctx, T0, T1) -> Fut + Clone + Send + Sync + 'static,
+//     Ctx: Send + Sync + 'static,
+//     T0: for<'de> Deserialize<'de> + Clone,
+//     T1: for<'de> Deserialize<'de> + Clone,
+//     Fut: Future<Output = Result<R, jsonrpsee::types::ErrorObjectOwned>> + Send + Sync + 'static,
+//     R: Serialize,
+// {
+//     fn wrap(
+//         self,
+//         param_names: [&'static str; 2],
+//         calling_convention: ParamStructure,
+//     ) -> impl (Fn(
+//         jsonrpsee::types::Params<'static>,
+//         Arc<Ctx>,
+//     )
+//         -> BoxCloneFuture<Result<serde_json::Value, jsonrpsee::types::ErrorObjectOwned>>) {
+//         move |params, ctx| {
+//             let f = self.clone();
+//             Box::pin(async move {
+//                 let params = params
+//                     .as_str()
+//                     .map(serde_json::from_str)
+//                     .transpose()
+//                     .map_err(|e| error2error(jsonrpc_types::Error::invalid_params(e, None)))?;
+//                 let mut parser =
+//                     Parser::new(params, &param_names, calling_convention).map_err(error2error)?;
+
+//                 let t0 = parser.parse().map_err(error2error)?;
+//                 let t1 = parser.parse().map_err(error2error)?;
+//                 match f(&ctx, t0, t1).await {
+//                     Ok(it) => match serde_json::to_value(it) {
+//                         Ok(it) => Ok(it),
+//                         Err(e) => Err(error2error(jsonrpc_types::Error::internal_error(e, None))),
+//                     },
+//                     Err(e) => Err(e),
+//                 }
+//             })
+//         }
+//     }
+// }
 
 fn error2error(ours: jsonrpc_types::Error) -> jsonrpsee::types::ErrorObjectOwned {
     let jsonrpc_types::Error {
