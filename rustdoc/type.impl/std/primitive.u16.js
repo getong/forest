@@ -1,5 +1,4 @@
 (function() {var type_impls = {
-"axum":[],
 "linux_raw_sys":[],
 "nonzero_ext":[],
 "serde":[],

@@ -391,39 +391,6 @@
 <a href="#390" id="390">390</a>
 <a href="#391" id="391">391</a>
 <a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a>
-<a href="#425" id="425">425</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -449,14 +416,13 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{Multiaddr, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::utils::net::global_http_client;
-<span class="kw">use </span>base64::prelude::{Engine, BASE64_STANDARD};
-<span class="kw">use </span>jsonrpsee::types::{params::TwoPointZero, Id, Request};
+<span class="kw">use </span>jsonrpsee::{
+    core::{client::ClientT, traits::ToRpcParams},
+    types::{params::TwoPointZero, Id, Request},
+    ws_client::WsClientBuilder,
+};
 <span class="kw">use </span>serde::Deserialize;
 <span class="kw">use </span>tracing::debug;
-
-<span class="kw">use </span>futures_util::{SinkExt, StreamExt};
-<span class="kw">use </span>tokio_tungstenite::tungstenite;
-<span class="kw">use </span>tokio_tungstenite::{connect_async, tungstenite::protocol::Message <span class="kw">as </span>WsMessage};
 
 <span class="kw">pub const </span>API_INFO_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"FULLNODE_API_INFO"</span>;
 <span class="kw">pub const </span>DEFAULT_HOST: <span class="kw-2">&amp;</span>str = <span class="string">"127.0.0.1"</span>;
@@ -566,57 +532,18 @@
         }
     }
 
-    <span class="kw">pub async fn </span>ws_call&lt;T: HasLotusJson&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, req: RpcRequest&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
-        <span class="kw">let </span>params = serde_json::value::to_raw_value(<span class="kw-2">&amp;</span>req.params)
-            .map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_PARAMS)<span class="question-mark">?</span>;
-        <span class="kw">let </span>rpc_req = Request::new(req.method_name.into(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>params), Id::Number(<span class="number">0</span>));
-
-        <span class="kw">let </span>payload = serde_json::to_vec(<span class="kw-2">&amp;</span>rpc_req).map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_REQUEST)<span class="question-mark">?</span>;
-
+    <span class="kw">pub async fn </span>ws_call&lt;T: HasLotusJson + Send&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        req: RpcRequest&lt;T&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
         <span class="kw">let </span>api_url = multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr, req.rpc_endpoint);
-
         <span class="macro">debug!</span>(<span class="string">"Using JSON-RPC v2 WS URL: {}"</span>, <span class="kw-2">&amp;</span>api_url);
-
-        <span class="comment">// A 16 byte key (base64 encoded) is expected for `Sec-WebSocket-Key` during a websocket handshake
-        // See 5. in https://datatracker.ietf.org/doc/html/rfc6455#section-4.2.1
-        </span><span class="kw">let </span>key = BASE64_STANDARD.encode(<span class="string">b"TheGreatOldOnes."</span>);
-
-        <span class="kw">let </span>request = tungstenite::http::Request::builder()
-            .method(<span class="string">"GET"</span>)
-            .uri(api_url.to_string())
-            .header(<span class="string">"Host"</span>, api_url.host)
-            .header(<span class="string">"Upgrade"</span>, <span class="string">"websocket"</span>)
-            .header(<span class="string">"Connection"</span>, <span class="string">"upgrade"</span>)
-            .header(<span class="string">"Sec-Websocket-Key"</span>, key)
-            .header(<span class="string">"Sec-Websocket-Version"</span>, <span class="string">"13"</span>)
-            .body(())
-            .map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_REQUEST)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>(ws_stream, <span class="kw">_</span>) = connect_async(request).<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="kw">let </span>(<span class="kw-2">mut </span>write, <span class="kw-2">mut </span>read) = ws_stream.split();
-
-        write.send(WsMessage::Binary(payload)).<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="kw">match </span>tokio::time::timeout(req.timeout, read.next()).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(v) =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = v {
-                    <span class="kw">let </span>data = message<span class="question-mark">?</span>.into_data();
-                    <span class="kw">let </span>rpc_res: JsonRpcResponse&lt;T::LotusJson&gt; =
-                        serde_json::from_slice(<span class="kw-2">&amp;</span>data).map_err(|<span class="kw">_</span>| JsonRpcError::PARSE_ERROR)<span class="question-mark">?</span>;
-
-                    <span class="kw">match </span>rpc_res {
-                        JsonRpcResponse::Result { result, .. } =&gt; {
-                            <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(result))
-                        }
-                        JsonRpcResponse::Error { error, .. } =&gt; <span class="prelude-val">Err</span>(error),
-                    }
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(JsonRpcError::INVALID_REQUEST)
-                }
-            }
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(JsonRpcError::TIMED_OUT),
-        }
+        <span class="kw">let </span>ws_client = WsClientBuilder::default()
+            .request_timeout(req.timeout)
+            .build(api_url.to_string())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>response_lotus_json: T::LotusJson = ws_client.request(req.method_name, req).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(response_lotus_json))
     }
 }
 
@@ -673,19 +600,6 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;tungstenite::Error&gt; <span class="kw">for </span>JsonRpcError {
-    <span class="kw">fn </span>from(tungstenite_error: tungstenite::Error) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>status = <span class="kw">match </span><span class="kw-2">&amp;</span>tungstenite_error {
-            tungstenite::Error::Http(resp) =&gt; <span class="prelude-val">Some</span>(resp.status()),
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-        };
-        JsonRpcError {
-            code: status.map(|s| s.as_u16()).unwrap_or_default() <span class="kw">as </span>i64,
-            message: Cow::Owned(tungstenite_error.to_string()),
-        }
-    }
-}
-
 <span class="kw">impl </span>From&lt;reqwest::Error&gt; <span class="kw">for </span>JsonRpcError {
     <span class="kw">fn </span>from(reqwest_error: reqwest::Error) -&gt; <span class="self">Self </span>{
         JsonRpcError {
@@ -694,6 +608,20 @@
                 .map(|s| s.as_u16())
                 .unwrap_or_default() <span class="kw">as </span>i64,
             message: Cow::Owned(reqwest_error.to_string()),
+        }
+    }
+}
+
+<span class="kw">impl </span>From&lt;jsonrpsee::core::client::Error&gt; <span class="kw">for </span>JsonRpcError {
+    <span class="kw">fn </span>from(error: jsonrpsee::core::client::Error) -&gt; <span class="self">Self </span>{
+        <span class="kw">use </span>jsonrpsee::core::client::Error::<span class="kw-2">*</span>;
+
+        <span class="kw">match </span>error {
+            RequestTimeout =&gt; JsonRpcError::TIMED_OUT,
+            e =&gt; JsonRpcError {
+                code: <span class="number">500</span>,
+                message: Cow::Owned(e.to_string()),
+            },
         }
     }
 }
@@ -847,6 +775,12 @@
             rpc_endpoint: <span class="self">self</span>.rpc_endpoint,
             timeout: <span class="self">self</span>.timeout,
         }
+    }
+}
+
+<span class="kw">impl</span>&lt;T&gt; ToRpcParams <span class="kw">for </span>RpcRequest&lt;T&gt; {
+    <span class="kw">fn </span>to_rpc_params(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Box&lt;serde_json::value::RawValue&gt;&gt;, serde_json::Error&gt; {
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(serde_json::value::to_raw_value(<span class="kw-2">&amp;</span><span class="self">self</span>.params)<span class="question-mark">?</span>))
     }
 }
 </code></pre></div></section></main></body></html>
