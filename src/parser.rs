@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 
-use itertools::Itertools as _;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -9,23 +8,6 @@ use crate::{
     openrpc_types::ParamStructure,
     util::Optional as _,
 };
-
-pub fn check_args<const N: usize>(names: [&str; N], optional: [bool; N]) {
-    let duplicates = names.into_iter().duplicates().collect::<Vec<_>>();
-    if !duplicates.is_empty() {
-        panic!("duplicate param names: [{}]", duplicates.join(", "))
-    }
-    for (ix, (left, right)) in optional.into_iter().tuple_windows().enumerate() {
-        if left && !right {
-            panic!(
-                "mandatory param `{}` follows optional param `{}` at index {}",
-                names[ix + 1],
-                names[ix],
-                ix
-            )
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct Parser<'a> {
