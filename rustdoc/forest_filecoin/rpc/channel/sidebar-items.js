@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["CANCEL_METHOD_NAME","NOTIF_METHOD_NAME"],"fn":["close_channel_response","close_payload","create_notif_message"],"struct":["PendingSubscriptionSink","RpcModule","SubscriptionSink"],"type":["ChannelId","Subscribers"]};
+window.SIDEBAR_ITEMS = {"constant":["CANCEL_METHOD_NAME","NOTIF_METHOD_NAME"],"fn":["close_channel_response","close_payload","create_notif_message"],"struct":["IsUnsubscribed","PendingSubscriptionSink","RpcModule","SubscriptionSink"],"type":["ChannelId","Subscribers"]};
