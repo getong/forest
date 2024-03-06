@@ -1013,6 +1013,14 @@
 <a href="#1012" id="1012">1012</a>
 <a href="#1013" id="1013">1013</a>
 <a href="#1014" id="1014">1014</a>
+<a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1239,8 +1247,20 @@
     }
 }
 
-<span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+<span class="attr">#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 </span><span class="kw">pub struct </span>ApiTipsetKey(<span class="kw">pub </span><span class="prelude-ty">Option</span>&lt;TipsetKey&gt;);
+
+<span class="kw">impl </span>From&lt;TipsetKey&gt; <span class="kw">for </span>ApiTipsetKey {
+    <span class="kw">fn </span>from(value: TipsetKey) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(<span class="prelude-val">Some</span>(value))
+    }
+}
+
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>TipsetKey&gt; <span class="kw">for </span>ApiTipsetKey {
+    <span class="kw">fn </span>from(value: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="self">Self </span>{
+        value.clone().into()
+    }
+}
 
 <span class="kw">impl </span>HasLotusJson <span class="kw">for </span>ApiTipsetKey {
     <span class="kw">type </span>LotusJson = LotusJson&lt;Vec&lt;Cid&gt;&gt;;
@@ -1253,17 +1273,13 @@
     <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
         LotusJson(
             <span class="self">self</span>.<span class="number">0
-                </span>.map(|ts| ts.cids.into_iter().collect::&lt;Vec&lt;Cid&gt;&gt;())
+                </span>.map(|ts| ts.into_cids().into_iter().collect::&lt;Vec&lt;Cid&gt;&gt;())
                 .unwrap_or_default(),
         )
     }
 
     <span class="kw">fn </span>from_lotus_json(LotusJson(lotus_json): <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(<span class="kw">if </span>lotus_json.is_empty() {
-            <span class="prelude-val">None
-        </span>} <span class="kw">else </span>{
-            <span class="prelude-val">Some</span>(TipsetKey::from_iter(lotus_json))
-        })
+        <span class="self">Self</span>(NonEmpty::from_vec(lotus_json).map(From::from))
     }
 }
 
@@ -2022,7 +2038,7 @@
         <span class="kw">let </span>api_ts = api_ts_lotus_json.into_inner();
         <span class="kw">let </span>cids_from_api_ts = api_ts
             .<span class="number">0
-            </span>.map(|ts| ts.cids.into_iter().collect::&lt;Vec&lt;Cid&gt;&gt;())
+            </span>.map(|ts| ts.into_cids().into_iter().collect::&lt;Vec&lt;Cid&gt;&gt;())
             .unwrap_or_default();
         <span class="macro">assert_eq!</span>(cids_from_api_ts, cids);
     }

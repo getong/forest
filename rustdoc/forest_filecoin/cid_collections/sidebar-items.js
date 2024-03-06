@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["MaybeCompactedCid"],"mod":["frozen_vec","hash_map","hash_set","imp"]};
+window.SIDEBAR_ITEMS = {"enum":["MaybeCompactedCid"],"mod":["hash_map","hash_set","imp","small_cid_vec"]};
