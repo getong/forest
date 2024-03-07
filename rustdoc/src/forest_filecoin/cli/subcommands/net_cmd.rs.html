@@ -120,13 +120,53 @@
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::libp2p::{Multiaddr, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::AddrInfo;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
-<span class="kw">use </span>ahash::HashSet;
+<span class="kw">use </span>ahash::{HashMap, HashSet};
 <span class="kw">use </span>cid::multibase;
 <span class="kw">use </span>clap::Subcommand;
 <span class="kw">use </span>itertools::Itertools;
@@ -140,7 +180,11 @@
     <span class="doccomment">/// Lists `libp2p` swarm network info
     </span>Info,
     <span class="doccomment">/// Lists `libp2p` swarm peers
-    </span>Peers,
+    </span>Peers {
+        <span class="doccomment">/// Print agent name
+        </span><span class="attr">#[arg(short, long)]
+        </span>agent: bool,
+    },
     <span class="doccomment">/// Connects to a peer by its peer ID and multi-addresses
     </span>Connect {
         <span class="doccomment">/// Multi-address (with `/p2p/` protocol)
@@ -177,8 +221,28 @@
                 <span class="macro">println!</span>(<span class="string">"num established: {}"</span>, info.num_established);
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="self">Self</span>::Peers =&gt; {
+            <span class="self">Self</span>::Peers { agent } =&gt; {
                 <span class="kw">let </span>addrs = api.net_peers().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>peer_to_agents: HashMap&lt;String, String&gt; = <span class="kw">if </span>agent {
+                    <span class="kw">let </span>agents = futures::future::join_all(
+                        addrs
+                            .iter()
+                            .map(|info| api.net_agent_version(info.id.to_owned())),
+                    )
+                    .<span class="kw">await
+                    </span>.into_iter()
+                    .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+
+                    HashMap::from_iter(
+                        addrs
+                            .iter()
+                            .map(|info| info.id.to_owned())
+                            .zip(agents.into_iter()),
+                    )
+                } <span class="kw">else </span>{
+                    HashMap::default()
+                };
+
                 <span class="kw">let </span>output: Vec&lt;String&gt; = addrs
                     .into_iter()
                     .filter_map(|info| {
@@ -196,7 +260,23 @@
                         <span class="kw">if </span>addresses.is_empty() {
                             <span class="kw">return </span><span class="prelude-val">None</span>;
                         }
-                        <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">"{}, [{}]"</span>, info.id, addresses.join(<span class="string">", "</span>)))
+
+                        <span class="kw">let </span>result = <span class="macro">format!</span>(<span class="string">"{}, [{}]"</span>, info.id, addresses.join(<span class="string">", "</span>));
+
+                        <span class="kw">if </span>agent {
+                            <span class="prelude-val">Some</span>(
+                                [
+                                    result,
+                                    peer_to_agents
+                                        .get(<span class="kw-2">&amp;</span>info.id)
+                                        .cloned()
+                                        .unwrap_or_else(|| <span class="string">"&lt;agent unknown&gt;"</span>.to_owned()),
+                                ]
+                                .join(<span class="string">", "</span>),
+                            )
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">Some</span>(result)
+                        }
                     })
                     .collect();
                 <span class="macro">println!</span>(<span class="string">"{}"</span>, output.join(<span class="string">"\n"</span>));

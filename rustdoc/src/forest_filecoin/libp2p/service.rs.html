@@ -910,6 +910,17 @@
 <a href="#909" id="909">909</a>
 <a href="#910" id="910">910</a>
 <a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1080,6 +1091,7 @@
     Info(OneShotSender&lt;NetInfoResult&gt;),
     Connect(OneShotSender&lt;bool&gt;, PeerId, HashSet&lt;Multiaddr&gt;),
     Disconnect(OneShotSender&lt;()&gt;, PeerId),
+    AgentVersion(OneShotSender&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;, PeerId),
 }
 
 <span class="doccomment">/// The `Libp2pService` listens to events from the libp2p swarm.
@@ -1410,8 +1422,8 @@
                     }
                 }
                 NetRPCMethods::Peers(response_channel) =&gt; {
-                    <span class="kw">let </span>peer_addresses = swarm.behaviour_mut().peer_addresses();
-                    <span class="kw">if </span>response_channel.send(peer_addresses.clone()).is_err() {
+                    <span class="kw">let </span>peer_addresses = swarm.behaviour().peer_addresses();
+                    <span class="kw">if </span>response_channel.send(peer_addresses).is_err() {
                         <span class="macro">warn!</span>(<span class="string">"Failed to get Libp2p peers"</span>);
                     }
                 }
@@ -1458,6 +1470,16 @@
                     <span class="kw">let _ </span>= Swarm::disconnect_peer_id(swarm, peer_id);
                     <span class="kw">if </span>response_channel.send(()).is_err() {
                         <span class="macro">warn!</span>(<span class="string">"Failed to disconnect from a peer"</span>);
+                    }
+                }
+                NetRPCMethods::AgentVersion(response_channel, peer_id) =&gt; {
+                    <span class="kw">let </span>agent_version = swarm
+                        .behaviour()
+                        .peer_info(<span class="kw-2">&amp;</span>peer_id)
+                        .and_then(|info| info.agent_version.clone());
+
+                    <span class="kw">if </span>response_channel.send(agent_version).is_err() {
+                        <span class="macro">warn!</span>(<span class="string">"Failed to get agent version"</span>);
                     }
                 }
             }

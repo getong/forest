@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["NET_ADDRS_LISTEN","NET_CONNECT","NET_DISCONNECT","NET_INFO","NET_PEERS"],"struct":["NetInfoResult"]};
+window.SIDEBAR_ITEMS = {"constant":["NET_ADDRS_LISTEN","NET_AGENT_VERSION","NET_CONNECT","NET_DISCONNECT","NET_INFO","NET_PEERS"],"struct":["NetInfoResult"]};

@@ -551,6 +551,22 @@
 <a href="#550" id="550">550</a>
 <a href="#551" id="551">551</a>
 <a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -684,7 +700,6 @@
         } = <span class="self">self</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>peers = HashSet::new();
-        <span class="kw">let </span>peer_addresses = HashMap::new();
 
         <span class="comment">// Kademlia config
         </span><span class="kw">let </span>store = MemoryStore::new(local_peer_id);
@@ -737,7 +752,7 @@
             pending_events: VecDeque::new(),
             n_node_connected: <span class="number">0</span>,
             peers,
-            peer_addresses,
+            peer_info: HashMap::new(),
             target_peer_count,
             custom_seed_peers: user_defined,
             pending_dial_opts: VecDeque::new(),
@@ -762,14 +777,20 @@
     </span>n_node_connected: u64,
     <span class="doccomment">/// Keeps hash set of peers connected.
     </span>peers: HashSet&lt;PeerId&gt;,
-    <span class="doccomment">/// Keeps hash map of peers and their multi-addresses
-    </span>peer_addresses: HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt;,
+    <span class="doccomment">/// Keeps hash map of peers and their information.
+    </span>peer_info: HashMap&lt;PeerId, PeerInfo&gt;,
     <span class="doccomment">/// Number of connected peers to pause discovery on.
     </span>target_peer_count: u64,
     <span class="doccomment">/// Seed peers
     </span>custom_seed_peers: Vec&lt;(PeerId, Multiaddr)&gt;,
     <span class="doccomment">/// Options to configure dials to known peers.
     </span>pending_dial_opts: VecDeque&lt;DialOpts&gt;,
+}
+
+<span class="attr">#[derive(Default)]
+</span><span class="kw">pub struct </span>PeerInfo {
+    <span class="kw">pub </span>addresses: HashSet&lt;Multiaddr&gt;,
+    <span class="kw">pub </span>agent_version: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="kw">impl </span>DiscoveryBehaviour {
@@ -779,8 +800,15 @@
     }
 
     <span class="doccomment">/// Returns a map of peer ids and their multi-addresses
-    </span><span class="kw">pub fn </span>peer_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt; {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.peer_addresses
+    </span><span class="kw">pub fn </span>peer_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt; {
+        <span class="self">self</span>.peer_info
+            .iter()
+            .map(|(peer_id, info)| (<span class="kw-2">*</span>peer_id, info.addresses.clone()))
+            .collect()
+    }
+
+    <span class="kw">pub fn </span>peer_info(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: <span class="kw-2">&amp;</span>PeerId) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>PeerInfo&gt; {
+        <span class="self">self</span>.peer_info.get(peer_id)
     }
 
     <span class="doccomment">/// Bootstrap Kademlia network
@@ -813,9 +841,10 @@
         local_addr: <span class="kw-2">&amp;</span>libp2p::Multiaddr,
         remote_addr: <span class="kw-2">&amp;</span>libp2p::Multiaddr,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;THandler&lt;<span class="self">Self</span>&gt;, ConnectionDenied&gt; {
-        <span class="self">self</span>.peer_addresses
+        <span class="self">self</span>.peer_info
             .entry(peer)
             .or_default()
+            .addresses
             .insert(remote_addr.clone());
         <span class="self">self</span>.discovery.handle_established_inbound_connection(
             connection_id,
@@ -832,9 +861,10 @@
         addr: <span class="kw-2">&amp;</span>libp2p::Multiaddr,
         role_override: libp2p::core::Endpoint,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;THandler&lt;<span class="self">Self</span>&gt;, ConnectionDenied&gt; {
-        <span class="self">self</span>.peer_addresses
+        <span class="self">self</span>.peer_info
             .entry(peer)
             .or_default()
+            .addresses
             .insert(addr.clone());
         <span class="self">self</span>.discovery.handle_established_outbound_connection(
             connection_id,
@@ -883,7 +913,7 @@
                 <span class="kw">if </span>e.remaining_established == <span class="number">0 </span>{
                     <span class="self">self</span>.n_node_connected -= <span class="number">1</span>;
                     <span class="self">self</span>.peers.remove(<span class="kw-2">&amp;</span>e.peer_id);
-                    <span class="self">self</span>.peer_addresses.remove(<span class="kw-2">&amp;</span>e.peer_id);
+                    <span class="self">self</span>.peer_info.remove(<span class="kw-2">&amp;</span>e.peer_id);
                     <span class="self">self</span>.pending_events
                         .push_back(DiscoveryEvent::PeerDisconnected(e.peer_id));
                 }
@@ -949,6 +979,8 @@
                     <span class="kw">match </span><span class="kw-2">&amp;</span>ev {
                         DerivedDiscoveryBehaviourEvent::Identify(ev) =&gt; {
                             <span class="kw">if let </span>identify::Event::Received { peer_id, info } = ev {
+                                <span class="self">self</span>.peer_info.entry(<span class="kw-2">*</span>peer_id).or_default().agent_version =
+                                    <span class="prelude-val">Some</span>(info.agent_version.clone());
                                 <span class="kw">if let </span><span class="prelude-val">Some</span>(kademlia) = <span class="self">self</span>.discovery.kademlia.as_mut() {
                                     <span class="kw">for </span>address <span class="kw">in </span><span class="kw-2">&amp;</span>info.listen_addrs {
                                         kademlia.add_address(peer_id, address.clone());
