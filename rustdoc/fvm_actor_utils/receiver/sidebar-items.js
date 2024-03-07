@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ReceiverHookError"],"struct":["ReceiverHook","UniversalReceiverParams"],"trait":["RecipientData","UniversalReceiver"],"type":["ReceiverType"]};

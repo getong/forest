@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["base_fee","chain_id","curr_epoch","tipset_cid","tipset_timestamp","total_fil_circ_supply","version"]};

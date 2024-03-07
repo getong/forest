@@ -169,6 +169,18 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -181,7 +193,10 @@
 
 <span class="kw">use crate</span>::{db::SettingsStore, utils::net::http_get};
 
-<span class="kw">use super</span>::{drand::DRAND_MAINNET, parse_bootstrap_peers, DrandPoint, Height, HeightInfo};
+<span class="kw">use super</span>::{
+    drand::{DRAND_MAINNET, DRAND_QUICKNET},
+    get_upgrade_height_from_env, parse_bootstrap_peers, DrandPoint, Height, HeightInfo,
+};
 
 <span class="doccomment">/// Fetches the genesis CAR from the local database or downloads it if it does not exist.
 /// The result bytes may be compressed.
@@ -203,7 +218,7 @@
 
 <span class="doccomment">/// Genesis CID
 </span><span class="kw">pub static </span>GENESIS_CID: Lazy&lt;Cid&gt; = Lazy::new(|| {
-    Cid::from_str(<span class="string">"bafy2bzacecl7vdlut572ia64cskp3onngc5ii6co2vsdoshc6ehcx7bful5oo"</span>).unwrap()
+    Cid::from_str(<span class="string">"bafy2bzacedz4owzn3irngak4cdv3xndfxyy4qi5hcv7p724anbnt27l7dctoq"</span>).unwrap()
 });
 
 <span class="doccomment">/// Compressed genesis file. It is compressed with zstd and cuts the download size by 80% (from 10 MB to 2 MB).
@@ -218,7 +233,7 @@
 /// The genesis file does not live on the `master` branch, currently on a draft PR.
 /// `&lt;https://github.com/filecoin-project/lotus/pull/11458&gt;`
 </span><span class="kw">static </span>GENESIS_URL_ALT: Lazy&lt;Url&gt; = Lazy::new(|| {
-    <span class="string">"https://github.com/filecoin-project/lotus/raw/3e379c9997bf152639a593d3efee49b88fee27ec/build/genesis/butterflynet.car"</span>.parse().expect(<span class="string">"hard-coded URL must parse"</span>)
+    <span class="string">"https://github.com/filecoin-project/lotus/raw/3331a7e52c97e5723fc0c613271a616bb3ccdb39/build/genesis/butterflynet.car"</span>.parse().expect(<span class="string">"hard-coded URL must parse"</span>)
 });
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MINIMUM_CONSENSUS_POWER: i64 = <span class="number">2 </span>&lt;&lt; <span class="number">30</span>;
@@ -236,21 +251,21 @@
 </span><span class="kw">pub static </span>HEIGHT_INFOS: Lazy&lt;HashMap&lt;Height, HeightInfo&gt;&gt; = Lazy::new(|| {
     HashMap::from_iter([
         (
-            Height::Thunder,
+            Height::Watermelon,
             HeightInfo {
                 epoch: -<span class="number">1</span>,
                 bundle: <span class="prelude-val">Some</span>(
-                    Cid::try_from(<span class="string">"bafy2bzaceaiy4dsxxus5xp5n5i4tjzkb7sc54mjz7qnk2efhgmsrobjesxnza"</span>)
+                    Cid::try_from(<span class="string">"bafy2bzacectxvbk77ntedhztd6sszp2btrtvsmy7lp2ypnrk6yl74zb34t2cq"</span>)
                         .unwrap(),
                 ),
             },
         ),
         (
-            Height::Watermelon,
+            Height::Dragon,
             HeightInfo {
-                epoch: <span class="number">400</span>,
+                epoch: <span class="number">2600</span>,
                 bundle: <span class="prelude-val">Some</span>(
-                    Cid::try_from(<span class="string">"bafy2bzacectxvbk77ntedhztd6sszp2btrtvsmy7lp2ypnrk6yl74zb34t2cq"</span>)
+                    Cid::try_from(<span class="string">"bafy2bzaceaqx5xa4cwso24rjiu2ketjlztrqlac6dkyol7tlyuhzrle3zfbos"</span>)
                         .unwrap(),
                 ),
             },
@@ -258,11 +273,18 @@
     ])
 });
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_SCHEDULE: Lazy&lt;[DrandPoint&lt;<span class="lifetime">'static</span>&gt;; <span class="number">1</span>]&gt; = Lazy::new(|| {
-    [DrandPoint {
-        height: <span class="number">0</span>,
-        config: <span class="kw-2">&amp;</span>DRAND_MAINNET,
-    }]
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_SCHEDULE: Lazy&lt;[DrandPoint&lt;<span class="lifetime">'static</span>&gt;; <span class="number">2</span>]&gt; = Lazy::new(|| {
+    [
+        DrandPoint {
+            height: <span class="number">0</span>,
+            config: <span class="kw-2">&amp;</span>DRAND_MAINNET,
+        },
+        DrandPoint {
+            height: get_upgrade_height_from_env(<span class="string">"FOREST_DRAND_QUICKNET_HEIGHT"</span>)
+                .unwrap_or(HEIGHT_INFOS.get(<span class="kw-2">&amp;</span>Height::Dragon).unwrap().epoch + <span class="number">120</span>),
+            config: <span class="kw-2">&amp;</span>DRAND_QUICKNET,
+        },
+    ]
 });
 
 <span class="doccomment">/// Creates a new butterfly policy with the given version.
@@ -332,11 +354,13 @@
         <span class="kw">let </span>v10 = <span class="macro">make_butterfly_policy!</span>(v10);
         <span class="kw">let </span>v11 = <span class="macro">make_butterfly_policy!</span>(v11);
         <span class="kw">let </span>v12 = <span class="macro">make_butterfly_policy!</span>(v12);
+        <span class="kw">let </span>v13 = <span class="macro">make_butterfly_policy!</span>(v13);
 
         <span class="comment">// basic sanity checks
         </span><span class="macro">assert_eq!</span>(v10.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
         <span class="macro">assert_eq!</span>(v11.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
         <span class="macro">assert_eq!</span>(v12.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
+        <span class="macro">assert_eq!</span>(v13.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
     }
 }
 </code></pre></div></section></main></body></html>

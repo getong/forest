@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["balance_of","create_actor","get_actor_code_cid","get_builtin_actor_type","get_code_cid_for_type","lookup_delegated_address","next_actor_address","resolve_address"]};

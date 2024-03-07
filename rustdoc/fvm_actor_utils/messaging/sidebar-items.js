@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["RECEIVER_HOOK_METHOD_NUM"],"enum":["MessagingError"],"struct":["FvmMessenger"],"trait":["Messaging"],"type":["Result"]};

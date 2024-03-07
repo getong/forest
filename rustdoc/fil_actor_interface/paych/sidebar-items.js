@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["is_v10_paych_cid","is_v11_paych_cid","is_v12_paych_cid"]};
+window.SIDEBAR_ITEMS = {"fn":["is_v10_paych_cid","is_v11_paych_cid","is_v12_paych_cid","is_v13_paych_cid"]};

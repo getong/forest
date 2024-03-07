@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["State"],"fn":["is_v10_multisig_cid","is_v11_multisig_cid","is_v12_multisig_cid","is_v8_multisig_cid","is_v9_multisig_cid"],"struct":["Transaction"],"type":["Method"]};
+window.SIDEBAR_ITEMS = {"enum":["State"],"fn":["is_v10_multisig_cid","is_v11_multisig_cid","is_v12_multisig_cid","is_v13_multisig_cid","is_v8_multisig_cid","is_v9_multisig_cid"],"struct":["Transaction"],"type":["Method"]};

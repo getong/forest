@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["TOKEN_PRECISION"],"enum":["TokenError"],"fn":["validate_allowance","validate_amount_with_granularity"],"mod":["state","types"],"struct":["Token"]};

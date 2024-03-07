@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["State"],"fn":["is_v10_account_cid","is_v11_account_cid","is_v12_account_cid","is_v8_account_cid","is_v9_account_cid"],"type":["Method"]};
+window.SIDEBAR_ITEMS = {"enum":["State"],"fn":["is_v10_account_cid","is_v11_account_cid","is_v12_account_cid","is_v13_account_cid","is_v8_account_cid","is_v9_account_cid"],"type":["Method"]};

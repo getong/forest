@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["caller","gas_premium","method_number","nonce","origin","params_raw","receiver","value_received"]};

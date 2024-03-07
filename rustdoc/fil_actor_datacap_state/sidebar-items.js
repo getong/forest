@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["v10","v11","v12","v9"]};
+window.SIDEBAR_ITEMS = {"mod":["v10","v11","v12","v13","v9"]};

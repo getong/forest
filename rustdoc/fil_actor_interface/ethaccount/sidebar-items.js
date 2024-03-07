@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["is_v10_ethaccount_cid","is_v11_ethaccount_cid","is_v12_ethaccount_cid"]};
+window.SIDEBAR_ITEMS = {"fn":["is_v10_ethaccount_cid","is_v11_ethaccount_cid","is_v12_ethaccount_cid","is_v13_ethaccount_cid"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FRC46_TOKEN_TYPE"],"struct":["FRC46TokenReceived"],"trait":["FRC46ReceiverHook"]};

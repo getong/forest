@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["current_balance","root","self_destruct","set_root"]};

@@ -211,6 +211,26 @@
 <a href="#210" id="210">210</a>
 <a href="#211" id="211">211</a>
 <a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -220,7 +240,10 @@
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>std::str::FromStr;
 
-<span class="kw">use super</span>::{drand::DRAND_MAINNET, parse_bootstrap_peers, DrandPoint, Height, HeightInfo};
+<span class="kw">use super</span>::{
+    drand::{DRAND_MAINNET, DRAND_QUICKNET},
+    get_upgrade_height_from_env, parse_bootstrap_peers, DrandPoint, Height, HeightInfo,
+};
 
 <span class="doccomment">/// Default genesis car file bytes.
 </span><span class="kw">pub const </span>DEFAULT_GENESIS: <span class="kw-2">&amp;</span>[u8] = <span class="macro">include_bytes!</span>(<span class="string">"genesis.car"</span>);
@@ -404,14 +427,31 @@
                 ),
             },
         ),
+        (
+            Height::Dragon,
+            HeightInfo {
+                epoch: <span class="number">1_427_974</span>,
+                bundle: <span class="prelude-val">Some</span>(
+                    Cid::try_from(<span class="string">"bafy2bzacea4firkyvt2zzdwqjrws5pyeluaesh6uaid246tommayr4337xpmi"</span>)
+                        .unwrap(),
+                ),
+            },
+        ),
     ])
 });
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_SCHEDULE: Lazy&lt;[DrandPoint&lt;<span class="lifetime">'static</span>&gt;; <span class="number">1</span>]&gt; = Lazy::new(|| {
-    [DrandPoint {
-        height: <span class="number">0</span>,
-        config: <span class="kw-2">&amp;</span>DRAND_MAINNET,
-    }]
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">static </span>DRAND_SCHEDULE: Lazy&lt;[DrandPoint&lt;<span class="lifetime">'static</span>&gt;; <span class="number">2</span>]&gt; = Lazy::new(|| {
+    [
+        DrandPoint {
+            height: <span class="number">0</span>,
+            config: <span class="kw-2">&amp;</span>DRAND_MAINNET,
+        },
+        DrandPoint {
+            height: get_upgrade_height_from_env(<span class="string">"FOREST_DRAND_QUICKNET_HEIGHT"</span>)
+                .unwrap_or(HEIGHT_INFOS.get(<span class="kw-2">&amp;</span>Height::Dragon).unwrap().epoch + <span class="number">120</span>),
+            config: <span class="kw-2">&amp;</span>DRAND_QUICKNET,
+        },
+    ]
 });
 
 <span class="attr">#[cfg(test)]

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_beacon_randomness","get_chain_randomness"]};
