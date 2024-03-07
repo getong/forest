@@ -672,6 +672,34 @@
 <a href="#671" id="671">671</a>
 <a href="#672" id="672">672</a>
 <a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="doccomment">//! In general, `forest` wants to support the same RPC messages as `lotus` (go
@@ -814,6 +842,7 @@
     access.insert(net_api::NET_CONNECT, Access::Write);
     access.insert(net_api::NET_DISCONNECT, Access::Write);
     access.insert(net_api::NET_AGENT_VERSION, Access::Read);
+    access.insert(net_api::NET_AUTO_NAT_STATUS, Access::Read);
 
     <span class="comment">// Node API
     </span>access.insert(node_api::NODE_STATUS, Access::Read);
@@ -1102,6 +1131,7 @@
     <span class="kw">pub const </span>NET_CONNECT: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.NetConnect"</span>;
     <span class="kw">pub const </span>NET_DISCONNECT: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.NetDisconnect"</span>;
     <span class="kw">pub const </span>NET_AGENT_VERSION: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.NetAgentVersion"</span>;
+    <span class="kw">pub const </span>NET_AUTO_NAT_STATUS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.NetAutoNatStatus"</span>;
 
     <span class="attr">#[derive(Debug, Default, Serialize, Deserialize, Clone)]
     </span><span class="kw">pub struct </span>NetInfoResult {
@@ -1124,6 +1154,32 @@
                 num_pending_incoming: counters.num_pending_incoming(),
                 num_pending_outgoing: counters.num_pending_outgoing(),
                 num_established: counters.num_established(),
+            }
+        }
+    }
+
+    <span class="attr">#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+    #[serde(rename_all = <span class="string">"PascalCase"</span>)]
+    </span><span class="kw">pub struct </span>NatStatusResult {
+        <span class="kw">pub </span>reachability: i32,
+        <span class="kw">pub </span>public_addrs: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    }
+    <span class="macro">lotus_json_with_self!</span>(NatStatusResult);
+
+    <span class="kw">impl </span>From&lt;libp2p::autonat::NatStatus&gt; <span class="kw">for </span>NatStatusResult {
+        <span class="kw">fn </span>from(nat: libp2p::autonat::NatStatus) -&gt; <span class="self">Self </span>{
+            <span class="kw">use </span>libp2p::autonat::NatStatus;
+
+            <span class="comment">// See &lt;https://github.com/libp2p/go-libp2p/blob/91e1025f04519a5560361b09dfccd4b5239e36e6/core/network/network.go#L77&gt;
+            </span><span class="kw">let </span>(reachability, public_addrs) = <span class="kw">match </span><span class="kw-2">&amp;</span>nat {
+                NatStatus::Unknown =&gt; (<span class="number">0</span>, <span class="prelude-val">None</span>),
+                NatStatus::Public(addr) =&gt; (<span class="number">1</span>, <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[addr.to_string()])),
+                NatStatus::Private =&gt; (<span class="number">2</span>, <span class="prelude-val">None</span>),
+            };
+
+            NatStatusResult {
+                reachability,
+                public_addrs,
             }
         }
     }
