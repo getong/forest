@@ -617,10 +617,17 @@
 <a href="#616" id="616">616</a>
 <a href="#617" id="617">617</a>
 <a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span>std::{collections::VecDeque, future::Future, sync::Arc};
+</span><span class="kw">use </span>std::ops::DerefMut;
+<span class="kw">use </span>std::{collections::VecDeque, future::Future, mem, sync::Arc};
 
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::ipld::Ipld;
@@ -982,19 +989,22 @@
         queue: Vec&lt;Cid&gt;,
         fail_on_dead_links: bool,
     }
+
+    <span class="kw">impl</span>&lt;DB, T&gt; PinnedDrop <span class="kw">for </span>UnorderedChainStream&lt;DB, T&gt; {
+        <span class="kw">fn </span>drop(this: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;) {
+           this.worker_handle.abort()
+        }
+    }
 }
 
 <span class="kw">impl</span>&lt;DB, T&gt; UnorderedChainStream&lt;DB, T&gt; {
     <span class="kw">pub fn </span>into_seen(<span class="self">self</span>) -&gt; CidHashSet {
-        <span class="kw">match </span>Arc::try_unwrap(<span class="self">self</span>.seen) {
-            <span class="prelude-val">Ok</span>(v) =&gt; v.into_inner(),
-            <span class="prelude-val">Err</span>(v) =&gt; v.lock().clone(),
-        }
+        <span class="kw">let </span><span class="kw-2">mut </span>set = CidHashSet::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>guard = <span class="self">self</span>.seen.lock();
+        <span class="kw">let </span>data = guard.deref_mut();
+        mem::swap(data, <span class="kw-2">&amp;mut </span>set);
+        set
     }
-
-    <span class="kw">pub async fn </span>join_workers(<span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="self">self</span>.worker_handle.<span class="kw">await</span><span class="question-mark">?
-    </span>}
 }
 
 <span class="doccomment">/// Stream all blocks that are reachable before the `stateroot_limit` epoch in an unordered fashion.
@@ -1095,7 +1105,7 @@
                 <span class="kw">let </span>db = db.clone();
                 <span class="kw">let </span>block_sender = block_sender.clone();
                 handles.spawn(<span class="kw">async move </span>{
-                    <span class="kw">while let </span><span class="prelude-val">Ok</span>(cid) = extract_receiver.recv_async().<span class="kw">await </span>{
+                    <span class="lifetime">'main</span>: <span class="kw">while let </span><span class="prelude-val">Ok</span>(cid) = extract_receiver.recv_async().<span class="kw">await </span>{
                         <span class="kw">let </span><span class="kw-2">mut </span>cid_vec = <span class="macro">vec!</span>[cid];
                         <span class="kw">while let </span><span class="prelude-val">Some</span>(cid) = cid_vec.pop() {
                             <span class="kw">if </span>should_save_block_to_snapshot(cid) &amp;&amp; seen.lock().insert(cid) {
@@ -1104,14 +1114,16 @@
                                         <span class="kw">let </span><span class="kw-2">mut </span>new_values = extract_cids(<span class="kw-2">&amp;</span>data)<span class="question-mark">?</span>;
                                         cid_vec.append(<span class="kw-2">&amp;mut </span>new_values);
                                     }
-                                    block_sender
-                                        .send(<span class="prelude-val">Ok</span>(CarBlock { cid, data }))
-                                        .expect(<span class="string">"unreachable"</span>);
+                                    <span class="comment">// Break out of the loop if the receiving end quit.
+                                    </span><span class="kw">if </span>block_sender.send(<span class="prelude-val">Ok</span>(CarBlock { cid, data })).is_err() {
+                                        <span class="kw">break </span><span class="lifetime">'main</span>;
+                                    }
                                 } <span class="kw">else if </span>fail_on_dead_links {
-                                    block_sender
-                                        .send(<span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"missing key: {}"</span>, cid)))
-                                        .expect(<span class="string">"unreachable"</span>);
-                                    <span class="kw">break</span>;
+                                    <span class="comment">// If the receiving end has already quit - just ignore it and
+                                    // break out of the loop.
+                                    </span><span class="kw">let _ </span>= block_sender
+                                        .send(<span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"missing key: {}"</span>, cid)));
+                                    <span class="kw">break </span><span class="lifetime">'main</span>;
                                 }
                             }
                         }
