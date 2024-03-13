@@ -202,6 +202,9 @@ do_impls!(4, T0, T1, T2, T3);
 do_impls!(5, T0, T1, T2, T3, T4);
 do_impls!(6, T0, T1, T2, T3, T4, T5);
 do_impls!(7, T0, T1, T2, T3, T4, T5, T6);
+do_impls!(8, T0, T1, T2, T3, T4, T5, T6, T7);
+do_impls!(9, T0, T1, T2, T3, T4, T5, T6, T7, T8);
+do_impls!(10, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
 
 pin_project! {
     pub struct AndThenDeserializeResponse<F> {

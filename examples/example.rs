@@ -1,5 +1,6 @@
 use std::{
     any::Any,
+    future::ready,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -86,6 +87,30 @@ fn main() {
         .serve("count", [], count)
         .serve("increment", ["amount"], increment)
         .serve("concat", ["left", "right"], concat);
-    let (_module, doc) = module.finish();
+    let (mut module, doc) = module.finish();
+    steal_ctx(&mut module);
     println!("{:#}", serde_json::to_value(doc).unwrap());
+}
+
+fn steal_ctx<Ctx>(module: &mut jsonrpsee::server::RpcModule<Ctx>) -> Arc<Ctx>
+where
+    Ctx: Send + Sync + 'static,
+{
+    let method_name = "__steal_ctx";
+    let stolen = Arc::new(std::sync::Mutex::new(None));
+    module
+        .register_async_method(method_name, {
+            let stolen = stolen.clone();
+            move |_params, ctx| {
+                *stolen.lock().unwrap() = Some(Arc::clone(&ctx));
+                ready(())
+            }
+        })
+        .unwrap();
+    futures::executor::block_on(
+        module.call::<_, ()>(method_name, jsonrpsee::core::params::ArrayParams::new()),
+    )
+    .unwrap();
+    let mut guard = stolen.lock().unwrap();
+    guard.take().unwrap()
 }
