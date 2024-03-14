@@ -1060,14 +1060,6 @@
 <a href="#1059" id="1059">1059</a>
 <a href="#1060" id="1060">1060</a>
 <a href="#1061" id="1061">1061</a>
-<a href="#1062" id="1062">1062</a>
-<a href="#1063" id="1063">1063</a>
-<a href="#1064" id="1064">1064</a>
-<a href="#1065" id="1065">1065</a>
-<a href="#1066" id="1066">1066</a>
-<a href="#1067" id="1067">1067</a>
-<a href="#1068" id="1068">1068</a>
-<a href="#1069" id="1069">1069</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1096,7 +1088,6 @@
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{Address, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::shim::crypto::Signature;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
-<span class="kw">use </span><span class="kw">crate</span>::utils::db::car_util::load_car;
 <span class="kw">use </span><span class="kw">crate</span>::utils::version::FOREST_VERSION_STRING;
 <span class="kw">use </span><span class="kw">crate</span>::Client;
 <span class="kw">use </span>ahash::HashMap;
@@ -1113,8 +1104,6 @@
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tabled::{builder::Builder, settings::Style};
-<span class="kw">use </span>tokio::fs::File;
-<span class="kw">use </span>tokio::io::BufReader;
 <span class="kw">use </span>tokio::sync::Semaphore;
 <span class="kw">use </span>tokio::{
     signal::{
@@ -1131,7 +1120,7 @@
     <span class="comment">// Serve
     </span>Serve {
         <span class="doccomment">/// Snapshot input paths. Supports `.car`, `.car.zst`, and `.forest.car.zst`.
-        </span>snapshot_file: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        </span>snapshot_files: Vec&lt;PathBuf&gt;,
         <span class="doccomment">/// Filecoin network chain
         </span><span class="attr">#[arg(long, default_value = <span class="string">"mainnet"</span>)]
         </span>chain: NetworkChain,
@@ -1192,14 +1181,14 @@
     <span class="kw">pub async fn </span>run(<span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Serve {
-                snapshot_file,
+                snapshot_files,
                 chain,
                 port,
                 data_dir,
                 auto_download_snapshot,
             } =&gt; {
                 start_offline_server(
-                    snapshot_file,
+                    snapshot_files,
                     chain,
                     port,
                     data_dir.clone(),
@@ -1881,7 +1870,7 @@
 </span>}
 
 <span class="kw">async fn </span>start_offline_server(
-    snapshot_path_opt: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    snapshot_files: Vec&lt;PathBuf&gt;,
     chain: NetworkChain,
     rpc_port: u16,
     rpc_data_dir: PathBuf,
@@ -1890,11 +1879,10 @@
     <span class="macro">info!</span>(<span class="string">"Configuring Offline RPC Server"</span>);
     <span class="kw">let </span>client = Client::default();
     <span class="kw">let </span>db_path = client.data_dir.as_path().join(rpc_data_dir);
-    <span class="kw">let </span>db = Arc::new(ParityDb::open(<span class="kw-2">&amp;</span>db_path, <span class="kw-2">&amp;</span>ParityDbConfig::default())<span class="question-mark">?</span>);
+    <span class="kw">let </span>db_writer = Arc::new(ParityDb::open(<span class="kw-2">&amp;</span>db_path, <span class="kw-2">&amp;</span>ParityDbConfig::default())<span class="question-mark">?</span>);
+    <span class="kw">let </span>db = Arc::new(ManyCar::new(db_writer.clone()));
 
-    <span class="kw">let </span>(snapshot_file, snapshot_path) = <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = snapshot_path_opt {
-        (File::open(<span class="kw-2">&amp;</span>path).<span class="kw">await</span><span class="question-mark">?</span>, path)
-    } <span class="kw">else </span>{
+    <span class="kw">let </span>snapshot_files = <span class="kw">if </span>snapshot_files.is_empty() {
         <span class="kw">let </span>(snapshot_url, num_bytes, path) =
             <span class="kw">crate</span>::cli_shared::snapshot::peek(TrustedVendor::default(), <span class="kw-2">&amp;</span>chain)
                 .<span class="kw">await
@@ -1922,17 +1910,12 @@
         );
         <span class="kw">let </span>downloaded_snapshot_path = std::env::current_dir()<span class="question-mark">?</span>.join(path);
         download_to(<span class="kw-2">&amp;</span>snapshot_url, <span class="kw-2">&amp;</span>downloaded_snapshot_path).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">info!</span>(<span class="string">"Snapshot downloaded !!!"</span>);
-        (
-            File::open(<span class="kw-2">&amp;</span>downloaded_snapshot_path).<span class="kw">await</span><span class="question-mark">?</span>,
-            downloaded_snapshot_path,
-        )
+        <span class="macro">info!</span>(<span class="string">"Snapshot downloaded"</span>);
+        <span class="macro">vec!</span>[downloaded_snapshot_path]
+    } <span class="kw">else </span>{
+        snapshot_files
     };
-
-    <span class="macro">info!</span>(<span class="string">"Loading snapshot file at {}"</span>, snapshot_path.display());
-    <span class="kw">let </span>car_reader = BufReader::new(snapshot_file);
-    load_car(<span class="kw-2">&amp;</span>db, car_reader).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">info!</span>(<span class="string">"Snapshot loaded!!!"</span>);
+    db.read_only_files(snapshot_files.iter().cloned())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>chain_config = Arc::new(ChainConfig::from_chain(<span class="kw-2">&amp;</span>chain));
     <span class="kw">let </span>sync_config = Arc::new(SyncConfig::default());
@@ -1940,7 +1923,7 @@
         read_genesis_header(<span class="prelude-val">None</span>, chain_config.genesis_bytes(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>.as_deref(), <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>chain_store = Arc::new(ChainStore::new(
         db.clone(),
-        db,
+        db.clone(),
         chain_config.clone(),
         genesis_header.clone(),
     )<span class="question-mark">?</span>);
@@ -1949,7 +1932,8 @@
         chain_config,
         sync_config,
     )<span class="question-mark">?</span>);
-    <span class="kw">let </span>ts = <span class="kw">crate</span>::db::car::ForestCar::try_from(snapshot_path.as_path())<span class="question-mark">?</span>.heaviest_tipset()<span class="question-mark">?</span>;
+    <span class="kw">let </span>ts = db.heaviest_tipset()<span class="question-mark">?</span>;
+
     state_manager
         .chain_store()
         .set_heaviest_tipset(Arc::new(ts))<span class="question-mark">?</span>;
