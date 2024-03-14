@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["JsonRpcError"]};
+window.SIDEBAR_ITEMS = {"macro":["from2internal"],"struct":["JsonRpcError"]};

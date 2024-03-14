@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["do_impls"],"mod":["jsonrpc_types","openrpc_types","parser","util"],"struct":["AndThenDeserializeResponse","SelfDescribingModule"],"trait":["GenerateSchemas","Wrap"]};
