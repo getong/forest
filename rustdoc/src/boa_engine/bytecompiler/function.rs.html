@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/boa_engine-0.17.3/src/bytecompiler/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="boa_engine" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="icon" href="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/boa_engine-0.18.0/src/bytecompiler/function.rs`."><title>function.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="boa_engine" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="icon" href="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><a class="sub-logo-container" href="../../../boa_engine/index.html"><img src="https://raw.githubusercontent.com/boa-dev/boa/main/assets/logo.svg" alt="boa_engine"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -164,50 +164,72 @@
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
 <a href="#165" id="165">165</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{cell::RefCell, rc::Rc};
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::rc::Rc;
 
 <span class="kw">use crate</span>::{
     builtins::function::ThisMode,
     bytecompiler::ByteCompiler,
     environments::CompileTimeEnvironment,
+    js_string,
     vm::{CodeBlock, CodeBlockFlags, Opcode},
-    Context,
+    Context, JsString,
 };
 <span class="kw">use </span>boa_ast::function::{FormalParameterList, FunctionBody};
 <span class="kw">use </span>boa_gc::Gc;
-<span class="kw">use </span>boa_interner::Sym;
 
 <span class="doccomment">/// `FunctionCompiler` is used to compile AST functions to bytecode.
-</span><span class="attr">#[derive(Debug, Clone, Copy)]
+</span><span class="attr">#[derive(Debug, Clone)]
 #[allow(clippy::struct_excessive_bools)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>FunctionCompiler {
-    name: Sym,
+    name: JsString,
     generator: bool,
     r#async: bool,
     strict: bool,
     arrow: bool,
-    binding_identifier: <span class="prelude-ty">Option</span>&lt;Sym&gt;,
-    class_name: <span class="prelude-ty">Option</span>&lt;Sym&gt;,
+    method: bool,
+    binding_identifier: <span class="prelude-ty">Option</span>&lt;JsString&gt;,
 }
 
 <span class="kw">impl </span>FunctionCompiler {
     <span class="doccomment">/// Create a new `FunctionCompiler`.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>new() -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            name: Sym::EMPTY_STRING,
+            name: <span class="macro">js_string!</span>(),
             generator: <span class="bool-val">false</span>,
             r#async: <span class="bool-val">false</span>,
             strict: <span class="bool-val">false</span>,
             arrow: <span class="bool-val">false</span>,
+            method: <span class="bool-val">false</span>,
             binding_identifier: <span class="prelude-val">None</span>,
-            class_name: <span class="prelude-val">None</span>,
         }
     }
 
     <span class="doccomment">/// Set the name of the function.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>name&lt;N&gt;(<span class="kw-2">mut </span><span class="self">self</span>, name: N) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>N: Into&lt;<span class="prelude-ty">Option</span>&lt;Sym&gt;&gt;,
+        </span>N: Into&lt;<span class="prelude-ty">Option</span>&lt;JsString&gt;&gt;,
     {
         <span class="kw">let </span>name = name.into();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = name {
@@ -219,6 +241,11 @@
     <span class="doccomment">/// Indicate if the function is an arrow function.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>arrow(<span class="kw-2">mut </span><span class="self">self</span>, arrow: bool) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.arrow = arrow;
+        <span class="self">self
+    </span>}
+    <span class="doccomment">/// Indicate if the function is a method function.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>method(<span class="kw-2">mut </span><span class="self">self</span>, method: bool) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.method = method;
         <span class="self">self
     </span>}
     <span class="doccomment">/// Indicate if the function is a generator function.
@@ -240,14 +267,8 @@
     </span>}
 
     <span class="doccomment">/// Indicate if the function has a binding identifier.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>binding_identifier(<span class="kw-2">mut </span><span class="self">self</span>, binding_identifier: <span class="prelude-ty">Option</span>&lt;Sym&gt;) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>binding_identifier(<span class="kw-2">mut </span><span class="self">self</span>, binding_identifier: <span class="prelude-ty">Option</span>&lt;JsString&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.binding_identifier = binding_identifier;
-        <span class="self">self
-    </span>}
-
-    <span class="doccomment">/// Indicate if the function has a class associated with it.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const fn </span>class_name(<span class="kw-2">mut </span><span class="self">self</span>, class_name: Sym) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.class_name = <span class="prelude-val">Some</span>(class_name);
         <span class="self">self
     </span>}
 
@@ -256,36 +277,75 @@
         <span class="kw-2">mut </span><span class="self">self</span>,
         parameters: <span class="kw-2">&amp;</span>FormalParameterList,
         body: <span class="kw-2">&amp;</span>FunctionBody,
-        outer_env: Rc&lt;RefCell&lt;CompileTimeEnvironment&gt;&gt;,
-        context: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
+        variable_environment: Rc&lt;CompileTimeEnvironment&gt;,
+        lexical_environment: Rc&lt;CompileTimeEnvironment&gt;,
+        context: <span class="kw-2">&amp;mut </span>Context,
     ) -&gt; Gc&lt;CodeBlock&gt; {
         <span class="self">self</span>.strict = <span class="self">self</span>.strict || body.strict();
 
         <span class="kw">let </span>length = parameters.length();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>compiler = ByteCompiler::new(<span class="self">self</span>.name, <span class="self">self</span>.strict, <span class="bool-val">false</span>, outer_env, context);
+        <span class="kw">let </span><span class="kw-2">mut </span>compiler = ByteCompiler::new(
+            <span class="self">self</span>.name,
+            <span class="self">self</span>.strict,
+            <span class="bool-val">false</span>,
+            variable_environment,
+            lexical_environment,
+            context,
+        );
         compiler.length = length;
-        compiler.in_async_generator = <span class="self">self</span>.generator &amp;&amp; <span class="self">self</span>.r#async;
+        compiler
+            .code_block_flags
+            .set(CodeBlockFlags::IS_ASYNC, <span class="self">self</span>.r#async);
+        compiler
+            .code_block_flags
+            .set(CodeBlockFlags::IS_GENERATOR, <span class="self">self</span>.generator);
+        compiler.code_block_flags.set(
+            CodeBlockFlags::HAS_PROTOTYPE_PROPERTY,
+            !<span class="self">self</span>.arrow &amp;&amp; !<span class="self">self</span>.method &amp;&amp; !<span class="self">self</span>.r#async &amp;&amp; !<span class="self">self</span>.generator,
+        );
 
         <span class="kw">if </span><span class="self">self</span>.arrow {
             compiler.this_mode = ThisMode::Lexical;
         }
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(class_name) = <span class="self">self</span>.class_name {
-            compiler.push_compile_environment(<span class="bool-val">false</span>);
-            compiler.create_immutable_binding(class_name.into(), <span class="bool-val">true</span>);
-        }
-
         <span class="kw">if let </span><span class="prelude-val">Some</span>(binding_identifier) = <span class="self">self</span>.binding_identifier {
             compiler.code_block_flags |= CodeBlockFlags::HAS_BINDING_IDENTIFIER;
-            compiler.push_compile_environment(<span class="bool-val">false</span>);
-            compiler.create_immutable_binding(binding_identifier.into(), <span class="self">self</span>.strict);
+            <span class="kw">let _ </span>= compiler.push_compile_environment(<span class="bool-val">false</span>);
+            compiler
+                .lexical_environment
+                .create_immutable_binding(binding_identifier, <span class="self">self</span>.strict);
         }
 
         <span class="comment">// Function environment
-        </span>compiler.push_compile_environment(<span class="bool-val">true</span>);
+        </span><span class="kw">let _ </span>= compiler.push_compile_environment(<span class="bool-val">true</span>);
 
-        <span class="kw">let </span>(env_label, additional_env) = compiler.function_declaration_instantiation(
+        <span class="comment">// Taken from:
+        //  - 15.9.3 Runtime Semantics: EvaluateAsyncConciseBody: &lt;https://tc39.es/ecma262/#sec-runtime-semantics-evaluateasyncconcisebody&gt;
+        //  - 15.8.4 Runtime Semantics: EvaluateAsyncFunctionBody: &lt;https://tc39.es/ecma262/#sec-runtime-semantics-evaluateasyncfunctionbody&gt;
+        //
+        // Note: In `EvaluateAsyncGeneratorBody` unlike the async non-generator functions we don't handle exceptions thrown by
+        // `FunctionDeclarationInstantiation` (so they are propagated).
+        //
+        // See: 15.6.2 Runtime Semantics: EvaluateAsyncGeneratorBody: https://tc39.es/ecma262/#sec-runtime-semantics-evaluateasyncgeneratorbody
+        </span><span class="kw">if </span>compiler.is_async() &amp;&amp; !compiler.is_generator() {
+            <span class="comment">// 1. Let promiseCapability be ! NewPromiseCapability(%Promise%).
+            //
+            // Note: If the promise capability is already set, then we do nothing.
+            // This is a deviation from the spec, but it allows to set the promise capability by
+            // ExecuteAsyncModule ( module ): &lt;https://tc39.es/ecma262/#sec-execute-async-module&gt;
+            </span>compiler.emit_opcode(Opcode::CreatePromiseCapability);
+
+            <span class="comment">// 2. Let declResult be Completion(FunctionDeclarationInstantiation(functionObject, argumentsList)).
+            //
+            // Note: We push an exception handler so we catch exceptions that are thrown by the
+            // `FunctionDeclarationInstantiation` abstract function.
+            //
+            // Patched in `ByteCompiler::finish()`.
+            </span>compiler.async_handler = <span class="prelude-val">Some</span>(compiler.push_handler());
+        }
+
+        compiler.function_declaration_instantiation(
             body,
             parameters,
             <span class="self">self</span>.arrow,
@@ -293,38 +353,22 @@
             <span class="self">self</span>.generator,
         );
 
+        <span class="comment">// Taken from:
+        // - 27.6.3.2 AsyncGeneratorStart ( generator, generatorBody ): &lt;https://tc39.es/ecma262/#sec-asyncgeneratorstart&gt;
+        //
+        // Note: We do handle exceptions thrown by generator body in `AsyncGeneratorStart`.
+        </span><span class="kw">if </span>compiler.is_generator() {
+            <span class="macro">assert!</span>(compiler.async_handler.is_none());
+
+            <span class="kw">if </span>compiler.is_async() {
+                <span class="comment">// Patched in `ByteCompiler::finish()`.
+                </span>compiler.async_handler = <span class="prelude-val">Some</span>(compiler.push_handler());
+            }
+        }
+
         compiler.compile_statement_list(body.statements(), <span class="bool-val">false</span>, <span class="bool-val">false</span>);
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(env_labels) = env_label {
-            <span class="kw">let </span>env_index = compiler.pop_compile_environment();
-            compiler.patch_jump_with_target(env_labels, env_index);
-        }
-
-        <span class="kw">if </span>additional_env {
-            compiler.pop_compile_environment();
-            compiler.code_block_flags |= CodeBlockFlags::PARAMETERS_ENV_BINDINGS;
-        }
-
-        compiler.pop_compile_environment();
-
-        <span class="kw">if </span><span class="self">self</span>.binding_identifier.is_some() {
-            compiler.pop_compile_environment();
-        }
-
-        <span class="kw">if </span><span class="self">self</span>.class_name.is_some() {
-            compiler.pop_compile_environment();
-        }
-
         compiler.params = parameters.clone();
-
-        <span class="kw">if </span>compiler
-            .bytecode
-            .last()
-            .filter(|last| <span class="kw-2">**</span>last == Opcode::Return <span class="kw">as </span>u8)
-            .is_none()
-        {
-            compiler.emit_opcode(Opcode::Return);
-        }
 
         Gc::new(compiler.finish())
     }

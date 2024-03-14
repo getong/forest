@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Opcode"],"struct":["CallFrame","CodeBlock","RuntimeLimits","Vm"]};
+window.SIDEBAR_ITEMS = {"enum":["GeneratorResumeKind"],"struct":["CallFrame","CodeBlock","RuntimeLimits","Vm"]};

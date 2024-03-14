@@ -3,7 +3,6 @@
 "config":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"enum\" href=\"config/enum.ConfigError.html\" title=\"enum config::ConfigError\">ConfigError</a>"]],
 "fvm_ipld_encoding":[],
 "libipld_core":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"struct\" href=\"libipld_core/error/struct.SerdeError.html\" title=\"struct libipld_core::error::SerdeError\">SerdeError</a>"]],
-"postcard":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"enum\" href=\"postcard/enum.Error.html\" title=\"enum postcard::Error\">Error</a>"]],
 "serde":[],
 "serde_ipld_dagcbor":[["impl&lt;E: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.76.0/core/error/trait.Error.html\" title=\"trait core::error::Error\">Error</a> + 'static&gt; <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"enum\" href=\"serde_ipld_dagcbor/enum.EncodeError.html\" title=\"enum serde_ipld_dagcbor::EncodeError\">EncodeError</a>&lt;E&gt;"]],
 "serde_json":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"struct\" href=\"serde_json/struct.Error.html\" title=\"struct serde_json::Error\">Error</a>"]],

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["raw"],"struct":["Buffer"],"trait":["Float"]};
+window.SIDEBAR_ITEMS = {"mod":["raw"],"struct":["Buffer"],"trait":["Float","FloatToFixed"]};

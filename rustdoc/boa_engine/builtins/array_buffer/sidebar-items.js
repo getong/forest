@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["create_byte_data_block"],"struct":["ArrayBuffer"]};
+window.SIDEBAR_ITEMS = {"struct":["ArrayBuffer","SharedArrayBuffer"]};

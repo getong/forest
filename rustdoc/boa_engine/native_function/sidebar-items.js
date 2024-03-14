@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["NativeFunction"],"type":["NativeFunctionPointer"]};
+window.SIDEBAR_ITEMS = {"struct":["NativeFunction","NativeFunctionObject"],"type":["NativeFunctionPointer"]};

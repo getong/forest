@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["format32","format64"]};
+window.SIDEBAR_ITEMS = {"fn":["format32","format64","format64_to_fixed"]};
