@@ -4,8 +4,8 @@ use std::sync::{
 };
 
 use playground::{
-    call, jsonrpc_types::Error, openrpc_types::ParamStructure, ConcreteCallingConvention,
-    RpcEndpoint, SelfDescribingModule,
+    jsonrpc_types::Error, openrpc_types::ParamStructure, ConcreteCallingConvention, RpcMethod,
+    RpcMethodExt, SelfDescribingRpcModule,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -35,25 +35,25 @@ struct MyCtx<BS> {
 }
 
 enum Count {}
-impl<BS: Send + Sync + Blockstore> RpcEndpoint<0, Arc<MyCtx<BS>>> for Count {
-    const METHOD_NAME: &'static str = "count";
-    const ARG_NAMES: [&'static str; 0] = [];
-    type Args = ();
+impl<BS: Send + Sync + Blockstore> RpcMethod<0, MyCtx<BS>> for Count {
+    const NAME: &'static str = "count";
+    const PARAM_NAMES: [&'static str; 0] = [];
+    type Params = ();
     type Ok = usize;
 
-    async fn handle(ctx: Arc<MyCtx<BS>>, (): Self::Args) -> Result<Self::Ok, Error> {
+    async fn handle(ctx: Arc<MyCtx<BS>>, (): Self::Params) -> Result<Self::Ok, Error> {
         Ok(ctx.blockstore.get_count())
     }
 }
 
 enum Increment {}
-impl<BS: Send + Sync + Blockstore> RpcEndpoint<1, Arc<MyCtx<BS>>> for Increment {
-    const METHOD_NAME: &'static str = "increment";
-    const ARG_NAMES: [&'static str; 1] = ["by"];
-    type Args = (usize,);
+impl<BS: Send + Sync + Blockstore> RpcMethod<1, MyCtx<BS>> for Increment {
+    const NAME: &'static str = "increment";
+    const PARAM_NAMES: [&'static str; 1] = ["by"];
+    type Params = (usize,);
     type Ok = ();
 
-    async fn handle(ctx: Arc<MyCtx<BS>>, (by,): Self::Args) -> Result<Self::Ok, Error> {
+    async fn handle(ctx: Arc<MyCtx<BS>>, (by,): Self::Params) -> Result<Self::Ok, Error> {
         ctx.blockstore.increment(by);
         Ok(())
     }
@@ -73,12 +73,12 @@ struct NestedInfo {
 }
 
 enum Concat {}
-impl<BS: Send> RpcEndpoint<2, BS> for Concat {
-    const METHOD_NAME: &'static str = "concat";
-    const ARG_NAMES: [&'static str; 2] = ["left", "right"];
-    type Args = (String, String);
+impl<BS: Sync + Send> RpcMethod<2, BS> for Concat {
+    const NAME: &'static str = "concat";
+    const PARAM_NAMES: [&'static str; 2] = ["left", "right"];
+    type Params = (String, String);
     type Ok = ConcatResult;
-    async fn handle(_ctx: BS, (left, right): Self::Args) -> Result<Self::Ok, Error> {
+    async fn handle(_ctx: Arc<BS>, (left, right): Self::Params) -> Result<Self::Ok, Error> {
         let result = format!("{left}{right}");
         Ok(ConcatResult {
             left,
@@ -94,24 +94,24 @@ fn main() {
 }
 
 async fn _main() {
-    let mut module = SelfDescribingModule::new(
+    let mut module = SelfDescribingRpcModule::new(
         MyCtx {
             blockstore: MyBlockstore::default(),
         },
         ParamStructure::Either,
     );
-    module
-        .register::<0, Count>()
-        .register::<1, Increment>()
-        .register::<2, Concat>();
+    Count::register(&mut module);
+    Increment::register(&mut module);
+    Concat::register(&mut module);
     let (module, doc) = module.finish();
     println!("{:#}", serde_json::to_value(doc).unwrap());
     dbg!(
-        call::<2, (), Concat>(
+        Concat::call(
             &module,
             ("hello".into(), "world".into()),
             ConcreteCallingConvention::ByName
         )
         .await
-    );
+    )
+    .unwrap();
 }
