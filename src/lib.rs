@@ -4,27 +4,23 @@ pub mod openrpc_types;
 mod parser;
 mod util;
 
-use std::{
-    future::{ready, Future, Ready},
-    pin::Pin,
-    sync::Arc,
-    task::{ready, Context, Poll},
+use crate::{
+    jsonrpc_types::{Error, RequestParameters},
+    util::Optional as _,
 };
-
-use futures::future::Either;
-use itertools::Itertools as _;
-use openrpc_types::{ContentDescriptor, Method, ParamStructure};
+use openrpc_types::{ContentDescriptor, Method, ParamStructure, Params};
 use parser::Parser;
-use pin_project_lite::pin_project;
 use schemars::{
     gen::{SchemaGenerator, SchemaSettings},
     schema::Schema,
     JsonSchema,
 };
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-
-use crate::util::Optional;
+use serde::Serialize;
+use serde::{
+    de::{DeserializeOwned, Error as _, Unexpected},
+    Deserialize,
+};
+use std::{future::Future, sync::Arc};
 
 pub struct SelfDescribingModule<Ctx> {
     inner: jsonrpsee::server::RpcModule<Ctx>,
@@ -42,43 +38,59 @@ impl<Ctx> SelfDescribingModule<Ctx> {
             methods: vec![],
         }
     }
-    pub fn serve<const ARITY: usize, F, Args, R>(
-        &mut self,
-        method_name: &'static str,
-        param_names: [&'static str; ARITY],
-        f: F,
-    ) -> &mut Self
+    pub fn register<'de, const ARITY: usize, T: RpcEndpoint<ARITY, Arc<Ctx>>>(&mut self)
     where
-        F: Wrap<ARITY, Ctx, Args, R>,
         Ctx: Send + Sync + 'static,
-        Args: GenerateSchemas,
-        R: JsonSchema + for<'de> Deserialize<'de>,
+        T::Ok: Serialize + Clone + 'static + JsonSchema + Deserialize<'de>,
+    {
+        self.register_with_calling_convention::<ARITY, T>(self.calling_convention)
+    }
+    pub fn register_with_calling_convention<
+        'de,
+        const ARITY: usize,
+        T: RpcEndpoint<ARITY, Arc<Ctx>>,
+    >(
+        &mut self,
+        override_cc: ParamStructure,
+    ) where
+        Ctx: Send + Sync + 'static,
+        T::Ok: Serialize + Clone + 'static + JsonSchema + Deserialize<'de>,
     {
         self.inner
-            .register_async_method(method_name, f.wrap(param_names, self.calling_convention))
+            .register_async_method(T::METHOD_NAME, move |params, ctx| async move {
+                let raw = params
+                    .as_str()
+                    .map(serde_json::from_str)
+                    .transpose()
+                    .map_err(|e| error2error(Error::invalid_params(e, None)))?;
+                let args = T::Args::parse(raw, T::ARG_NAMES, override_cc).map_err(error2error)?;
+                let ok = T::handle(ctx, args).await.map_err(error2error)?;
+                Result::<_, jsonrpsee::types::ErrorObjectOwned>::Ok(ok)
+            })
             .unwrap();
-        self.methods.push(Method {
-            name: String::from(method_name),
-            params: openrpc_types::Params::new(
-                Args::generate_schemas(&mut self.schema_generator)
-                    .into_iter()
-                    .zip_eq(param_names)
-                    .map(|((schema, optional), name)| ContentDescriptor {
+
+        let method = Method {
+            name: String::from(T::METHOD_NAME),
+            params: Params::new(
+                itertools::zip_eq(T::ARG_NAMES, T::Args::schemas(&mut self.schema_generator)).map(
+                    |(name, (schema, optional))| ContentDescriptor {
                         name: String::from(name),
                         schema,
                         required: !optional,
-                    }),
+                    },
+                ),
             )
             .unwrap(),
-            param_structure: self.calling_convention,
+            param_structure: override_cc,
             result: Some(ContentDescriptor {
-                name: format!("{}-result", method_name),
-                schema: R::json_schema(&mut self.schema_generator),
-                required: !R::optional(),
+                name: format!("{}::Result", T::METHOD_NAME),
+                schema: T::Ok::json_schema(&mut self.schema_generator),
+                required: !T::Ok::optional(),
             }),
-        });
-        self
+        };
+        self.methods.push(method);
     }
+
     pub fn finish(self) -> (jsonrpsee::server::RpcModule<Ctx>, openrpc_types::OpenRPC) {
         let Self {
             inner,
@@ -96,27 +108,118 @@ impl<Ctx> SelfDescribingModule<Ctx> {
             },
         )
     }
+
+    pub async fn call<const ARITY: usize, T: RpcEndpoint<ARITY, Ctx>>(
+        &self,
+        args: T::Args,
+    ) -> Result<T::Ok, jsonrpsee::MethodsError>
+    where
+        Ctx: Send,
+        T::Args: Serialize,
+        T::Ok: Clone + DeserializeOwned,
+    {
+        self.call_with_calling_convention::<ARITY, T>(
+            args,
+            match self.calling_convention {
+                ParamStructure::ByName | ParamStructure::Either => {
+                    ConcreteCallingConvention::ByName
+                }
+                ParamStructure::ByPosition => ConcreteCallingConvention::ByPosition,
+            },
+        )
+        .await
+    }
+
+    pub async fn call_with_calling_convention<const ARITY: usize, T: RpcEndpoint<ARITY, Ctx>>(
+        &self,
+        args: T::Args,
+        override_cc: ConcreteCallingConvention,
+    ) -> Result<T::Ok, jsonrpsee::MethodsError>
+    where
+        Ctx: Send,
+        T::Args: Serialize,
+        T::Ok: Clone + DeserializeOwned,
+    {
+        match params::<ARITY, Ctx, T>(args, override_cc)? {
+            RequestParameters::ByPosition(args) => {
+                let mut builder = jsonrpsee::core::params::ArrayParams::new();
+                for arg in args {
+                    builder.insert(arg)?
+                }
+                self.inner.call(T::METHOD_NAME, builder).await
+            }
+            RequestParameters::ByName(args) => {
+                let mut builder = jsonrpsee::core::params::ObjectParams::new();
+                for (name, value) in args {
+                    builder.insert(&name, value)?;
+                }
+                self.inner.call(T::METHOD_NAME, builder).await
+            }
+        }
+    }
 }
 
-/// Wrap a bare function with our argument parsing logic.
-/// Turns any `fn foo(ctx, arg0...)` into a function that can be passed to [`jsonrpsee::server::RpcModule::register_async_method`]
-pub trait Wrap<const ARITY: usize, Ctx, Args, R> {
-    type Future: Future<Output = Result<serde_json::Value, jsonrpsee::types::ErrorObjectOwned>>
-        + Send;
-    fn wrap(
-        self,
-        param_names: [&'static str; ARITY],
+pub fn params<const ARITY: usize, Ctx: Send, T: RpcEndpoint<ARITY, Ctx>>(
+    args: T::Args,
+    calling_convention: ConcreteCallingConvention,
+) -> Result<RequestParameters, serde_json::Error>
+where
+    T::Args: Serialize,
+{
+    let args = args.unparse()?;
+    match calling_convention {
+        ConcreteCallingConvention::ByPosition => Ok(RequestParameters::ByPosition(Vec::from(args))),
+        ConcreteCallingConvention::ByName => Ok(RequestParameters::ByName(
+            itertools::zip_eq(T::ARG_NAMES.into_iter().map(String::from), args).collect(),
+        )),
+    }
+}
+
+pub enum ConcreteCallingConvention {
+    ByPosition,
+    ByName,
+}
+
+pub trait Args<const ARITY: usize> {
+    fn schemas(gen: &mut SchemaGenerator) -> [(Schema, bool); ARITY];
+    fn parse(
+        raw: Option<RequestParameters>,
+        arg_names: [&str; ARITY],
         calling_convention: ParamStructure,
-    ) -> impl Clone
-           + Send
-           + Sync
-           + 'static
-           + Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future;
-}
-
-/// Return all schemas from function arguments.
-pub trait GenerateSchemas {
-    fn generate_schemas(gen: &mut SchemaGenerator) -> Vec<(Schema, bool)>;
+    ) -> Result<Self, Error>
+    where
+        Self: Sized;
+    fn unparse(&self) -> Result<[serde_json::Value; ARITY], serde_json::Error>
+    where
+        Self: Serialize,
+    {
+        fn kind(v: &serde_json::Value) -> Unexpected<'_> {
+            match v {
+                serde_json::Value::Null => Unexpected::Unit,
+                serde_json::Value::Bool(it) => Unexpected::Bool(*it),
+                serde_json::Value::Number(it) => match (it.as_f64(), it.as_i64(), it.as_u64()) {
+                    (None, None, None) => Unexpected::Other("Number"),
+                    (Some(it), _, _) => Unexpected::Float(it),
+                    (_, Some(it), _) => Unexpected::Signed(it),
+                    (_, _, Some(it)) => Unexpected::Unsigned(it),
+                },
+                serde_json::Value::String(it) => Unexpected::Str(it),
+                serde_json::Value::Array(_) => Unexpected::Seq,
+                serde_json::Value::Object(_) => Unexpected::Map,
+            }
+        }
+        match serde_json::to_value(self) {
+            Ok(serde_json::Value::Array(args)) => match args.try_into() {
+                Ok(it) => Ok(it),
+                Err(_) => Err(serde_json::Error::custom("ARITY mismatch")),
+            },
+            Ok(it) => Err(serde_json::Error::invalid_type(
+                kind(&it),
+                &"a Vec with an item for each argument",
+            )),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 macro_rules! do_impls {
@@ -125,72 +228,22 @@ macro_rules! do_impls {
             let _assert: [&str; $arity] = [$(stringify!($arg)),*];
         };
 
-        impl<F, $($arg,)* Ctx, Fut, R> Wrap<$arity, Ctx, ($($arg,)*), R> for F
+        impl<$($arg),*> Args<$arity> for ($($arg,)*)
         where
-            F: Clone + Send + Sync + 'static + Fn(Arc<Ctx>, $($arg),*) -> Fut,
-            Ctx: Send + Sync + 'static,
-            $(
-                $arg: for<'de> Deserialize<'de> + Clone,
-            )*
-            Fut: Future<Output = Result<R, jsonrpsee::types::ErrorObjectOwned>> + Send + Sync + 'static,
-            R: Serialize,
+            $($arg: DeserializeOwned + Serialize + JsonSchema),*
         {
-            type Future = Either<
-                Ready<Result<Value, jsonrpsee::types::ErrorObjectOwned>>,
-                AndThenDeserializeResponse<Fut>,
-            >;
-
-            fn wrap(
-                self,
-                param_names: [&'static str; $arity],
+            fn parse(
+                raw: Option<RequestParameters>,
+                arg_names: [&str; $arity],
                 calling_convention: ParamStructure,
-            ) -> impl Clone
-                   + Send
-                   + Sync
-                   + 'static
-                   + Fn(jsonrpsee::types::Params<'static>, Arc<Ctx>) -> Self::Future {
-                move |params, ctx| {
-                    let params = match params.as_str().map(serde_json::from_str).transpose() {
-                        Ok(it) => it,
-                        Err(e) => {
-                            return Either::Left(ready(Err(error2error(
-                                jsonrpc_types::Error::invalid_params(e, None),
-                            ))))
-                        }
-                    };
-                    #[allow(unused_variables, unused_mut)]
-                    let mut parser = match Parser::new(params, &param_names, calling_convention) {
-                        Ok(it) => it,
-                        Err(e) => return Either::Left(ready(Err(error2error(e)))),
-                    };
-
-                    Either::Right(AndThenDeserializeResponse {
-                        inner: self(
-                            ctx,
-                            $(
-                                match parser.parse::<$arg>() {
-                                    Ok(it) => it,
-                                    Err(e) => return Either::Left(ready(Err(error2error(e)))),
-                                },
-                            )*
-                        ),
-                    })
-                }
+            ) -> Result<Self, Error> {
+                let mut _parser = Parser::new(raw, &arg_names, calling_convention)?;
+                Ok(($(_parser.parse::<$arg>()?,)*))
+            }
+            fn schemas(_gen: &mut SchemaGenerator) -> [(Schema, bool); $arity] {
+                [$(($arg::json_schema(_gen), $arg::optional())),*]
             }
         }
-
-        #[automatically_derived]
-        impl<$($arg,)*> GenerateSchemas for ($($arg,)*)
-        where
-            $($arg: JsonSchema + for<'de> Deserialize<'de>,)*
-        {
-            fn generate_schemas(gen: &mut SchemaGenerator) -> Vec<(Schema, bool)> {
-                vec![
-                    $(($arg::json_schema(gen), $arg::optional())),*
-                ]
-            }
-        }
-
     };
 }
 
@@ -206,35 +259,12 @@ do_impls!(8, T0, T1, T2, T3, T4, T5, T6, T7);
 do_impls!(9, T0, T1, T2, T3, T4, T5, T6, T7, T8);
 do_impls!(10, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
 
-pin_project! {
-    pub struct AndThenDeserializeResponse<F> {
-        #[pin]
-        inner: F
-    }
-}
-
-impl<R, F> Future for AndThenDeserializeResponse<F>
-where
-    F: Future<Output = Result<R, jsonrpsee::types::ErrorObjectOwned>>,
-    R: Serialize,
-{
-    type Output = Result<Value, jsonrpsee::types::ErrorObjectOwned>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        Poll::Ready(
-            serde_json::to_value(ready!(self.project().inner.poll(cx))?)
-                .map_err(|e| {
-                    jsonrpc_types::Error::internal_error(
-                        "error deserializing return value for handler",
-                        json!({
-                            "type": std::any::type_name::<R>(),
-                            "error": e.to_string()
-                        }),
-                    )
-                })
-                .map_err(error2error),
-        )
-    }
+pub trait RpcEndpoint<const ARITY: usize, Ctx: Send> {
+    const METHOD_NAME: &'static str;
+    const ARG_NAMES: [&'static str; ARITY];
+    type Args: Args<ARITY>;
+    type Ok;
+    fn handle(ctx: Ctx, args: Self::Args) -> impl Future<Output = Result<Self::Ok, Error>> + Send;
 }
 
 fn error2error(ours: jsonrpc_types::Error) -> jsonrpsee::types::ErrorObjectOwned {
