@@ -114,7 +114,6 @@ impl<Ctx> SelfDescribingModule<Ctx> {
         args: T::Args,
     ) -> Result<T::Ok, jsonrpsee::MethodsError>
     where
-        Ctx: Send,
         T::Args: Serialize,
         T::Ok: Clone + DeserializeOwned,
     {
@@ -136,7 +135,6 @@ impl<Ctx> SelfDescribingModule<Ctx> {
         override_cc: ConcreteCallingConvention,
     ) -> Result<T::Ok, jsonrpsee::MethodsError>
     where
-        Ctx: Send,
         T::Args: Serialize,
         T::Ok: Clone + DeserializeOwned,
     {
@@ -159,7 +157,7 @@ impl<Ctx> SelfDescribingModule<Ctx> {
     }
 }
 
-pub fn params<const ARITY: usize, Ctx: Send, T: RpcEndpoint<ARITY, Ctx>>(
+pub fn params<const ARITY: usize, Ctx, T: RpcEndpoint<ARITY, Ctx>>(
     args: T::Args,
     calling_convention: ConcreteCallingConvention,
 ) -> Result<RequestParameters, serde_json::Error>
@@ -259,7 +257,7 @@ do_impls!(8, T0, T1, T2, T3, T4, T5, T6, T7);
 do_impls!(9, T0, T1, T2, T3, T4, T5, T6, T7, T8);
 do_impls!(10, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
 
-pub trait RpcEndpoint<const ARITY: usize, Ctx: Send> {
+pub trait RpcEndpoint<const ARITY: usize, Ctx> {
     const METHOD_NAME: &'static str;
     const ARG_NAMES: [&'static str; ARITY];
     type Args: Args<ARITY>;
