@@ -1,13 +1,12 @@
-use std::{
-    any::Any,
-    future::ready,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
 };
 
-use playground::{openrpc_types::ParamStructure, SelfDescribingModule};
+use playground::{
+    call, jsonrpc_types::Error, openrpc_types::ParamStructure, ConcreteCallingConvention,
+    RpcEndpoint, SelfDescribingModule,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -35,48 +34,66 @@ struct MyCtx<BS> {
     blockstore: BS,
 }
 
-async fn count(
-    ctx: Arc<MyCtx<impl Blockstore>>,
-) -> Result<usize, jsonrpsee::types::ErrorObjectOwned> {
-    Ok(ctx.blockstore.get_count())
+enum Count {}
+impl<BS: Send + Sync + Blockstore> RpcEndpoint<0, Arc<MyCtx<BS>>> for Count {
+    const METHOD_NAME: &'static str = "count";
+    const ARG_NAMES: [&'static str; 0] = [];
+    type Args = ();
+    type Ok = usize;
+
+    async fn handle(ctx: Arc<MyCtx<BS>>, (): Self::Args) -> Result<Self::Ok, Error> {
+        Ok(ctx.blockstore.get_count())
+    }
 }
 
-async fn increment(
-    ctx: Arc<MyCtx<impl Blockstore>>,
-    by: usize,
-) -> Result<(), jsonrpsee::types::ErrorObjectOwned> {
-    ctx.blockstore.increment(by);
-    Ok(())
+enum Increment {}
+impl<BS: Send + Sync + Blockstore> RpcEndpoint<1, Arc<MyCtx<BS>>> for Increment {
+    const METHOD_NAME: &'static str = "increment";
+    const ARG_NAMES: [&'static str; 1] = ["by"];
+    type Args = (usize,);
+    type Ok = ();
+
+    async fn handle(ctx: Arc<MyCtx<BS>>, (by,): Self::Args) -> Result<Self::Ok, Error> {
+        ctx.blockstore.increment(by);
+        Ok(())
+    }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-struct Concat {
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+struct ConcatResult {
     left: String,
     right: String,
     result: String,
     info: NestedInfo,
 }
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 struct NestedInfo {
     x: usize,
     y: usize,
 }
 
-async fn concat(
-    _ctx: impl Any,
-    left: String,
-    right: String,
-) -> Result<Concat, jsonrpsee::types::ErrorObjectOwned> {
-    let result = format!("{left}{right}");
-    Ok(Concat {
-        left,
-        right,
-        result,
-        info: NestedInfo { x: 1, y: 2 },
-    })
+enum Concat {}
+impl<BS: Send> RpcEndpoint<2, BS> for Concat {
+    const METHOD_NAME: &'static str = "concat";
+    const ARG_NAMES: [&'static str; 2] = ["left", "right"];
+    type Args = (String, String);
+    type Ok = ConcatResult;
+    async fn handle(_ctx: BS, (left, right): Self::Args) -> Result<Self::Ok, Error> {
+        let result = format!("{left}{right}");
+        Ok(ConcatResult {
+            left,
+            right,
+            result,
+            info: NestedInfo { x: 1, y: 2 },
+        })
+    }
 }
 
 fn main() {
+    futures::executor::block_on(_main());
+}
+
+async fn _main() {
     let mut module = SelfDescribingModule::new(
         MyCtx {
             blockstore: MyBlockstore::default(),
@@ -84,33 +101,17 @@ fn main() {
         ParamStructure::Either,
     );
     module
-        .serve("count", [], count)
-        .serve("increment", ["amount"], increment)
-        .serve("concat", ["left", "right"], concat);
-    let (mut module, doc) = module.finish();
-    steal_ctx(&mut module);
+        .register::<0, Count>()
+        .register::<1, Increment>()
+        .register::<2, Concat>();
+    let (module, doc) = module.finish();
     println!("{:#}", serde_json::to_value(doc).unwrap());
-}
-
-fn steal_ctx<Ctx>(module: &mut jsonrpsee::server::RpcModule<Ctx>) -> Arc<Ctx>
-where
-    Ctx: Send + Sync + 'static,
-{
-    let method_name = "__steal_ctx";
-    let stolen = Arc::new(std::sync::Mutex::new(None));
-    module
-        .register_async_method(method_name, {
-            let stolen = stolen.clone();
-            move |_params, ctx| {
-                *stolen.lock().unwrap() = Some(Arc::clone(&ctx));
-                ready(())
-            }
-        })
-        .unwrap();
-    futures::executor::block_on(
-        module.call::<_, ()>(method_name, jsonrpsee::core::params::ArrayParams::new()),
-    )
-    .unwrap();
-    let mut guard = stolen.lock().unwrap();
-    guard.take().unwrap()
+    dbg!(
+        call::<2, (), Concat>(
+            &module,
+            ("hello".into(), "world".into()),
+            ConcreteCallingConvention::ByName
+        )
+        .await
+    );
 }

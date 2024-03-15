@@ -8,6 +8,7 @@ use crate::{
     jsonrpc_types::{Error, RequestParameters},
     util::Optional as _,
 };
+use jsonrpsee::{MethodsError, RpcModule};
 use openrpc_types::{ContentDescriptor, Method, ParamStructure, Params};
 use parser::Parser;
 use schemars::{
@@ -20,7 +21,7 @@ use serde::{
     de::{DeserializeOwned, Error as _, Unexpected},
     Deserialize,
 };
-use std::{future::Future, sync::Arc};
+use std::{any::Any, future::Future, sync::Arc};
 
 pub struct SelfDescribingModule<Ctx> {
     inner: jsonrpsee::server::RpcModule<Ctx>,
@@ -38,7 +39,9 @@ impl<Ctx> SelfDescribingModule<Ctx> {
             methods: vec![],
         }
     }
-    pub fn register<'de, const ARITY: usize, T: RpcEndpoint<ARITY, Arc<Ctx>>>(&mut self)
+    pub fn register<'de, const ARITY: usize, T: RpcEndpoint<ARITY, Arc<Ctx>>>(
+        &mut self,
+    ) -> &mut Self
     where
         Ctx: Send + Sync + 'static,
         T::Ok: Serialize + Clone + 'static + JsonSchema + Deserialize<'de>,
@@ -52,7 +55,8 @@ impl<Ctx> SelfDescribingModule<Ctx> {
     >(
         &mut self,
         override_cc: ParamStructure,
-    ) where
+    ) -> &mut Self
+    where
         Ctx: Send + Sync + 'static,
         T::Ok: Serialize + Clone + 'static + JsonSchema + Deserialize<'de>,
     {
@@ -89,6 +93,7 @@ impl<Ctx> SelfDescribingModule<Ctx> {
             }),
         };
         self.methods.push(method);
+        self
     }
 
     pub fn finish(self) -> (jsonrpsee::server::RpcModule<Ctx>, openrpc_types::OpenRPC) {
@@ -116,6 +121,7 @@ impl<Ctx> SelfDescribingModule<Ctx> {
     where
         T::Args: Serialize,
         T::Ok: Clone + DeserializeOwned,
+        Ctx: 'static,
     {
         self.call_with_calling_convention::<ARITY, T>(
             args,
@@ -137,27 +143,40 @@ impl<Ctx> SelfDescribingModule<Ctx> {
     where
         T::Args: Serialize,
         T::Ok: Clone + DeserializeOwned,
+        Ctx: 'static,
     {
-        match params::<ARITY, Ctx, T>(args, override_cc)? {
-            RequestParameters::ByPosition(args) => {
-                let mut builder = jsonrpsee::core::params::ArrayParams::new();
-                for arg in args {
-                    builder.insert(arg)?
-                }
-                self.inner.call(T::METHOD_NAME, builder).await
+        call::<ARITY, Ctx, T>(&self.inner, args, override_cc).await
+    }
+}
+
+pub async fn call<const ARITY: usize, Ctx, T: RpcEndpoint<ARITY, Ctx>>(
+    module: &RpcModule<impl Any>,
+    args: T::Args,
+    calling_convention: ConcreteCallingConvention,
+) -> Result<T::Ok, MethodsError>
+where
+    T::Args: Serialize,
+    T::Ok: DeserializeOwned + Clone,
+{
+    match params::<ARITY, Ctx, T>(args, calling_convention)? {
+        RequestParameters::ByPosition(args) => {
+            let mut builder = jsonrpsee::core::params::ArrayParams::new();
+            for arg in args {
+                builder.insert(arg)?
             }
-            RequestParameters::ByName(args) => {
-                let mut builder = jsonrpsee::core::params::ObjectParams::new();
-                for (name, value) in args {
-                    builder.insert(&name, value)?;
-                }
-                self.inner.call(T::METHOD_NAME, builder).await
+            module.call(T::METHOD_NAME, builder).await
+        }
+        RequestParameters::ByName(args) => {
+            let mut builder = jsonrpsee::core::params::ObjectParams::new();
+            for (name, value) in args {
+                builder.insert(&name, value)?;
             }
+            module.call(T::METHOD_NAME, builder).await
         }
     }
 }
 
-pub fn params<const ARITY: usize, Ctx, T: RpcEndpoint<ARITY, Ctx>>(
+fn params<const ARITY: usize, Ctx, T: RpcEndpoint<ARITY, Ctx>>(
     args: T::Args,
     calling_convention: ConcreteCallingConvention,
 ) -> Result<RequestParameters, serde_json::Error>
