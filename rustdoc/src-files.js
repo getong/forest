@@ -30,6 +30,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["async_trait",["",[],["args.rs","bound.rs","expand.rs","lib.rs","lifetime.rs","parse.rs","receiver.rs","verbatim.rs"]]],\
 ["asynchronous_codec",["",[["codec",[],["bytes.rs","length.rs","lines.rs","mod.rs"]]],["decoder.rs","encoder.rs","framed.rs","framed_read.rs","framed_write.rs","fuse.rs","lib.rs"]]],\
 ["atomic_waker",["",[],["lib.rs"]]],\
+["attohttpc",["",[["parsing",[],["body_reader.rs","buffers.rs","chunked_reader.rs","compressed_reader.rs","mod.rs","response.rs","response_reader.rs"]],["request",[],["body.rs","builder.rs","mod.rs","proxy.rs","session.rs","settings.rs"]],["tls",[],["mod.rs","no_tls_impl.rs"]]],["error.rs","happy.rs","lib.rs","streams.rs"]]],\
 ["axum",["",[["body",[],["mod.rs"]],["error_handling",[],["mod.rs"]],["extract",[["path",[],["de.rs","mod.rs"]]],["connect_info.rs","host.rs","matched_path.rs","mod.rs","nested_path.rs","query.rs","raw_form.rs","raw_query.rs","rejection.rs","request_parts.rs","state.rs"]],["handler",[],["future.rs","mod.rs","service.rs"]],["middleware",[],["from_extractor.rs","from_fn.rs","map_request.rs","map_response.rs","mod.rs"]],["response",[],["mod.rs","redirect.rs","sse.rs"]],["routing",[],["future.rs","into_make_service.rs","method_filter.rs","method_routing.rs","mod.rs","not_found.rs","path_router.rs","route.rs","strip_prefix.rs","url_params.rs"]]],["boxed.rs","extension.rs","form.rs","json.rs","lib.rs","macros.rs","serve.rs","service_ext.rs","util.rs"]]],\
 ["axum_core",["",[["ext_traits",[],["mod.rs","request.rs","request_parts.rs"]],["extract",[],["default_body_limit.rs","from_ref.rs","mod.rs","rejection.rs","request_parts.rs","tuple.rs"]],["response",[],["append_headers.rs","into_response.rs","into_response_parts.rs","mod.rs"]]],["body.rs","error.rs","lib.rs","macros.rs"]]],\
 ["backoff",["",[],["backoff.rs","clock.rs","default.rs","error.rs","exponential.rs","future.rs","lib.rs","retry.rs"]]],\
@@ -274,6 +275,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["icu_provider_macros",["",[],["lib.rs"]]],\
 ["idna",["",[],["lib.rs","punycode.rs","uts46.rs"]]],\
 ["if_watch",["",[],["lib.rs","linux.rs"]]],\
+["igd_next",["",[["aio",[],["gateway.rs","mod.rs","tokio.rs"]],["common",[],["messages.rs","mod.rs","options.rs","parsing.rs"]]],["errors.rs","gateway.rs","lib.rs","search.rs"]]],\
 ["impl_rlp",["",[],["lib.rs"]]],\
 ["impl_serde",["",[],["lib.rs","serialize.rs"]]],\
 ["indexmap",["",[["map",[["core",[],["entry.rs","raw.rs","raw_entry_v1.rs"]]],["core.rs","iter.rs","serde_seq.rs","slice.rs"]],["set",[],["iter.rs","slice.rs"]]],["arbitrary.rs","lib.rs","macros.rs","map.rs","mutable_keys.rs","serde.rs","set.rs","util.rs"]]],\
@@ -324,6 +326,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["libp2p_swarm",["",[["behaviour",[],["either.rs","external_addresses.rs","listen_addresses.rs","toggle.rs"]],["connection",[["pool",[],["concurrent_dial.rs","task.rs"]]],["error.rs","pool.rs","supported_protocols.rs"]],["handler",[],["either.rs","map_in.rs","map_out.rs","multi.rs","one_shot.rs","pending.rs","select.rs"]]],["behaviour.rs","connection.rs","dial_opts.rs","dummy.rs","executor.rs","handler.rs","lib.rs","listen_opts.rs","stream.rs","stream_protocol.rs","upgrade.rs"]]],\
 ["libp2p_swarm_derive",["",[],["lib.rs","syn_ext.rs"]]],\
 ["libp2p_tcp",["",[["provider",[],["tokio.rs"]]],["lib.rs","provider.rs"]]],\
+["libp2p_upnp",["",[],["behaviour.rs","lib.rs","tokio.rs"]]],\
 ["libp2p_yamux",["",[],["lib.rs"]]],\
 ["libsecp256k1",["",[],["lib.rs"]]],\
 ["libsecp256k1_core",["",[],["der.rs","ecdh.rs","ecdsa.rs","ecmult.rs","error.rs","field.rs","group.rs","lib.rs","scalar.rs"]]],\
@@ -632,6 +635,8 @@ var srcIndex = new Map(JSON.parse('[\
 ["wyz",["",[],["bidi.rs","comu.rs","fmt.rs","lib.rs","range.rs"]]],\
 ["x25519_dalek",["",[],["lib.rs","x25519.rs"]]],\
 ["xattr",["",[["sys",[],["linux_macos.rs","mod.rs"]]],["error.rs","lib.rs","util.rs"]]],\
+["xml",["",[["reader",[["parser",[],["inside_cdata.rs","inside_closing_tag_name.rs","inside_comment.rs","inside_declaration.rs","inside_doctype.rs","inside_opening_tag.rs","inside_processing_instruction.rs","inside_reference.rs","outside_tag.rs"]]],["config.rs","error.rs","events.rs","indexset.rs","lexer.rs","parser.rs"]],["writer",[],["config.rs","emitter.rs","events.rs"]]],["attribute.rs","common.rs","escape.rs","lib.rs","macros.rs","name.rs","namespace.rs","reader.rs","util.rs","writer.rs"]]],\
+["xmltree",["",[],["lib.rs"]]],\
 ["yamux",["",[["connection",[["stream",[],["flow_control.rs"]]],["cleanup.rs","closing.rs","rtt.rs","stream.rs"]],["frame",[],["header.rs","io.rs"]]],["chunks.rs","connection.rs","error.rs","frame.rs","lib.rs","tagged_stream.rs"]]],\
 ["yansi",["",[],["color.rs","lib.rs","macros.rs","paint.rs","style.rs","windows.rs"]]],\
 ["yastl",["",[],["lib.rs","scope.rs","wait.rs"]]],\
