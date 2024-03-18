@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Subcommand"],"mod":["api_cmd","archive_cmd","backup_cmd","benchmark_cmd","car_cmd","db_cmd","fetch_params_cmd","shed_cmd","snapshot_cmd","state_migration_cmd"],"struct":["Cli"]};
+window.SIDEBAR_ITEMS = {"enum":["Subcommand"],"mod":["api_cmd","archive_cmd","backup_cmd","benchmark_cmd","car_cmd","db_cmd","fetch_params_cmd","net_cmd","shed_cmd","snapshot_cmd","state_migration_cmd"],"struct":["Cli"]};
