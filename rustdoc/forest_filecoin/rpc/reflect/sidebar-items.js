@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["do_impls"],"mod":["jsonrpc_types","openrpc_types","parser","util"],"struct":["AndThenDeserializeResponse","SelfDescribingModule"],"trait":["GenerateSchemas","Wrap"]};
+window.SIDEBAR_ITEMS = {"enum":["ConcreteCallingConvention"],"fn":["unexpected"],"macro":["do_impls"],"mod":["jsonrpc_types","openrpc_types","parser","util"],"struct":["SelfDescribingRpcModule"],"trait":["Params","RpcMethod","RpcMethodExt"],"type":["Ctx","ModuleState"]};

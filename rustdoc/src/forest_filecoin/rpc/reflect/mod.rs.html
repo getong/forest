@@ -268,6 +268,72 @@
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -279,12 +345,14 @@
 //! - The number of arguments ([arity](https://en.wikipedia.org/wiki/Arity)) and
 //!   names of those arguments for each RPC method.
 //!
-//! We have all this information in our handler functions, we just need to use it.
-//! - [`schemars::JsonSchema`] provides schema definitions, with our [`GenerateSchemas`]
-//!   trait acting as a shim.
-//! - [`Wrap`] defining arity and actually dispatching the function calls.
+//! As a secondary objective, we wish to provide an RPC client for our CLI, and
+//! internal tests against Lotus.
 //!
-//! [`SelfDescribingModule`] actually does the work to create the OpenRPC document.
+//! The [`RpcMethod`] trait encapsulates all the above at a single site.
+//! - [`schemars::JsonSchema`] provides schema definitions,
+//! - [`RpcMethod`] defining arity and actually dispatching the function calls.
+//!
+//! [`SelfDescribingRpcModule`] actually does the work to create the OpenRPC document.
 
 </span><span class="kw">pub mod </span>jsonrpc_types;
 <span class="kw">pub mod </span>openrpc_types;
@@ -292,39 +360,280 @@
 <span class="kw">mod </span>parser;
 <span class="kw">mod </span>util;
 
-<span class="kw">use </span>std::{
-    future::{ready, Future, Ready},
-    pin::Pin,
-    sync::Arc,
-    task::{ready, Context, Poll},
-};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::RPCState;
+
+<span class="kw">use </span><span class="self">self</span>::{jsonrpc_types::RequestParameters, util::Optional <span class="kw">as _</span>};
+<span class="kw">use </span><span class="kw">super</span>::error::JsonRpcError <span class="kw">as </span>Error;
 
 <span class="kw">use </span>futures::future::Either;
-<span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
-<span class="kw">use </span>openrpc_types::{ContentDescriptor, Method, ParamStructure};
+<span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
+<span class="kw">use </span>jsonrpsee::{MethodsError, RpcModule};
+<span class="kw">use </span>openrpc_types::{ContentDescriptor, Method, ParamListError, ParamStructure};
 <span class="kw">use </span>parser::Parser;
-<span class="kw">use </span>pin_project_lite::pin_project;
 <span class="kw">use </span>schemars::{
     gen::{SchemaGenerator, SchemaSettings},
     schema::Schema,
     JsonSchema,
 };
-<span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>serde_json::{json, Value};
+<span class="kw">use </span>serde::Serialize;
+<span class="kw">use </span>serde::{
+    de::{DeserializeOwned, Error <span class="kw">as _</span>, Unexpected},
+    Deserialize,
+};
+<span class="kw">use </span>std::{future::Future, sync::Arc};
 
-<span class="kw">use </span><span class="kw">super</span>::error::JsonRpcError;
-<span class="kw">use </span>util::Optional <span class="kw">as _</span>;
+<span class="doccomment">/// Type to be used by [`RpcMethod::handle`].
+</span><span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4007
+//                  avoid double indirection
+</span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;Arc&lt;RPCState&lt;T&gt;&gt;&gt;;
+<span class="doccomment">/// Type to be used by [`SelfDescribingRpcModule`] and [`RpcModule`].
+</span><span class="kw">type </span>ModuleState&lt;T&gt; = Arc&lt;RPCState&lt;T&gt;&gt;;
 
-<span class="doccomment">/// A wrapped [`jsonrpsee::server::RpcModule`] which generates an [OpenRPC](https://spec.open-rpc.org)
-/// schema for the methods.
-</span><span class="kw">pub struct </span>SelfDescribingModule&lt;Ctx&gt; {
+<span class="doccomment">/// A definition of an RPC method handler which can be registered with a
+/// [`SelfDescribingRpcModule`].
+///
+/// Note, an earlier draft of this trait had an additional type parameter for `Ctx`
+/// for generality.
+/// However, fixing it as [`Ctx&lt;...&gt;`] saves on complexity/confusion for implementors,
+/// at the expense of handler flexibility, which could come back to bite us.
+/// - All handlers accept [`RPCState`].
+/// - All `Ctx`s must be `Send + Sync + 'static` due to bounds on [`RpcModule`].
+/// - Handlers don't specialize on top of the given bounds, but they MAY relax them.
+</span><span class="kw">pub trait </span>RpcMethod&lt;<span class="kw">const </span>ARITY: usize&gt; {
+    <span class="doccomment">/// Method name.
+    </span><span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str;
+    <span class="doccomment">/// Name of each argument, MUST be unique.
+    </span><span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; ARITY];
+    <span class="doccomment">/// Types of each argument. [`Option`]-al arguments MUST follow mandatory ones.
+    </span><span class="kw">type </span>Params: Params&lt;ARITY&gt;;
+    <span class="doccomment">/// Return value of this method.
+    </span><span class="kw">type </span><span class="prelude-val">Ok</span>;
+    <span class="doccomment">/// Logic for this method.
+    </span><span class="kw">fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        params: <span class="self">Self</span>::Params,
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, Error&gt;&gt; + Send;
+}
+
+<span class="doccomment">/// Utility methods, defined as an extension trait to avoid having to specify
+/// `ARITY` in user code.
+</span><span class="kw">pub trait </span>RpcMethodExt&lt;<span class="kw">const </span>ARITY: usize&gt;: RpcMethod&lt;ARITY&gt; {
+    <span class="doccomment">/// Convert from typed handler parameters to un-typed JSON-RPC parameters.
+    ///
+    /// Exposes errors from [`Params::unparse`]
+    </span><span class="kw">fn </span>build_params(
+        params: <span class="self">Self</span>::Params,
+        calling_convention: ConcreteCallingConvention,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RequestParameters, serde_json::Error&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>::Params: Serialize,
+    {
+        <span class="kw">let </span>args = params.unparse()<span class="question-mark">?</span>;
+        <span class="kw">match </span>calling_convention {
+            ConcreteCallingConvention::ByPosition =&gt; {
+                <span class="prelude-val">Ok</span>(RequestParameters::ByPosition(Vec::from(args)))
+            }
+            ConcreteCallingConvention::ByName =&gt; <span class="prelude-val">Ok</span>(RequestParameters::ByName(
+                itertools::zip_eq(<span class="self">Self</span>::PARAM_NAMES.into_iter().map(String::from), args).collect(),
+            )),
+        }
+    }
+    <span class="doccomment">/// Generate a full `OpenRPC` method definition for this endpoint.
+    </span><span class="kw">fn </span>openrpc&lt;<span class="lifetime">'de</span>&gt;(
+        gen: <span class="kw-2">&amp;mut </span>SchemaGenerator,
+        calling_convention: ParamStructure,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Method, ParamListError&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>::Ok: JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt;,
+    {
+        <span class="prelude-val">Ok</span>(Method {
+            name: String::from(<span class="self">Self</span>::NAME),
+            params: openrpc_types::Params::new(
+                itertools::zip_eq(<span class="self">Self</span>::PARAM_NAMES, <span class="self">Self</span>::Params::schemas(gen)).map(
+                    |(name, (schema, optional))| ContentDescriptor {
+                        name: String::from(name),
+                        schema,
+                        required: !optional,
+                    },
+                ),
+            )<span class="question-mark">?</span>,
+            param_structure: calling_convention,
+            result: <span class="prelude-val">Some</span>(ContentDescriptor {
+                name: <span class="macro">format!</span>(<span class="string">"{}::Result"</span>, <span class="self">Self</span>::NAME),
+                schema: <span class="self">Self</span>::Ok::json_schema(gen),
+                required: !<span class="self">Self</span>::Ok::optional(),
+            }),
+        })
+    }
+    <span class="doccomment">/// Register this method with an [`RpcModule`].
+    </span><span class="kw">fn </span>register_raw(
+        module: <span class="kw-2">&amp;mut </span>RpcModule&lt;ModuleState&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;&gt;,
+        calling_convention: ParamStructure,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span>jsonrpsee::MethodCallback, jsonrpsee::core::RegisterMethodError&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>::Ok: Serialize + Clone + <span class="lifetime">'static</span>,
+    {
+        module.register_async_method(<span class="self">Self</span>::NAME, <span class="kw">move </span>|params, ctx| <span class="kw">async move </span>{
+            <span class="kw">let </span>raw = params
+                .as_str()
+                .map(serde_json::from_str)
+                .transpose()
+                .map_err(|e| Error::invalid_params(e, <span class="prelude-val">None</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>params = <span class="self">Self</span>::Params::parse(raw, <span class="self">Self</span>::PARAM_NAMES, calling_convention)<span class="question-mark">?</span>;
+            <span class="kw">let </span>ok = <span class="self">Self</span>::handle(ctx, params).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, jsonrpsee::types::ErrorObjectOwned&gt;::Ok(ok)
+        })
+    }
+    <span class="doccomment">/// Register this method and generate a schema entry for it in a [`SelfDescribingRpcModule`].
+    </span><span class="kw">fn </span>register&lt;<span class="lifetime">'de</span>&gt;(
+        module: <span class="kw-2">&amp;mut </span>SelfDescribingRpcModule&lt;ModuleState&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;&gt;,
+    ) <span class="kw">where
+        </span><span class="self">Self</span>::Ok: Serialize + Clone + <span class="lifetime">'static</span>,
+        <span class="self">Self</span>::Ok: JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt;,
+    {
+        <span class="self">Self</span>::register_raw(<span class="kw-2">&amp;mut </span>module.inner, module.calling_convention).unwrap();
+        module
+            .methods
+            .push(<span class="self">Self</span>::openrpc(<span class="kw-2">&amp;mut </span>module.schema_generator, module.calling_convention).unwrap());
+    }
+    <span class="doccomment">/// Call this method on an [`RpcModule`].
+    </span><span class="kw">fn </span>call(
+        module: <span class="kw-2">&amp;</span>RpcModule&lt;Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;&gt;,
+        params: <span class="self">Self</span>::Params,
+        calling_convention: ConcreteCallingConvention,
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, MethodsError&gt;&gt; + Send
+    <span class="kw">where
+        </span><span class="self">Self</span>::Params: Serialize,
+        <span class="self">Self</span>::Ok: DeserializeOwned + Clone + Send,
+    {
+        <span class="macro">macro_rules! </span>tri {
+            (<span class="macro-nonterminal">$expr</span>:expr) =&gt; {
+                <span class="kw">match </span><span class="macro-nonterminal">$expr </span>{
+                    <span class="prelude-val">Ok</span>(it) =&gt; it,
+                    <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span>Either::Left(futures::future::ready(<span class="prelude-val">Err</span>(e.into()))),
+                }
+            };
+        }
+        <span class="kw">match </span><span class="macro">tri!</span>(<span class="self">Self</span>::build_params(params, calling_convention)) {
+            RequestParameters::ByPosition(args) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>builder = jsonrpsee::core::params::ArrayParams::new();
+                <span class="kw">for </span>arg <span class="kw">in </span>args {
+                    <span class="macro">tri!</span>(builder.insert(arg))
+                }
+                Either::Right(Either::Left(module.call(<span class="self">Self</span>::NAME, builder)))
+            }
+            RequestParameters::ByName(args) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>builder = jsonrpsee::core::params::ObjectParams::new();
+                <span class="kw">for </span>(name, value) <span class="kw">in </span>args {
+                    <span class="macro">tri!</span>(builder.insert(<span class="kw-2">&amp;</span>name, value));
+                }
+                Either::Right(Either::Right(module.call(<span class="self">Self</span>::NAME, builder)))
+            }
+        }
+    }
+}
+<span class="kw">impl</span>&lt;<span class="kw">const </span>ARITY: usize, T&gt; RpcMethodExt&lt;ARITY&gt; <span class="kw">for </span>T <span class="kw">where </span>T: RpcMethod&lt;ARITY&gt; {}
+
+<span class="doccomment">/// A tuple of `ARITY` arguments.
+///
+/// This should NOT be manually implemented.
+</span><span class="kw">pub trait </span>Params&lt;<span class="kw">const </span>ARITY: usize&gt; {
+    <span class="doccomment">/// A [`Schema`] and [`Optional::optional`](`util::Optional::optional`)
+    /// pair for argument, in-order.
+    </span><span class="kw">fn </span>schemas(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; [(Schema, bool); ARITY];
+    <span class="doccomment">/// Convert from raw request parameters, to the argument tuple required by
+    /// [`RpcMethod::handle`]
+    </span><span class="kw">fn </span>parse(
+        raw: <span class="prelude-ty">Option</span>&lt;RequestParameters&gt;,
+        names: [<span class="kw-2">&amp;</span>str; ARITY],
+        calling_convention: ParamStructure,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized;
+    <span class="doccomment">/// Convert from an argument tuple to un-typed JSON.
+    ///
+    /// Exposes de-serialization errors, or mis-implementation of this trait.
+    </span><span class="kw">fn </span>unparse(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[serde_json::Value; ARITY], serde_json::Error&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Serialize,
+    {
+        <span class="kw">match </span>serde_json::to_value(<span class="self">self</span>) {
+            <span class="prelude-val">Ok</span>(serde_json::Value::Array(args)) =&gt; <span class="kw">match </span>args.try_into() {
+                <span class="prelude-val">Ok</span>(it) =&gt; <span class="prelude-val">Ok</span>(it),
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(serde_json::Error::custom(<span class="string">"ARITY mismatch"</span>)),
+            },
+            <span class="prelude-val">Ok</span>(it) =&gt; <span class="prelude-val">Err</span>(serde_json::Error::invalid_type(
+                unexpected(<span class="kw-2">&amp;</span>it),
+                <span class="kw-2">&amp;</span><span class="string">"a Vec with an item for each argument"</span>,
+            )),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e),
+        }
+    }
+}
+
+<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4066
+</span><span class="attr">#[allow(unused)]
+</span><span class="kw">fn </span>unexpected(v: <span class="kw-2">&amp;</span>serde_json::Value) -&gt; Unexpected&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">match </span>v {
+        serde_json::Value::Null =&gt; Unexpected::Unit,
+        serde_json::Value::Bool(it) =&gt; Unexpected::Bool(<span class="kw-2">*</span>it),
+        serde_json::Value::Number(it) =&gt; <span class="kw">match </span>(it.as_f64(), it.as_i64(), it.as_u64()) {
+            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; Unexpected::Other(<span class="string">"Number"</span>),
+            (<span class="prelude-val">Some</span>(it), <span class="kw">_</span>, <span class="kw">_</span>) =&gt; Unexpected::Float(it),
+            (<span class="kw">_</span>, <span class="prelude-val">Some</span>(it), <span class="kw">_</span>) =&gt; Unexpected::Signed(it),
+            (<span class="kw">_</span>, <span class="kw">_</span>, <span class="prelude-val">Some</span>(it)) =&gt; Unexpected::Unsigned(it),
+        },
+        serde_json::Value::String(it) =&gt; Unexpected::Str(it),
+        serde_json::Value::Array(<span class="kw">_</span>) =&gt; Unexpected::Seq,
+        serde_json::Value::Object(<span class="kw">_</span>) =&gt; Unexpected::Map,
+    }
+}
+
+<span class="macro">macro_rules! </span>do_impls {
+    (<span class="macro-nonterminal">$arity</span>:literal $(, <span class="macro-nonterminal">$arg</span>:ident)* $(,)<span class="question-mark">?</span>) =&gt; {
+        <span class="kw">const _</span>: () = {
+            <span class="kw">let </span>_assert: [<span class="kw-2">&amp;</span>str; <span class="macro-nonterminal">$arity</span>] = [$(<span class="macro">stringify!</span>(<span class="macro-nonterminal">$arg</span>)),<span class="kw-2">*</span>];
+        };
+
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$arg</span>),<span class="kw-2">*</span>&gt; Params&lt;<span class="macro-nonterminal">$arity</span>&gt; <span class="kw">for </span>($(<span class="macro-nonterminal">$arg</span>,)<span class="kw-2">*</span>)
+        <span class="kw">where
+            </span>$(<span class="macro-nonterminal">$arg</span>: DeserializeOwned + Serialize + JsonSchema),*
+        {
+            <span class="kw">fn </span>parse(
+                raw: <span class="prelude-ty">Option</span>&lt;RequestParameters&gt;,
+                arg_names: [<span class="kw-2">&amp;</span>str; <span class="macro-nonterminal">$arity</span>],
+                calling_convention: ParamStructure,
+            ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>_parser = Parser::new(raw, <span class="kw-2">&amp;</span>arg_names, calling_convention)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(($(_parser.parse::&lt;<span class="macro-nonterminal">$arg</span>&gt;()<span class="question-mark">?</span>,)<span class="kw-2">*</span>))
+            }
+            <span class="kw">fn </span>schemas(_gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; [(Schema, bool); <span class="macro-nonterminal">$arity</span>] {
+                [$((<span class="macro-nonterminal">$arg::json_schema</span>(_gen), <span class="macro-nonterminal">$arg::optional</span>())),<span class="kw-2">*</span>]
+            }
+        }
+    };
+}
+
+<span class="macro">do_impls!</span>(<span class="number">0</span>);
+<span class="macro">do_impls!</span>(<span class="number">1</span>, T0);
+<span class="macro">do_impls!</span>(<span class="number">2</span>, T0, T1);
+<span class="macro">do_impls!</span>(<span class="number">3</span>, T0, T1, T2);
+<span class="macro">do_impls!</span>(<span class="number">4</span>, T0, T1, T2, T3);
+<span class="macro">do_impls!</span>(<span class="number">5</span>, T0, T1, T2, T3, T4);
+<span class="macro">do_impls!</span>(<span class="number">6</span>, T0, T1, T2, T3, T4, T5);
+<span class="macro">do_impls!</span>(<span class="number">7</span>, T0, T1, T2, T3, T4, T5, T6);
+<span class="macro">do_impls!</span>(<span class="number">8</span>, T0, T1, T2, T3, T4, T5, T6, T7);
+<span class="macro">do_impls!</span>(<span class="number">9</span>, T0, T1, T2, T3, T4, T5, T6, T7, T8);
+<span class="macro">do_impls!</span>(<span class="number">10</span>, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
+
+<span class="kw">pub struct </span>SelfDescribingRpcModule&lt;Ctx&gt; {
     inner: jsonrpsee::server::RpcModule&lt;Ctx&gt;,
     schema_generator: SchemaGenerator,
     calling_convention: ParamStructure,
     methods: Vec&lt;Method&gt;,
 }
 
-<span class="kw">impl</span>&lt;Ctx&gt; SelfDescribingModule&lt;Ctx&gt; {
+<span class="kw">impl</span>&lt;Ctx&gt; SelfDescribingRpcModule&lt;Ctx&gt; {
     <span class="kw">pub fn </span>new(ctx: Ctx, calling_convention: ParamStructure) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             inner: jsonrpsee::server::RpcModule::new(ctx),
@@ -333,49 +642,6 @@
             methods: <span class="macro">vec!</span>[],
         }
     }
-    <span class="doccomment">/// Even if the calling convention is [`ParamStructure::ByPosition`], OpenRPC
-    /// requires each argument to have a unique name.
-    ///
-    /// # Panics
-    /// - if param names aren't unique
-    /// - if optional parameters follow mandatory params
-    </span><span class="kw">pub fn </span>serve&lt;<span class="kw">const </span>ARITY: usize, F, Args, R&gt;(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        method_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-        param_names: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; ARITY],
-        f: F,
-    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self
-    </span><span class="kw">where
-        </span>F: Wrap&lt;ARITY, Ctx, Args, R&gt;,
-        Ctx: Send + Sync + <span class="lifetime">'static</span>,
-        Args: GenerateSchemas,
-        R: JsonSchema + <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt;,
-    {
-        <span class="self">self</span>.inner
-            .register_async_method(method_name, f.wrap(param_names, <span class="self">self</span>.calling_convention))
-            .unwrap();
-        <span class="self">self</span>.methods.push(Method {
-            name: String::from(method_name),
-            params: openrpc_types::Params::new(
-                Args::generate_schemas(<span class="kw-2">&amp;mut </span><span class="self">self</span>.schema_generator)
-                    .into_iter()
-                    .zip_eq(param_names)
-                    .map(|((schema, optional), name)| ContentDescriptor {
-                        name: String::from(name),
-                        schema,
-                        required: !optional,
-                    }),
-            )
-            .unwrap(),
-            param_structure: <span class="self">self</span>.calling_convention,
-            result: <span class="prelude-val">Some</span>(ContentDescriptor {
-                name: <span class="macro">format!</span>(<span class="string">"{}-result"</span>, method_name),
-                schema: R::json_schema(<span class="kw-2">&amp;mut </span><span class="self">self</span>.schema_generator),
-                required: !R::optional(),
-            }),
-        });
-        <span class="self">self
-    </span>}
     <span class="kw">pub fn </span>finish(<span class="self">self</span>) -&gt; (jsonrpsee::server::RpcModule&lt;Ctx&gt;, openrpc_types::OpenRPC) {
         <span class="kw">let </span><span class="self">Self </span>{
             inner,
@@ -395,146 +661,12 @@
     }
 }
 
-<span class="doccomment">/// Wrap a bare function with our argument parsing logic.
-/// Turns any `async fn foo(ctx, arg0...)` into a function that can be passed to [`jsonrpsee::server::RpcModule::register_async_method`].
-///
-/// This trait is NOT designed to implemented on anything except bare handler functions, as below.
-</span><span class="kw">pub trait </span>Wrap&lt;<span class="kw">const </span>ARITY: usize, Ctx, Args, R&gt; {
-    <span class="kw">type </span>Future: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;serde_json::Value, JsonRpcError&gt;&gt; + Send;
-    <span class="kw">fn </span>wrap(
-        <span class="self">self</span>,
-        param_names: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; ARITY],
-        calling_convention: ParamStructure,
-    ) -&gt; <span class="kw">impl </span>Clone
-           + Send
-           + Sync
-           + <span class="lifetime">'static
-           </span>+ Fn(jsonrpsee::types::Params&lt;<span class="lifetime">'static</span>&gt;, Arc&lt;Ctx&gt;) -&gt; <span class="self">Self</span>::Future;
-}
-
-<span class="doccomment">/// Return type-specific information for a function signature so that a [`ContentDescriptor`] can be created.
-</span><span class="kw">pub trait </span>GenerateSchemas {
-    <span class="kw">fn </span>generate_schemas(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; Vec&lt;(Schema, bool)&gt;;
-}
-
-<span class="doccomment">/// Implement [`Wrap`] and [`GenerateSchemas`] for various function arities.
-///
-/// See documentation on [`Wrap`] for more.
-</span><span class="macro">macro_rules! </span>do_impls {
-    (<span class="macro-nonterminal">$arity</span>:literal $(, <span class="macro-nonterminal">$arg</span>:ident)* $(,)<span class="question-mark">?</span>) =&gt; {
-        <span class="kw">const _</span>: () = {
-            <span class="kw">let </span>_assert: [<span class="kw-2">&amp;</span>str; <span class="macro-nonterminal">$arity</span>] = [$(<span class="macro">stringify!</span>(<span class="macro-nonterminal">$arg</span>)),<span class="kw-2">*</span>];
-        };
-
-        <span class="kw">impl</span>&lt;F, $(<span class="macro-nonterminal">$arg</span>,)* Ctx, Fut, R&gt; Wrap&lt;<span class="macro-nonterminal">$arity</span>, Ctx, ($(<span class="macro-nonterminal">$arg</span>,)<span class="kw-2">*</span>), R&gt; <span class="kw">for </span>F
-        <span class="kw">where
-            </span>F: Clone + Send + Sync + <span class="lifetime">'static </span>+ Fn(Arc&lt;Ctx&gt;, $(<span class="macro-nonterminal">$arg</span>),<span class="kw-2">*</span>) -&gt; Fut,
-            <span class="comment">//                                    ^^^ Receives an Arc rather than a reference lest
-            //                                        we get the dreaded "one type is more general than the other"
-            </span>Ctx: Send + Sync + <span class="lifetime">'static</span>,
-            $(
-                <span class="macro-nonterminal">$arg</span>: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt; + Clone,
-            )*
-            Fut: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;R, JsonRpcError&gt;&gt; + Send + Sync + <span class="lifetime">'static</span>,
-            R: Serialize,
-        {
-            <span class="kw">type </span>Future = Either&lt;
-                Ready&lt;<span class="prelude-ty">Result</span>&lt;Value, JsonRpcError&gt;&gt;, <span class="comment">// early exit when parsing
-                </span>AndThenDeserializeResponse&lt;Fut&gt;,    <span class="comment">// deferred handler, then deserializer
-            </span>&gt;;
-
-            <span class="kw">fn </span>wrap(
-                <span class="self">self</span>,
-                param_names: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="macro-nonterminal">$arity</span>],
-                calling_convention: ParamStructure,
-            ) -&gt; <span class="kw">impl </span>Clone
-                   + Send
-                   + Sync
-                   + <span class="lifetime">'static
-                   </span>+ Fn(jsonrpsee::types::Params&lt;<span class="lifetime">'static</span>&gt;, Arc&lt;Ctx&gt;) -&gt; <span class="self">Self</span>::Future {
-                <span class="kw">move </span>|params, ctx| {
-                    <span class="kw">let </span>params = <span class="kw">match </span>params.as_str().map(serde_json::from_str).transpose() {
-                        <span class="prelude-val">Ok</span>(it) =&gt; it,
-                        <span class="prelude-val">Err</span>(e) =&gt; {
-                            <span class="kw">return </span>Either::Left(ready(<span class="prelude-val">Err</span>(
-                                JsonRpcError::invalid_params(e, <span class="prelude-val">None</span>),
-                            )));
-                        }
-                    };
-                    <span class="attr">#[allow(unused_variables, unused_mut)] </span><span class="comment">// for the zero-argument case
-                    </span><span class="kw">let </span><span class="kw-2">mut </span>parser = <span class="kw">match </span>Parser::new(params, <span class="kw-2">&amp;</span>param_names, calling_convention) {
-                        <span class="prelude-val">Ok</span>(it) =&gt; it,
-                        <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span>Either::Left(ready(<span class="prelude-val">Err</span>(e))),
-                    };
-
-                    Either::Right(AndThenDeserializeResponse {
-                        inner: <span class="self">self</span>(
-                            ctx,
-                            $(  <span class="comment">// parse out each argument
-                                </span><span class="kw">match </span>parser.parse::&lt;<span class="macro-nonterminal">$arg</span>&gt;() {
-                                    <span class="prelude-val">Ok</span>(it) =&gt; it,
-                                    <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span>Either::Left(ready(<span class="prelude-val">Err</span>(e))),
-                                },
-                            )*
-                        ),
-                    })
-                }
-            }
-        }
-
-        <span class="attr">#[automatically_derived]
-        </span><span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$arg</span>,)<span class="kw-2">*</span>&gt; GenerateSchemas <span class="kw">for </span>($(<span class="macro-nonterminal">$arg</span>,)<span class="kw-2">*</span>)
-        <span class="kw">where
-            </span>$(<span class="macro-nonterminal">$arg</span>: JsonSchema + <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt;,)*
-        {
-            <span class="kw">fn </span>generate_schemas(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; Vec&lt;(Schema, bool)&gt; {
-                <span class="macro">vec!</span>[
-                    $((<span class="macro-nonterminal">$arg::json_schema</span>(gen), <span class="macro-nonterminal">$arg::optional</span>())),*
-                ]
-            }
-        }
-
-    };
-}
-
-<span class="macro">do_impls!</span>(<span class="number">0</span>);
-<span class="macro">do_impls!</span>(<span class="number">1</span>, T0);
-<span class="macro">do_impls!</span>(<span class="number">2</span>, T0, T1);
-<span class="macro">do_impls!</span>(<span class="number">3</span>, T0, T1, T2);
-<span class="macro">do_impls!</span>(<span class="number">4</span>, T0, T1, T2, T3);
-<span class="macro">do_impls!</span>(<span class="number">5</span>, T0, T1, T2, T3, T4);
-<span class="macro">do_impls!</span>(<span class="number">6</span>, T0, T1, T2, T3, T4, T5);
-<span class="macro">do_impls!</span>(<span class="number">7</span>, T0, T1, T2, T3, T4, T5, T6);
-<span class="macro">do_impls!</span>(<span class="number">8</span>, T0, T1, T2, T3, T4, T5, T6, T7);
-<span class="macro">do_impls!</span>(<span class="number">9</span>, T0, T1, T2, T3, T4, T5, T6, T7, T8);
-<span class="macro">do_impls!</span>(<span class="number">10</span>, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
-
-<span class="macro">pin_project! </span>{
-    <span class="kw">pub struct </span>AndThenDeserializeResponse&lt;F&gt; {
-        <span class="attr">#[pin]
-        </span>inner: F
-    }
-}
-
-<span class="kw">impl</span>&lt;R, F&gt; Future <span class="kw">for </span>AndThenDeserializeResponse&lt;F&gt;
-<span class="kw">where
-    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;R, JsonRpcError&gt;&gt;,
-    R: Serialize,
-{
-    <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;Value, JsonRpcError&gt;;
-
-    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-        Poll::Ready(
-            serde_json::to_value(<span class="macro">ready!</span>(<span class="self">self</span>.project().inner.poll(cx))<span class="question-mark">?</span>).map_err(|e| {
-                JsonRpcError::internal_error(
-                    <span class="string">"error deserializing return value for handler"</span>,
-                    <span class="macro">json!</span>({
-                        <span class="string">"type"</span>: std::any::type_name::&lt;R&gt;(),
-                        <span class="string">"error"</span>: e.to_string()
-                    }),
-                )
-            }),
-        )
-    }
+<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4066
+</span><span class="attr">#[allow(unused)]
+</span><span class="doccomment">/// [`openrpc_types::ParamStructure`] describes accepted param format.
+/// This is an actual param format, used to decide how to construct arguments.
+</span><span class="kw">pub enum </span>ConcreteCallingConvention {
+    ByPosition,
+    ByName,
 }
 </code></pre></div></section></main></body></html>
