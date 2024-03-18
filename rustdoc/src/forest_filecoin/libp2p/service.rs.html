@@ -912,32 +912,6 @@
 <a href="#911" id="911">911</a>
 <a href="#912" id="912">912</a>
 <a href="#913" id="913">913</a>
-<a href="#914" id="914">914</a>
-<a href="#915" id="915">915</a>
-<a href="#916" id="916">916</a>
-<a href="#917" id="917">917</a>
-<a href="#918" id="918">918</a>
-<a href="#919" id="919">919</a>
-<a href="#920" id="920">920</a>
-<a href="#921" id="921">921</a>
-<a href="#922" id="922">922</a>
-<a href="#923" id="923">923</a>
-<a href="#924" id="924">924</a>
-<a href="#925" id="925">925</a>
-<a href="#926" id="926">926</a>
-<a href="#927" id="927">927</a>
-<a href="#928" id="928">928</a>
-<a href="#929" id="929">929</a>
-<a href="#930" id="930">930</a>
-<a href="#931" id="931">931</a>
-<a href="#932" id="932">932</a>
-<a href="#933" id="933">933</a>
-<a href="#934" id="934">934</a>
-<a href="#935" id="935">935</a>
-<a href="#936" id="936">936</a>
-<a href="#937" id="937">937</a>
-<a href="#938" id="938">938</a>
-<a href="#939" id="939">939</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -954,30 +928,22 @@
 <span class="kw">use crate</span>::{blocks::GossipBlock, rpc_api::net_api::NetInfoResult};
 <span class="kw">use crate</span>::{chain::ChainStore, utils::encoding::from_slice_with_fallback};
 <span class="kw">use </span>ahash::{HashMap, HashSet};
-<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>flume::Sender;
-<span class="kw">use </span>futures::{
-    channel::oneshot::Sender <span class="kw">as </span>OneShotSender, future::Either, select, stream::StreamExt,
-};
+<span class="kw">use </span>futures::{channel::oneshot, select, stream::StreamExt <span class="kw">as _</span>};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">pub use </span>libp2p::gossipsub::{IdentTopic, Topic};
 <span class="kw">use </span>libp2p::{
     autonat::NatStatus,
     connection_limits::Exceeded,
-    core::{
-        <span class="self">self</span>,
-        muxing::StreamMuxerBox,
-        transport::{Boxed, OrTransport},
-        Multiaddr,
-    },
+    core::Multiaddr,
     gossipsub,
     identity::Keypair,
     metrics::{Metrics, Recorder},
     multiaddr::Protocol,
     noise, ping, request_response,
-    swarm::{<span class="self">self</span>, DialError, SwarmEvent},
-    yamux, PeerId, Swarm, Transport,
+    swarm::{DialError, SwarmEvent},
+    tcp, yamux, PeerId, Swarm, SwarmBuilder,
 };
 <span class="kw">use </span>tokio_stream::wrappers::IntervalStream;
 <span class="kw">use </span>tracing::{debug, error, info, trace, warn};
@@ -1109,13 +1075,13 @@
 <span class="doccomment">/// Network RPC API methods used to gather data from libp2p node.
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>NetRPCMethods {
-    AddrsListen(OneShotSender&lt;(PeerId, HashSet&lt;Multiaddr&gt;)&gt;),
-    Peers(OneShotSender&lt;HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt;&gt;),
-    Info(OneShotSender&lt;NetInfoResult&gt;),
-    Connect(OneShotSender&lt;bool&gt;, PeerId, HashSet&lt;Multiaddr&gt;),
-    Disconnect(OneShotSender&lt;()&gt;, PeerId),
-    AgentVersion(OneShotSender&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;, PeerId),
-    AutoNATStatus(OneShotSender&lt;NatStatus&gt;),
+    AddrsListen(oneshot::Sender&lt;(PeerId, HashSet&lt;Multiaddr&gt;)&gt;),
+    Peers(oneshot::Sender&lt;HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt;&gt;),
+    Info(oneshot::Sender&lt;NetInfoResult&gt;),
+    Connect(oneshot::Sender&lt;bool&gt;, PeerId, HashSet&lt;Multiaddr&gt;),
+    Disconnect(oneshot::Sender&lt;()&gt;, PeerId),
+    AgentVersion(oneshot::Sender&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;, PeerId),
+    AutoNATStatus(oneshot::Sender&lt;NatStatus&gt;),
 }
 
 <span class="doccomment">/// The `Libp2pService` listens to events from the libp2p swarm.
@@ -1144,19 +1110,27 @@
         network_name: <span class="kw-2">&amp;</span>str,
         genesis_cid: Cid,
     ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>peer_id = PeerId::from(net_keypair.public());
-
-        <span class="kw">let </span>transport = build_transport(<span class="kw-2">&amp;</span>net_keypair).expect(<span class="string">"Failed to build libp2p transport"</span>);
-
-        <span class="kw">let </span><span class="kw-2">mut </span>swarm = Swarm::new(
-            transport,
-            ForestBehaviour::new(<span class="kw-2">&amp;</span>net_keypair, <span class="kw-2">&amp;</span>config, network_name)<span class="question-mark">?</span>,
-            peer_id,
-            swarm::Config::with_tokio_executor()
-                .with_notify_handler_buffer_size(std::num::NonZeroUsize::new(<span class="number">20</span>).expect(<span class="string">"Not zero"</span>))
-                .with_per_connection_event_buffer_size(<span class="number">64</span>)
-                .with_idle_connection_timeout(Duration::from_secs(<span class="number">60 </span>* <span class="number">10</span>)),
-        );
+        <span class="kw">let </span>behaviour = ForestBehaviour::new(<span class="kw-2">&amp;</span>net_keypair, <span class="kw-2">&amp;</span>config, network_name)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>swarm = SwarmBuilder::with_existing_identity(net_keypair)
+            .with_tokio()
+            .with_tcp(
+                tcp::Config::default().nodelay(<span class="bool-val">true</span>),
+                noise::Config::new,
+                yamux::Config::default,
+            )<span class="question-mark">?
+            </span>.with_quic()
+            .with_dns()<span class="question-mark">?
+            </span>.with_bandwidth_metrics(<span class="kw-2">&amp;mut </span><span class="kw">crate</span>::metrics::default_registry())
+            .with_behaviour(|<span class="kw">_</span>| behaviour)<span class="question-mark">?
+            </span>.with_swarm_config(|config| {
+                config
+                    .with_notify_handler_buffer_size(
+                        std::num::NonZeroUsize::new(<span class="number">20</span>).expect(<span class="string">"Not zero"</span>),
+                    )
+                    .with_per_connection_event_buffer_size(<span class="number">64</span>)
+                    .with_idle_connection_timeout(Duration::from_secs(<span class="number">60 </span>* <span class="number">10</span>))
+            })
+            .build();
 
         <span class="comment">// Subscribe to gossipsub topics with the network name suffix
         </span><span class="kw">for </span>topic <span class="kw">in </span>PUBSUB_TOPICS.iter() {
@@ -1850,31 +1824,5 @@
     <span class="kw">if </span>sender.send_async(event).<span class="kw">await</span>.is_err() {
         <span class="macro">error!</span>(<span class="string">"Failed to emit event: Network channel receiver has been dropped"</span>);
     }
-}
-
-<span class="doccomment">/// Builds the transport stack that libp2p will communicate over. When support
-/// of other protocols like `udp`, `quic`, `http` are added, remember to update
-/// code comment in [`Libp2pConfig`].
-///
-/// As a reference `lotus` uses the default `go-libp2p` transport builder which
-/// has all above protocols enabled.
-</span><span class="kw">pub fn </span>build_transport(local_key: <span class="kw-2">&amp;</span>Keypair) -&gt; anyhow::Result&lt;Boxed&lt;(PeerId, StreamMuxerBox)&gt;&gt; {
-    <span class="kw">let </span>auth_config = noise::Config::new(local_key).context(<span class="string">"Noise key generation failed"</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>build_tcp = || {
-        libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::new().nodelay(<span class="bool-val">true</span>))
-            .upgrade(core::upgrade::Version::V1)
-            .authenticate(auth_config)
-            .multiplex(yamux::Config::default())
-            .timeout(Duration::from_secs(<span class="number">20</span>))
-    };
-    <span class="kw">let </span>build_quic = || libp2p::quic::tokio::Transport::new(libp2p::quic::Config::new(local_key));
-    <span class="kw">let </span>build_tcp_quic = || {
-        OrTransport::new(build_tcp(), build_quic()).map(|either_output, <span class="kw">_</span>| <span class="kw">match </span>either_output {
-            Either::Left((peer_id, muxer)) =&gt; (peer_id, StreamMuxerBox::new(muxer)),
-            Either::Right((peer_id, muxer)) =&gt; (peer_id, StreamMuxerBox::new(muxer)),
-        })
-    };
-    <span class="kw">let </span>build_dns_tcp_quic = || libp2p::dns::tokio::Transport::system(build_tcp_quic());
-    <span class="prelude-val">Ok</span>(build_dns_tcp_quic()<span class="question-mark">?</span>.boxed())
 }
 </code></pre></div></section></main></body></html>
