@@ -749,6 +749,9 @@
 <a href="#748" id="748">748</a>
 <a href="#749" id="749">749</a>
 <a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1220,14 +1223,14 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>chain_notify&lt;DB: Blockstore&gt;(
     _params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: <span class="kw-2">&amp;</span>RPCState&lt;DB&gt;,
-) -&gt; Subscriber&lt;ApiHeadChange&gt; {
+) -&gt; Subscriber&lt;Vec&lt;ApiHeadChange&gt;&gt; {
     <span class="kw">let </span>(sender, receiver) = broadcast::channel(<span class="number">100</span>);
 
     <span class="comment">// As soon as the channel is created, send the current tipset
     </span><span class="kw">let </span>current = data.chain_store.heaviest_tipset();
     <span class="kw">let </span>(change, headers) = (<span class="string">"current"</span>.into(), current.block_headers().clone().into());
     sender
-        .send(ApiHeadChange { change, headers })
+        .send(<span class="macro">vec!</span>[ApiHeadChange { change, headers }])
         .expect(<span class="string">"receiver is not dropped"</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>subscriber = data.chain_store.publisher().subscribe();
@@ -1238,7 +1241,10 @@
                 HeadChange::Apply(ts) =&gt; (<span class="string">"apply"</span>.into(), ts.block_headers().clone().into()),
             };
 
-            <span class="kw">if </span>sender.send(ApiHeadChange { change, headers }).is_err() {
+            <span class="kw">if </span>sender
+                .send(<span class="macro">vec!</span>[ApiHeadChange { change, headers }])
+                .is_err()
+            {
                 <span class="kw">break</span>;
             }
         }
