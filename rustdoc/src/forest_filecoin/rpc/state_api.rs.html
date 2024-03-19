@@ -1021,6 +1021,29 @@
 <a href="#1020" id="1020">1020</a>
 <a href="#1021" id="1021">1021</a>
 <a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1030,13 +1053,9 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
-    ApiActorState, ApiDeadline, ApiInvocResult, ApiTipsetKey, CirculatingSupply, Data, MarketDeal,
-    MessageFilter, MessageLookup, MinerSectors, MiningBaseInfo, RPCState, SectorOnChainInfo,
-    Transaction,
-};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
-    address::Address, clock::ChainEpoch, econ::TokenAmount, executor::Receipt,
+    address::Address, clock::ChainEpoch, deal::DealID, econ::TokenAmount, executor::Receipt,
     state_tree::ActorState, version::NetworkVersion,
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
@@ -1047,6 +1066,7 @@
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>cid::Cid;
+<span class="kw">use </span>fil_actor_interface::market::DealState;
 <span class="kw">use </span>fil_actor_interface::miner::DeadlineInfo;
 <span class="kw">use </span>fil_actor_interface::{
     market, miner,
@@ -2032,7 +2052,7 @@
     <span class="kw">let </span>actor = data
         .state_manager
         .get_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
-        </span>.context(<span class="string">"Power actor not found"</span>.to_string())<span class="question-mark">?</span>;
+        </span>.context(<span class="string">"Power actor not found"</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>state = power::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
     <span class="kw">let </span>miners = state
@@ -2042,5 +2062,31 @@
         .collect();
 
     <span class="prelude-val">Ok</span>(LotusJson(miners))
+}
+
+<span class="kw">pub async fn </span>state_market_storage_deal&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
+    params: Params&lt;<span class="lifetime">'_</span>&gt;,
+    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;ApiMarketDeal, JsonRpcError&gt; {
+    <span class="kw">let </span>LotusJson((deal_id, ApiTipsetKey(tsk))): LotusJson&lt;(DealID, ApiTipsetKey)&gt; =
+        params.parse()<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>ts = data
+        .state_manager
+        .chain_store()
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>store = data.state_manager.blockstore();
+    <span class="kw">let </span>actor = data
+        .state_manager
+        .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?
+        </span>.context(<span class="string">"Market actor not found"</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>market_state = market::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
+    <span class="kw">let </span>proposals = market_state.proposals(store)<span class="question-mark">?</span>;
+    <span class="kw">let </span>proposal =  proposals.get(deal_id)<span class="question-mark">?</span>.ok_or_else(|| <span class="macro">anyhow::anyhow!</span>(<span class="string">"deal {deal_id} not found - deal may not have completed sealing before deal proposal start epoch, or deal may have been slashed"</span>))<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>states = market_state.states(store)<span class="question-mark">?</span>;
+    <span class="kw">let </span>state = states.get(deal_id)<span class="question-mark">?</span>.unwrap_or_else(DealState::empty);
+
+    <span class="prelude-val">Ok</span>(MarketDeal { proposal, state }.into())
 }
 </code></pre></div></section></main></body></html>
