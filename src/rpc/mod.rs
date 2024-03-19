@@ -12,13 +12,15 @@ mod gas_api;
 mod mpool_api;
 mod net_api;
 mod node_api;
-mod reflect;
 mod state_api;
 mod sync_api;
 mod wallet_api;
 
 mod error;
+pub use client::Client;
 pub use error::JsonRpcError;
+mod client;
+mod reflect;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
