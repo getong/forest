@@ -1230,6 +1230,44 @@
 <a href="#1229" id="1229">1229</a>
 <a href="#1230" id="1230">1230</a>
 <a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a>
+<a href="#1239" id="1239">1239</a>
+<a href="#1240" id="1240">1240</a>
+<a href="#1241" id="1241">1241</a>
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+<a href="#1247" id="1247">1247</a>
+<a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
+<a href="#1259" id="1259">1259</a>
+<a href="#1260" id="1260">1260</a>
+<a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
+<a href="#1267" id="1267">1267</a>
+<a href="#1268" id="1268">1268</a>
+<a href="#1269" id="1269">1269</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1254,6 +1292,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{MessageFilter, MessageLookup};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::eth_api::Address <span class="kw">as </span>EthAddress;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::{data_types::RPCState, eth_api::<span class="kw-2">*</span>};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_client::CommunicationProtocol;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, JsonRpcError, RpcRequest, DEFAULT_PORT};
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{Address, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::shim::crypto::Signature;
@@ -1262,7 +1301,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::utils::version::FOREST_VERSION_STRING;
 <span class="kw">use </span><span class="kw">crate</span>::Client;
 <span class="kw">use </span>ahash::HashMap;
-<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
+<span class="kw">use </span>anyhow::{bail, Context <span class="kw">as _</span>};
 <span class="kw">use </span>clap::{Subcommand, ValueEnum};
 <span class="kw">use </span>fil_actor_interface::market;
 <span class="kw">use </span>fil_actors_shared::v10::runtime::DomainSeparationTag;
@@ -1339,9 +1378,6 @@
         <span class="doccomment">/// Maximum number of concurrent requests
         </span><span class="attr">#[arg(long, default_value = <span class="string">"8"</span>)]
         </span>max_concurrent_requests: usize,
-        <span class="doccomment">/// API calls are handled over WebSocket connections.
-        </span><span class="attr">#[arg(long = <span class="string">"ws"</span>)]
-        </span>use_websocket: bool,
     },
 }
 
@@ -1354,7 +1390,6 @@
     n_tipsets: usize,
     run_ignored: RunIgnored,
     max_concurrent_requests: usize,
-    use_websocket: bool,
 }
 
 <span class="kw">impl </span>ApiCommands {
@@ -1386,7 +1421,6 @@
                 n_tipsets,
                 run_ignored,
                 max_concurrent_requests,
-                use_websocket,
             } =&gt; {
                 <span class="kw">let </span>config = ApiTestFlags {
                     filter,
@@ -1395,7 +1429,6 @@
                     n_tipsets,
                     run_ignored,
                     max_concurrent_requests,
-                    use_websocket,
                 };
 
                 compare_apis(forest, lotus, snapshot_files, config).<span class="kw">await</span><span class="question-mark">?
@@ -2031,6 +2064,21 @@
     <span class="macro">vec!</span>[test]
 }
 
+<span class="kw">fn </span>derive_protocol(forest: <span class="kw-2">&amp;</span>ApiInfo, lotus: <span class="kw-2">&amp;</span>ApiInfo) -&gt; anyhow::Result&lt;CommunicationProtocol&gt; {
+    <span class="kw">let </span>a = forest.multiaddr.clone().pop().map(|p| p.tag());
+    <span class="kw">let </span>b = lotus.multiaddr.clone().pop().map(|p| p.tag());
+
+    <span class="comment">// Both `ApiInfo` should end with the same tag to be valid, and the protocol should be supported
+    </span><span class="kw">match </span>(a, b) {
+        (<span class="prelude-val">Some</span>(x), <span class="prelude-val">Some</span>(y)) <span class="kw">if </span>x == y =&gt; <span class="prelude-val">Ok</span>(x.try_into()<span class="question-mark">?</span>),
+        <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(
+            <span class="string">"communication protocols mismatch: {:?} (Forest) is different from {:?} (Lotus)"</span>,
+            a,
+            b
+        ),
+    }
+}
+
 <span class="doccomment">/// Compare two RPC providers. The providers are labeled `forest` and `lotus`,
 /// but other nodes may be used (such as `venus`). The `lotus` node is assumed
 /// to be correct and the `forest` node will be marked as incorrect if it
@@ -2055,6 +2103,8 @@
     snapshot_files: Vec&lt;PathBuf&gt;,
     config: ApiTestFlags,
 ) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>communication = derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus)<span class="question-mark">?</span>;
+
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
 
     tests.extend(common_tests());
@@ -2072,13 +2122,14 @@
         tests.extend(snapshot_tests(store, config.n_tipsets)<span class="question-mark">?</span>);
     }
 
-    <span class="kw">if </span>config.use_websocket {
+    <span class="kw">let </span>use_websocket = communication == CommunicationProtocol::Ws;
+    <span class="kw">if </span>use_websocket {
         tests.extend(websocket_tests());
     }
 
     tests.sort_by_key(|test| test.request.method_name);
 
-    run_tests(tests, <span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, <span class="kw-2">&amp;</span>config).<span class="kw">await
+    run_tests(tests, <span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, <span class="kw-2">&amp;</span>config, use_websocket).<span class="kw">await
 </span>}
 
 <span class="kw">async fn </span>start_offline_server(
@@ -2221,6 +2272,7 @@
     forest: <span class="kw-2">&amp;</span>ApiInfo,
     lotus: <span class="kw-2">&amp;</span>ApiInfo,
     config: <span class="kw-2">&amp;</span>ApiTestFlags,
+    use_websocket: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(config.max_concurrent_requests));
     <span class="kw">let </span><span class="kw-2">mut </span>futures = FuturesUnordered::new();
@@ -2247,7 +2299,6 @@
 
         <span class="comment">// Acquire a permit from the semaphore before spawning a test
         </span><span class="kw">let </span>permit = semaphore.clone().acquire_owned().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>use_websocket = config.use_websocket;
         <span class="kw">let </span>forest = forest.clone();
         <span class="kw">let </span>lotus = lotus.clone();
         <span class="kw">let </span>future = tokio::spawn(<span class="kw">async move </span>{
@@ -2459,6 +2510,31 @@
             .allow(<span class="string">"Chain"</span>.to_string())
             .reject(<span class="string">"Chain"</span>.to_string());
         <span class="macro">assert!</span>(!list.authorize(<span class="string">"Filecoin.ChainGetBlock"</span>));
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_derive_protocol() {
+        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/http"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/http"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+            derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus),
+            <span class="prelude-val">Ok</span>(CommunicationProtocol::Http)
+        ));
+
+        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/ws"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/ws"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+            derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus),
+            <span class="prelude-val">Ok</span>(CommunicationProtocol::Ws)
+        ));
+
+        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/http"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/ws"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="macro">assert!</span>(derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).is_err());
+
+        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/wss"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/wss"</span>).expect(<span class="string">"infallible"</span>);
+        <span class="macro">assert!</span>(derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).is_err());
     }
 }
 </code></pre></div></section></main></body></html>

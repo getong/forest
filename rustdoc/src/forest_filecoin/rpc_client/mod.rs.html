@@ -391,6 +391,33 @@
 <a href="#390" id="390">390</a>
 <a href="#391" id="391">391</a>
 <a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -428,7 +455,6 @@
 <span class="kw">pub const </span>DEFAULT_HOST: <span class="kw-2">&amp;</span>str = <span class="string">"127.0.0.1"</span>;
 <span class="kw">pub const </span>DEFAULT_MULTIADDRESS: <span class="kw-2">&amp;</span>str = <span class="string">"/ip4/127.0.0.1/tcp/2345/http"</span>;
 <span class="kw">pub const </span>DEFAULT_PORT: u16 = <span class="number">2345</span>;
-<span class="kw">pub const </span>DEFAULT_PROTOCOL: <span class="kw-2">&amp;</span>str = <span class="string">"http"</span>;
 <span class="kw">const </span>DEFAULT_TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
 
 <span class="attr">#[derive(Clone, Debug)]
@@ -483,12 +509,20 @@
         ApiInfo::from_str(<span class="kw-2">&amp;</span>api_info)
     }
 
-    <span class="kw">pub async fn </span>call&lt;T: HasLotusJson&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, req: RpcRequest&lt;T&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
+    <span class="kw">pub async fn </span>call&lt;T: HasLotusJson + std::fmt::Debug&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        req: RpcRequest&lt;T&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
         <span class="kw">let </span>params = serde_json::value::to_raw_value(<span class="kw-2">&amp;</span>req.params)
             .map_err(|<span class="kw">_</span>| JsonRpcError::INVALID_PARAMS)<span class="question-mark">?</span>;
         <span class="kw">let </span>rpc_req = Request::new(req.method_name.into(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>params), Id::Number(<span class="number">0</span>));
 
-        <span class="kw">let </span>api_url = multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr, req.rpc_endpoint).to_string();
+        <span class="kw">let </span>api_url = multiaddress_to_url(
+            <span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr,
+            req.rpc_endpoint,
+            CommunicationProtocol::Http,
+        )
+        .to_string();
 
         <span class="macro">debug!</span>(<span class="string">"Using JSON-RPC v2 HTTP URL: {}"</span>, api_url);
 
@@ -526,24 +560,32 @@
         <span class="kw">let </span>rpc_res: JsonRpcResponse&lt;T::LotusJson&gt; =
             serde_json::from_slice(<span class="kw-2">&amp;</span>json).map_err(|<span class="kw">_</span>| JsonRpcError::PARSE_ERROR)<span class="question-mark">?</span>;
 
-        <span class="kw">match </span>rpc_res {
+        <span class="kw">let </span>resp = <span class="kw">match </span>rpc_res {
             JsonRpcResponse::Result { result, .. } =&gt; <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(result)),
             JsonRpcResponse::Error { error, .. } =&gt; <span class="prelude-val">Err</span>(error),
-        }
+        };
+
+        <span class="macro">tracing::debug!</span>(<span class="string">"Response: {:?}"</span>, resp);
+        resp
     }
 
-    <span class="kw">pub async fn </span>ws_call&lt;T: HasLotusJson + Send&gt;(
+    <span class="kw">pub async fn </span>ws_call&lt;T: HasLotusJson + std::fmt::Debug + Send&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         req: RpcRequest&lt;T&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt; {
-        <span class="kw">let </span>api_url = multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr, req.rpc_endpoint);
+        <span class="kw">let </span>api_url =
+            multiaddress_to_url(<span class="kw-2">&amp;</span><span class="self">self</span>.multiaddr, req.rpc_endpoint, CommunicationProtocol::Ws);
         <span class="macro">debug!</span>(<span class="string">"Using JSON-RPC v2 WS URL: {}"</span>, <span class="kw-2">&amp;</span>api_url);
         <span class="kw">let </span>ws_client = WsClientBuilder::default()
             .request_timeout(req.timeout)
             .build(api_url.to_string())
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>response_lotus_json: T::LotusJson = ws_client.request(req.method_name, req).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(response_lotus_json))
+
+        <span class="kw">let </span>resp = <span class="prelude-val">Ok</span>(HasLotusJson::from_lotus_json(response_lotus_json));
+
+        <span class="macro">tracing::debug!</span>(<span class="string">"Response: {:?}"</span>, resp);
+        resp
     }
 }
 
@@ -660,12 +702,24 @@
     }
 }
 
+<span class="attr">#[derive(PartialEq, Eq, Debug, strum::EnumString, strum::Display)]
+</span><span class="kw">pub enum </span>CommunicationProtocol {
+    <span class="attr">#[strum(serialize = <span class="string">"http"</span>)]
+    </span>Http,
+    <span class="attr">#[strum(serialize = <span class="string">"ws"</span>)]
+    </span>Ws,
+}
+
 <span class="doccomment">/// Parses a multi-address into a URL
-</span><span class="kw">fn </span>multiaddress_to_url(multiaddr: <span class="kw-2">&amp;</span>Multiaddr, endpoint: <span class="kw-2">&amp;</span>str) -&gt; Url {
+</span><span class="kw">fn </span>multiaddress_to_url(
+    multiaddr: <span class="kw-2">&amp;</span>Multiaddr,
+    endpoint: <span class="kw-2">&amp;</span>str,
+    protocol: CommunicationProtocol,
+) -&gt; Url {
     <span class="comment">// Fold Multiaddress into a Url struct
     </span><span class="kw">let </span>addr = multiaddr.iter().fold(
         Url {
-            protocol: DEFAULT_PROTOCOL.to_owned(),
+            protocol: protocol.to_string(),
             port: DEFAULT_PORT,
             host: DEFAULT_HOST.to_owned(),
             endpoint: endpoint.into(),
