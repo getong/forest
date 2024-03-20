@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["net_addrs_listen","net_agent_version","net_auto_nat_status","net_connect","net_disconnect","net_info","net_listening","net_peers"]};
+window.SIDEBAR_ITEMS = {"fn":["net_addrs_listen","net_agent_version","net_auto_nat_status","net_connect","net_disconnect","net_info","net_listening","net_peers","net_version"]};
