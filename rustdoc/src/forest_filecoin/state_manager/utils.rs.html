@@ -481,6 +481,10 @@
 <a href="#480" id="480">480</a>
 <a href="#481" id="481">481</a>
 <a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -727,7 +731,9 @@
 
 <span class="doccomment">/// Parsed tree of [`fvm4::trace::ExecutionEvent`]s
 </span><span class="kw">pub mod </span>structured {
-    <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{ExecutionTrace, GasTrace, MessageTrace, ReturnTrace};
+    <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{
+        ActorTrace, ExecutionTrace, GasTrace, MessageTrace, ReturnTrace,
+    };
     <span class="kw">use </span>std::collections::VecDeque;
 
     <span class="kw">use </span><span class="kw">crate</span>::shim::{
@@ -737,7 +743,6 @@
         kernel::SyscallError,
         trace::{Call, CallReturn, ExecutionEvent},
     };
-    <span class="kw">use </span>cid::Cid;
     <span class="kw">use </span>fvm_ipld_encoding::{ipld_block::IpldBlock, RawBytes};
     <span class="kw">use </span>itertools::Either;
 
@@ -857,7 +862,7 @@
         ) -&gt; <span class="prelude-ty">Result</span>&lt;ExecutionTrace, BuildExecutionTraceError&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>gas_charges = <span class="macro">vec!</span>[];
             <span class="kw">let </span><span class="kw-2">mut </span>subcalls = <span class="macro">vec!</span>[];
-            <span class="kw">let </span><span class="kw-2">mut </span>code_cid = Default::default();
+            <span class="kw">let </span><span class="kw-2">mut </span>actor_trace = <span class="prelude-val">None</span>;
 
             <span class="comment">// we don't use a for loop over `events` so we can pass them to recursive calls
             </span><span class="kw">while let </span><span class="prelude-val">Some</span>(event) = events.pop_front() {
@@ -875,9 +880,12 @@
                     ExecutionEvent::CallError(e) =&gt; <span class="prelude-val">Some</span>(CallTreeReturn::Error(e)),
                     ExecutionEvent::Log(_ignored) =&gt; <span class="prelude-val">None</span>,
                     ExecutionEvent::InvokeActor(cid) =&gt; {
-                        code_cid = <span class="kw">match </span>cid {
-                            Either::Left(cid) =&gt; cid,
-                            Either::Right(actor) =&gt; actor.state.code,
+                        actor_trace = <span class="kw">match </span>cid {
+                            Either::Left(_cid) =&gt; <span class="prelude-val">None</span>,
+                            Either::Right(actor) =&gt; <span class="prelude-val">Some</span>(ActorTrace {
+                                id: actor.id,
+                                state: actor.state,
+                            }),
                         };
                         <span class="prelude-val">None
                     </span>}
@@ -892,10 +900,11 @@
                 <span class="comment">// commonise the return branch
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(ret) = found_return {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(ExecutionTrace {
-                        msg: to_message_trace(call, code_cid),
+                        msg: to_message_trace(call),
                         msg_rct: to_return_trace(ret),
                         gas_charges,
                         subcalls,
+                        invoked_actor: actor_trace,
                     });
                 }
             }
@@ -904,7 +913,7 @@
         }
     }
 
-    <span class="kw">fn </span>to_message_trace(call: Call, code_cid: Cid) -&gt; MessageTrace {
+    <span class="kw">fn </span>to_message_trace(call: Call) -&gt; MessageTrace {
         <span class="kw">let </span>(bytes, codec) = to_bytes_codec(call.params);
         MessageTrace {
             from: Address::new_id(call.from),
@@ -915,7 +924,6 @@
             params_codec: codec,
             gas_limit: call.gas_limit,
             read_only: call.read_only,
-            code_cid,
         }
     }
 
