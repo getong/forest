@@ -1,22 +1,26 @@
 use std::fmt::Display;
+use std::time::Duration;
 
 use http0::{header, HeaderMap, HeaderValue};
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::core::params::{ArrayParams, ObjectParams};
 use jsonrpsee::core::ClientError;
 use libp2p::multiaddr::Protocol;
 use libp2p::Multiaddr;
 use serde::de::DeserializeOwned;
+use tracing::debug;
 use url::Url;
 
 pub struct Client {
-    url: Url,
     inner: ClientInner,
 }
 
 impl Client {
-    pub async fn from_multiaddr_with_path<'a>(
+    pub async fn from_multiaddr_with_path(
         multiaddr: &Multiaddr,
         path: impl Display,
-        token: impl Into<Option<&'a str>>,
+        token: impl Into<Option<String>>,
+        timeout: Duration,
     ) -> Result<Self, ClientError> {
         let Some(mut it) = multiaddr2url(&multiaddr) else {
             return Err(ClientError::Custom(String::from(
@@ -24,16 +28,17 @@ impl Client {
             )));
         };
         it.set_path(&path.to_string());
-        Self::from_url(it, token).await
+        Self::from_url(it, token, timeout).await
     }
-    pub async fn from_url<'a>(
+    pub async fn from_url(
         url: Url,
-        token: impl Into<Option<&'a str>>,
+        token: impl Into<Option<String>>,
+        timeout: Duration,
     ) -> Result<Self, ClientError> {
         let headers = match token.into() {
             Some(it) => HeaderMap::from_iter([(
                 header::AUTHORIZATION,
-                match HeaderValue::from_str(it) {
+                match HeaderValue::try_from(it) {
                     Ok(it) => it,
                     Err(e) => {
                         return Err(ClientError::Custom(format!(
@@ -48,17 +53,69 @@ impl Client {
             "ws" | "wss" => ClientInner::Ws(
                 jsonrpsee::ws_client::WsClientBuilder::new()
                     .set_headers(headers)
+                    .request_timeout(timeout)
                     .build(&url)
                     .await?,
             ),
             "http" | "https" => ClientInner::Https(
                 jsonrpsee::http_client::HttpClientBuilder::new()
                     .set_headers(headers)
+                    .request_timeout(timeout)
                     .build(&url)?,
             ),
             it => return Err(ClientError::Custom(format!("Unsupported URL scheme: {it}"))),
         };
-        Ok(Self { inner, url })
+        Ok(Self { inner })
+    }
+    pub async fn call<T: crate::lotus_json::HasLotusJson + std::fmt::Debug>(
+        &self,
+        req: crate::rpc_client::RpcRequest<T>,
+    ) -> Result<T, ClientError> {
+        let crate::rpc_client::RpcRequest {
+            method_name,
+            params,
+            result_type,
+            rpc_endpoint,
+            timeout,
+        } = req;
+        let result_or_timeout = tokio::time::timeout(
+            timeout,
+            match params {
+                serde_json::Value::Null => {
+                    self.request::<T::LotusJson, _>(method_name, ArrayParams::new())
+                }
+                serde_json::Value::Array(it) => {
+                    let mut params = ArrayParams::new();
+                    for param in it {
+                        params.insert(param)?
+                    }
+                    self.request(method_name, params)
+                }
+                serde_json::Value::Object(it) => {
+                    let mut params = ObjectParams::new();
+                    for (name, param) in it {
+                        params.insert(&name, param)?
+                    }
+                    self.request(method_name, params)
+                }
+                prim @ (serde_json::Value::Bool(_)
+                | serde_json::Value::Number(_)
+                | serde_json::Value::String(_)) => {
+                    return Err(ClientError::Custom(format!(
+                        "invalid parameter type: {}",
+                        prim
+                    )))
+                }
+            },
+        )
+        .await;
+        let result = match result_or_timeout {
+            Ok(Ok(it)) => Ok(T::from_lotus_json(it)),
+            Ok(Err(e)) => Err(e),
+            Err(_) => Err(ClientError::RequestTimeout),
+        };
+        debug!(?result);
+        result
     }
 }
 
