@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["BLOCK_CHANNEL_LIMIT"],"enum":["Task"],"fn":["recurse_links_hash","should_save_block_to_snapshot","stream_chain","stream_graph","traverse_ipld_links_hash","unordered_stream_chain","unordered_stream_graph"],"struct":["ChainStream","DfsIter","UnorderedChainStream"]};
+window.SIDEBAR_ITEMS = {"constant":["BLOCK_CHANNEL_LIMIT"],"enum":["Task"],"fn":["should_save_block_to_snapshot","stream_chain","stream_graph","unordered_stream_chain","unordered_stream_graph"],"struct":["ChainStream","DfsIter","UnorderedChainStream"]};
