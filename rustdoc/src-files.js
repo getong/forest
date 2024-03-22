@@ -26,7 +26,6 @@ var srcIndex = new Map(JSON.parse('[\
 ["async_compression",["",[["codec",[["zstd",[],["decoder.rs","encoder.rs","mod.rs"]]],["mod.rs"]],["tokio",[["bufread",[["generic",[],["decoder.rs","encoder.rs","mod.rs"]],["macros",[],["decoder.rs","encoder.rs","mod.rs"]]],["mod.rs"]],["write",[["generic",[],["decoder.rs","encoder.rs","mod.rs"]],["macros",[],["decoder.rs","encoder.rs","mod.rs"]]],["buf_write.rs","buf_writer.rs","mod.rs"]]],["mod.rs"]]],["lib.rs","macros.rs","unshared.rs","util.rs","zstd.rs"]]],\
 ["async_fs",["",[],["lib.rs"]]],\
 ["async_lock",["",[["rwlock",[],["futures.rs","raw.rs"]]],["barrier.rs","lib.rs","mutex.rs","once_cell.rs","rwlock.rs","semaphore.rs"]]],\
-["async_recursion",["",[],["expand.rs","lib.rs","parse.rs"]]],\
 ["async_stream",["",[],["async_stream.rs","lib.rs","next.rs","yielder.rs"]]],\
 ["async_stream_impl",["",[],["lib.rs"]]],\
 ["async_task",["",[],["header.rs","lib.rs","raw.rs","runnable.rs","state.rs","task.rs","utils.rs"]]],\
