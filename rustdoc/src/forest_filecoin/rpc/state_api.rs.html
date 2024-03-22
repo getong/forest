@@ -1044,13 +1044,11 @@
 <a href="#1042" id="1042">1042</a>
 <a href="#1043" id="1043">1043</a>
 <a href="#1044" id="1044">1044</a>
-<a href="#1045" id="1045">1045</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKey;
-<span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
+</span><span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
@@ -1175,14 +1173,14 @@
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
-    <span class="kw">let </span>LotusJson((address, tipset_keys)): LotusJson&lt;(Address, TipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
+    <span class="kw">let </span>LotusJson((address, tipset_keys)): LotusJson&lt;(Address, ApiTipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
 
+    <span class="kw">let </span>ts = data
+        .chain_store
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tipset_keys.<span class="number">0</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(LotusJson(
         data.state_manager
-            .resolve_to_deterministic_address(
-                address,
-                data.chain_store.chain_index.load_tipset(<span class="kw-2">&amp;</span>tipset_keys)<span class="question-mark">?</span>,
-            )
+            .resolve_to_deterministic_address(address, ts)
             .<span class="kw">await</span><span class="question-mark">?</span>,
     ))
 }

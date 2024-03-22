@@ -1629,7 +1629,6 @@
 <a href="#1627" id="1627">1627</a>
 <a href="#1628" id="1628">1628</a>
 <a href="#1629" id="1629">1629</a>
-<a href="#1630" id="1630">1630</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2856,7 +2855,7 @@
         <span class="kw">let </span>info = miner_state.info(<span class="self">self</span>.blockstore())<span class="question-mark">?</span>;
 
         <span class="kw">let </span>worker_key = <span class="self">self
-            </span>.resolve_to_deterministic_address(info.worker.into(), <span class="prelude-val">Some</span>(tipset.clone()))
+            </span>.resolve_to_deterministic_address(info.worker.into(), tipset.clone())
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>eligible = <span class="self">self</span>.eligible_to_mine(<span class="kw-2">&amp;</span>addr, <span class="kw-2">&amp;</span>tipset, <span class="kw-2">&amp;</span>lb_tipset)<span class="question-mark">?</span>;
 
@@ -2990,14 +2989,13 @@
     <span class="kw">pub async fn </span>resolve_to_deterministic_address(
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
         address: Address,
-        ts: <span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;,
+        ts: Arc&lt;Tipset&gt;,
     ) -&gt; anyhow::Result&lt;Address&gt; {
         <span class="kw">use </span><span class="kw">crate</span>::shim::address::Protocol::<span class="kw-2">*</span>;
         <span class="kw">match </span>address.protocol() {
             BLS | Secp256k1 | Delegated =&gt; <span class="prelude-val">Ok</span>(address),
             Actor =&gt; <span class="macro">anyhow::bail!</span>(<span class="string">"cannot resolve actor address to key address"</span>),
             <span class="kw">_ </span>=&gt; {
-                <span class="kw">let </span>ts = ts.unwrap_or_else(|| <span class="self">self</span>.chain_store().heaviest_tipset());
                 <span class="comment">// First try to resolve the actor in the parent state, so we don't have to compute anything.
                 </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(state) =
                     StateTree::new_from_root(<span class="self">self</span>.chain_store().db.clone(), ts.parent_state())
