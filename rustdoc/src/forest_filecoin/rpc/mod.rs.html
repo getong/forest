@@ -393,14 +393,6 @@
 <a href="#391" id="391">391</a>
 <a href="#392" id="392">392</a>
 <a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -410,7 +402,6 @@
 <span class="kw">mod </span>chain_api;
 <span class="kw">mod </span>channel;
 <span class="kw">mod </span>common_api;
-<span class="kw">mod </span>error;
 <span class="kw">mod </span>eth_api;
 <span class="kw">mod </span>gas_api;
 <span class="kw">mod </span>mpool_api;
@@ -421,9 +412,11 @@
 <span class="kw">mod </span>sync_api;
 <span class="kw">mod </span>wallet_api;
 
+<span class="kw">mod </span>error;
+<span class="kw">pub use </span>error::JsonRpcError;
+
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{error::Error <span class="kw">as </span>StdError, fmt::Display};
 
 <span class="kw">use </span><span class="kw">crate</span>::key_management::KeyStore;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::auth_layer::AuthLayer;
@@ -446,7 +439,6 @@
 <span class="kw">use </span>jsonrpsee::{
     core::RegisterMethodError,
     server::{stop_channel, RpcModule, RpcServiceBuilder, Server, StopHandle, TowerServiceBuilder},
-    types::{error::ErrorCode <span class="kw">as </span>RpcErrorCode, ErrorObjectOwned <span class="kw">as </span>RpcError},
     Methods,
 };
 <span class="kw">use </span>tokio::sync::mpsc::Sender;
@@ -473,7 +465,7 @@
     rpc_endpoint: SocketAddr,
     forest_version: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     shutdown_send: Sender&lt;()&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), RpcError&gt;
+) -&gt; anyhow::Result&lt;()&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
@@ -489,18 +481,15 @@
         u64::from(state.state_manager.chain_config().block_delay_secs),
         forest_version,
         shutdown_send,
-    )
-    .map_err(to_rpc_err)<span class="question-mark">?</span>;
+    )<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>pubsub_module = FilRpcModule::default();
 
-    pubsub_module
-        .register_channel(<span class="string">"Filecoin.ChainNotify"</span>, {
-            <span class="kw">let </span>state_clone = state.clone();
-            <span class="kw">move </span>|params| chain_api::chain_notify(params, <span class="kw-2">&amp;</span>state_clone)
-        })
-        .map_err(to_rpc_err)<span class="question-mark">?</span>;
-    module.merge(pubsub_module).map_err(to_rpc_err)<span class="question-mark">?</span>;
+    pubsub_module.register_channel(<span class="string">"Filecoin.ChainNotify"</span>, {
+        <span class="kw">let </span>state_clone = state.clone();
+        <span class="kw">move </span>|params| chain_api::chain_notify(params, <span class="kw-2">&amp;</span>state_clone)
+    })<span class="question-mark">?</span>;
+    module.merge(pubsub_module)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>(stop_handle, _handle) = stop_channel();
 
@@ -518,7 +507,7 @@
         <span class="kw">let </span>per_conn = per_conn.clone();
 
         <span class="kw">async move </span>{
-            <span class="prelude-val">Ok</span>::&lt;<span class="kw">_</span>, Box&lt;<span class="kw">dyn </span>StdError + Send + Sync&gt;&gt;(service_fn(<span class="kw">move </span>|req| {
+            anyhow::Ok(service_fn(<span class="kw">move </span>|req| {
                 <span class="kw">let </span>PerConnection {
                     methods,
                     stop_handle,
@@ -544,8 +533,7 @@
     <span class="macro">info!</span>(<span class="string">"Ready for RPC connections"</span>);
     hyper::Server::bind(<span class="kw-2">&amp;</span>rpc_endpoint)
         .serve(make_service)
-        .<span class="kw">await
-        </span>.map_err(to_rpc_err)<span class="question-mark">?</span>;
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="macro">info!</span>(<span class="string">"Stopped accepting RPC connections"</span>);
 
@@ -725,10 +713,6 @@
     module.register_async_method(ETH_GET_BALANCE, eth_get_balance::&lt;DB&gt;)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
-}
-
-<span class="kw">fn </span>to_rpc_err(e: <span class="kw">impl </span>Display) -&gt; RpcError {
-    RpcError::owned::&lt;String&gt;(RpcErrorCode::InternalError.code(), e.to_string(), <span class="prelude-val">None</span>)
 }
 
 <span class="attr">#[cfg(test)]
