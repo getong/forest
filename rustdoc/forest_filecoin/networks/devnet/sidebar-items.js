@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ETH_CHAIN_ID"],"static":["DRAND_SCHEDULE","HEIGHT_INFOS"]};
+window.SIDEBAR_ITEMS = {"constant":["ETH_CHAIN_ID"],"static":["DRAND_SCHEDULE","GENESIS_NETWORK_VERSION","HEIGHT_INFOS"]};
