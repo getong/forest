@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["eth_accounts","eth_block_number","eth_chain_id","eth_gas_price","eth_get_balance","tipset_by_block_number_or_hash"]};
+window.SIDEBAR_ITEMS = {"fn":["eth_accounts","eth_block_number","eth_chain_id","eth_gas_price","eth_get_balance","eth_syncing","tipset_by_block_number_or_hash"]};
