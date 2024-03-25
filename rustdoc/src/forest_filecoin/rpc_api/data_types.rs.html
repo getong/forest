@@ -1108,53 +1108,18 @@
 <a href="#1106" id="1106">1106</a>
 <a href="#1107" id="1107">1107</a>
 <a href="#1108" id="1108">1108</a>
-<a href="#1109" id="1109">1109</a>
-<a href="#1110" id="1110">1110</a>
-<a href="#1111" id="1111">1111</a>
-<a href="#1112" id="1112">1112</a>
-<a href="#1113" id="1113">1113</a>
-<a href="#1114" id="1114">1114</a>
-<a href="#1115" id="1115">1115</a>
-<a href="#1116" id="1116">1116</a>
-<a href="#1117" id="1117">1117</a>
-<a href="#1118" id="1118">1118</a>
-<a href="#1119" id="1119">1119</a>
-<a href="#1120" id="1120">1120</a>
-<a href="#1121" id="1121">1121</a>
-<a href="#1122" id="1122">1122</a>
-<a href="#1123" id="1123">1123</a>
-<a href="#1124" id="1124">1124</a>
-<a href="#1125" id="1125">1125</a>
-<a href="#1126" id="1126">1126</a>
-<a href="#1127" id="1127">1127</a>
-<a href="#1128" id="1128">1128</a>
-<a href="#1129" id="1129">1129</a>
-<a href="#1130" id="1130">1130</a>
-<a href="#1131" id="1131">1131</a>
-<a href="#1132" id="1132">1132</a>
-<a href="#1133" id="1133">1133</a>
-<a href="#1134" id="1134">1134</a>
-<a href="#1135" id="1135">1135</a>
-<a href="#1136" id="1136">1136</a>
-<a href="#1137" id="1137">1137</a>
-<a href="#1138" id="1138">1138</a>
-<a href="#1139" id="1139">1139</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::str::FromStr;
-<span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span><span class="kw">crate</span>::beacon::{BeaconEntry, BeaconSchedule};
+<span class="kw">use </span><span class="kw">crate</span>::beacon::BeaconEntry;
 <span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, TipsetKey};
-<span class="kw">use </span><span class="kw">crate</span>::chain::ChainStore;
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::{BadBlockCache, SyncState};
-<span class="kw">use </span><span class="kw">crate</span>::key_management::KeyStore;
+<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncState;
 <span class="kw">pub use </span><span class="kw">crate</span>::libp2p::Multiaddr;
-<span class="kw">use </span><span class="kw">crate</span>::libp2p::{Multihash, NetworkMessage};
+<span class="kw">use </span><span class="kw">crate</span>::libp2p::Multihash;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, HasLotusJson, LotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::message::signed_message::SignedMessage;
-<span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
 <span class="kw">use </span><span class="kw">crate</span>::shim::sector::SectorInfo;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address,
@@ -1168,9 +1133,7 @@
     sector::{RegisteredSealProof, SectorNumber},
     state_tree::{ActorID, ActorState},
 };
-<span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
 <span class="kw">use </span>ahash::HashSet;
-<span class="kw">use </span>chrono::Utc;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actor_interface::market::AllocationID;
 <span class="kw">use </span>fil_actor_interface::miner::MinerInfo;
@@ -1181,38 +1144,13 @@
 };
 <span class="kw">use </span>fil_actor_miner_state::v12::{BeneficiaryTerm, PendingBeneficiaryChange};
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::BitField;
-<span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::{BytesDe, RawBytes};
 <span class="kw">use </span>libipld_core::ipld::Ipld;
 <span class="kw">use </span>libp2p::PeerId;
 <span class="kw">use </span>nonempty::NonEmpty;
 <span class="kw">use </span>num_bigint::BigInt;
-<span class="kw">use </span>parking_lot::RwLock <span class="kw">as </span>SyncRwLock;
 <span class="kw">use </span>serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 <span class="kw">use </span>serde_json::Value;
-<span class="kw">use </span>tokio::sync::RwLock;
-
-<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4007
-//                  avoid double indirection
-</span><span class="kw">pub type </span>Data&lt;T&gt; = Arc&lt;Arc&lt;T&gt;&gt;;
-
-<span class="doccomment">/// This is where you store persistent data, or at least access to stateful
-/// data.
-</span><span class="kw">pub struct </span>RPCState&lt;DB&gt;
-<span class="kw">where
-    </span>DB: Blockstore,
-{
-    <span class="kw">pub </span>keystore: Arc&lt;RwLock&lt;KeyStore&gt;&gt;,
-    <span class="kw">pub </span>chain_store: Arc&lt;ChainStore&lt;DB&gt;&gt;,
-    <span class="kw">pub </span>state_manager: Arc&lt;StateManager&lt;DB&gt;&gt;,
-    <span class="kw">pub </span>mpool: Arc&lt;MessagePool&lt;MpoolRpcProvider&lt;DB&gt;&gt;&gt;,
-    <span class="kw">pub </span>bad_blocks: Arc&lt;BadBlockCache&gt;,
-    <span class="kw">pub </span>sync_state: Arc&lt;SyncRwLock&lt;SyncState&gt;&gt;,
-    <span class="kw">pub </span>network_send: flume::Sender&lt;NetworkMessage&gt;,
-    <span class="kw">pub </span>network_name: String,
-    <span class="kw">pub </span>start_time: chrono::DateTime&lt;Utc&gt;,
-    <span class="kw">pub </span>beacon: Arc&lt;BeaconSchedule&gt;,
-}
 
 <span class="attr">#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]

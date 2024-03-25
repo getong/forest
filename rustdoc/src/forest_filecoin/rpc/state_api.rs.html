@@ -1043,7 +1043,6 @@
 <a href="#1041" id="1041">1041</a>
 <a href="#1042" id="1042">1042</a>
 <a href="#1043" id="1043">1043</a>
-<a href="#1044" id="1044">1044</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1052,6 +1051,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, clock::ChainEpoch, deal::DealID, econ::TokenAmount, executor::Receipt,
@@ -1089,7 +1089,7 @@
 
 <span class="kw">pub async fn </span>miner_get_base_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; anyhow::Result&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;MiningBaseInfo&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((address, epoch, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1106,7 +1106,7 @@
 <span class="doccomment">/// runs the given message and returns its result without any persisted changes.
 </span><span class="kw">pub async fn </span>state_call&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((message, ApiTipsetKey(key))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1124,7 +1124,7 @@
 /// executed in the indicated tipset.
 </span><span class="kw">pub async fn </span>state_replay&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;InvocResult, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid, ApiTipsetKey(key))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1143,9 +1143,7 @@
 }
 
 <span class="doccomment">/// gets network name from state manager
-</span><span class="kw">pub async fn </span>state_network_name&lt;DB: Blockstore&gt;(
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
+</span><span class="kw">pub async fn </span>state_network_name&lt;DB: Blockstore&gt;(data: Ctx&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
     <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
     <span class="kw">let </span>heaviest_tipset = state_manager.chain_store().heaviest_tipset();
 
@@ -1156,7 +1154,7 @@
 
 <span class="kw">pub async fn </span>state_get_network_version&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkVersion, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1168,7 +1166,7 @@
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateAccountKey&gt;
 </span><span class="kw">pub async fn </span>state_account_key&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Address&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
@@ -1189,7 +1187,7 @@
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateLookupID&gt;
 </span><span class="kw">pub async fn </span>state_lookup_id&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Address&gt;, JsonRpcError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
@@ -1208,7 +1206,7 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>state_get_actor&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;ActorState&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1222,7 +1220,7 @@
 /// Market
 </span><span class="kw">pub async fn </span>state_market_balance&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MarketBalance, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1238,7 +1236,7 @@
 
 <span class="kw">pub async fn </span>state_market_deals&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;String, MarketDeal&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1276,7 +1274,7 @@
 <span class="doccomment">/// looks up the miner info of the given address.
 </span><span class="kw">pub async fn </span>state_miner_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;MinerInfo&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1290,7 +1288,7 @@
 
 <span class="kw">pub async fn </span>state_miner_active_sectors&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;SectorOnChainInfo&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((miner, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1325,7 +1323,7 @@
 <span class="comment">// Returns the number of sectors in a miner's sector set and proving set
 </span><span class="kw">pub async fn </span>state_miner_sector_count&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;MinerSectors&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((miner, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1361,7 +1359,7 @@
 <span class="doccomment">/// looks up the miner power of the given address.
 </span><span class="kw">pub async fn </span>state_miner_power&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;MinerPower&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1379,7 +1377,7 @@
 
 <span class="kw">pub async fn </span>state_miner_deadlines&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;ApiDeadline&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1405,7 +1403,7 @@
 
 <span class="kw">pub async fn </span>state_miner_proving_deadline&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;DeadlineInfo&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1424,7 +1422,7 @@
 <span class="doccomment">/// looks up the miner power of the given address.
 </span><span class="kw">pub async fn </span>state_miner_faults&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;BitField&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((address, ApiTipsetKey(key))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1442,7 +1440,7 @@
 
 <span class="kw">pub async fn </span>state_miner_recoveries&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;BitField&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((miner, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1460,7 +1458,7 @@
 
 <span class="kw">pub async fn </span>state_miner_available_balance&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((miner_address, ApiTipsetKey(tsk))): LotusJson&lt;(Address, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1509,7 +1507,7 @@
 <span class="doccomment">/// returns the message receipt for the given message
 </span><span class="kw">pub async fn </span>state_get_receipt&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Receipt&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid, ApiTipsetKey(key))): LotusJson&lt;(Cid, ApiTipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1527,7 +1525,7 @@
 /// message arrives on chain, and gets to the indicated confidence depth.
 </span><span class="kw">pub async fn </span>state_wait_msg&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MessageLookup, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid, confidence)): LotusJson&lt;(Cid, i64)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1550,7 +1548,7 @@
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateSearchMsg&gt;
 </span><span class="kw">pub async fn </span>state_search_msg&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MessageLookup, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid,)): LotusJson&lt;(Cid,)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1575,7 +1573,7 @@
 /// See &lt;https://github.com/filecoin-project/lotus/blob/master/documentation/en/api-v0-methods.md#StateSearchMsgLimited&gt;
 </span><span class="kw">pub async fn </span>state_search_msg_limited&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MessageLookup, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid, look_back_limit)): LotusJson&lt;(Cid, i64)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1614,7 +1612,7 @@
 /// consensus rules.
 </span><span class="kw">pub async fn </span>state_fetch_root&lt;DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((root_cid, save_to_file)): LotusJson&lt;(Cid, <span class="prelude-ty">Option</span>&lt;PathBuf&gt;)&gt; = params.parse()<span class="question-mark">?</span>;
 
@@ -1776,7 +1774,7 @@
 <span class="doccomment">/// Get randomness from tickets
 </span><span class="kw">pub async fn </span>state_get_randomness_from_tickets&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;u8&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((personalization, rand_epoch, entropy, ApiTipsetKey(tsk))): LotusJson&lt;
         RandomnessParams,
@@ -1803,7 +1801,7 @@
 <span class="doccomment">/// Get randomness from beacon
 </span><span class="kw">pub async fn </span>state_get_randomness_from_beacon&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;u8&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((personalization, rand_epoch, entropy, ApiTipsetKey(tsk))): LotusJson&lt;
         RandomnessParams,
@@ -1830,7 +1828,7 @@
 <span class="doccomment">/// Get read state
 </span><span class="kw">pub async fn </span>state_read_state&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;ApiActorState&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1855,7 +1853,7 @@
 
 <span class="kw">pub async fn </span>state_circulating_supply&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
 
@@ -1877,7 +1875,7 @@
 
 <span class="kw">pub async fn </span>msig_get_available_balance&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;TokenAmount&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1897,7 +1895,7 @@
 
 <span class="kw">pub async fn </span>msig_get_pending&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Transaction&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1927,7 +1925,7 @@
 <span class="doccomment">/// Get state sector info using sector no
 </span><span class="kw">pub async fn </span>state_sector_get_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;SectorOnChainInfo&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, sector_no, ApiTipsetKey(tsk))): LotusJson&lt;(Address, u64, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -1946,7 +1944,7 @@
 
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_verified_client_status&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;<span class="prelude-ty">Option</span>&lt;BigInt&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((addr, ApiTipsetKey(tsk))) = params.parse()<span class="question-mark">?</span>;
 
@@ -1959,7 +1957,7 @@
     DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 &gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;CirculatingSupply&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
 
@@ -1977,7 +1975,7 @@
 <span class="doccomment">/// Looks back and returns all messages with a matching to or from address, stopping at the given height.
 </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_list_messages&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Cid&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((from_to, tsk, max_height)): LotusJson&lt;(MessageFilter, ApiTipsetKey, i64)&gt; =
         params.parse()<span class="question-mark">?</span>;
@@ -2039,7 +2037,7 @@
 
 <span class="kw">pub async fn </span>state_list_miners&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Address&gt;&gt;, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)) = params.parse()<span class="question-mark">?</span>;
 
@@ -2065,7 +2063,7 @@
 
 <span class="kw">pub async fn </span>state_market_storage_deal&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiMarketDeal, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((deal_id, ApiTipsetKey(tsk))): LotusJson&lt;(DealID, ApiTipsetKey)&gt; =
         params.parse()<span class="question-mark">?</span>;

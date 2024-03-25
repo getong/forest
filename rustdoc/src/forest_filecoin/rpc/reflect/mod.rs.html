@@ -333,8 +333,6 @@
 <a href="#331" id="331">331</a>
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -361,8 +359,6 @@
 <span class="kw">mod </span>parser;
 <span class="kw">mod </span>util;
 
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::RPCState;
-
 <span class="kw">use </span><span class="self">self</span>::{jsonrpc_types::RequestParameters, util::Optional <span class="kw">as _</span>};
 <span class="kw">use </span><span class="kw">super</span>::error::JsonRpcError <span class="kw">as </span>Error;
 
@@ -386,9 +382,9 @@
 <span class="doccomment">/// Type to be used by [`RpcMethod::handle`].
 </span><span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4007
 //                  avoid double indirection
-</span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;Arc&lt;RPCState&lt;T&gt;&gt;&gt;;
+</span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;&gt;;
 <span class="doccomment">/// Type to be used by [`SelfDescribingRpcModule`] and [`RpcModule`].
-</span><span class="kw">type </span>ModuleState&lt;T&gt; = Arc&lt;RPCState&lt;T&gt;&gt;;
+</span><span class="kw">type </span>ModuleState&lt;T&gt; = Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;;
 
 <span class="doccomment">/// A definition of an RPC method handler which can be registered with a
 /// [`SelfDescribingRpcModule`].
@@ -397,7 +393,7 @@
 /// for generality.
 /// However, fixing it as [`Ctx&lt;...&gt;`] saves on complexity/confusion for implementors,
 /// at the expense of handler flexibility, which could come back to bite us.
-/// - All handlers accept [`RPCState`].
+/// - All handlers accept the same type.
 /// - All `Ctx`s must be `Send + Sync + 'static` due to bounds on [`RpcModule`].
 /// - Handlers don't specialize on top of the given bounds, but they MAY relax them.
 </span><span class="kw">pub trait </span>RpcMethod&lt;<span class="kw">const </span>ARITY: usize&gt; {
@@ -498,7 +494,7 @@
             .push(<span class="self">Self</span>::openrpc(<span class="kw-2">&amp;mut </span>module.schema_generator, module.calling_convention).unwrap());
     }
     <span class="doccomment">/// Call this method on an [`RpcModule`].
-    </span><span class="kw">fn </span>call(
+    </span><span class="kw">fn </span>call_module(
         module: <span class="kw-2">&amp;</span>RpcModule&lt;Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;&gt;,
         params: <span class="self">Self</span>::Params,
         calling_convention: ConcreteCallingConvention,

@@ -394,6 +394,21 @@
 <a href="#392" id="392">392</a>
 <a href="#393" id="393">393</a>
 <a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -408,13 +423,15 @@
 <span class="kw">mod </span>mpool_api;
 <span class="kw">mod </span>net_api;
 <span class="kw">mod </span>node_api;
-<span class="kw">mod </span>reflect;
 <span class="kw">mod </span>state_api;
 <span class="kw">mod </span>sync_api;
 <span class="kw">mod </span>wallet_api;
 
-<span class="kw">mod </span>error;
 <span class="kw">pub use </span>error::JsonRpcError;
+<span class="kw">use </span>reflect::Ctx;
+<span class="kw">pub use </span>reflect::RpcMethodExt;
+<span class="kw">mod </span>error;
+<span class="kw">mod </span>reflect;
 
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::sync::Arc;
@@ -429,9 +446,8 @@
     state_api::<span class="kw-2">*</span>,
 };
 <span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
-    auth_api::<span class="kw-2">*</span>, beacon_api::<span class="kw-2">*</span>, chain_api::<span class="kw-2">*</span>, common_api::<span class="kw-2">*</span>, data_types::RPCState, eth_api::<span class="kw-2">*</span>,
-    gas_api::<span class="kw-2">*</span>, mpool_api::<span class="kw-2">*</span>, net_api::<span class="kw-2">*</span>, node_api::NODE_STATUS, state_api::<span class="kw-2">*</span>, sync_api::<span class="kw-2">*</span>,
-    wallet_api::<span class="kw-2">*</span>,
+    auth_api::<span class="kw-2">*</span>, beacon_api::<span class="kw-2">*</span>, chain_api::<span class="kw-2">*</span>, common_api::<span class="kw-2">*</span>, eth_api::<span class="kw-2">*</span>, gas_api::<span class="kw-2">*</span>, mpool_api::<span class="kw-2">*</span>,
+    net_api::<span class="kw-2">*</span>, node_api::NODE_STATUS, state_api::<span class="kw-2">*</span>, sync_api::<span class="kw-2">*</span>, wallet_api::<span class="kw-2">*</span>,
 };
 
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -449,9 +465,23 @@
 
 <span class="kw">use </span><span class="self">self</span>::chain_api::ChainGetPath;
 <span class="kw">use </span><span class="self">self</span>::reflect::openrpc_types::ParamStructure;
-<span class="kw">use </span><span class="self">self</span>::reflect::RpcMethodExt <span class="kw">as _</span>;
 
 <span class="kw">const </span>MAX_RESPONSE_BODY_SIZE: u32 = <span class="number">16 </span>* <span class="number">1024 </span>* <span class="number">1024</span>;
+
+<span class="doccomment">/// This is where you store persistent data, or at least access to stateful
+/// data.
+</span><span class="kw">pub struct </span>RPCState&lt;DB&gt; {
+    <span class="kw">pub </span>keystore: Arc&lt;RwLock&lt;KeyStore&gt;&gt;,
+    <span class="kw">pub </span>chain_store: Arc&lt;<span class="kw">crate</span>::chain::ChainStore&lt;DB&gt;&gt;,
+    <span class="kw">pub </span>state_manager: Arc&lt;<span class="kw">crate</span>::state_manager::StateManager&lt;DB&gt;&gt;,
+    <span class="kw">pub </span>mpool: Arc&lt;<span class="kw">crate</span>::message_pool::MessagePool&lt;<span class="kw">crate</span>::message_pool::MpoolRpcProvider&lt;DB&gt;&gt;&gt;,
+    <span class="kw">pub </span>bad_blocks: Arc&lt;<span class="kw">crate</span>::chain_sync::BadBlockCache&gt;,
+    <span class="kw">pub </span>sync_state: Arc&lt;parking_lot::RwLock&lt;<span class="kw">crate</span>::chain_sync::SyncState&gt;&gt;,
+    <span class="kw">pub </span>network_send: flume::Sender&lt;<span class="kw">crate</span>::libp2p::NetworkMessage&gt;,
+    <span class="kw">pub </span>network_name: String,
+    <span class="kw">pub </span>start_time: chrono::DateTime&lt;chrono::Utc&gt;,
+    <span class="kw">pub </span>beacon: Arc&lt;<span class="kw">crate</span>::beacon::BeaconSchedule&gt;,
+}
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">struct </span>PerConnection&lt;RpcMiddleware, HttpMiddleware&gt; {

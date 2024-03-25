@@ -204,7 +204,8 @@
 </span><span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncState;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{Data, RPCState, RPCSyncState};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::RPCSyncState;
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -215,7 +216,7 @@
 <span class="doccomment">/// Checks if a given block is marked as bad.
 </span><span class="kw">pub async fn </span>sync_check_bad&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;String, JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid,)) = params.parse()<span class="question-mark">?</span>;
 
@@ -225,7 +226,7 @@
 <span class="doccomment">/// Marks a block as bad, meaning it will never be synced.
 </span><span class="kw">pub async fn </span>sync_mark_bad&lt;DB: Blockstore&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
+    data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), JsonRpcError&gt; {
     <span class="kw">let </span>LotusJson((cid,)) = params.parse()<span class="question-mark">?</span>;
 
@@ -239,9 +240,7 @@
 }
 
 <span class="doccomment">/// Returns the current status of the `ChainSync` process.
-</span><span class="kw">pub async fn </span>sync_state&lt;DB: Blockstore&gt;(
-    data: Data&lt;RPCState&lt;DB&gt;&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;RPCSyncState, JsonRpcError&gt; {
+</span><span class="kw">pub async fn </span>sync_state&lt;DB: Blockstore&gt;(data: Ctx&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;RPCSyncState, JsonRpcError&gt; {
     <span class="kw">let </span>active_syncs = <span class="macro">nonempty!</span>[clone_state(data.sync_state.as_ref()).<span class="kw">await</span>];
     <span class="prelude-val">Ok</span>(RPCSyncState { active_syncs })
 }
@@ -260,6 +259,7 @@
     <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
     <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
     <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
+    <span class="kw">use </span><span class="kw">crate</span>::rpc::RPCState;
     <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
     <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
     <span class="kw">use </span><span class="kw">crate</span>::utils::encoding::from_slice_with_fallback;
