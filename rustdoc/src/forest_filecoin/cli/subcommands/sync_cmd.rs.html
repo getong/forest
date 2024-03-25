@@ -148,6 +148,11 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -156,10 +161,10 @@
     time::Duration,
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::<span class="kw-2">*</span>;
+<span class="kw">use crate</span>::{chain_sync::SyncStage, rpc_api::data_types::RPCSyncState, rpc_client::<span class="kw-2">*</span>};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>clap::Subcommand;
+<span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>ticker::Ticker;
 
 <span class="kw">use </span><span class="kw">crate</span>::cli::subcommands::format_vec_pretty;
@@ -196,20 +201,25 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>stdout = stdout();
 
                 <span class="kw">for _ in </span>ticker {
-                    <span class="kw">let </span>response = api.sync_status().<span class="kw">await</span><span class="question-mark">?</span>;
-                    <span class="kw">let </span>state = response.active_syncs.first();
+                    <span class="kw">let </span>RPCSyncState { active_syncs } = api.sync_status().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">let </span>state = active_syncs
+                        .iter()
+                        .rev()
+                        .find_or_first(|ss| {
+                            ss.stage() != SyncStage::Idle &amp;&amp; ss.stage() != SyncStage::Complete
+                        })
+                        .expect(<span class="string">"Infallible, active_syncs is NonEmpty"</span>);
 
-                    <span class="kw">let </span>target_height = <span class="kw">if let </span><span class="prelude-val">Some</span>(tipset) = state.target() {
-                        tipset.epoch()
-                    } <span class="kw">else </span>{
-                        <span class="number">0
-                    </span>};
-
-                    <span class="kw">let </span>base_height = <span class="kw">if let </span><span class="prelude-val">Some</span>(tipset) = state.base() {
-                        tipset.epoch()
-                    } <span class="kw">else </span>{
-                        <span class="number">0
-                    </span>};
+                    <span class="kw">let </span>base_height = state
+                        .base()
+                        .as_ref()
+                        .map(|ts| ts.epoch())
+                        .unwrap_or_default();
+                    <span class="kw">let </span>target_height = state
+                        .target()
+                        .as_ref()
+                        .map(|ts| ts.epoch())
+                        .unwrap_or_default();
 
                     <span class="macro">println!</span>(
                         <span class="string">"Worker: 0; Base: {}; Target: {}; (diff: {})"</span>,
