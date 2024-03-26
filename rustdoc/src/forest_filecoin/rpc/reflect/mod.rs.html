@@ -331,8 +331,6 @@
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -380,11 +378,9 @@
 <span class="kw">use </span>std::{future::Future, sync::Arc};
 
 <span class="doccomment">/// Type to be used by [`RpcMethod::handle`].
-</span><span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4007
-//                  avoid double indirection
-</span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;&gt;;
+</span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;;
 <span class="doccomment">/// Type to be used by [`SelfDescribingRpcModule`] and [`RpcModule`].
-</span><span class="kw">type </span>ModuleState&lt;T&gt; = Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;;
+</span><span class="kw">type </span>ModuleState&lt;T&gt; = <span class="kw">crate</span>::rpc::RPCState&lt;T&gt;;
 
 <span class="doccomment">/// A definition of an RPC method handler which can be registered with a
 /// [`SelfDescribingRpcModule`].
@@ -631,9 +627,9 @@
 }
 
 <span class="kw">impl</span>&lt;Ctx&gt; SelfDescribingRpcModule&lt;Ctx&gt; {
-    <span class="kw">pub fn </span>new(ctx: Ctx, calling_convention: ParamStructure) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(ctx: Arc&lt;Ctx&gt;, calling_convention: ParamStructure) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            inner: jsonrpsee::server::RpcModule::new(ctx),
+            inner: jsonrpsee::server::RpcModule::from_arc(ctx),
             schema_generator: SchemaGenerator::new(SchemaSettings::openapi3()),
             calling_convention,
             methods: <span class="macro">vec!</span>[],
