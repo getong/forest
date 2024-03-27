@@ -1248,85 +1248,58 @@
 <a href="#1246" id="1246">1246</a>
 <a href="#1247" id="1247">1247</a>
 <a href="#1248" id="1248">1248</a>
-<a href="#1249" id="1249">1249</a>
-<a href="#1250" id="1250">1250</a>
-<a href="#1251" id="1251">1251</a>
-<a href="#1252" id="1252">1252</a>
-<a href="#1253" id="1253">1253</a>
-<a href="#1254" id="1254">1254</a>
-<a href="#1255" id="1255">1255</a>
-<a href="#1256" id="1256">1256</a>
-<a href="#1257" id="1257">1257</a>
-<a href="#1258" id="1258">1258</a>
-<a href="#1259" id="1259">1259</a>
-<a href="#1260" id="1260">1260</a>
-<a href="#1261" id="1261">1261</a>
-<a href="#1262" id="1262">1262</a>
-<a href="#1263" id="1263">1263</a>
-<a href="#1264" id="1264">1264</a>
-<a href="#1265" id="1265">1265</a>
-<a href="#1266" id="1266">1266</a>
-<a href="#1267" id="1267">1267</a>
-<a href="#1268" id="1268">1268</a>
-<a href="#1269" id="1269">1269</a>
-<a href="#1270" id="1270">1270</a>
-<a href="#1271" id="1271">1271</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::ChainStore;
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncConfig;
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
+<span class="kw">use </span><span class="kw">crate</span>::chain_sync::{SyncConfig, SyncStage};
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::cli_shared::snapshot::TrustedVendor;
 <span class="kw">use </span><span class="kw">crate</span>::daemon::db_util::download_to;
-<span class="kw">use </span><span class="kw">crate</span>::db::car::ManyCar;
-<span class="kw">use </span><span class="kw">crate</span>::db::{parity_db::ParityDb, parity_db_config::ParityDbConfig};
+<span class="kw">use </span><span class="kw">crate</span>::db::{car::ManyCar, MemoryDB};
 <span class="kw">use </span><span class="kw">crate</span>::genesis::{get_network_name_from_genesis, read_genesis_header};
 <span class="kw">use </span><span class="kw">crate</span>::key_management::{KeyStore, KeyStoreConfig};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::Message <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
-<span class="kw">use </span><span class="kw">crate</span>::networks::parse_bootstrap_peers;
-<span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
-<span class="kw">use </span><span class="kw">crate</span>::networks::NetworkChain;
+<span class="kw">use </span><span class="kw">crate</span>::networks::{parse_bootstrap_peers, ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{start_rpc, RPCState};
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::data_types::{MessageFilter, MessageLookup};
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::eth_api::Address <span class="kw">as </span>EthAddress;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_api::eth_api::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::CommunicationProtocol;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, JsonRpcError, RpcRequest, DEFAULT_PORT};
-<span class="kw">use </span><span class="kw">crate</span>::shim::address::{Address, Protocol};
-<span class="kw">use </span><span class="kw">crate</span>::shim::crypto::Signature;
-<span class="kw">use </span><span class="kw">crate</span>::shim::state_tree::StateTree;
+<span class="kw">use </span><span class="kw">crate</span>::rpc_api::{
+    data_types::{MessageFilter, MessageLookup},
+    eth_api::{Address <span class="kw">as </span>EthAddress, <span class="kw-2">*</span>},
+};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, CommunicationProtocol, JsonRpcError, RpcRequest, DEFAULT_PORT};
+<span class="kw">use </span><span class="kw">crate</span>::shim::{
+    address::{Address, Protocol},
+    crypto::Signature,
+    state_tree::StateTree,
+};
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
 <span class="kw">use </span><span class="kw">crate</span>::utils::version::FOREST_VERSION_STRING;
-<span class="kw">use </span><span class="kw">crate</span>::Client;
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>anyhow::{bail, Context <span class="kw">as _</span>};
 <span class="kw">use </span>clap::{Subcommand, ValueEnum};
 <span class="kw">use </span>fil_actor_interface::market;
 <span class="kw">use </span>fil_actors_shared::v10::runtime::DomainSeparationTag;
-<span class="kw">use </span>futures::stream::FuturesUnordered;
-<span class="kw">use </span>futures::StreamExt;
+<span class="kw">use </span>futures::{stream::FuturesUnordered, StreamExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>jsonrpsee::types::ErrorCode;
 <span class="kw">use </span>serde::de::DeserializeOwned;
-<span class="kw">use </span>std::net::{IpAddr, Ipv4Addr, SocketAddr};
-<span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>std::path::PathBuf;
-<span class="kw">use </span>std::str::FromStr;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::time::Duration;
+<span class="kw">use </span>std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
 <span class="kw">use </span>tabled::{builder::Builder, settings::Style};
-<span class="kw">use </span>tokio::sync::Semaphore;
 <span class="kw">use </span>tokio::{
     signal::{
         ctrl_c,
         unix::{signal, SignalKind},
     },
-    sync::{mpsc, RwLock},
+    sync::{mpsc, RwLock, Semaphore},
     task::JoinSet,
 };
 <span class="kw">use </span>tracing::{info, warn};
@@ -1343,9 +1316,6 @@
         <span class="comment">// RPC port
         </span><span class="attr">#[arg(long, default_value_t = DEFAULT_PORT)]
         </span>port: u16,
-        <span class="comment">// Data Directory
-        </span><span class="attr">#[arg(long, default_value = <span class="string">"offline-rpc-db"</span>)]
-        </span>data_dir: PathBuf,
         <span class="comment">// Allow downloading snapshot automatically
         </span><span class="attr">#[arg(long)]
         </span>auto_download_snapshot: bool,
@@ -1403,17 +1373,9 @@
                 snapshot_files,
                 chain,
                 port,
-                data_dir,
                 auto_download_snapshot,
             } =&gt; {
-                start_offline_server(
-                    snapshot_files,
-                    chain,
-                    port,
-                    data_dir.clone(),
-                    auto_download_snapshot,
-                )
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+                start_offline_server(snapshot_files, chain, port, auto_download_snapshot).<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="self">Self</span>::Compare {
                 forest,
@@ -2141,14 +2103,10 @@
     snapshot_files: Vec&lt;PathBuf&gt;,
     chain: NetworkChain,
     rpc_port: u16,
-    rpc_data_dir: PathBuf,
     auto_download_snapshot: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="macro">info!</span>(<span class="string">"Configuring Offline RPC Server"</span>);
-    <span class="kw">let </span>client = Client::default();
-    <span class="kw">let </span>db_path = client.data_dir.as_path().join(rpc_data_dir);
-    <span class="kw">let </span>db_writer = Arc::new(ParityDb::open(<span class="kw-2">&amp;</span>db_path, <span class="kw-2">&amp;</span>ParityDbConfig::default())<span class="question-mark">?</span>);
-    <span class="kw">let </span>db = Arc::new(ManyCar::new(db_writer.clone()));
+    <span class="kw">let </span>db = Arc::new(ManyCar::new(MemoryDB::default()));
 
     <span class="kw">let </span>snapshot_files = <span class="kw">if </span>snapshot_files.is_empty() {
         <span class="kw">let </span>(snapshot_url, num_bytes, path) =
@@ -2236,10 +2194,6 @@
     rpc_state.sync_state.write().set_stage(SyncStage::Idle);
     start_offline_rpc(rpc_state, rpc_port).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// TODO: this should more be done in a script
-    // Cleanup offline RPC resources
-    </span><span class="macro">info!</span>(<span class="string">"Cleaning offline RPC data directory: {}"</span>, db_path.display());
-    std::fs::remove_dir_all(<span class="kw-2">&amp;</span>db_path)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
 
