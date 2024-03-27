@@ -1629,6 +1629,7 @@
 <a href="#1627" id="1627">1627</a>
 <a href="#1628" id="1628">1628</a>
 <a href="#1629" id="1629">1629</a>
+<a href="#1630" id="1630">1630</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1944,12 +1945,12 @@
         state_cid: Cid,
         addr: <span class="kw-2">&amp;</span>Address,
     ) -&gt; anyhow::Result&lt;Address, Error&gt; {
-        <span class="kw">let </span>state = StateTree::new_from_root(<span class="self">self</span>.blockstore_owned(), <span class="kw-2">&amp;</span>state_cid)
-            .map_err(|e| Error::Other(e.to_string()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>state =
+            StateTree::new_from_root(<span class="self">self</span>.blockstore_owned(), <span class="kw-2">&amp;</span>state_cid).map_err(Error::other)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>act = state
             .get_actor(addr)
-            .map_err(|e| Error::State(e.to_string()))<span class="question-mark">?
+            .map_err(Error::state)<span class="question-mark">?
             </span>.ok_or_else(|| Error::State(<span class="string">"Miner actor not found"</span>.to_string()))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>ms = miner::State::load(<span class="self">self</span>.blockstore(), act.code, act.state)<span class="question-mark">?</span>;
@@ -2357,11 +2358,11 @@
             </span>.cs
             .chain_index
             .load_required_tipset(tipset.parents())
-            .map_err(|err| Error::Other(err.to_string()))<span class="question-mark">?</span>;
+            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"Failed to load tipset: {err}"</span>)))<span class="question-mark">?</span>;
         <span class="kw">let </span>messages = <span class="self">self
             </span>.cs
             .messages_for_tipset(<span class="kw-2">&amp;</span>pts)
-            .map_err(|err| Error::Other(err.to_string()))<span class="question-mark">?</span>;
+            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"Failed to load messages for tipset: {err}"</span>)))<span class="question-mark">?</span>;
         messages
             .iter()
             .enumerate()
@@ -2385,12 +2386,13 @@
                         message.from(),
                     )))
                 } <span class="kw">else </span>{
+                    <span class="kw">let </span>block_header = tipset.block_headers().first();
                     <span class="kw">crate</span>::chain::get_parent_receipt(
                         <span class="self">self</span>.blockstore(),
-                        tipset.block_headers().first(),
+                        block_header,
                         index,
                     )
-                    .map_err(|err| Error::Other(err.to_string()))
+                    .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"Failed to get parent receipt (message_receipts={}, index={index}, error={err})"</span>, block_header.message_receipts)))
                 }
             })
             .next()
@@ -2606,7 +2608,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
         <span class="kw">let </span>from = from.unwrap_or_else(|| <span class="self">self</span>.chain_store().heaviest_tipset());
         <span class="kw">let </span>message = <span class="kw">crate</span>::chain::get_chain_message(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>msg_cid)
-            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"failed to load message {err:}"</span>)))<span class="question-mark">?</span>;
+            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"failed to load message {err}"</span>)))<span class="question-mark">?</span>;
         <span class="kw">let </span>current_tipset = <span class="self">self</span>.cs.heaviest_tipset();
         <span class="kw">let </span>maybe_message_reciept = <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>message, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = maybe_message_reciept {

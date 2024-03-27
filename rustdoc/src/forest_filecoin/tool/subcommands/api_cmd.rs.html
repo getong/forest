@@ -1248,13 +1248,25 @@
 <a href="#1246" id="1246">1246</a>
 <a href="#1247" id="1247">1247</a>
 <a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
+<a href="#1259" id="1259">1259</a>
+<a href="#1260" id="1260">1260</a>
+<a href="#1261" id="1261">1261</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::ChainStore;
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::{SyncConfig, SyncStage};
-<span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::cli_shared::snapshot::TrustedVendor;
 <span class="kw">use </span><span class="kw">crate</span>::daemon::db_util::download_to;
 <span class="kw">use </span><span class="kw">crate</span>::db::{car::ManyCar, MemoryDB};
@@ -1284,6 +1296,7 @@
 <span class="kw">use </span>fil_actors_shared::v10::runtime::DomainSeparationTag;
 <span class="kw">use </span>futures::{stream::FuturesUnordered, StreamExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
+<span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>jsonrpsee::types::ErrorCode;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>std::{
@@ -1319,6 +1332,10 @@
         <span class="comment">// Allow downloading snapshot automatically
         </span><span class="attr">#[arg(long)]
         </span>auto_download_snapshot: bool,
+        <span class="doccomment">/// Validate snapshot at given EPOCH, use a negative value -N to validate
+        /// the last N EPOCH(s) starting at HEAD.
+        </span><span class="attr">#[arg(long, default_value_t = -<span class="number">20</span>)]
+        </span>height: i64,
     },
     <span class="doccomment">/// Compare
     </span>Compare {
@@ -1374,8 +1391,10 @@
                 chain,
                 port,
                 auto_download_snapshot,
+                height,
             } =&gt; {
-                start_offline_server(snapshot_files, chain, port, auto_download_snapshot).<span class="kw">await</span><span class="question-mark">?</span>;
+                start_offline_server(snapshot_files, chain, port, auto_download_snapshot, height)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
             }
             <span class="self">Self</span>::Compare {
                 forest,
@@ -1805,7 +1824,6 @@
         shared_tipset.key().into(),
     )));
 
-    <span class="kw">let </span><span class="kw-2">mut </span>seen = CidHashSet::default();
     <span class="kw">for </span>tipset <span class="kw">in </span>shared_tipset.clone().chain(<span class="kw-2">&amp;</span>store).take(n_tipsets) {
         tests.push(RpcTest::identity(
             ApiInfo::chain_get_messages_in_tipset_req(tipset.key().clone()),
@@ -1826,115 +1844,106 @@
             )));
 
             <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
-            <span class="kw">for </span>msg <span class="kw">in </span>bls_messages {
-                <span class="kw">if </span>seen.insert(msg.cid()<span class="question-mark">?</span>) {
-                    tests.push(RpcTest::identity(ApiInfo::chain_get_message_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                        msg.from(),
-                        root_tsk.into(),
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                        msg.from(),
-                        Default::default(),
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
-                        msg.from(),
-                        root_tsk.into(),
-                    )));
-                    tests.push(
-                        validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
-                            .with_timeout(Duration::from_secs(<span class="number">30</span>)),
-                    );
-                    tests.push(
-                        validate_message_lookup(ApiInfo::state_search_msg_req(msg.cid()<span class="question-mark">?</span>))
-                            .ignore(<span class="string">"Not implemented yet"</span>),
-                    );
-                    tests.push(
-                        validate_message_lookup(ApiInfo::state_search_msg_limited_req(
-                            msg.cid()<span class="question-mark">?</span>,
-                            <span class="number">800</span>,
-                        ))
-                        .ignore(<span class="string">"Not implemented yet"</span>),
-                    );
-                    tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
-                        MessageFilter {
-                            from: <span class="prelude-val">Some</span>(msg.from()),
-                            to: <span class="prelude-val">Some</span>(msg.to()),
-                        },
-                        root_tsk.into(),
-                        shared_tipset.epoch(),
-                    )));
-                    tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                    )));
-                    tests.push(validate_message_lookup(
-                        ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
-                    ));
-                }
+            <span class="kw">for </span>msg <span class="kw">in </span>bls_messages.into_iter().unique() {
+                tests.push(RpcTest::identity(ApiInfo::chain_get_message_req(
+                    msg.cid()<span class="question-mark">?</span>,
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
+                    msg.from(),
+                    root_tsk.into(),
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
+                    msg.from(),
+                    Default::default(),
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
+                    msg.from(),
+                    root_tsk.into(),
+                )));
+                tests.push(
+                    validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
+                        .with_timeout(Duration::from_secs(<span class="number">30</span>)),
+                );
+                tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
+                    msg.cid()<span class="question-mark">?</span>,
+                )));
+                tests.push(validate_message_lookup(
+                    ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
+                ));
+                tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
+                    MessageFilter {
+                        from: <span class="prelude-val">Some</span>(msg.from()),
+                        to: <span class="prelude-val">Some</span>(msg.to()),
+                    },
+                    root_tsk.into(),
+                    shared_tipset.epoch(),
+                )));
+                tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
+                    msg.cid()<span class="question-mark">?</span>,
+                )));
+                tests.push(validate_message_lookup(
+                    ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
+                ));
             }
-            <span class="kw">for </span>msg <span class="kw">in </span>secp_messages {
-                <span class="kw">if </span>seen.insert(msg.cid()<span class="question-mark">?</span>) {
-                    tests.push(RpcTest::identity(ApiInfo::chain_get_message_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                        msg.from(),
-                        root_tsk.into(),
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                        msg.from(),
-                        Default::default(),
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
-                        msg.from(),
-                        root_tsk.into(),
-                    )));
-                    tests.push(
-                        validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
-                            .with_timeout(Duration::from_secs(<span class="number">30</span>)),
-                    );
-                    tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
-                        msg.cid()<span class="question-mark">?</span>,
-                    )));
-                    tests.push(validate_message_lookup(
-                        ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
-                    ));
-                    tests.push(RpcTest::basic(ApiInfo::mpool_get_nonce_req(msg.from())));
-                    tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
-                        MessageFilter {
-                            from: <span class="prelude-val">None</span>,
-                            to: <span class="prelude-val">Some</span>(msg.to()),
-                        },
-                        root_tsk.into(),
-                        shared_tipset.epoch(),
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
-                        MessageFilter {
-                            from: <span class="prelude-val">Some</span>(msg.from()),
-                            to: <span class="prelude-val">None</span>,
-                        },
-                        root_tsk.into(),
-                        shared_tipset.epoch(),
-                    )));
-                    tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
-                        MessageFilter {
-                            from: <span class="prelude-val">None</span>,
-                            to: <span class="prelude-val">None</span>,
-                        },
-                        root_tsk.into(),
-                        shared_tipset.epoch(),
-                    )));
+            <span class="kw">for </span>msg <span class="kw">in </span>secp_messages.into_iter().unique() {
+                tests.push(RpcTest::identity(ApiInfo::chain_get_message_req(
+                    msg.cid()<span class="question-mark">?</span>,
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
+                    msg.from(),
+                    root_tsk.into(),
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
+                    msg.from(),
+                    Default::default(),
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
+                    msg.from(),
+                    root_tsk.into(),
+                )));
+                tests.push(
+                    validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
+                        .with_timeout(Duration::from_secs(<span class="number">30</span>)),
+                );
+                tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
+                    msg.cid()<span class="question-mark">?</span>,
+                )));
+                tests.push(validate_message_lookup(
+                    ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
+                ));
+                tests.push(RpcTest::basic(ApiInfo::mpool_get_nonce_req(msg.from())));
+                tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
+                    MessageFilter {
+                        from: <span class="prelude-val">None</span>,
+                        to: <span class="prelude-val">Some</span>(msg.to()),
+                    },
+                    root_tsk.into(),
+                    shared_tipset.epoch(),
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
+                    MessageFilter {
+                        from: <span class="prelude-val">Some</span>(msg.from()),
+                        to: <span class="prelude-val">None</span>,
+                    },
+                    root_tsk.into(),
+                    shared_tipset.epoch(),
+                )));
+                tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
+                    MessageFilter {
+                        from: <span class="prelude-val">None</span>,
+                        to: <span class="prelude-val">None</span>,
+                    },
+                    root_tsk.into(),
+                    shared_tipset.epoch(),
+                )));
 
-                    <span class="kw">if </span>!msg.params().is_empty() {
-                        tests.push(RpcTest::identity(ApiInfo::state_decode_params_req(
+                <span class="kw">if </span>!msg.params().is_empty() {
+                    tests.push(RpcTest::identity(ApiInfo::state_decode_params_req(
                             msg.to(),
                             msg.method_num(),
                             msg.params().to_vec(),
                             root_tsk.into(),
                         )).ignore(<span class="string">"Difficult to implement. Tracking issue: https://github.com/ChainSafe/forest/issues/3769"</span>));
-                    }
                 }
             }
             tests.push(RpcTest::identity(ApiInfo::state_miner_info_req(
@@ -2104,6 +2113,7 @@
     chain: NetworkChain,
     rpc_port: u16,
     auto_download_snapshot: bool,
+    height: i64,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="macro">info!</span>(<span class="string">"Configuring Offline RPC Server"</span>);
     <span class="kw">let </span>db = Arc::new(ManyCar::new(MemoryDB::default()));
@@ -2158,11 +2168,11 @@
         chain_config,
         sync_config,
     )<span class="question-mark">?</span>);
-    <span class="kw">let </span>ts = db.heaviest_tipset()<span class="question-mark">?</span>;
+    <span class="kw">let </span>head_ts = Arc::new(db.heaviest_tipset()<span class="question-mark">?</span>);
 
     state_manager
         .chain_store()
-        .set_heaviest_tipset(Arc::new(ts))<span class="question-mark">?</span>;
+        .set_heaviest_tipset(head_ts.clone())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>beacon = Arc::new(
         state_manager
@@ -2179,6 +2189,22 @@
         state_manager.chain_config().clone(),
         <span class="kw-2">&amp;mut </span>JoinSet::new(),
     )<span class="question-mark">?</span>;
+
+    <span class="comment">// Validate tipsets since the {height} EPOCH when `height &gt;= 0`,
+    // or valiadte the last {-height} EPOCH(s) when `height &lt; 0`
+    </span><span class="kw">let </span>n_ts_to_validate = <span class="kw">if </span>height &gt; <span class="number">0 </span>{
+        (head_ts.epoch() - height).max(<span class="number">0</span>)
+    } <span class="kw">else </span>{
+        -height
+    } <span class="kw">as </span>usize;
+    <span class="kw">if </span>n_ts_to_validate &gt; <span class="number">0 </span>{
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) =
+            state_manager.validate_tipsets(head_ts.chain_arc(<span class="kw-2">&amp;</span>db).take(n_ts_to_validate))
+        {
+            <span class="macro">warn!</span>(<span class="string">"{e}"</span>);
+        }
+    }
+
     <span class="kw">let </span>rpc_state = RPCState {
         state_manager,
         keystore: Arc::new(RwLock::new(KeyStore::new(KeyStoreConfig::Memory)<span class="question-mark">?</span>)),
@@ -2202,7 +2228,7 @@
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="macro">info!</span>(<span class="string">"Starting offline RPC Server"</span>);
-    <span class="kw">let </span>rpc_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), rpc_port);
+    <span class="kw">let </span>rpc_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), rpc_port);
     <span class="kw">let </span>forest_version = FOREST_VERSION_STRING.as_str();
     <span class="kw">let </span>(shutdown_send, <span class="kw-2">mut </span>shutdown_recv) = mpsc::channel(<span class="number">1</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>terminate = signal(SignalKind::terminate())<span class="question-mark">?</span>;

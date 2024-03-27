@@ -341,6 +341,17 @@
 <a href="#339" id="339">339</a>
 <a href="#340" id="340">340</a>
 <a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -373,7 +384,7 @@
 };
 <span class="kw">use </span>serde::de::IntoDeserializer;
 <span class="kw">use </span>serde::Deserialize;
-<span class="kw">use </span>tracing::debug;
+<span class="kw">use </span>tracing::{debug, error};
 
 <span class="kw">pub const </span>API_INFO_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"FULLNODE_API_INFO"</span>;
 <span class="kw">pub const </span>DEFAULT_HOST: <span class="kw-2">&amp;</span>str = <span class="string">"127.0.0.1"</span>;
@@ -448,7 +459,12 @@
         )
         .to_string();
 
-        <span class="macro">debug!</span>(<span class="string">"Using JSON-RPC v2 HTTP URL: {}"</span>, api_url);
+        <span class="kw">let </span>request_log = <span class="macro">format!</span>(
+            <span class="string">"JSON-RPC request URL: {}, payload: {}"</span>,
+            api_url,
+            serde_json::to_string(<span class="kw-2">&amp;</span>rpc_req).unwrap_or_default()
+        );
+        <span class="macro">debug!</span>(request_log);
 
         <span class="kw">let </span>request = global_http_client()
             .post(api_url)
@@ -460,7 +476,7 @@
         };
 
         <span class="kw">let </span>response = request.send().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">match </span>response.status() {
+        <span class="kw">let </span>result = <span class="kw">match </span>response.status() {
             http0::StatusCode::NOT_FOUND =&gt; {
                 <span class="prelude-val">Err</span>(JsonRpcError::method_not_found(<span class="string">"method_not_found"</span>, <span class="prelude-val">None</span>))
             }
@@ -495,7 +511,13 @@
                     }
                 }
             }
+        };
+
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="kw-2">&amp;</span>result {
+            <span class="macro">error!</span>(<span class="string">"Failure: {}\n{request_log}"</span>, err.message());
         }
+
+        result
     }
 
     <span class="kw">pub async fn </span>ws_call&lt;T: HasLotusJson + std::fmt::Debug + Send&gt;(
