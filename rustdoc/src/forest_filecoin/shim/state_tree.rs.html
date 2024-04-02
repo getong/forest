@@ -530,6 +530,12 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="kw">use </span>std::{
@@ -545,16 +551,18 @@
     ActorState <span class="kw">as </span>ActorStateV4, ActorState <span class="kw">as </span>ActorState_latest, StateTree <span class="kw">as </span>StateTreeV4,
 };
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::repr::{Deserialize_repr, Serialize_repr};
+<span class="kw">use </span>fvm_ipld_encoding::{
+    repr::{Deserialize_repr, Serialize_repr},
+    CborStore <span class="kw">as _</span>,
+};
 <span class="kw">use </span>fvm_shared2::state::StateTreeVersion <span class="kw">as </span>StateTreeVersionV2;
-<span class="kw">pub use </span>fvm_shared3::state::StateRoot;
 <span class="kw">use </span>fvm_shared3::state::StateTreeVersion <span class="kw">as </span>StateTreeVersionV3;
-<span class="kw">pub use </span>fvm_shared3::ActorID;
 <span class="kw">use </span>fvm_shared4::state::StateTreeVersion <span class="kw">as </span>StateTreeVersionV4;
 <span class="kw">use </span>num::FromPrimitive;
 <span class="kw">use </span>num_derive::FromPrimitive;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
+<span class="kw">pub use </span><span class="kw">super</span>::fvm_shared_latest::{state::StateRoot, ActorID};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, econ::TokenAmount};
 
 <span class="attr">#[derive(
@@ -694,10 +702,14 @@
             <span class="prelude-val">Ok</span>(StateTree::FvmV3(st))
         } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(st) = StateTreeV2::new_from_root(store.clone(), c) {
             <span class="prelude-val">Ok</span>(StateTree::FvmV2(st))
-        } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(st) = <span class="kw">super</span>::state_tree_v0::StateTreeV0::new_from_root(store, c) {
+        } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(st) = <span class="kw">super</span>::state_tree_v0::StateTreeV0::new_from_root(store.clone(), c) {
             <span class="prelude-val">Ok</span>(StateTree::V0(st))
         } <span class="kw">else </span>{
-            <span class="macro">bail!</span>(<span class="string">"Can't create a valid state tree from the given root. This error may indicate unsupported version."</span>)
+            <span class="kw">let </span>state_root = store.get_cbor::&lt;StateRoot&gt;(c).ok().flatten();
+            <span class="kw">let </span>state_root_version = state_root
+                .map(|sr| <span class="macro">format!</span>(<span class="string">"{:?}"</span>, sr.version))
+                .unwrap_or_else(|| <span class="string">"unknown"</span>.into());
+            <span class="macro">bail!</span>(<span class="string">"Can't create a valid state tree from the given root. This error may indicate unsupported version. state_root_cid={c}, state_root_version={state_root_version}"</span>)
         }
     }
 

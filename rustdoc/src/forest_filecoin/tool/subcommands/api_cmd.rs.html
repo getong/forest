@@ -1261,6 +1261,31 @@
 <a href="#1259" id="1259">1259</a>
 <a href="#1260" id="1260">1260</a>
 <a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
+<a href="#1267" id="1267">1267</a>
+<a href="#1268" id="1268">1268</a>
+<a href="#1269" id="1269">1269</a>
+<a href="#1270" id="1270">1270</a>
+<a href="#1271" id="1271">1271</a>
+<a href="#1272" id="1272">1272</a>
+<a href="#1273" id="1273">1273</a>
+<a href="#1274" id="1274">1274</a>
+<a href="#1275" id="1275">1275</a>
+<a href="#1276" id="1276">1276</a>
+<a href="#1277" id="1277">1277</a>
+<a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1282,6 +1307,7 @@
     eth_api::{Address <span class="kw">as </span>EthAddress, <span class="kw-2">*</span>},
 };
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, CommunicationProtocol, JsonRpcError, RpcRequest, DEFAULT_PORT};
+<span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Protocol},
     crypto::Signature,
@@ -1315,7 +1341,7 @@
     sync::{mpsc, RwLock, Semaphore},
     task::JoinSet,
 };
-<span class="kw">use </span>tracing::{info, warn};
+<span class="kw">use </span>tracing::{debug, info, warn};
 
 <span class="attr">#[derive(Debug, Subcommand)]
 </span><span class="kw">pub enum </span>ApiCommands {
@@ -1334,7 +1360,7 @@
         </span>auto_download_snapshot: bool,
         <span class="doccomment">/// Validate snapshot at given EPOCH, use a negative value -N to validate
         /// the last N EPOCH(s) starting at HEAD.
-        </span><span class="attr">#[arg(long, default_value_t = -<span class="number">20</span>)]
+        </span><span class="attr">#[arg(long, default_value_t = -<span class="number">50</span>)]
         </span>height: i64,
     },
     <span class="doccomment">/// Compare
@@ -1478,7 +1504,15 @@
     {
         RpcTest {
             request: request.lower(),
-            check_syntax: Arc::new(|value| serde_json::from_value::&lt;T::LotusJson&gt;(value).is_ok()),
+            check_syntax: Arc::new(
+                |value| <span class="kw">match </span>serde_json::from_value::&lt;T::LotusJson&gt;(value) {
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">debug!</span>(<span class="string">"{e}"</span>);
+                        <span class="bool-val">false
+                    </span>}
+                },
+            ),
             check_semantics: Arc::new(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="bool-val">true</span>),
             ignore: <span class="prelude-val">None</span>,
         }
@@ -1496,16 +1530,34 @@
     {
         RpcTest {
             request: request.lower(),
-            check_syntax: Arc::new(|value| serde_json::from_value::&lt;T::LotusJson&gt;(value).is_ok()),
+            check_syntax: Arc::new(
+                |value| <span class="kw">match </span>serde_json::from_value::&lt;T::LotusJson&gt;(value) {
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">debug!</span>(<span class="string">"{e}"</span>);
+                        <span class="bool-val">false
+                    </span>}
+                },
+            ),
             check_semantics: Arc::new(<span class="kw">move </span>|forest_json, lotus_json| {
-                serde_json::from_value::&lt;T::LotusJson&gt;(forest_json).is_ok_and(|forest| {
-                    serde_json::from_value::&lt;T::LotusJson&gt;(lotus_json).is_ok_and(|lotus| {
-                        validate(
-                            HasLotusJson::from_lotus_json(forest),
-                            HasLotusJson::from_lotus_json(lotus),
-                        )
-                    })
-                })
+                <span class="kw">match </span>(
+                    serde_json::from_value::&lt;T::LotusJson&gt;(forest_json),
+                    serde_json::from_value::&lt;T::LotusJson&gt;(lotus_json),
+                ) {
+                    (<span class="prelude-val">Ok</span>(forest), <span class="prelude-val">Ok</span>(lotus)) =&gt; validate(
+                        HasLotusJson::from_lotus_json(forest),
+                        HasLotusJson::from_lotus_json(lotus),
+                    ),
+                    (forest, lotus) =&gt; {
+                        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = forest {
+                            <span class="macro">debug!</span>(<span class="string">"[forest] invalid json: {e}"</span>);
+                        }
+                        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = lotus {
+                            <span class="macro">debug!</span>(<span class="string">"[lotus] invalid json: {e}"</span>);
+                        }
+                        <span class="bool-val">false
+                    </span>}
+                }
             }),
             ignore: <span class="prelude-val">None</span>,
         }
@@ -1609,9 +1661,7 @@
 
 <span class="kw">fn </span>chain_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
-        RpcTest::validate(ApiInfo::chain_head_req(), |forest, lotus| {
-            forest.epoch().abs_diff(lotus.epoch()) &lt; <span class="number">10
-        </span>}),
+        RpcTest::basic(ApiInfo::chain_head_req()),
         RpcTest::identity(ApiInfo::chain_get_genesis_req()),
     ]
 }
@@ -1767,13 +1817,7 @@
 <span class="kw">fn </span>eth_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
         RpcTest::identity(ApiInfo::eth_accounts_req()),
-        RpcTest::validate(ApiInfo::eth_block_number_req(), |forest, lotus| {
-            <span class="kw">fn </span>parse_hex(inp: <span class="kw-2">&amp;</span>str) -&gt; i64 {
-                <span class="kw">let </span>without_prefix = inp.trim_start_matches(<span class="string">"0x"</span>);
-                i64::from_str_radix(without_prefix, <span class="number">16</span>).unwrap_or_default()
-            }
-            parse_hex(<span class="kw-2">&amp;</span>forest).abs_diff(parse_hex(<span class="kw-2">&amp;</span>lotus)) &lt; <span class="number">10
-        </span>}),
+        RpcTest::basic(ApiInfo::eth_block_number_req()),
         RpcTest::identity(ApiInfo::eth_chain_id_req()),
         <span class="comment">// There is randomness in the result of this API
         </span>RpcTest::basic(ApiInfo::eth_gas_price_req()),
@@ -1806,8 +1850,15 @@
 // CIDs. Right now, only the last `n_tipsets` tipsets are used.
 </span><span class="kw">fn </span>snapshot_tests(store: Arc&lt;ManyCar&gt;, n_tipsets: usize) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
-    <span class="kw">let </span>shared_tipset = store.heaviest_tipset()<span class="question-mark">?</span>;
-    <span class="kw">let </span>root_tsk = shared_tipset.key();
+    <span class="comment">// shared_tipset in the snapshot might not be finalized for the offline RPC server
+    // use heaviest - 10 instead
+    </span><span class="kw">let </span>shared_tipset = store
+        .heaviest_tipset()<span class="question-mark">?
+        </span>.chain(<span class="kw-2">&amp;</span>store)
+        .take(<span class="number">10</span>)
+        .last()
+        .expect(<span class="string">"Infallible"</span>);
+    <span class="kw">let </span>shared_tipset_key = shared_tipset.key();
     tests.extend(chain_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
     tests.extend(state_tests(<span class="kw-2">&amp;</span>shared_tipset));
     tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
@@ -1840,7 +1891,7 @@
             )));
             tests.push(RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
                 block.miner_address,
-                root_tsk.into(),
+                shared_tipset_key.into(),
             )));
 
             <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
@@ -1850,7 +1901,7 @@
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
                     msg.from(),
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
                     msg.from(),
@@ -1858,7 +1909,7 @@
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
                     msg.from(),
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                 )));
                 tests.push(
                     validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
@@ -1875,7 +1926,7 @@
                         from: <span class="prelude-val">Some</span>(msg.from()),
                         to: <span class="prelude-val">Some</span>(msg.to()),
                     },
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                     shared_tipset.epoch(),
                 )));
                 tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
@@ -1891,7 +1942,7 @@
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
                     msg.from(),
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
                     msg.from(),
@@ -1899,7 +1950,7 @@
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
                     msg.from(),
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                 )));
                 tests.push(
                     validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
@@ -1917,7 +1968,7 @@
                         from: <span class="prelude-val">None</span>,
                         to: <span class="prelude-val">Some</span>(msg.to()),
                     },
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                     shared_tipset.epoch(),
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
@@ -1925,7 +1976,7 @@
                         from: <span class="prelude-val">Some</span>(msg.from()),
                         to: <span class="prelude-val">None</span>,
                     },
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                     shared_tipset.epoch(),
                 )));
                 tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
@@ -1933,7 +1984,7 @@
                         from: <span class="prelude-val">None</span>,
                         to: <span class="prelude-val">None</span>,
                     },
-                    root_tsk.into(),
+                    shared_tipset_key.into(),
                     shared_tipset.epoch(),
                 )));
 
@@ -1942,7 +1993,7 @@
                             msg.to(),
                             msg.method_num(),
                             msg.params().to_vec(),
-                            root_tsk.into(),
+                            shared_tipset_key.into(),
                         )).ignore(<span class="string">"Difficult to implement. Tracking issue: https://github.com/ChainSafe/forest/issues/3769"</span>));
                 }
             }
@@ -2152,8 +2203,11 @@
         snapshot_files
     };
     db.read_only_files(snapshot_files.iter().cloned())<span class="question-mark">?</span>;
-
+    <span class="macro">info!</span>(<span class="string">"Using chain config for {chain}"</span>);
     <span class="kw">let </span>chain_config = Arc::new(ChainConfig::from_chain(<span class="kw-2">&amp;</span>chain));
+    <span class="kw">if </span>chain_config.is_testnet() {
+        CurrentNetwork::set_global(Network::Testnet);
+    }
     <span class="kw">let </span>sync_config = Arc::new(SyncConfig::default());
     <span class="kw">let </span>genesis_header =
         read_genesis_header(<span class="prelude-val">None</span>, chain_config.genesis_bytes(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>.as_deref(), <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -2198,11 +2252,7 @@
         -height
     } <span class="kw">as </span>usize;
     <span class="kw">if </span>n_ts_to_validate &gt; <span class="number">0 </span>{
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) =
-            state_manager.validate_tipsets(head_ts.chain_arc(<span class="kw-2">&amp;</span>db).take(n_ts_to_validate))
-        {
-            <span class="macro">warn!</span>(<span class="string">"{e}"</span>);
-        }
+        state_manager.validate_tipsets(head_ts.chain_arc(<span class="kw-2">&amp;</span>db).take(n_ts_to_validate))<span class="question-mark">?</span>;
     }
 
     <span class="kw">let </span>rpc_state = RPCState {

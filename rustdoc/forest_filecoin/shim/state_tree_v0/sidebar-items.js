@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["HAMTV0_BIT_WIDTH"],"struct":["ActorStateV2","StateRoot","StateTreeV0"]};
+window.SIDEBAR_ITEMS = {"constant":["HAMTV0_BIT_WIDTH"],"struct":["ActorStateV2","StateTreeV0"]};
