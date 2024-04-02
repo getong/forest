@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["auth_api","beacon_api","chain_api","common_api","data_types","eth_api","gas_api","mpool_api","net_api","node_api","state_api","sync_api","wallet_api"]};

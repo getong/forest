@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["clone_state","sync_check_bad","sync_mark_bad","sync_state"]};
+window.SIDEBAR_ITEMS = {"constant":["SYNC_CHECK_BAD","SYNC_MARK_BAD","SYNC_STATE"],"fn":["clone_state","sync_check_bad","sync_mark_bad","sync_state"]};

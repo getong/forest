@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["beacon_get_entry"]};
+window.SIDEBAR_ITEMS = {"constant":["BEACON_GET_ENTRY"],"fn":["beacon_get_entry"]};

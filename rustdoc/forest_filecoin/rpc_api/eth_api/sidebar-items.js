@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["ETH_ACCOUNTS","ETH_BLOCK_NUMBER","ETH_CHAIN_ID","ETH_GAS_PRICE","ETH_GET_BALANCE","ETH_SYNCING","MASKED_ID_PREFIX"],"enum":["BlockNumberOrHash","EthSyncingResultLotusJson","Predefined"],"struct":["Address","BigInt","EthSyncingResult","GasPriceResult","Hash"]};

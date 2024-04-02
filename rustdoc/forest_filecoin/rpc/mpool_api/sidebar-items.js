@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["mpool_get_nonce","mpool_pending","mpool_push","mpool_push_message"]};
+window.SIDEBAR_ITEMS = {"constant":["MPOOL_GET_NONCE","MPOOL_PENDING","MPOOL_PUSH","MPOOL_PUSH_MESSAGE"],"fn":["mpool_get_nonce","mpool_pending","mpool_push","mpool_push_message"]};

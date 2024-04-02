@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["net_addrs_listen","net_agent_version","net_auto_nat_status","net_connect","net_disconnect","net_info","net_listening","net_peers","net_version"]};
+window.SIDEBAR_ITEMS = {"constant":["NET_ADDRS_LISTEN","NET_AGENT_VERSION","NET_AUTO_NAT_STATUS","NET_CONNECT","NET_DISCONNECT","NET_INFO","NET_LISTENING","NET_PEERS","NET_VERSION"],"fn":["net_addrs_listen","net_agent_version","net_auto_nat_status","net_connect","net_disconnect","net_info","net_listening","net_peers","net_version"],"struct":["NatStatusResult","NetInfoResult"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["DISCOVER","SESSION","SHUTDOWN","START_TIME","VERSION"]};

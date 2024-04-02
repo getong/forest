@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["node_status"]};
+window.SIDEBAR_ITEMS = {"constant":["NODE_STATUS"],"fn":["node_status"],"struct":["NodeChainStatus","NodePeerStatus","NodeStatus","NodeSyncStatus"],"type":["NodeStatusResult"]};

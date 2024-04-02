@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["SYNC_CHECK_BAD","SYNC_MARK_BAD","SYNC_STATE"]};
