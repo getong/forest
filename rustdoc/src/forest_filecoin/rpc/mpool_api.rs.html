@@ -174,178 +174,202 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
-</span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span>std::convert::TryFrom;
-
+</span><span class="kw">use </span><span class="kw">super</span>::gas_api::estimate_message_gas;
+<span class="kw">use </span><span class="kw">super</span>::RPCState;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::SignedMessage;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageSendSpec};
-<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
-<span class="kw">use </span><span class="kw">crate</span>::shim::{address::Protocol, message::Message};
-
-<span class="kw">use </span>ahash::{HashSet, HashSetExt};
-<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{reflect::SelfDescribingRpcModule, Ctx, RpcMethod, RpcMethodExt <span class="kw">as _</span>};
+<span class="kw">use </span><span class="kw">crate</span>::shim::{
+    address::{Address, Protocol},
+    message::Message,
+};
+<span class="kw">use </span>ahash::{HashSet, HashSetExt <span class="kw">as _</span>};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpsee::types::Params;
 
-<span class="kw">use </span><span class="kw">super</span>::gas_api::estimate_message_gas;
-
-<span class="kw">pub const </span>MPOOL_GET_NONCE: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.MpoolGetNonce"</span>;
-<span class="kw">pub const </span>MPOOL_PENDING: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.MpoolPending"</span>;
-<span class="kw">pub const </span>MPOOL_PUSH: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.MpoolPush"</span>;
-<span class="kw">pub const </span>MPOOL_PUSH_MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.MpoolPushMessage"</span>;
+<span class="kw">pub fn </span>register_all(
+    module: <span class="kw-2">&amp;mut </span>SelfDescribingRpcModule&lt;RPCState&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;&gt;,
+) {
+    MpoolGetNonce::register(module);
+    MpoolPending::register(module);
+    MpoolPush::register(module);
+    MpoolPushMessage::register(module);
+}
 
 <span class="doccomment">/// Gets next nonce for the specified sender.
-</span><span class="kw">pub async fn </span>mpool_get_nonce&lt;DB&gt;(params: Params&lt;<span class="lifetime">'_</span>&gt;, data: Ctx&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;u64, JsonRpcError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span>LotusJson((address,)) = params.parse()<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(data.mpool.get_sequence(<span class="kw-2">&amp;</span>address)<span class="question-mark">?</span>)
+</span><span class="kw">pub enum </span>MpoolGetNonce {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>MpoolGetNonce {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.MpoolGetNonce"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"address"</span>];
+    <span class="kw">type </span>Params = (LotusJson&lt;Address&gt;,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= u64;
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (address,): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, JsonRpcError&gt; {
+        <span class="prelude-val">Ok</span>(ctx.mpool.get_sequence(<span class="kw-2">&amp;</span>address.into_inner())<span class="question-mark">?</span>)
+    }
 }
 
 <span class="doccomment">/// Return `Vec` of pending messages in `mpool`
-</span><span class="kw">pub async fn </span>mpool_pending&lt;DB&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;SignedMessage&gt;&gt;, JsonRpcError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span>LotusJson((ApiTipsetKey(tsk),)): LotusJson&lt;(ApiTipsetKey,)&gt; = params.parse()<span class="question-mark">?</span>;
+</span><span class="kw">pub enum </span>MpoolPending {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>MpoolPending {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.MpoolPending"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"tsk"</span>];
+    <span class="kw">type </span>Params = (LotusJson&lt;ApiTipsetKey&gt;,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;SignedMessage&gt;&gt;;
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (LotusJson(ApiTipsetKey(tsk)),): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, JsonRpcError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>ts = ctx
+            .state_manager
+            .chain_store()
+            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>ts = data
-        .state_manager
-        .chain_store()
-        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw-2">mut </span>pending, mpts) = ctx.mpool.pending()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(<span class="kw-2">mut </span>pending, mpts) = data.mpool.pending()<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>have_cids = HashSet::new();
+        <span class="kw">for </span>item <span class="kw">in </span>pending.iter() {
+            have_cids.insert(item.cid()<span class="question-mark">?</span>);
+        }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>have_cids = HashSet::new();
-    <span class="kw">for </span>item <span class="kw">in </span>pending.iter() {
-        have_cids.insert(item.cid()<span class="question-mark">?</span>);
-    }
+        <span class="kw">if </span>mpts.epoch() &gt; ts.epoch() {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(pending.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().into());
+        }
 
-    <span class="kw">if </span>mpts.epoch() &gt; ts.epoch() {
-        <span class="kw">return </span><span class="prelude-val">Ok</span>(pending.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().into());
-    }
+        <span class="kw">loop </span>{
+            <span class="kw">if </span>mpts.epoch() == ts.epoch() {
+                <span class="kw">if </span>mpts == ts {
+                    <span class="kw">break</span>;
+                }
 
-    <span class="kw">loop </span>{
-        <span class="kw">if </span>mpts.epoch() == ts.epoch() {
-            <span class="kw">if </span>mpts == ts {
-                <span class="kw">break</span>;
+                <span class="comment">// mpts has different blocks than ts
+                </span><span class="kw">let </span>have = ctx
+                    .mpool
+                    .as_ref()
+                    .messages_for_blocks(ts.block_headers().iter())<span class="question-mark">?</span>;
+
+                <span class="kw">for </span>sm <span class="kw">in </span>have {
+                    have_cids.insert(sm.cid()<span class="question-mark">?</span>);
+                }
             }
 
-            <span class="comment">// mpts has different blocks than ts
-            </span><span class="kw">let </span>have = data
+            <span class="kw">let </span>msgs = ctx
                 .mpool
                 .as_ref()
                 .messages_for_blocks(ts.block_headers().iter())<span class="question-mark">?</span>;
 
-            <span class="kw">for </span>sm <span class="kw">in </span>have {
-                have_cids.insert(sm.cid()<span class="question-mark">?</span>);
-            }
-        }
+            <span class="kw">for </span>m <span class="kw">in </span>msgs {
+                <span class="kw">if </span>have_cids.contains(<span class="kw-2">&amp;</span>m.cid()<span class="question-mark">?</span>) {
+                    <span class="kw">continue</span>;
+                }
 
-        <span class="kw">let </span>msgs = data
-            .mpool
-            .as_ref()
-            .messages_for_blocks(ts.block_headers().iter())<span class="question-mark">?</span>;
-
-        <span class="kw">for </span>m <span class="kw">in </span>msgs {
-            <span class="kw">if </span>have_cids.contains(<span class="kw-2">&amp;</span>m.cid()<span class="question-mark">?</span>) {
-                <span class="kw">continue</span>;
+                have_cids.insert(m.cid()<span class="question-mark">?</span>);
+                pending.push(m);
             }
 
-            have_cids.insert(m.cid()<span class="question-mark">?</span>);
-            pending.push(m);
-        }
+            <span class="kw">if </span>mpts.epoch() &gt;= ts.epoch() {
+                <span class="kw">break</span>;
+            }
 
-        <span class="kw">if </span>mpts.epoch() &gt;= ts.epoch() {
-            <span class="kw">break</span>;
+            ts = ctx
+                .state_manager
+                .chain_store()
+                .chain_index
+                .load_required_tipset(ts.parents())<span class="question-mark">?</span>;
         }
-
-        ts = data
-            .state_manager
-            .chain_store()
-            .chain_index
-            .load_required_tipset(ts.parents())<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(pending.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().into())
     }
-    <span class="prelude-val">Ok</span>(pending.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().into())
 }
 
 <span class="doccomment">/// Add `SignedMessage` to `mpool`, return message CID
-</span><span class="kw">pub async fn </span>mpool_push&lt;DB&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Cid&gt;, JsonRpcError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span>LotusJson((signed_message,)) = params.parse()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>cid = data.mpool.as_ref().push(signed_message).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(cid.into())
+</span><span class="kw">pub enum </span>MpoolPush {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>MpoolPush {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.MpoolPush"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"msg"</span>];
+    <span class="kw">type </span>Params = (LotusJson&lt;SignedMessage&gt;,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Cid&gt;;
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (LotusJson(msg),): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, JsonRpcError&gt; {
+        <span class="kw">let </span>cid = ctx.mpool.as_ref().push(msg).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(cid.into())
+    }
 }
 
 <span class="doccomment">/// Sign given `UnsignedMessage` and add it to `mpool`, return `SignedMessage`
-</span><span class="kw">pub async fn </span>mpool_push_message&lt;DB&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;SignedMessage&gt;, JsonRpcError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span>LotusJson((umsg, spec)): LotusJson&lt;(Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;)&gt; = params.parse()<span class="question-mark">?</span>;
+</span><span class="kw">pub enum </span>MpoolPushMessage {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">2</span>&gt; <span class="kw">for </span>MpoolPushMessage {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.MpoolPushMessage"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"usmg"</span>, <span class="string">"spec"</span>];
+    <span class="kw">type </span>Params = (LotusJson&lt;Message&gt;, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;SignedMessage&gt;;
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (LotusJson(umsg), spec): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, JsonRpcError&gt; {
+        <span class="kw">let </span>from = umsg.from;
 
-    <span class="kw">let </span>from = umsg.from;
+        <span class="kw">let </span><span class="kw-2">mut </span>keystore = ctx.keystore.as_ref().write().<span class="kw">await</span>;
+        <span class="kw">let </span>heaviest_tipset = ctx.state_manager.chain_store().heaviest_tipset();
+        <span class="kw">let </span>key_addr = ctx
+            .state_manager
+            .resolve_to_key_addr(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>heaviest_tipset)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>keystore = data.keystore.as_ref().write().<span class="kw">await</span>;
-    <span class="kw">let </span>heaviest_tipset = data.state_manager.chain_store().heaviest_tipset();
-    <span class="kw">let </span>key_addr = data
-        .state_manager
-        .resolve_to_key_addr(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>heaviest_tipset)
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">if </span>umsg.sequence != <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(
+                <span class="string">"Expected nonce for MpoolPushMessage is 0, and will be calculated for you"
+            </span>)
+            .into());
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>umsg = estimate_message_gas(<span class="kw-2">&amp;</span>ctx, umsg, spec, Default::default()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">if </span>umsg.gas_premium &gt; umsg.gas_fee_cap {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(
+                <span class="string">"After estimation, gas premium is greater than gas fee cap"
+            </span>)
+            .into());
+        }
 
-    <span class="kw">if </span>umsg.sequence != <span class="number">0 </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(
-            <span class="string">"Expected nonce for MpoolPushMessage is 0, and will be calculated for you"
-        </span>)
-        .into());
+        <span class="kw">if </span>from.protocol() == Protocol::ID {
+            umsg.from = key_addr;
+        }
+        <span class="kw">let </span>nonce = ctx.mpool.get_sequence(<span class="kw-2">&amp;</span>from)<span class="question-mark">?</span>;
+        umsg.sequence = nonce;
+        <span class="kw">let </span>key = <span class="kw">crate</span>::key_management::Key::try_from(<span class="kw">crate</span>::key_management::try_find(
+            <span class="kw-2">&amp;</span>key_addr,
+            <span class="kw-2">&amp;mut </span>keystore,
+        )<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>sig = <span class="kw">crate</span>::key_management::sign(
+            <span class="kw-2">*</span>key.key_info.key_type(),
+            key.key_info.private_key(),
+            umsg.cid().unwrap().to_bytes().as_slice(),
+        )<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>smsg = SignedMessage::new_from_parts(umsg, sig)<span class="question-mark">?</span>;
+
+        ctx.mpool.as_ref().push(smsg.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(smsg.into())
     }
-    <span class="kw">let </span><span class="kw-2">mut </span>umsg = estimate_message_gas::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, umsg, spec, Default::default()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">if </span>umsg.gas_premium &gt; umsg.gas_fee_cap {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(
-            <span class="macro">anyhow::anyhow!</span>(<span class="string">"After estimation, gas premium is greater than gas fee cap"</span>).into(),
-        );
-    }
-
-    <span class="kw">if </span>from.protocol() == Protocol::ID {
-        umsg.from = key_addr;
-    }
-    <span class="kw">let </span>nonce = data.mpool.get_sequence(<span class="kw-2">&amp;</span>from)<span class="question-mark">?</span>;
-    umsg.sequence = nonce;
-    <span class="kw">let </span>key = <span class="kw">crate</span>::key_management::Key::try_from(<span class="kw">crate</span>::key_management::try_find(
-        <span class="kw-2">&amp;</span>key_addr,
-        <span class="kw-2">&amp;mut </span>keystore,
-    )<span class="question-mark">?</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>sig = <span class="kw">crate</span>::key_management::sign(
-        <span class="kw-2">*</span>key.key_info.key_type(),
-        key.key_info.private_key(),
-        umsg.cid().unwrap().to_bytes().as_slice(),
-    )<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>smsg = SignedMessage::new_from_parts(umsg, sig)<span class="question-mark">?</span>;
-
-    data.mpool.as_ref().push(smsg.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(smsg.into())
 }
 </code></pre></div></section></main></body></html>

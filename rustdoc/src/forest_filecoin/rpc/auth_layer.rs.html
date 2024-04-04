@@ -272,12 +272,14 @@
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::auth::{verify_token, JWT_IDENTIFIER};
+</span><span class="kw">use </span><span class="kw">super</span>::RpcMethod <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::auth::{verify_token, JWT_IDENTIFIER};
 <span class="kw">use </span><span class="kw">crate</span>::key_management::KeyStore;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{
     auth_api, beacon_api, chain_api, common_api, eth_api, gas_api, mpool_api, net_api, node_api,
     state_api, sync_api, wallet_api, CANCEL_METHOD_NAME,
 };
+<span class="kw">use </span>ahash::{HashMap, HashMapExt <span class="kw">as _</span>};
 <span class="kw">use </span>futures::future::BoxFuture;
 <span class="kw">use </span>futures::FutureExt;
 <span class="kw">use </span>hyper::header::{HeaderValue, AUTHORIZATION};
@@ -285,13 +287,11 @@
 <span class="kw">use </span>jsonrpsee::server::middleware::rpc::RpcServiceT;
 <span class="kw">use </span>jsonrpsee::types::{error::ErrorCode, ErrorObject};
 <span class="kw">use </span>jsonrpsee::MethodResponse;
+<span class="kw">use </span>once_cell::sync::Lazy;
+<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::RwLock;
 <span class="kw">use </span>tower::Layer;
 <span class="kw">use </span>tracing::debug;
-
-<span class="kw">use </span>ahash::{HashMap, HashMapExt <span class="kw">as _</span>};
-<span class="kw">use </span>once_cell::sync::Lazy;
-<span class="kw">use </span>std::sync::Arc;
 
 <span class="doccomment">/// Access levels to be checked against JWT claims
 </span><span class="kw">enum </span>Access {
@@ -334,10 +334,10 @@
     access.insert(chain_api::CHAIN_GET_PARENT_RECEIPTS, Access::Read);
 
     <span class="comment">// Message Pool API
-    </span>access.insert(mpool_api::MPOOL_GET_NONCE, Access::Read);
-    access.insert(mpool_api::MPOOL_PENDING, Access::Read);
-    access.insert(mpool_api::MPOOL_PUSH, Access::Write);
-    access.insert(mpool_api::MPOOL_PUSH_MESSAGE, Access::Sign);
+    </span>access.insert(mpool_api::MpoolGetNonce::NAME, Access::Read);
+    access.insert(mpool_api::MpoolPending::NAME, Access::Read);
+    access.insert(mpool_api::MpoolPush::NAME, Access::Write);
+    access.insert(mpool_api::MpoolPushMessage::NAME, Access::Sign);
 
     <span class="comment">// Sync API
     </span>access.insert(sync_api::SYNC_CHECK_BAD, Access::Read);
