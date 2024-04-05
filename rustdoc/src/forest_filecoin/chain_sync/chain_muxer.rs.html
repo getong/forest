@@ -1004,6 +1004,34 @@
 <a href="#1002" id="1002">1002</a>
 <a href="#1003" id="1003">1003</a>
 <a href="#1004" id="1004">1004</a>
+<a href="#1005" id="1005">1005</a>
+<a href="#1006" id="1006">1006</a>
+<a href="#1007" id="1007">1007</a>
+<a href="#1008" id="1008">1008</a>
+<a href="#1009" id="1009">1009</a>
+<a href="#1010" id="1010">1010</a>
+<a href="#1011" id="1011">1011</a>
+<a href="#1012" id="1012">1012</a>
+<a href="#1013" id="1013">1013</a>
+<a href="#1014" id="1014">1014</a>
+<a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1570,12 +1598,32 @@
         <span class="kw">let </span>chain_store = <span class="self">self</span>.state_manager.chain_store().clone();
         <span class="kw">let </span>network = <span class="self">self</span>.network.clone();
         <span class="kw">let </span>genesis = <span class="self">self</span>.genesis.clone();
+        <span class="kw">let </span>genesis_timestamp = <span class="self">self</span>.genesis.block_headers().first().timestamp <span class="kw">as </span>i64;
         <span class="kw">let </span>bad_block_cache = <span class="self">self</span>.bad_blocks.clone();
         <span class="kw">let </span>mem_pool = <span class="self">self</span>.mpool.clone();
         <span class="kw">let </span>tipset_sample_size = <span class="self">self</span>.state_manager.sync_config().tipset_sample_size;
         <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs <span class="kw">as </span>u64;
 
         <span class="kw">let </span>evaluator = <span class="kw">async move </span>{
+            <span class="comment">// If `local_epoch &gt;= now_epoch`, return `NetworkHeadEvaluation::InSync`
+            // and enter FOLLOW mode directly instead of waiting to collect `tipset_sample_size` tipsets.
+            // Otherwise in some conditions, `forest-cli sync wait` takes very long to exit (only when the node enters FOLLOW mode)
+            </span><span class="kw">match </span>(
+                chain_store.heaviest_tipset().epoch(),
+                get_now_epoch(
+                    chrono::Utc::now().timestamp(),
+                    genesis_timestamp,
+                    block_delay <span class="kw">as </span>i64,
+                ),
+            ) {
+                (local_epoch, now_epoch) <span class="kw">if </span>local_epoch &gt;= now_epoch =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(NetworkHeadEvaluation::InSync)
+                }
+                (local_epoch, now_epoch) =&gt; {
+                    <span class="macro">info!</span>(<span class="string">"local head is behind the network, local_epoch: {local_epoch}, now_epoch: {now_epoch}"</span>);
+                }
+            };
+
             <span class="kw">let </span><span class="kw-2">mut </span>tipsets = Vec::with_capacity(tipset_sample_size);
             <span class="kw">while </span>tipsets.len() &lt; tipset_sample_size {
                 <span class="kw">let </span>event = <span class="kw">match </span>p2p_messages.recv_async().<span class="kw">await </span>{
@@ -1606,12 +1654,11 @@
                     }
                 };
 
-                <span class="kw">let </span>now_epoch = chrono::Utc::now()
-                    .timestamp()
-                    .saturating_add(block_delay <span class="kw">as </span>i64 - <span class="number">1</span>)
-                    .saturating_sub(genesis.block_headers().first().timestamp <span class="kw">as </span>i64)
-                    / block_delay <span class="kw">as </span>i64;
-
+                <span class="kw">let </span>now_epoch = get_now_epoch(
+                    chrono::Utc::now().timestamp(),
+                    genesis_timestamp,
+                    block_delay <span class="kw">as </span>i64,
+                );
                 <span class="kw">let </span>is_block_valid = |block: <span class="kw-2">&amp;</span>Block| -&gt; bool {
                     <span class="kw">let </span>header = <span class="kw-2">&amp;</span>block.header;
                     <span class="kw">if </span>!header.is_within_clock_drift() {
@@ -1645,7 +1692,6 @@
                 .unwrap();
 
             <span class="comment">// Query the heaviest tipset in the store
-            // Unwrapping is fine because the store always has at least one tipset
             </span><span class="kw">let </span>local_head = chain_store.heaviest_tipset();
 
             <span class="comment">// We are in sync if the local head weight is heavier or
@@ -2007,5 +2053,15 @@
             }
         }
     }
+}
+
+<span class="comment">// The formula matches lotus
+// ```go
+// sinceGenesis := build.Clock.Now().Sub(genesisTime)
+// expectedHeight := int64(sinceGenesis.Seconds()) / int64(build.BlockDelaySecs)
+// ```
+// See &lt;https://github.com/filecoin-project/lotus/blob/b27c861485695d3f5bb92bcb281abc95f4d90fb6/chain/sync.go#L180&gt;
+</span><span class="kw">fn </span>get_now_epoch(now_timestamp: i64, genesis_timestamp: i64, block_delay: i64) -&gt; i64 {
+    now_timestamp.saturating_sub(genesis_timestamp) / block_delay
 }
 </code></pre></div></section></main></body></html>
