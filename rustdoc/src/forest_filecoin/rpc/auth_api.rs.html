@@ -53,22 +53,67 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::auth::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::lotus_json_with_self;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{
+    reflect::SelfDescribingRpcModule, ApiVersion, Ctx, JsonRpcError, RPCState, RpcMethod,
+    RpcMethodExt <span class="kw">as _</span>,
+};
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>chrono::Duration;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpsee::types::Params;
+<span class="kw">use </span>schemars::JsonSchema;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>serde_with::{serde_as, DurationSeconds};
 
-<span class="kw">pub const </span>AUTH_NEW: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.AuthNew"</span>;
+<span class="kw">pub fn </span>register_all(
+    module: <span class="kw-2">&amp;mut </span>SelfDescribingRpcModule&lt;RPCState&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;&gt;,
+) {
+    AuthNew::register(module);
+    AuthVerify::register(module);
+}
+
 <span class="attr">#[serde_as]
 #[derive(Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>AuthNewParams {
@@ -78,32 +123,61 @@
 }
 <span class="macro">lotus_json_with_self!</span>(AuthNewParams);
 
-<span class="kw">pub const </span>AUTH_VERIFY: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.AuthVerify"</span>;
+<span class="doccomment">/// `#[derive(JsonSchema)]` doesn't play nicely with [`serde_as`].
+///
+/// The correct solution is `token_exp: u64`, but the auth tests use negative
+/// durations, so accept the tech debt for this for now
+</span><span class="kw">impl </span>JsonSchema <span class="kw">for </span>AuthNewParams {
+    <span class="kw">fn </span>schema_name() -&gt; String {
+        <span class="string">"AuthNewParams"</span>.into()
+    }
 
-<span class="doccomment">/// RPC call to create a new JWT Token
-</span><span class="kw">pub async fn </span>auth_new&lt;DB: Blockstore&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;u8&gt;&gt;, JsonRpcError&gt; {
-    <span class="kw">let </span>auth_params: AuthNewParams = params.parse()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>ks = data.keystore.read().<span class="kw">await</span>;
-    <span class="kw">let </span>ki = ks.get(JWT_IDENTIFIER)<span class="question-mark">?</span>;
-    <span class="kw">let </span>token = create_token(auth_params.perms, ki.private_key(), auth_params.token_exp)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(LotusJson(token.as_bytes().to_vec()))
+    <span class="kw">fn </span>json_schema(gen: <span class="kw-2">&amp;mut </span>schemars::gen::SchemaGenerator) -&gt; schemars::schema::Schema {
+        <span class="attr">#[derive(JsonSchema)]
+        #[allow(dead_code)]
+        </span><span class="kw">struct </span>Helper {
+            perms: Vec&lt;String&gt;,
+            token_exp: i64,
+        }
+        Helper::json_schema(gen)
+    }
 }
 
-<span class="doccomment">/// RPC call to verify JWT Token and return the token's permissions
-</span><span class="kw">pub async fn </span>auth_verify&lt;DB&gt;(params: Params&lt;<span class="lifetime">'_</span>&gt;, data: Ctx&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;String&gt;, JsonRpcError&gt;
-<span class="kw">where
-    </span>DB: Blockstore,
-{
-    <span class="kw">let </span>(header_raw,): (String,) = params.parse()<span class="question-mark">?</span>;
+<span class="doccomment">/// RPC call to create a new JWT Token
+</span><span class="kw">pub enum </span>AuthNew {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>AuthNew {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.AuthNew"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"params"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+    <span class="kw">type </span>Params = (AuthNewParams,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (params,): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, JsonRpcError&gt; {
+        <span class="kw">let </span>ks = ctx.keystore.read().<span class="kw">await</span>;
+        <span class="kw">let </span>ki = ks.get(JWT_IDENTIFIER)<span class="question-mark">?</span>;
+        <span class="kw">let </span>token = create_token(params.perms, ki.private_key(), params.token_exp)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(LotusJson(token.as_bytes().to_vec()))
+    }
+}
 
-    <span class="kw">let </span>ks = data.keystore.read().<span class="kw">await</span>;
-    <span class="kw">let </span>token = header_raw.trim_start_matches(<span class="string">"Bearer "</span>);
-    <span class="kw">let </span>ki = ks.get(JWT_IDENTIFIER)<span class="question-mark">?</span>;
-    <span class="kw">let </span>perms = verify_token(token, ki.private_key())<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(perms)
+<span class="kw">pub enum </span>AuthVerify {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>AuthVerify {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.AuthVerify"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"header_raw"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+    <span class="kw">type </span>Params = (String,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;String&gt;;
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (header_raw,): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, JsonRpcError&gt; {
+        <span class="kw">let </span>ks = ctx.keystore.read().<span class="kw">await</span>;
+        <span class="kw">let </span>token = header_raw.trim_start_matches(<span class="string">"Bearer "</span>);
+        <span class="kw">let </span>ki = ks.get(JWT_IDENTIFIER)<span class="question-mark">?</span>;
+        <span class="kw">let </span>perms = verify_token(token, ki.private_key())<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(perms)
+    }
 }
 </code></pre></div></section></main></body></html>

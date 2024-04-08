@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["AUTH_NEW","AUTH_VERIFY"],"fn":["auth_new","auth_verify"],"struct":["AuthNewParams"]};
+window.SIDEBAR_ITEMS = {"enum":["AuthNew","AuthVerify"],"fn":["register_all"],"struct":["AuthNewParams"]};

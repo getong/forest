@@ -67,11 +67,31 @@
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::auth::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, JsonRpcError};
+</span><span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, JsonRpcError};
+<span class="kw">use crate</span>::{
+    auth::<span class="kw-2">*</span>,
+    rpc::{
+        <span class="self">self</span>,
+        auth_api::{AuthNew, AuthNewParams},
+        RpcMethodExt <span class="kw">as _</span>,
+    },
+};
 <span class="kw">use </span>chrono::Duration;
 <span class="kw">use </span>clap::Subcommand;
 <span class="kw">use </span>std::str::FromStr;
@@ -115,18 +135,24 @@
 
 <span class="kw">impl </span>AuthCommands {
     <span class="kw">pub async fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>client = rpc::Client::from(api.clone());
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::CreateToken { perm, expire_in } =&gt; {
                 <span class="kw">let </span>perm: String = perm.parse()<span class="question-mark">?</span>;
                 <span class="kw">let </span>perms = process_perms(perm)<span class="question-mark">?</span>;
                 <span class="kw">let </span>token_exp = Duration::from_std(expire_in.into())<span class="question-mark">?</span>;
-                print_rpc_res_bytes(api.auth_new(perms, token_exp).<span class="kw">await</span><span class="question-mark">?</span>)
+                <span class="kw">let </span>res = AuthNew::call(<span class="kw-2">&amp;</span>client, (AuthNewParams { perms, token_exp },))
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.into_inner();
+                print_rpc_res_bytes(res)
             }
             <span class="self">Self</span>::ApiInfo { perm, expire_in } =&gt; {
                 <span class="kw">let </span>perm: String = perm.parse()<span class="question-mark">?</span>;
                 <span class="kw">let </span>perms = process_perms(perm)<span class="question-mark">?</span>;
                 <span class="kw">let </span>token_exp = Duration::from_std(expire_in.into())<span class="question-mark">?</span>;
-                <span class="kw">let </span>token = api.auth_new(perms, token_exp).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>token = AuthNew::call(<span class="kw-2">&amp;</span>client, (AuthNewParams { perms, token_exp },))
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.into_inner();
                 <span class="kw">let </span>new_api = api.set_token(<span class="prelude-val">Some</span>(String::from_utf8(token)<span class="question-mark">?</span>));
                 <span class="macro">println!</span>(<span class="string">"FULLNODE_API_INFO=\"{}\""</span>, new_api);
                 <span class="prelude-val">Ok</span>(())
