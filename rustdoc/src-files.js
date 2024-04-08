@@ -149,7 +149,6 @@ var srcIndex = new Map(JSON.parse('[\
 ["ed25519_dalek",["",[],["constants.rs","errors.rs","hazmat.rs","lib.rs","signature.rs","signing.rs","verifying.rs"]]],\
 ["either",["",[],["iterator.rs","lib.rs"]]],\
 ["elliptic_curve",["",[["point",[],["non_identity.rs"]],["scalar",[],["blinded.rs","nonzero.rs","primitive.rs"]],["secret_key",[],["pkcs8.rs"]]],["arithmetic.rs","error.rs","field.rs","lib.rs","ops.rs","point.rs","public_key.rs","scalar.rs","sec1.rs","secret_key.rs","weierstrass.rs"]]],\
-["encoding_rs",["",[],["ascii.rs","big5.rs","data.rs","euc_jp.rs","euc_kr.rs","gb18030.rs","handles.rs","iso_2022_jp.rs","lib.rs","macros.rs","mem.rs","replacement.rs","shift_jis.rs","single_byte.rs","utf_16.rs","utf_8.rs","variant.rs","x_user_defined.rs"]]],\
 ["endian_type",["",[],["lib.rs"]]],\
 ["enum_as_inner",["",[],["lib.rs"]]],\
 ["env_logger",["",[["filter",[],["mod.rs","regex.rs"]],["fmt",[["humantime",[],["mod.rs","shim_impl.rs"]],["writer",[["termcolor",[],["mod.rs","shim_impl.rs"]]],["atty.rs","mod.rs"]]],["mod.rs"]]],["lib.rs"]]],\
@@ -234,7 +233,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["fxprof_processed_profile",["",[],["category.rs","category_color.rs","counters.rs","cpu_delta.rs","fast_hash_map.rs","frame.rs","frame_table.rs","func_table.rs","global_lib_table.rs","lib.rs","lib_mappings.rs","library_info.rs","marker_table.rs","markers.rs","native_symbols.rs","process.rs","profile.rs","reference_timestamp.rs","resource_table.rs","sample_table.rs","serialization_helpers.rs","stack_table.rs","string_table.rs","thread.rs","thread_string_table.rs","timestamp.rs"]]],\
 ["generic_array",["",[],["arr.rs","functional.rs","hex.rs","impls.rs","internal.rs","iter.rs","lib.rs","sequence.rs"]]],\
 ["gethostname",["",[],["lib.rs"]]],\
-["getrandom",["",[],["error.rs","error_impls.rs","lazy.rs","lib.rs","linux_android.rs","use_file.rs","util.rs","util_libc.rs"]]],\
+["getrandom",["",[],["error.rs","error_impls.rs","lazy.rs","lib.rs","linux_android_with_fallback.rs","use_file.rs","util.rs","util_libc.rs"]]],\
 ["gimli",["",[["read",[],["abbrev.rs","addr.rs","aranges.rs","cfi.rs","dwarf.rs","endian_slice.rs","index.rs","line.rs","lists.rs","loclists.rs","lookup.rs","mod.rs","op.rs","pubnames.rs","pubtypes.rs","reader.rs","rnglists.rs","str.rs","unit.rs","util.rs","value.rs"]]],["arch.rs","common.rs","constants.rs","endianity.rs","leb128.rs","lib.rs"]]],\
 ["git_version",["",[],["lib.rs"]]],\
 ["git_version_macro",["",[],["args.rs","lib.rs","utils.rs"]]],\
@@ -261,10 +260,10 @@ var srcIndex = new Map(JSON.parse('[\
 ["human_bytes",["",[],["lib.rs"]]],\
 ["human_repr",["",[],["human_count.rs","human_duration.rs","human_throughput.rs","lib.rs","utils.rs"]]],\
 ["humantime",["",[],["date.rs","duration.rs","lib.rs","wrapper.rs"]]],\
-["hyper",["",[["body",[],["incoming.rs","length.rs","mod.rs"]],["common",[["io",[],["mod.rs","rewind.rs"]]],["buf.rs","date.rs","mod.rs","task.rs","time.rs","watch.rs"]],["ext",[],["h1_reason_phrase.rs","mod.rs"]],["proto",[["h1",[],["conn.rs","decode.rs","dispatch.rs","encode.rs","io.rs","mod.rs","role.rs"]]],["mod.rs"]],["rt",[],["bounds.rs","io.rs","mod.rs","timer.rs"]],["server",[["conn",[],["http1.rs","mod.rs"]]],["mod.rs"]],["service",[],["http.rs","mod.rs","service.rs","util.rs"]]],["cfg.rs","error.rs","headers.rs","lib.rs","trace.rs","upgrade.rs"]]],\
+["hyper",["",[["body",[],["incoming.rs","length.rs","mod.rs"]],["client",[["conn",[],["http1.rs","mod.rs"]]],["dispatch.rs","mod.rs"]],["common",[["io",[],["mod.rs","rewind.rs"]]],["buf.rs","date.rs","mod.rs","task.rs","time.rs","watch.rs"]],["ext",[],["h1_reason_phrase.rs","mod.rs"]],["proto",[["h1",[],["conn.rs","decode.rs","dispatch.rs","encode.rs","io.rs","mod.rs","role.rs"]]],["mod.rs"]],["rt",[],["bounds.rs","io.rs","mod.rs","timer.rs"]],["server",[["conn",[],["http1.rs","mod.rs"]]],["mod.rs"]],["service",[],["http.rs","mod.rs","service.rs","util.rs"]]],["cfg.rs","error.rs","headers.rs","lib.rs","trace.rs","upgrade.rs"]]],\
 ["hyper_rustls",["",[["connector",[],["builder.rs"]]],["config.rs","connector.rs","lib.rs","stream.rs"]]],\
 ["hyper_timeout",["",[],["lib.rs","stream.rs"]]],\
-["hyper_util",["",[["common",[],["exec.rs","mod.rs","rewind.rs","timer.rs"]],["rt",[],["mod.rs","tokio.rs"]],["server",[["conn",[],["auto.rs","mod.rs"]]],["mod.rs"]]],["error.rs","lib.rs"]]],\
+["hyper_util",["",[["client",[["legacy",[["connect",[],["dns.rs","http.rs","mod.rs"]]],["client.rs","mod.rs","pool.rs"]]],["mod.rs"]],["common",[],["exec.rs","lazy.rs","mod.rs","rewind.rs","sync.rs","timer.rs"]],["rt",[],["mod.rs","tokio.rs"]],["server",[["conn",[],["auto.rs","mod.rs"]]],["mod.rs"]]],["error.rs","lib.rs"]]],\
 ["iana_time_zone",["",[],["ffi_utils.rs","lib.rs","tz_linux.rs"]]],\
 ["icu_collections",["",[["char16trie",[],["mod.rs","trie.rs"]],["codepointinvlist",[],["builder.rs","conversions.rs","cpinvlist.rs","mod.rs","utils.rs"]],["codepointinvliststringlist",[],["mod.rs"]],["codepointtrie",[],["cptrie.rs","error.rs","impl_const.rs","mod.rs","planes.rs"]]],["iterator_utils.rs","lib.rs"]]],\
 ["icu_locid",["",[["extensions",[["other",[],["mod.rs","subtag.rs"]],["private",[],["mod.rs","other.rs"]],["transform",[],["fields.rs","key.rs","mod.rs","value.rs"]],["unicode",[],["attribute.rs","attributes.rs","key.rs","keywords.rs","mod.rs","value.rs"]]],["mod.rs"]],["parser",[],["errors.rs","langid.rs","locale.rs","mod.rs"]],["subtags",[],["language.rs","mod.rs","region.rs","script.rs","variant.rs","variants.rs"]]],["helpers.rs","langid.rs","lib.rs","locale.rs","macros.rs","ordering.rs","zerovec.rs"]]],\
@@ -445,7 +444,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["prometheus_client",["",[["encoding",[],["text.rs"]],["metrics",[],["counter.rs","exemplar.rs","family.rs","gauge.rs","histogram.rs","info.rs"]]],["collector.rs","encoding.rs","lib.rs","metrics.rs","registry.rs"]]],\
 ["prometheus_client_derive_encode",["",[],["lib.rs"]]],\
 ["prost",["",[],["encoding.rs","error.rs","lib.rs","message.rs","name.rs","types.rs"]]],\
-["prost_types",["",[],["compiler.rs","datetime.rs","lib.rs","protobuf.rs"]]],\
+["prost_types",["",[],["any.rs","compiler.rs","datetime.rs","duration.rs","lib.rs","protobuf.rs","timestamp.rs","type_url.rs"]]],\
 ["psm",["",[],["lib.rs"]]],\
 ["quick_error",["",[],["lib.rs"]]],\
 ["quick_protobuf",["",[],["errors.rs","lib.rs","message.rs","reader.rs","sizeofs.rs","writer.rs"]]],\
@@ -604,6 +603,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["tracing_serde",["",[],["fields.rs","lib.rs"]]],\
 ["tracing_subscriber",["",[["field",[],["debug.rs","delimited.rs","display.rs","mod.rs"]],["filter",[["env",[],["builder.rs","directive.rs","field.rs","mod.rs"]],["layer_filters",[],["combinator.rs","mod.rs"]]],["directive.rs","filter_fn.rs","level.rs","mod.rs","targets.rs"]],["fmt",[["format",[],["mod.rs","pretty.rs"]],["time",[],["datetime.rs","mod.rs"]]],["fmt_layer.rs","mod.rs","writer.rs"]],["layer",[],["context.rs","layered.rs","mod.rs"]],["registry",[],["extensions.rs","mod.rs","sharded.rs","stack.rs"]]],["lib.rs","macros.rs","prelude.rs","reload.rs","sync.rs","util.rs"]]],\
 ["trait_set",["",[],["lib.rs"]]],\
+["try_lock",["",[],["lib.rs"]]],\
 ["typenum",["",[],["array.rs","bit.rs","int.rs","lib.rs","marker_traits.rs","operator_aliases.rs","private.rs","type_operators.rs","uint.rs"]]],\
 ["uint",["",[],["lib.rs","uint.rs"]]],\
 ["unicode_bidi",["",[["char_data",[],["mod.rs","tables.rs"]]],["data_source.rs","deprecated.rs","explicit.rs","format_chars.rs","implicit.rs","level.rs","lib.rs","prepare.rs","utf16.rs"]]],\
@@ -622,6 +622,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["uuid",["",[],["builder.rs","error.rs","external.rs","fmt.rs","lib.rs","macros.rs","parser.rs","rng.rs","timestamp.rs","v4.rs"]]],\
 ["void",["",[],["lib.rs"]]],\
 ["walkdir",["",[],["dent.rs","error.rs","lib.rs","util.rs"]]],\
+["want",["",[],["lib.rs"]]],\
 ["wasm_encoder",["",[["component",[],["aliases.rs","builder.rs","canonicals.rs","components.rs","exports.rs","imports.rs","instances.rs","modules.rs","names.rs","start.rs","types.rs"]],["core",[],["code.rs","custom.rs","data.rs","dump.rs","elements.rs","exports.rs","functions.rs","globals.rs","imports.rs","linking.rs","memories.rs","names.rs","producers.rs","start.rs","tables.rs","tags.rs","types.rs"]]],["component.rs","core.rs","lib.rs","raw.rs"]]],\
 ["wasmparser",["",[["readers",[["component",[],["aliases.rs","canonicals.rs","exports.rs","imports.rs","instances.rs","names.rs","start.rs","types.rs"]],["core",[["types",[],["matches.rs"]]],["branch_hinting.rs","code.rs","coredumps.rs","custom.rs","data.rs","dylink0.rs","elements.rs","exports.rs","functions.rs","globals.rs","imports.rs","init.rs","linking.rs","memories.rs","names.rs","operators.rs","producers.rs","tables.rs","tags.rs","types.rs"]]],["component.rs","core.rs"]],["validator",[["core",[],["canonical.rs"]]],["component.rs","core.rs","func.rs","names.rs","operators.rs","types.rs"]]],["binary_reader.rs","lib.rs","limits.rs","parser.rs","readers.rs","resources.rs","validator.rs"]]],\
 ["wasmprinter",["",[],["lib.rs","operator.rs"]]],\
