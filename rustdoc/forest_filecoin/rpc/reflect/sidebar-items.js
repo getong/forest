@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ConcreteCallingConvention"],"fn":["unexpected"],"macro":["do_impls"],"mod":["jsonrpc_types","openrpc_types","parser","util"],"struct":["SelfDescribingRpcModule"],"trait":["Params","RpcMethod","RpcMethodExt"],"type":["Ctx","ModuleState"]};
+window.SIDEBAR_ITEMS = {"enum":["ApiVersion","ConcreteCallingConvention"],"fn":["params2params","unexpected"],"macro":["do_impls"],"mod":["jsonrpc_types","openrpc_types","parser","util"],"struct":["SelfDescribingRpcModule"],"trait":["Params","RpcMethod","RpcMethodExt"],"type":["Ctx"]};

@@ -1259,32 +1259,6 @@
 <a href="#1257" id="1257">1257</a>
 <a href="#1258" id="1258">1258</a>
 <a href="#1259" id="1259">1259</a>
-<a href="#1260" id="1260">1260</a>
-<a href="#1261" id="1261">1261</a>
-<a href="#1262" id="1262">1262</a>
-<a href="#1263" id="1263">1263</a>
-<a href="#1264" id="1264">1264</a>
-<a href="#1265" id="1265">1265</a>
-<a href="#1266" id="1266">1266</a>
-<a href="#1267" id="1267">1267</a>
-<a href="#1268" id="1268">1268</a>
-<a href="#1269" id="1269">1269</a>
-<a href="#1270" id="1270">1270</a>
-<a href="#1271" id="1271">1271</a>
-<a href="#1272" id="1272">1272</a>
-<a href="#1273" id="1273">1273</a>
-<a href="#1274" id="1274">1274</a>
-<a href="#1275" id="1275">1275</a>
-<a href="#1276" id="1276">1276</a>
-<a href="#1277" id="1277">1277</a>
-<a href="#1278" id="1278">1278</a>
-<a href="#1279" id="1279">1279</a>
-<a href="#1280" id="1280">1280</a>
-<a href="#1281" id="1281">1281</a>
-<a href="#1282" id="1282">1282</a>
-<a href="#1283" id="1283">1283</a>
-<a href="#1284" id="1284">1284</a>
-<a href="#1285" id="1285">1285</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1296,15 +1270,19 @@
 <span class="kw">use </span><span class="kw">crate</span>::db::{car::ManyCar, MemoryDB};
 <span class="kw">use </span><span class="kw">crate</span>::genesis::{get_network_name_from_genesis, read_genesis_header};
 <span class="kw">use </span><span class="kw">crate</span>::key_management::{KeyStore, KeyStoreConfig};
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
+<span class="kw">use </span><span class="kw">crate</span>::lotus_json::{HasLotusJson, LotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::message::Message <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
 <span class="kw">use </span><span class="kw">crate</span>::networks::{parse_bootstrap_peers, ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth_api::Address <span class="kw">as </span>EthAddress;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth_api::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::types::{MessageFilter, MessageLookup};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageFilter, MessageLookup};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{
+    mpool_api::{MpoolGetNonce, MpoolPending},
+    RpcMethodExt <span class="kw">as _</span>,
+};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{start_rpc, RPCState};
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, CommunicationProtocol, JsonRpcError, RpcRequest, DEFAULT_PORT};
+<span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, JsonRpcError, RpcRequest, DEFAULT_PORT};
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Protocol},
@@ -1314,7 +1292,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
 <span class="kw">use </span><span class="kw">crate</span>::utils::version::FOREST_VERSION_STRING;
 <span class="kw">use </span>ahash::HashMap;
-<span class="kw">use </span>anyhow::{bail, Context <span class="kw">as _</span>};
+<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>clap::{Subcommand, ValueEnum};
 <span class="kw">use </span>fil_actor_interface::market;
 <span class="kw">use </span>fil_actors_shared::v10::runtime::DomainSeparationTag;
@@ -1342,6 +1320,7 @@
 <span class="kw">use </span>tracing::{debug, info, warn};
 
 <span class="attr">#[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 </span><span class="kw">pub enum </span>ApiCommands {
     <span class="comment">// Serve
     </span>Serve {
@@ -1515,6 +1494,25 @@
             ignore: <span class="prelude-val">None</span>,
         }
     }
+    <span class="doccomment">/// This is [`Self::basic`] without the [`HasLotusJson`] bound, for methods
+    /// where the return type does not need converting via a third type.
+    ///
+    /// This is a temporary measure, and should be removed when
+    /// &lt;https://github.com/ChainSafe/forest/issues/4032&gt; is completed.
+    </span><span class="kw">fn </span>basic_raw&lt;T: DeserializeOwned&gt;(request: RpcRequest&lt;T&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            request: request.lower(),
+            check_syntax: Arc::new(|it| <span class="kw">match </span>serde_json::from_value::&lt;T&gt;(it) {
+                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">true</span>,
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="macro">debug!</span>(<span class="question-mark">?</span>e);
+                    <span class="bool-val">false
+                </span>}
+            }),
+            check_semantics: Arc::new(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="bool-val">true</span>),
+            ignore: <span class="prelude-val">None</span>,
+        }
+    }
 
     <span class="comment">// Check that an endpoint exist, has the same JSON schema, and do custom
     // validation over both responses.
@@ -1585,19 +1583,9 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         forest_api: <span class="kw-2">&amp;</span>ApiInfo,
         lotus_api: <span class="kw-2">&amp;</span>ApiInfo,
-        use_websocket: bool,
     ) -&gt; (EndpointStatus, EndpointStatus) {
-        <span class="kw">let </span>(forest_resp, lotus_resp) = <span class="kw">if </span>use_websocket {
-            (
-                forest_api.ws_call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
-                lotus_api.ws_call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
-            )
-        } <span class="kw">else </span>{
-            (
-                forest_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
-                lotus_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>,
-            )
-        };
+        <span class="kw">let </span>forest_resp = forest_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>;
+        <span class="kw">let </span>lotus_resp = lotus_api.call(<span class="self">self</span>.request.clone()).<span class="kw">await</span>;
 
         <span class="kw">match </span>(forest_resp, lotus_resp) {
             (<span class="prelude-val">Ok</span>(forest), <span class="prelude-val">Ok</span>(lotus))
@@ -1688,7 +1676,9 @@
 }
 
 <span class="kw">fn </span>mpool_tests() -&gt; Vec&lt;RpcTest&gt; {
-    <span class="macro">vec!</span>[RpcTest::basic(ApiInfo::mpool_pending_req(<span class="macro">vec!</span>[]))]
+    <span class="macro">vec!</span>[RpcTest::basic_raw(
+        MpoolPending::request((LotusJson(ApiTipsetKey(<span class="prelude-val">None</span>)),)).unwrap(),
+    )]
 }
 
 <span class="kw">fn </span>net_tests() -&gt; Vec&lt;RpcTest&gt; {
@@ -1960,7 +1950,9 @@
                 tests.push(validate_message_lookup(
                     ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
                 ));
-                tests.push(RpcTest::basic(ApiInfo::mpool_get_nonce_req(msg.from())));
+                tests.push(RpcTest::basic(
+                    MpoolGetNonce::request((msg.from().into(),)).unwrap(),
+                ));
                 tests.push(RpcTest::identity(ApiInfo::state_list_messages_req(
                     MessageFilter {
                         from: <span class="prelude-val">None</span>,
@@ -2089,21 +2081,6 @@
     <span class="macro">vec!</span>[test]
 }
 
-<span class="kw">fn </span>derive_protocol(forest: <span class="kw-2">&amp;</span>ApiInfo, lotus: <span class="kw-2">&amp;</span>ApiInfo) -&gt; anyhow::Result&lt;CommunicationProtocol&gt; {
-    <span class="kw">let </span>a = forest.multiaddr.clone().pop().map(|p| p.tag());
-    <span class="kw">let </span>b = lotus.multiaddr.clone().pop().map(|p| p.tag());
-
-    <span class="comment">// Both `ApiInfo` should end with the same tag to be valid, and the protocol should be supported
-    </span><span class="kw">match </span>(a, b) {
-        (<span class="prelude-val">Some</span>(x), <span class="prelude-val">Some</span>(y)) <span class="kw">if </span>x == y =&gt; <span class="prelude-val">Ok</span>(x.try_into()<span class="question-mark">?</span>),
-        <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(
-            <span class="string">"communication protocols mismatch: {:?} (Forest) is different from {:?} (Lotus)"</span>,
-            a,
-            b
-        ),
-    }
-}
-
 <span class="doccomment">/// Compare two RPC providers. The providers are labeled `forest` and `lotus`,
 /// but other nodes may be used (such as `venus`). The `lotus` node is assumed
 /// to be correct and the `forest` node will be marked as incorrect if it
@@ -2128,8 +2105,6 @@
     snapshot_files: Vec&lt;PathBuf&gt;,
     config: ApiTestFlags,
 ) -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>communication = derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus)<span class="question-mark">?</span>;
-
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
 
     tests.extend(common_tests());
@@ -2147,14 +2122,13 @@
         tests.extend(snapshot_tests(store, config.n_tipsets)<span class="question-mark">?</span>);
     }
 
-    <span class="kw">let </span>use_websocket = communication == CommunicationProtocol::Ws;
-    <span class="kw">if </span>use_websocket {
-        tests.extend(websocket_tests());
+    <span class="kw">if </span><span class="macro">matches!</span>(forest.scheme(), <span class="string">"ws" </span>| <span class="string">"wss"</span>) &amp;&amp; <span class="macro">matches!</span>(lotus.scheme(), <span class="string">"ws" </span>| <span class="string">"wss"</span>) {
+        tests.extend(websocket_tests())
     }
 
     tests.sort_by_key(|test| test.request.method_name);
 
-    run_tests(tests, <span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, <span class="kw-2">&amp;</span>config, use_websocket).<span class="kw">await
+    run_tests(tests, <span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, <span class="kw-2">&amp;</span>config).<span class="kw">await
 </span>}
 
 <span class="kw">async fn </span>start_offline_server(
@@ -2305,7 +2279,6 @@
     forest: <span class="kw-2">&amp;</span>ApiInfo,
     lotus: <span class="kw-2">&amp;</span>ApiInfo,
     config: <span class="kw-2">&amp;</span>ApiTestFlags,
-    use_websocket: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(config.max_concurrent_requests));
     <span class="kw">let </span><span class="kw-2">mut </span>futures = FuturesUnordered::new();
@@ -2335,7 +2308,7 @@
         <span class="kw">let </span>forest = forest.clone();
         <span class="kw">let </span>lotus = lotus.clone();
         <span class="kw">let </span>future = tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span>(forest_status, lotus_status) = test.run(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus, use_websocket).<span class="kw">await</span>;
+            <span class="kw">let </span>(forest_status, lotus_status) = test.run(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).<span class="kw">await</span>;
             drop(permit); <span class="comment">// Release the permit after test execution
             </span>(test.request.method_name, forest_status, lotus_status)
         });
@@ -2543,31 +2516,6 @@
             .allow(<span class="string">"Chain"</span>.to_string())
             .reject(<span class="string">"Chain"</span>.to_string());
         <span class="macro">assert!</span>(!list.authorize(<span class="string">"Filecoin.ChainGetBlock"</span>));
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_derive_protocol() {
-        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/http"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/http"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus),
-            <span class="prelude-val">Ok</span>(CommunicationProtocol::Http)
-        ));
-
-        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/ws"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/ws"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-            derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus),
-            <span class="prelude-val">Ok</span>(CommunicationProtocol::Ws)
-        ));
-
-        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/http"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/ws"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="macro">assert!</span>(derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).is_err());
-
-        <span class="kw">let </span>forest = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/2345/wss"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="kw">let </span>lotus = ApiInfo::from_str(<span class="string">"/ip4/127.0.0.1/tcp/1234/wss"</span>).expect(<span class="string">"infallible"</span>);
-        <span class="macro">assert!</span>(derive_protocol(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).is_err());
     }
 }
 </code></pre></div></section></main></body></html>
