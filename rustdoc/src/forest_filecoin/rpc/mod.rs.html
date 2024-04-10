@@ -379,6 +379,46 @@
 <a href="#377" id="377">377</a>
 <a href="#378" id="378">378</a>
 <a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -386,28 +426,63 @@
 <span class="kw">mod </span>channel;
 <span class="kw">mod </span>client;
 
-<span class="comment">// API handlers
-</span><span class="kw">pub mod </span>auth_api;
-<span class="kw">pub mod </span>beacon_api;
-<span class="kw">pub mod </span>chain_api;
-<span class="kw">pub mod </span>common_api;
-<span class="kw">pub mod </span>eth_api;
-<span class="kw">pub mod </span>gas_api;
-<span class="kw">pub mod </span>mpool_api;
-<span class="kw">pub mod </span>net_api;
-<span class="kw">pub mod </span>node_api;
-<span class="kw">pub mod </span>state_api;
-<span class="kw">pub mod </span>sync_api;
-<span class="kw">pub mod </span>wallet_api;
-
 <span class="comment">// Other RPC-specific modules
 </span><span class="kw">pub use </span>client::Client;
-<span class="kw">pub use </span>error::JsonRpcError;
+<span class="kw">pub use </span>error::ServerError;
 <span class="kw">use </span>reflect::Ctx;
 <span class="kw">pub use </span>reflect::{ApiVersion, RpcMethod, RpcMethodExt};
 <span class="kw">mod </span>error;
 <span class="kw">mod </span>reflect;
 <span class="kw">pub mod </span>types;
+<span class="kw">pub use </span>methods::<span class="kw-2">*</span>;
+
+<span class="doccomment">/// Protocol or transport-specific error
+</span><span class="attr">#[allow(unused)]
+</span><span class="kw">pub use </span>jsonrpsee::core::ClientError;
+
+<span class="attr">#[allow(unused)]
+</span><span class="doccomment">/// All handler definitions.
+///
+/// Usage guide:
+/// ```ignore
+/// use crate::rpc::{self, prelude::*};
+///
+/// let client = rpc::Client::from(..);
+/// ChainHead::call(&amp;client, ()).await?;
+/// fn foo() -&gt; rpc::ClientError {..}
+/// fn bar() -&gt; rpc::ServerError {..}
+/// ```
+</span><span class="kw">pub mod </span>prelude {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="kw">pub use </span>reflect::RpcMethodExt <span class="kw">as _</span>;
+
+    <span class="macro">macro_rules! </span>export {
+        (<span class="macro-nonterminal">$ty</span>:ty) =&gt; {
+            <span class="kw">pub use </span><span class="macro-nonterminal">$ty</span>;
+        };
+    }
+    <span class="macro">auth::for_each_method!</span>(export);
+    <span class="macro">beacon::for_each_method!</span>(export);
+    <span class="macro">chain::for_each_method!</span>(export);
+    <span class="macro">mpool::for_each_method!</span>(export);
+}
+
+<span class="doccomment">/// All the methods live in their own folder
+</span><span class="kw">mod </span>methods {
+    <span class="kw">pub mod </span>auth;
+    <span class="kw">pub mod </span>beacon;
+    <span class="kw">pub mod </span>chain;
+    <span class="kw">pub mod </span>common;
+    <span class="kw">pub mod </span>eth;
+    <span class="kw">pub mod </span>gas;
+    <span class="kw">pub mod </span>mpool;
+    <span class="kw">pub mod </span>net;
+    <span class="kw">pub mod </span>node;
+    <span class="kw">pub mod </span>state;
+    <span class="kw">pub mod </span>sync;
+    <span class="kw">pub mod </span>wallet;
+}
 
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::sync::Arc;
@@ -416,7 +491,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::auth_layer::AuthLayer;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::channel::RpcModule <span class="kw">as </span>FilRpcModule;
 <span class="kw">pub use </span><span class="kw">crate</span>::rpc::channel::CANCEL_METHOD_NAME;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::state_api::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::state::<span class="kw-2">*</span>;
 
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>hyper::server::conn::AddrStream;
@@ -485,7 +560,7 @@
 
     pubsub_module.register_channel(<span class="string">"Filecoin.ChainNotify"</span>, {
         <span class="kw">let </span>state_clone = state.clone();
-        <span class="kw">move </span>|params| chain_api::chain_notify(params, <span class="kw-2">&amp;</span>state_clone)
+        <span class="kw">move </span>|params| chain::chain_notify(params, <span class="kw-2">&amp;</span>state_clone)
     })<span class="question-mark">?</span>;
     module.merge(pubsub_module)<span class="question-mark">?</span>;
 
@@ -545,10 +620,15 @@
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">let </span><span class="kw-2">mut </span>module = reflect::SelfDescribingRpcModule::new(state, ParamStructure::ByPosition);
-    chain_api::register_all(<span class="kw-2">&amp;mut </span>module);
-    mpool_api::register_all(<span class="kw-2">&amp;mut </span>module);
-    auth_api::register_all(<span class="kw-2">&amp;mut </span>module);
-    beacon_api::register_all(<span class="kw-2">&amp;mut </span>module);
+    <span class="macro">macro_rules! </span>register {
+        (<span class="macro-nonterminal">$ty</span>:ty) =&gt; {
+            &lt;<span class="macro-nonterminal">$ty</span>&gt;::register(<span class="kw-2">&amp;mut </span>module);
+        };
+    }
+    <span class="macro">chain::for_each_method!</span>(register);
+    <span class="macro">mpool::for_each_method!</span>(register);
+    <span class="macro">auth::for_each_method!</span>(register);
+    <span class="macro">beacon::for_each_method!</span>(register);
     module.finish()
 }
 
@@ -562,13 +642,13 @@
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
-    <span class="kw">use </span>common_api::<span class="kw-2">*</span>;
-    <span class="kw">use </span>eth_api::<span class="kw-2">*</span>;
-    <span class="kw">use </span>gas_api::<span class="kw-2">*</span>;
-    <span class="kw">use </span>net_api::<span class="kw-2">*</span>;
-    <span class="kw">use </span>node_api::<span class="kw-2">*</span>;
-    <span class="kw">use </span>sync_api::<span class="kw-2">*</span>;
-    <span class="kw">use </span>wallet_api::<span class="kw-2">*</span>;
+    <span class="kw">use </span>common::<span class="kw-2">*</span>;
+    <span class="kw">use </span>eth::<span class="kw-2">*</span>;
+    <span class="kw">use </span>gas::<span class="kw-2">*</span>;
+    <span class="kw">use </span>net::<span class="kw-2">*</span>;
+    <span class="kw">use </span>node::<span class="kw-2">*</span>;
+    <span class="kw">use </span>sync::<span class="kw-2">*</span>;
+    <span class="kw">use </span>wallet::<span class="kw-2">*</span>;
 
     <span class="comment">// Sync API
     </span>module.register_async_method(SYNC_CHECK_BAD, sync_check_bad::&lt;DB&gt;)<span class="question-mark">?</span>;

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AuthNew","AuthVerify"],"macro":["for_each_method"],"struct":["AuthNewParams"]};

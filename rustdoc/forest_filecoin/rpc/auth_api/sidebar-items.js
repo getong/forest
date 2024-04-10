@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["AuthNew","AuthVerify"],"fn":["register_all"],"struct":["AuthNewParams"]};

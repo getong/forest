@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["ctor","from2internal"],"struct":["JsonRpcError"]};
+window.SIDEBAR_ITEMS = {"macro":["ctor","from2internal"],"struct":["ServerError"]};

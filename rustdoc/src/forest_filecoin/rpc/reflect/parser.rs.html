@@ -374,7 +374,7 @@
 <span class="kw">use </span>serde_json::{json, Value};
 
 <span class="kw">use super</span>::{jsonrpc_types::RequestParameters, openrpc_types::ParamStructure, util::Optional <span class="kw">as _</span>};
-<span class="kw">use </span><span class="kw">crate</span>::rpc::error::JsonRpcError;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
 
 <span class="doccomment">/// Parser for JSON-RPC parameters.
 /// Abstracts calling convention, checks for unexpected params etc, so that
@@ -415,7 +415,7 @@
         params: <span class="prelude-ty">Option</span>&lt;RequestParameters&gt;,
         names: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str], <span class="comment">// in position order
         </span>calling_convention: ParamStructure,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, JsonRpcError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ServerError&gt; {
         <span class="self">Self</span>::_new(params, names, calling_convention).map_err(Into::into)
     }
     <span class="kw">fn </span>_new(
@@ -464,7 +464,7 @@
         <span class="self">self</span>.has_errored = <span class="bool-val">true</span>;
         <span class="prelude-val">Err</span>(e)
     }
-    <span class="kw">pub fn </span>parse&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, JsonRpcError&gt;
+    <span class="kw">pub fn </span>parse&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;T, ServerError&gt;
     <span class="kw">where
         </span>T: <span class="kw">for</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt;,
     {
@@ -558,10 +558,10 @@
     MustBePositional,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;ParseError&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>JsonRpcError {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; From&lt;ParseError&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>ServerError {
     <span class="kw">fn </span>from(value: ParseError&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>value {
-            ParseError::Missing { index, name, ty } =&gt; JsonRpcError::invalid_params(
+            ParseError::Missing { index, name, ty } =&gt; ServerError::invalid_params(
                 <span class="string">"missing required parameter"</span>,
                 <span class="macro">json!</span>({
                     <span class="string">"index"</span>: index,
@@ -574,7 +574,7 @@
                 name,
                 ty,
                 error,
-            } =&gt; JsonRpcError::invalid_params(
+            } =&gt; ServerError::invalid_params(
                 <span class="string">"error deserializing parameter"</span>,
                 <span class="macro">json!</span>({
                     <span class="string">"index"</span>: index,
@@ -584,16 +584,16 @@
                 }),
             ),
             ParseError::UnexpectedPositional(n) =&gt; {
-                JsonRpcError::invalid_params(<span class="string">"unexpected trailing arguments"</span>, <span class="macro">json!</span>({<span class="string">"count"</span>: n}))
+                ServerError::invalid_params(<span class="string">"unexpected trailing arguments"</span>, <span class="macro">json!</span>({<span class="string">"count"</span>: n}))
             }
             ParseError::UnexpectedNamed(names) =&gt; {
-                JsonRpcError::invalid_params(<span class="string">"unexpected named arguments"</span>, <span class="macro">json!</span>(names))
+                ServerError::invalid_params(<span class="string">"unexpected named arguments"</span>, <span class="macro">json!</span>(names))
             }
             ParseError::MustBeNamed =&gt; {
-                JsonRpcError::invalid_params(<span class="string">"this method only accepts arguments by-name"</span>, <span class="prelude-val">None</span>)
+                ServerError::invalid_params(<span class="string">"this method only accepts arguments by-name"</span>, <span class="prelude-val">None</span>)
             }
             ParseError::MustBePositional =&gt; {
-                JsonRpcError::invalid_params(<span class="string">"this method only accepts arguments by-position"</span>, <span class="prelude-val">None</span>)
+                ServerError::invalid_params(<span class="string">"this method only accepts arguments by-position"</span>, <span class="prelude-val">None</span>)
             }
         }
     }
