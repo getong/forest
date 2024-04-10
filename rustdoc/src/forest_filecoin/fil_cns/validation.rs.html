@@ -461,6 +461,12 @@
 <a href="#459" id="459">459</a>
 <a href="#460" id="460">460</a>
 <a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -545,7 +551,7 @@
 
     <span class="kw">let </span>prev_beacon = chain_store
         .chain_index
-        .latest_beacon_entry(<span class="kw-2">&amp;</span>base_tipset)
+        .latest_beacon_entry(base_tipset.clone())
         .map(Arc::new)
         .map_err(to_errs)<span class="question-mark">?</span>;
 
@@ -590,19 +596,17 @@
 
     <span class="comment">// Beacon values check
     </span><span class="kw">if </span>std::env::var(IGNORE_DRAND_VAR) != <span class="prelude-val">Ok</span>(<span class="string">"1"</span>.to_owned()) {
-        <span class="kw">let </span>v_block = Arc::clone(<span class="kw-2">&amp;</span>block);
-        <span class="kw">let </span>parent_epoch = base_tipset.epoch();
-        <span class="kw">let </span>v_prev_beacon = Arc::clone(<span class="kw-2">&amp;</span>prev_beacon);
-        validations.push(tokio::task::spawn(<span class="kw">async move </span>{
-            v_block
-                .header()
-                .validate_block_drand(
-                    win_p_nv,
-                    beacon_schedule.as_ref(),
-                    parent_epoch,
-                    <span class="kw-2">&amp;</span>v_prev_beacon,
-                )
-                .map_err(|e| FilecoinConsensusError::BeaconValidation(e.to_string()))
+        validations.push(tokio::task::spawn({
+            <span class="kw">let </span>block = Arc::clone(<span class="kw-2">&amp;</span>block);
+            <span class="kw">let </span>parent_epoch = base_tipset.epoch();
+            <span class="kw">let </span>prev_beacon = Arc::clone(<span class="kw-2">&amp;</span>prev_beacon);
+            <span class="kw">let </span>nv = state_manager.get_network_version(header.epoch);
+            <span class="kw">async move </span>{
+                block
+                    .header()
+                    .validate_block_drand(nv, beacon_schedule.as_ref(), parent_epoch, <span class="kw-2">&amp;</span>prev_beacon)
+                    .map_err(|e| FilecoinConsensusError::BeaconValidation(e.to_string()))
+            }
         }));
     }
 
@@ -660,10 +664,18 @@
     base_tipset: <span class="kw-2">&amp;</span>Tipset,
     chain_config: <span class="kw-2">&amp;</span>ChainConfig,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FilecoinConsensusError&gt; {
+    <span class="kw">if </span>header.epoch &lt;= base_tipset.epoch() {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(
+            FilecoinConsensusError::BlockHeightNotGreaterThanParentHeight {
+                current: header.epoch,
+                parent: base_tipset.epoch(),
+            },
+        );
+    }
     <span class="comment">// Timestamp checks
     </span><span class="kw">let </span>block_delay = chain_config.block_delay_secs;
-    <span class="kw">let </span>nulls = (header.epoch - (base_tipset.epoch() + <span class="number">1</span>)) <span class="kw">as </span>u64;
-    <span class="kw">let </span>target_timestamp = base_tipset.min_timestamp() + block_delay <span class="kw">as </span>u64 * (nulls + <span class="number">1</span>);
+    <span class="kw">let </span>nulls = header.epoch - (base_tipset.epoch() + <span class="number">1</span>);
+    <span class="kw">let </span>target_timestamp = base_tipset.min_timestamp() + block_delay <span class="kw">as </span>u64 * (nulls + <span class="number">1</span>) <span class="kw">as </span>u64;
     <span class="kw">if </span>target_timestamp != header.timestamp {
         <span class="kw">return </span><span class="prelude-val">Err</span>(FilecoinConsensusError::UnequalBlockTimestamps(
             header.timestamp,

@@ -412,6 +412,8 @@
 <a href="#410" id="410">410</a>
 <a href="#411" id="411">411</a>
 <a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -687,7 +689,7 @@
     <span class="kw">fn </span>verify_entries&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         entries: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[BeaconEntry],
-        <span class="kw-2">mut </span>prev: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>BeaconEntry,
+        prev: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>BeaconEntry,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;bool, anyhow::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>validated = <span class="macro">vec!</span>[];
         <span class="kw">let </span>is_valid = <span class="kw">if </span><span class="self">self</span>.network.is_unchained() {
@@ -717,15 +719,17 @@
 
             <span class="kw">let </span>pk = PublicKeyOnG1::from_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key)<span class="question-mark">?</span>;
             {
+                <span class="kw">let </span>prev_curr_pairs = std::iter::once(prev)
+                    .chain(entries.iter())
+                    .unique_by(|e| e.round())
+                    .tuple_windows::&lt;(<span class="kw">_</span>, <span class="kw">_</span>)&gt;();
                 <span class="kw">let </span>cache = <span class="self">self</span>.verified_beacons.read();
-                <span class="kw">for </span>curr <span class="kw">in </span>entries.iter() {
+                <span class="kw">for </span>(prev, curr) <span class="kw">in </span>prev_curr_pairs {
                     <span class="kw">if </span>prev.round() &gt; <span class="number">0 </span>&amp;&amp; !cache.contains(<span class="kw-2">&amp;</span>curr.round()) {
                         messages.push(BeaconEntry::message_chained(curr.round(), prev.signature()));
                         signatures.push(SignatureOnG2::from_bytes(curr.signature())<span class="question-mark">?</span>);
                         validated.push(curr);
                     }
-
-                    prev = curr;
                 }
             }
 
