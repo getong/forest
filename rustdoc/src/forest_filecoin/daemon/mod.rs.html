@@ -714,6 +714,25 @@
 <a href="#712" id="712">712</a>
 <a href="#713" id="713">713</a>
 <a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1039,11 +1058,11 @@
     <span class="comment">// Initialize ChainMuxer
     </span><span class="kw">let </span>chain_muxer = ChainMuxer::new(
         Arc::clone(<span class="kw-2">&amp;</span>state_manager),
-        peer_manager,
+        peer_manager.clone(),
         mpool.clone(),
         network_send.clone(),
         network_rx,
-        Arc::new(Tipset::from(genesis_header)),
+        Arc::new(Tipset::from(<span class="kw-2">&amp;</span>genesis_header)),
         tipset_sink,
         tipset_stream,
         opts.stateless,
@@ -1051,6 +1070,25 @@
     <span class="kw">let </span>bad_blocks = chain_muxer.bad_blocks_cloned();
     <span class="kw">let </span>sync_state = chain_muxer.sync_state_cloned();
     services.spawn(<span class="kw">async </span>{ <span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"{}"</span>, chain_muxer.<span class="kw">await</span>)) });
+
+    {
+        <span class="kw">let </span>forest_state = <span class="kw">crate</span>::health::ForestState {
+            config: config.clone(),
+            chain_config: chain_config.clone(),
+            genesis_timestamp: genesis_header.timestamp,
+            sync_state: sync_state.clone(),
+            peer_manager,
+        };
+
+        <span class="kw">let </span>listener =
+            tokio::net::TcpListener::bind(forest_state.config.client.healthcheck_address).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        services.spawn(<span class="kw">async move </span>{
+            <span class="kw">crate</span>::health::init_healthcheck_server(forest_state, listener)
+                .<span class="kw">await
+                </span>.context(<span class="string">"Failed to initiate healthcheck server"</span>)
+        });
+    }
 
     <span class="comment">// Start services
     </span><span class="kw">if </span>config.client.enable_rpc {
