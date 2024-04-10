@@ -155,15 +155,22 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncConfig;
 <span class="kw">use </span><span class="kw">crate</span>::cli_shared::snapshot::{<span class="self">self</span>, TrustedVendor};
-<span class="kw">use </span><span class="kw">crate</span>::rpc::chain_api::{ChainExport, ChainExportParams};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::ApiTipsetKey;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::RpcMethodExt;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::RpcMethodExt <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{
+    <span class="self">self</span>,
+    chain_api::{ChainExport, ChainExportParams, ChainGetTipSetByHeight, ChainHead},
+};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>chrono::DateTime;
@@ -198,6 +205,7 @@
 
 <span class="kw">impl </span>SnapshotCommands {
     <span class="kw">pub async fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>client = rpc::Client::from(api.clone());
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Export {
                 output_path,
@@ -206,16 +214,16 @@
                 tipset,
                 depth,
             } =&gt; {
-                <span class="kw">let </span>chain_head = api.chain_head().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>chain_head = ChainHead::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
 
                 <span class="kw">let </span>epoch = tipset.unwrap_or(chain_head.epoch());
 
                 <span class="kw">let </span>raw_network_name = api.state_network_name().<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span>chain_name = <span class="kw">crate</span>::daemon::get_actual_chain_name(<span class="kw-2">&amp;</span>raw_network_name);
 
-                <span class="kw">let </span>tipset = api
-                    .chain_get_tipset_by_height(epoch, Default::default())
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>tipset = ChainGetTipSetByHeight::call(<span class="kw-2">&amp;</span>client, (epoch, Default::default()))
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.into_inner();
 
                 <span class="kw">let </span>output_path = <span class="kw">match </span>output_path.is_dir() {
                     <span class="bool-val">true </span>=&gt; output_path.join(snapshot::filename(

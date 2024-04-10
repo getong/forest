@@ -111,12 +111,37 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::path::PathBuf;
 
-<span class="kw">use crate</span>::{libp2p::keypair::get_keypair, rpc_client::ApiInfo};
+<span class="kw">use crate</span>::{
+    libp2p::keypair::get_keypair,
+    lotus_json::LotusJson,
+    rpc::{
+        <span class="self">self</span>,
+        chain_api::{ChainGetTipSetByHeight, ChainHead},
+        types::ApiTipsetKey,
+        RpcMethodExt <span class="kw">as _</span>,
+    },
+    rpc_client::ApiInfo,
+};
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>base64::{prelude::BASE64_STANDARD, Engine};
 <span class="kw">use </span>clap::Subcommand;
@@ -161,8 +186,8 @@
     <span class="kw">pub async fn </span>run(<span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             ShedCommands::SummarizeTipsets { height, ancestors } =&gt; {
-                <span class="kw">let </span>client = ApiInfo::from_env()<span class="question-mark">?</span>;
-                <span class="kw">let </span>head = client.chain_head().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>client = rpc::Client::from(ApiInfo::from_env()<span class="question-mark">?</span>);
+                <span class="kw">let </span>head = ChainHead::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
                 <span class="kw">let </span>end_height = <span class="kw">match </span>height {
                     <span class="prelude-val">Some</span>(it) =&gt; it,
                     <span class="prelude-val">None </span>=&gt; head
@@ -176,12 +201,17 @@
 
                 <span class="kw">let </span><span class="kw-2">mut </span>epoch2cids =
                     futures::stream::iter((start_height..=end_height).map(|epoch| {
-                        client
-                            .chain_get_tipset_by_height(i64::from(epoch), head.key().into())
-                            .map_ok(|tipset| {
-                                <span class="kw">let </span>cids = tipset.block_headers().iter().map(|it| <span class="kw-2">*</span>it.cid());
-                                (tipset.epoch(), cids.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
-                            })
+                        ChainGetTipSetByHeight::call(
+                            <span class="kw-2">&amp;</span>client,
+                            (
+                                i64::from(epoch),
+                                LotusJson(ApiTipsetKey(<span class="prelude-val">Some</span>(head.key().clone()))),
+                            ),
+                        )
+                        .map_ok(|LotusJson(tipset)| {
+                            <span class="kw">let </span>cids = tipset.block_headers().iter().map(|it| <span class="kw-2">*</span>it.cid());
+                            (tipset.epoch(), cids.collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
+                        })
                     }))
                     .buffered(<span class="number">12</span>);
 

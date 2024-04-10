@@ -1256,6 +1256,8 @@
 <a href="#1254" id="1254">1254</a>
 <a href="#1255" id="1255">1255</a>
 <a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1272,10 +1274,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
 <span class="kw">use </span><span class="kw">crate</span>::networks::{parse_bootstrap_peers, ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::beacon_api::BeaconGetEntry;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::chain_api::{
-    ChainGetBlockMessages, ChainGetMessage, ChainGetMessagesInTipset, ChainGetParentMessages,
-    ChainGetParentReceipts, ChainHasObj, ChainReadObj,
-};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::chain_api::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth_api::Address <span class="kw">as </span>EthAddress;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth_api::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageFilter, MessageLookup};
@@ -1636,31 +1635,36 @@
 
 <span class="kw">fn </span>chain_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
-        RpcTest::basic(ApiInfo::chain_head_req()),
-        RpcTest::identity(ApiInfo::chain_get_genesis_req()),
+        RpcTest::basic_raw(ChainHead::request(()).unwrap()),
+        RpcTest::identity_raw(ChainGetGenesis::request(()).unwrap()),
     ]
 }
 
 <span class="kw">fn </span>chain_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
-    <span class="kw">let </span>shared_block_cid = <span class="kw-2">*</span>shared_tipset.min_ticket_block().cid();
+    <span class="kw">let </span>shared_block_cid = (<span class="kw-2">*</span>shared_tipset.min_ticket_block().cid()).into();
 
     <span class="macro">vec!</span>[
-        RpcTest::identity_raw(ChainReadObj::request((shared_block_cid.into(),)).unwrap()),
-        RpcTest::identity_raw(ChainHasObj::request((shared_block_cid.into(),)).unwrap()),
-        RpcTest::identity(ApiInfo::chain_get_block_req(shared_block_cid)),
-        RpcTest::identity(ApiInfo::chain_get_tipset_by_height_req(
-            shared_tipset.epoch(),
-            Default::default(),
-        )),
-        RpcTest::identity(ApiInfo::chain_get_tipset_after_height_req(
-            shared_tipset.epoch(),
-            Default::default(),
-        )),
-        RpcTest::identity(ApiInfo::chain_get_tipset_req(shared_tipset.key().clone())),
-        RpcTest::identity(ApiInfo::chain_get_path_req(
-            shared_tipset.key().clone(),
-            shared_tipset.parents().clone(),
-        )),
+        RpcTest::identity_raw(ChainReadObj::request((shared_block_cid,)).unwrap()),
+        RpcTest::identity_raw(ChainHasObj::request((shared_block_cid,)).unwrap()),
+        RpcTest::identity_raw(ChainGetBlock::request((shared_block_cid,)).unwrap()),
+        RpcTest::identity_raw(
+            ChainGetTipSetAfterHeight::request((shared_tipset.epoch(), Default::default()))
+                .unwrap(),
+        ),
+        RpcTest::identity_raw(
+            ChainGetTipSetAfterHeight::request((shared_tipset.epoch(), Default::default()))
+                .unwrap(),
+        ),
+        RpcTest::identity_raw(
+            ChainGetTipSet::request((LotusJson(shared_tipset.key().clone().into()),)).unwrap(),
+        ),
+        RpcTest::identity_raw(
+            ChainGetPath::request((
+                shared_tipset.key().clone().into(),
+                shared_tipset.parents().clone().into(),
+            ))
+            .unwrap(),
+        ),
     ]
 }
 
