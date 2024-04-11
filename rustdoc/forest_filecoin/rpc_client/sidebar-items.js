@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["API_INFO_KEY","DEFAULT_PORT","DEFAULT_TIMEOUT"],"fn":["multiaddr2url"],"mod":["chain_ops","common_ops","eth_ops","gas_ops","net_ops","node_ops","state_ops","sync_ops","wallet_ops"],"struct":["ApiInfo","RpcRequest"]};
+window.SIDEBAR_ITEMS = {"constant":["API_INFO_KEY","DEFAULT_PORT","DEFAULT_TIMEOUT"],"fn":["multiaddr2url"],"mod":["chain_ops","eth_ops","gas_ops","net_ops","node_ops","state_ops","sync_ops","wallet_ops"],"struct":["ApiInfo","RpcRequest"]};

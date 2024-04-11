@@ -401,24 +401,6 @@
 <a href="#399" id="399">399</a>
 <a href="#400" id="400">400</a>
 <a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -466,6 +448,7 @@
     <span class="macro">beacon::for_each_method!</span>(export);
     <span class="macro">chain::for_each_method!</span>(export);
     <span class="macro">mpool::for_each_method!</span>(export);
+    <span class="macro">common::for_each_method!</span>(export);
 }
 
 <span class="doccomment">/// All the methods live in their own folder
@@ -501,8 +484,7 @@
     server::{stop_channel, RpcModule, RpcServiceBuilder, Server, StopHandle, TowerServiceBuilder},
     Methods,
 };
-<span class="kw">use </span>tokio::sync::mpsc::Sender;
-<span class="kw">use </span>tokio::sync::RwLock;
+<span class="kw">use </span>tokio::sync::{mpsc, RwLock};
 <span class="kw">use </span>tower::Service;
 <span class="kw">use </span>tracing::info;
 
@@ -523,6 +505,7 @@
     <span class="kw">pub </span>network_name: String,
     <span class="kw">pub </span>start_time: chrono::DateTime&lt;chrono::Utc&gt;,
     <span class="kw">pub </span>beacon: Arc&lt;<span class="kw">crate</span>::beacon::BeaconSchedule&gt;,
+    <span class="kw">pub </span>shutdown: mpsc::Sender&lt;()&gt;,
 }
 
 <span class="attr">#[derive(Clone)]
@@ -533,12 +516,7 @@
     keystore: Arc&lt;RwLock&lt;KeyStore&gt;&gt;,
 }
 
-<span class="kw">pub async fn </span>start_rpc&lt;DB&gt;(
-    state: RPCState&lt;DB&gt;,
-    rpc_endpoint: SocketAddr,
-    forest_version: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-    shutdown_send: Sender&lt;()&gt;,
-) -&gt; anyhow::Result&lt;()&gt;
+<span class="kw">pub async fn </span>start_rpc&lt;DB&gt;(state: RPCState&lt;DB&gt;, rpc_endpoint: SocketAddr) -&gt; anyhow::Result&lt;()&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
@@ -549,12 +527,7 @@
 
     <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/4032
     </span><span class="attr">#[allow(deprecated)]
-    </span>register_methods(
-        <span class="kw-2">&amp;mut </span>module,
-        u64::from(state.state_manager.chain_config().block_delay_secs),
-        forest_version,
-        shutdown_send,
-    )<span class="question-mark">?</span>;
+    </span>register_methods(<span class="kw-2">&amp;mut </span>module)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>pubsub_module = FilRpcModule::default();
 
@@ -629,20 +602,15 @@
     <span class="macro">mpool::for_each_method!</span>(register);
     <span class="macro">auth::for_each_method!</span>(register);
     <span class="macro">beacon::for_each_method!</span>(register);
+    <span class="macro">common::for_each_method!</span>(register);
     module.finish()
 }
 
 <span class="attr">#[deprecated = <span class="string">"methods should use `create_module`"</span>]
-</span><span class="kw">fn </span>register_methods&lt;DB&gt;(
-    module: <span class="kw-2">&amp;mut </span>RpcModule&lt;RPCState&lt;DB&gt;&gt;,
-    block_delay: u64,
-    forest_version: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-    shutdown_send: Sender&lt;()&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), RegisterMethodError&gt;
+</span><span class="kw">fn </span>register_methods&lt;DB&gt;(module: <span class="kw-2">&amp;mut </span>RpcModule&lt;RPCState&lt;DB&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), RegisterMethodError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
-    <span class="kw">use </span>common::<span class="kw-2">*</span>;
     <span class="kw">use </span>eth::<span class="kw-2">*</span>;
     <span class="kw">use </span>gas::<span class="kw-2">*</span>;
     <span class="kw">use </span>net::<span class="kw-2">*</span>;
@@ -736,11 +704,6 @@
     module.register_async_method(GAS_ESTIMATE_GAS_LIMIT, gas_estimate_gas_limit::&lt;DB&gt;)<span class="question-mark">?</span>;
     module.register_async_method(GAS_ESTIMATE_GAS_PREMIUM, gas_estimate_gas_premium::&lt;DB&gt;)<span class="question-mark">?</span>;
     module.register_async_method(GAS_ESTIMATE_MESSAGE_GAS, gas_estimate_message_gas::&lt;DB&gt;)<span class="question-mark">?</span>;
-    <span class="comment">// Common API
-    </span>module.register_method(VERSION, <span class="kw">move </span>|<span class="kw">_</span>, <span class="kw">_</span>| version(block_delay, forest_version))<span class="question-mark">?</span>;
-    module.register_method(SESSION, |<span class="kw">_</span>, <span class="kw">_</span>| session())<span class="question-mark">?</span>;
-    module.register_async_method(SHUTDOWN, <span class="kw">move </span>|<span class="kw">_</span>, <span class="kw">_</span>| shutdown(shutdown_send.clone()))<span class="question-mark">?</span>;
-    module.register_method(START_TIME, <span class="kw">move </span>|<span class="kw">_</span>, state| start_time::&lt;DB&gt;(state))<span class="question-mark">?</span>;
     <span class="comment">// Net API
     </span>module.register_async_method(NET_ADDRS_LISTEN, |<span class="kw">_</span>, state| net_addrs_listen::&lt;DB&gt;(state))<span class="question-mark">?</span>;
     module.register_async_method(NET_PEERS, |<span class="kw">_</span>, state| net_peers::&lt;DB&gt;(state))<span class="question-mark">?</span>;
@@ -761,7 +724,7 @@
     module.register_async_method(ETH_GET_BALANCE, eth_get_balance::&lt;DB&gt;)<span class="question-mark">?</span>;
     module.register_async_method(ETH_SYNCING, eth_syncing::&lt;DB&gt;)<span class="question-mark">?</span>;
     module.register_method(WEB3_CLIENT_VERSION, <span class="kw">move </span>|<span class="kw">_</span>, <span class="kw">_</span>| {
-        web3_client_version(forest_version)
+        <span class="kw">crate</span>::utils::version::FOREST_VERSION_STRING.clone()
     })<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -834,7 +797,8 @@
                 start_time: Default::default(),
                 chain_store,
                 beacon,
-            }
+                shutdown: mpsc::channel(<span class="number">1</span>).<span class="number">0</span>, <span class="comment">// dummy for tests
+            </span>}
         }
     }
 }

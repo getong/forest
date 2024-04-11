@@ -1253,6 +1253,9 @@
 <a href="#1251" id="1251">1251</a>
 <a href="#1252" id="1252">1252</a>
 <a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1281,7 +1284,6 @@
     state_tree::StateTree,
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
-<span class="kw">use </span><span class="kw">crate</span>::utils::version::FOREST_VERSION_STRING;
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>clap::{Subcommand, ValueEnum};
@@ -1604,10 +1606,9 @@
 
 <span class="kw">fn </span>common_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
-        RpcTest::basic(ApiInfo::version_req()),
-        RpcTest::basic(ApiInfo::start_time_req()),
-        RpcTest::basic(ApiInfo::discover_req()).ignore(<span class="string">"Not implemented yet"</span>),
-        RpcTest::basic(ApiInfo::session_req()),
+        RpcTest::basic_raw(Version::request(()).unwrap()),
+        RpcTest::basic_raw(StartTime::request(()).unwrap()),
+        RpcTest::basic_raw(Session::request(()).unwrap()),
     ]
 }
 
@@ -2215,6 +2216,8 @@
         state_manager.validate_tipsets(head_ts.chain_arc(<span class="kw-2">&amp;</span>db).take(n_ts_to_validate))<span class="question-mark">?</span>;
     }
 
+    <span class="kw">let </span>(shutdown, shutdown_recv) = mpsc::channel(<span class="number">1</span>);
+
     <span class="kw">let </span>rpc_state = RPCState {
         state_manager,
         keystore: Arc::new(RwLock::new(KeyStore::new(KeyStoreConfig::Memory)<span class="question-mark">?</span>)),
@@ -2226,25 +2229,28 @@
         start_time: chrono::Utc::now(),
         chain_store,
         beacon,
+        shutdown,
     };
     rpc_state.sync_state.write().set_stage(SyncStage::Idle);
-    start_offline_rpc(rpc_state, rpc_port).<span class="kw">await</span><span class="question-mark">?</span>;
+    start_offline_rpc(rpc_state, rpc_port, shutdown_recv).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub async fn </span>start_offline_rpc&lt;DB&gt;(state: RPCState&lt;DB&gt;, rpc_port: u16) -&gt; anyhow::Result&lt;()&gt;
+<span class="kw">async fn </span>start_offline_rpc&lt;DB&gt;(
+    state: RPCState&lt;DB&gt;,
+    rpc_port: u16,
+    <span class="kw-2">mut </span>shutdown_recv: mpsc::Receiver&lt;()&gt;,
+) -&gt; anyhow::Result&lt;()&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="macro">info!</span>(<span class="string">"Starting offline RPC Server"</span>);
     <span class="kw">let </span>rpc_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), rpc_port);
-    <span class="kw">let </span>forest_version = FOREST_VERSION_STRING.as_str();
-    <span class="kw">let </span>(shutdown_send, <span class="kw-2">mut </span>shutdown_recv) = mpsc::channel(<span class="number">1</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>terminate = signal(SignalKind::terminate())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>result = <span class="macro">tokio::select! </span>{
-        ret = start_rpc(state, rpc_address, forest_version, shutdown_send) =&gt; ret,
+        ret = start_rpc(state, rpc_address) =&gt; ret,
         <span class="kw">_ </span>= ctrl_c() =&gt; {
             <span class="macro">info!</span>(<span class="string">"Keyboard interrupt."</span>);
             <span class="prelude-val">Ok</span>(())

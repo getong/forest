@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DISCOVER","SESSION","SHUTDOWN","START_TIME","VERSION"],"fn":["session","shutdown","start_time","version"],"static":["SESSION_UUID"]};
+window.SIDEBAR_ITEMS = {"enum":["Session","Shutdown","StartTime","Version"],"macro":["for_each_method"],"static":["SESSION_UUID"],"struct":["PublicVersion","ShiftingVersion"]};
