@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PARAMETERS","FOREST_FORCE_TRUST_PARAMS_ENV","PARAM_DIR","PROOFS_PARAMETER_CACHE_ENV","PROOF_DIGEST_LEN"],"fn":["check_parameter_file","param_dir","set_proofs_parameter_cache_dir_env"],"struct":["ParameterData"],"type":["ParameterMap"]};

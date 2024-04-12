@@ -234,87 +234,18 @@
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
 <a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a>
-<a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a>
-<a href="#238" id="238">238</a>
-<a href="#239" id="239">239</a>
-<a href="#240" id="240">240</a>
-<a href="#241" id="241">241</a>
-<a href="#242" id="242">242</a>
-<a href="#243" id="243">243</a>
-<a href="#244" id="244">244</a>
-<a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a>
-<a href="#249" id="249">249</a>
-<a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
-<a href="#259" id="259">259</a>
-<a href="#260" id="260">260</a>
-<a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
-<a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a>
-<a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
-<a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
-<a href="#281" id="281">281</a>
-<a href="#282" id="282">282</a>
-<a href="#283" id="283">283</a>
-<a href="#284" id="284">284</a>
-<a href="#285" id="285">285</a>
-<a href="#286" id="286">286</a>
-<a href="#287" id="287">287</a>
-<a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a>
-<a href="#290" id="290">290</a>
-<a href="#291" id="291">291</a>
-<a href="#292" id="292">292</a>
-<a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-<a href="#295" id="295">295</a>
-<a href="#296" id="296">296</a>
-<a href="#297" id="297">297</a>
-<a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
-<a href="#302" id="302">302</a>
-<a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a>
-<a href="#305" id="305">305</a>
-<a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
+</span><span class="doccomment">//! This module contains the logic for fetching the proofs parameters from the network.
+//! As a general rule, the parameters are first fetched from ChainSafe's Cloudflare R2 bucket, if
+//! that fails (or is overridden by [`PROOFS_ONLY_IPFS_GATEWAY_ENV`]), the IPFS gateway is used as a fallback.
+//!
+//! The reason for this is that the IPFS gateway is not as reliable and performant as the centralized solution, which contributed to
+//! issues in CI in the past.
 
 </span><span class="kw">use </span>std::{
-    fs::File <span class="kw">as </span>SyncFile,
-    io::{<span class="self">self</span>, copy <span class="kw">as </span>sync_copy, BufReader <span class="kw">as </span>SyncBufReader, ErrorKind},
+    io::{<span class="self">self</span>, ErrorKind},
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
     time::Duration,
 };
@@ -323,28 +254,33 @@
     shim::sector::SectorSize,
     utils::net::{download_ipfs_file_trustlessly, global_http_client},
 };
-<span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>backoff::{future::retry, ExponentialBackoffBuilder};
-<span class="kw">use </span>blake2b_simd::{Hash, State <span class="kw">as </span>Blake2b};
-<span class="kw">use </span>cid::Cid;
-<span class="kw">use </span>futures::{AsyncWriteExt, TryStreamExt};
-<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>futures::{stream::FuturesUnordered, AsyncWriteExt, TryStreamExt};
 <span class="kw">use </span>tokio::fs::{<span class="self">self</span>};
-<span class="kw">use </span>tracing::{debug, error, info, warn};
+<span class="kw">use </span>tracing::{debug, info, warn};
 
-<span class="kw">const </span>GATEWAY: <span class="kw-2">&amp;</span>str = <span class="string">"https://proofs.filecoin.io/ipfs/"</span>;
-<span class="kw">const </span>PARAM_DIR: <span class="kw-2">&amp;</span>str = <span class="string">"filecoin-proof-parameters"</span>;
-<span class="kw">const </span>DEFAULT_PARAMETERS: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="string">"./parameters.json"</span>);
+<span class="kw">use super</span>::{
+    is_env_truthy,
+    parameters::{
+        check_parameter_file, param_dir, ParameterData, ParameterMap, DEFAULT_PARAMETERS,
+        PROOFS_PARAMETER_CACHE_ENV,
+    },
+};
 
+<span class="doccomment">/// Default IPFS gateway to use for fetching parameters.
+/// Set via the [`IPFS_GATEWAY_ENV`] environment variable.
+</span><span class="kw">const </span>DEFAULT_IPFS_GATEWAY: <span class="kw-2">&amp;</span>str = <span class="string">"https://proofs.filecoin.io/ipfs/"</span>;
 <span class="doccomment">/// Domain bound to the Cloudflare R2 bucket.
 </span><span class="kw">const </span>CLOUDFLARE_PROOF_PARAMETER_DOMAIN: <span class="kw-2">&amp;</span>str = <span class="string">"filecoin-proof-parameters.chainsafe.dev"</span>;
 
 <span class="doccomment">/// If set to 1, enforce using the IPFS gateway for fetching parameters.
 </span><span class="kw">const </span>PROOFS_ONLY_IPFS_GATEWAY_ENV: <span class="kw-2">&amp;</span>str = <span class="string">"FOREST_PROOFS_ONLY_IPFS_GATEWAY"</span>;
-<span class="kw">const </span>DIR_ENV: <span class="kw-2">&amp;</span>str = <span class="string">"FIL_PROOFS_PARAMETER_CACHE"</span>;
-<span class="kw">const </span>GATEWAY_ENV: <span class="kw-2">&amp;</span>str = <span class="string">"IPFS_GATEWAY"</span>;
-<span class="kw">const </span>TRUST_PARAMS_ENV: <span class="kw-2">&amp;</span>str = <span class="string">"TRUST_PARAMS"</span>;
+
+<span class="doccomment">/// Running Forest requires the download of chain's proof parameters which are large files, by default are hosted outside of China and very slow to download there.
+/// To get around that, users should set this variable to:
+/// &lt;https://proof-parameters.s3.cn-south-1.jdcloud-oss.com/ipfs/&gt;
+</span><span class="kw">const </span>IPFS_GATEWAY_ENV: <span class="kw-2">&amp;</span>str = <span class="string">"IPFS_GATEWAY"</span>;
 
 <span class="doccomment">/// Sector size options for fetching.
 </span><span class="kw">pub enum </span>SectorSizeOpt {
@@ -356,42 +292,9 @@
     </span>Size(SectorSize),
 }
 
-<span class="kw">type </span>ParameterMap = HashMap&lt;String, ParameterData&gt;;
-
-<span class="attr">#[derive(Debug, Deserialize, Serialize, Clone)]
-</span><span class="kw">struct </span>ParameterData {
-    cid: String,
-    digest: String,
-    sector_size: u64,
-}
-
-<span class="comment">// Proof parameter file directory. Defaults to
-// %DATA_DIR/filecoin-proof-parameters unless the FIL_PROOFS_PARAMETER_CACHE
-// environment variable is set.
-</span><span class="kw">fn </span>param_dir(data_dir: <span class="kw-2">&amp;</span>Path) -&gt; PathBuf {
-    std::env::var(PathBuf::from(DIR_ENV))
-        .map(PathBuf::from)
-        .unwrap_or_else(|<span class="kw">_</span>| data_dir.join(PARAM_DIR))
-}
-
-<span class="doccomment">/// Forest uses a set of external crates for verifying the proofs generated by
-/// the miners. These external crates require a specific set of parameter files
-/// to be located at in a specific folder. By default, it is
-/// `/var/tmp/filecoin-proof-parameters` but it can be overridden by the
-/// `FIL_PROOFS_PARAMETER_CACHE` environment variable. Forest will automatically
-/// download the parameter files from IPFS and verify their validity. For
-/// consistency, Forest will prefer to download the files it's local data
-/// directory. To this end, the `FIL_PROOFS_PARAMETER_CACHE` environment
-/// variable is updated before the parameters are downloaded.
-///
-/// More information available here: &lt;https://github.com/filecoin-project/rust-fil-proofs#parameter-file-location&gt;
-</span><span class="kw">pub fn </span>set_proofs_parameter_cache_dir_env(data_dir: <span class="kw-2">&amp;</span>Path) {
-    std::env::set_var(DIR_ENV, param_dir(data_dir));
-}
-
 <span class="doccomment">/// Ensures the parameter files are downloaded to cache dir
 </span><span class="kw">pub async fn </span>ensure_params_downloaded() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>data_dir = std::env::var(DIR_ENV).unwrap_or_default();
+    <span class="kw">let </span>data_dir = std::env::var(PROOFS_PARAMETER_CACHE_ENV).unwrap_or_default();
     <span class="kw">if </span>data_dir.is_empty() {
         <span class="macro">anyhow::bail!</span>(<span class="string">"Proof parameter data dir is not set"</span>);
     }
@@ -417,46 +320,24 @@
     fs::create_dir_all(param_dir(data_dir)).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>params: ParameterMap = serde_json::from_str(param_json)<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>tasks = Vec::with_capacity(params.len());
 
-    params
-        .into_iter()
-        .filter(|(name, info)| <span class="kw">match </span>storage_size {
-            SectorSizeOpt::Keys =&gt; !name.ends_with(<span class="string">"params"</span>),
-            SectorSizeOpt::Size(size) =&gt; {
-                size <span class="kw">as </span>u64 == info.sector_size || !name.ends_with(<span class="string">".params"</span>)
-            }
-            SectorSizeOpt::All =&gt; <span class="bool-val">true</span>,
-        })
-        .for_each(|(name, info)| {
-            <span class="kw">let </span>data_dir_clone = data_dir.to_owned();
-            tasks.push(tokio::task::spawn(<span class="kw">async move </span>{
-                fetch_verify_params(<span class="kw-2">&amp;</span>data_dir_clone, <span class="kw-2">&amp;</span>name, Arc::new(info))
-                    .<span class="kw">await
-                    </span>.map_err(|err| {
-                        <span class="macro">error!</span>(<span class="string">"Error fetching param file {name}: {err}"</span>);
-                        err
-                    })
-            }))
-        });
-
-    <span class="kw">let </span><span class="kw-2">mut </span>errors = Vec::&lt;anyhow::Error&gt;::new();
-
-    <span class="kw">for </span>t <span class="kw">in </span>tasks {
-        <span class="kw">match </span>t.<span class="kw">await </span>{
-            <span class="prelude-val">Err</span>(err) =&gt; errors.push(err.into()),
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(err)) =&gt; errors.push(err),
-            <span class="kw">_ </span>=&gt; (),
-        }
-    }
-
-    <span class="kw">if </span>!errors.is_empty() {
-        <span class="kw">let </span>error_messages: Vec&lt;<span class="kw">_</span>&gt; = errors.iter().map(|e| <span class="macro">format!</span>(<span class="string">"{e}"</span>)).collect();
-        <span class="macro">anyhow::bail!</span>(anyhow::Error::msg(<span class="macro">format!</span>(
-            <span class="string">"Aggregated errors:\n{}"</span>,
-            error_messages.join(<span class="string">"\n\n"</span>)
-        )))
-    }
+    FuturesUnordered::from_iter(
+        params
+            .into_iter()
+            .filter(|(name, info)| <span class="kw">match </span>storage_size {
+                SectorSizeOpt::Keys =&gt; !name.ends_with(<span class="string">"params"</span>),
+                SectorSizeOpt::Size(size) =&gt; {
+                    size <span class="kw">as </span>u64 == info.sector_size || !name.ends_with(<span class="string">".params"</span>)
+                }
+                SectorSizeOpt::All =&gt; <span class="bool-val">true</span>,
+            })
+            .map(|(name, info)| <span class="kw">async move </span>{
+                <span class="kw">let </span>data_dir_clone = data_dir.to_owned();
+                fetch_verify_params(<span class="kw-2">&amp;</span>data_dir_clone, <span class="kw-2">&amp;</span>name, Arc::new(info)).<span class="kw">await
+            </span>}),
+    )
+    .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -472,13 +353,6 @@
     get_params(data_dir, DEFAULT_PARAMETERS, storage_size, dry_run).<span class="kw">await
 </span>}
 
-<span class="kw">fn </span>should_use_ipfs_gateway() -&gt; bool {
-    <span class="kw">match </span>std::env::var(PROOFS_ONLY_IPFS_GATEWAY_ENV) {
-        <span class="prelude-val">Ok</span>(var) =&gt; <span class="macro">matches!</span>(var.to_lowercase().as_str(), <span class="string">"1" </span>| <span class="string">"true"</span>),
-        <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
-    }
-}
-
 <span class="kw">async fn </span>fetch_verify_params(
     data_dir: <span class="kw-2">&amp;</span>Path,
     name: <span class="kw-2">&amp;</span>str,
@@ -486,30 +360,38 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), anyhow::Error&gt; {
     <span class="kw">let </span>path: PathBuf = param_dir(data_dir).join(name);
 
-    <span class="kw">match </span>check_file(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await </span>{
+    <span class="kw">match </span>check_parameter_file(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await </span>{
         <span class="prelude-val">Ok</span>(()) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
         <span class="prelude-val">Err</span>(e) =&gt; {
-            <span class="kw">if </span>e.kind() != ErrorKind::NotFound {
-                <span class="macro">warn!</span>(<span class="string">"Error checking file: {}"</span>, e);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(e) = e.downcast_ref::&lt;io::Error&gt;() {
+                <span class="kw">if </span>e.kind() == ErrorKind::NotFound {
+                    <span class="comment">// File is missing, download it
+                </span>}
+            } <span class="kw">else </span>{
+                <span class="macro">warn!</span>(<span class="string">"Error checking file: {e:?}"</span>);
             }
         }
     }
 
-    <span class="kw">if </span>should_use_ipfs_gateway() {
-        fetch_params(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">if </span>is_env_truthy(PROOFS_ONLY_IPFS_GATEWAY_ENV) {
+        fetch_params_ipfs_gateway(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await</span><span class="question-mark">?</span>;
     } <span class="kw">else if let </span><span class="prelude-val">Err</span>(e) = fetch_params_cloudflare(name, <span class="kw-2">&amp;</span>path).<span class="kw">await </span>{
         <span class="macro">warn!</span>(<span class="string">"Failed to fetch param file from Cloudflare R2: {e:?}. Falling back to IPFS gateway"</span>,);
-        fetch_params(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await</span><span class="question-mark">?</span>;
+        fetch_params_ipfs_gateway(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await</span><span class="question-mark">?</span>;
     }
 
-    check_file(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_parameter_file(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>info).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>fetch_params(path: <span class="kw-2">&amp;</span>Path, info: <span class="kw-2">&amp;</span>ParameterData) -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>cid = Cid::from_str(<span class="kw-2">&amp;</span>info.cid)<span class="question-mark">?</span>;
-    <span class="kw">let </span>gw = std::env::var(GATEWAY_ENV).unwrap_or_else(|<span class="kw">_</span>| GATEWAY.to_owned());
-    <span class="macro">info!</span>(<span class="string">"Fetching param file {} from {gw}"</span>, path.display());
+<span class="kw">async fn </span>fetch_params_ipfs_gateway(path: <span class="kw-2">&amp;</span>Path, info: <span class="kw-2">&amp;</span>ParameterData) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>gateway = std::env::var(IPFS_GATEWAY_ENV)
+        .unwrap_or_else(|<span class="kw">_</span>| DEFAULT_IPFS_GATEWAY.to_owned())
+        .parse()<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(
+        <span class="string">"Fetching param file {path} from {gateway}"</span>,
+        path = path.display()
+    );
     <span class="kw">let </span>backoff = ExponentialBackoffBuilder::default()
         <span class="comment">// Up to 30 minutes for downloading the file. This may be drastic,
         // but the gateway proved to be unreliable at times and we
@@ -517,10 +399,13 @@
         </span>.with_max_elapsed_time(<span class="prelude-val">Some</span>(Duration::from_secs(<span class="number">60 </span>* <span class="number">30</span>)))
         .build();
     <span class="kw">let </span>result = retry(backoff, || <span class="kw">async </span>{
-        <span class="prelude-val">Ok</span>(download_ipfs_file_trustlessly(<span class="kw-2">&amp;</span>cid, <span class="prelude-val">Some</span>(GATEWAY), path).<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="prelude-val">Ok</span>(download_ipfs_file_trustlessly(<span class="kw-2">&amp;</span>info.cid, <span class="kw-2">&amp;</span>gateway, path).<span class="kw">await</span><span class="question-mark">?</span>)
     })
     .<span class="kw">await</span>;
-    <span class="macro">debug!</span>(<span class="string">"Done fetching param file {:?} from {}"</span>, path, gw);
+    <span class="macro">debug!</span>(
+        <span class="string">"Done fetching param file {path} from {gateway}"</span>,
+        path = path.display(),
+    );
     result
 }
 
@@ -582,36 +467,5 @@
 
     tmp.persist(path).context(<span class="string">"Failed to persist temp file"</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
-}
-
-<span class="kw">async fn </span>check_file(path: <span class="kw-2">&amp;</span>Path, info: <span class="kw-2">&amp;</span>ParameterData) -&gt; <span class="prelude-ty">Result</span>&lt;(), io::Error&gt; {
-    <span class="kw">if </span>std::env::var(TRUST_PARAMS_ENV) == <span class="prelude-val">Ok</span>(<span class="string">"1"</span>.to_owned()) {
-        <span class="macro">warn!</span>(<span class="string">"Assuming parameter files are okay. Do not use in production!"</span>);
-        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-    }
-
-    <span class="kw">let </span>hash = tokio::task::spawn_blocking({
-        <span class="kw">let </span>file = SyncFile::open(path)<span class="question-mark">?</span>;
-        <span class="kw">move </span>|| -&gt; <span class="prelude-ty">Result</span>&lt;Hash, io::Error&gt; {
-            <span class="kw">let </span><span class="kw-2">mut </span>reader = SyncBufReader::new(file);
-            <span class="kw">let </span><span class="kw-2">mut </span>hasher = Blake2b::new();
-            sync_copy(<span class="kw-2">&amp;mut </span>reader, <span class="kw-2">&amp;mut </span>hasher)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(hasher.finalize())
-        }
-    })
-    .<span class="kw">await</span><span class="question-mark">??</span>;
-
-    <span class="kw">let </span>str_sum = hash.to_hex();
-    <span class="attr">#[allow(clippy::indexing_slicing)]
-    </span><span class="kw">let </span>str_sum = <span class="kw-2">&amp;</span>str_sum[..<span class="number">32</span>];
-    <span class="kw">if </span>str_sum == info.digest {
-        <span class="macro">debug!</span>(<span class="string">"Parameter file {:?} is ok"</span>, path);
-        <span class="prelude-val">Ok</span>(())
-    } <span class="kw">else </span>{
-        <span class="prelude-val">Err</span>(io::Error::other(<span class="macro">format!</span>(
-            <span class="string">"Checksum mismatch in param file {:?}. ({} != {})"</span>,
-            path, str_sum, info.digest
-        )))
-    }
 }
 </code></pre></div></section></main></body></html>
