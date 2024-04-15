@@ -147,7 +147,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["ecdsa",["",[],["der.rs","hazmat.rs","lib.rs","normalized.rs","recovery.rs","signing.rs","verifying.rs"]]],\
 ["ed25519",["",[],["hex.rs","lib.rs"]]],\
 ["ed25519_dalek",["",[],["constants.rs","errors.rs","hazmat.rs","lib.rs","signature.rs","signing.rs","verifying.rs"]]],\
-["either",["",[],["iterator.rs","lib.rs"]]],\
+["either",["",[],["into_either.rs","iterator.rs","lib.rs"]]],\
 ["elliptic_curve",["",[["point",[],["non_identity.rs"]],["scalar",[],["blinded.rs","nonzero.rs","primitive.rs"]],["secret_key",[],["pkcs8.rs"]]],["arithmetic.rs","error.rs","field.rs","lib.rs","ops.rs","point.rs","public_key.rs","scalar.rs","sec1.rs","secret_key.rs","weierstrass.rs"]]],\
 ["endian_type",["",[],["lib.rs"]]],\
 ["enum_as_inner",["",[],["lib.rs"]]],\
@@ -574,7 +574,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["ticker",["",[],["lib.rs"]]],\
 ["tikv_jemalloc_sys",["",[],["env.rs","lib.rs"]]],\
 ["tikv_jemallocator",["",[],["lib.rs"]]],\
-["time",["",[["error",[],["component_range.rs","conversion_range.rs","different_variant.rs","format.rs","indeterminate_offset.rs","invalid_format_description.rs","invalid_variant.rs","mod.rs","parse.rs","parse_from_description.rs","try_from_parsed.rs"]],["format_description",[["parse",[],["ast.rs","format_item.rs","lexer.rs","mod.rs"]],["well_known",[["iso8601",[],["adt_hack.rs"]]],["iso8601.rs","rfc2822.rs","rfc3339.rs"]]],["borrowed_format_item.rs","component.rs","mod.rs","modifier.rs","owned_format_item.rs"]],["formatting",[],["formattable.rs","iso8601.rs","mod.rs"]],["parsing",[["combinator",[["rfc",[],["iso8601.rs","mod.rs","rfc2234.rs","rfc2822.rs"]]],["mod.rs"]]],["component.rs","iso8601.rs","mod.rs","parsable.rs","parsed.rs","shim.rs"]],["sys",[["local_offset_at",[],["mod.rs","unix.rs"]]],["mod.rs"]]],["date.rs","duration.rs","ext.rs","instant.rs","internal_macros.rs","lib.rs","macros.rs","month.rs","offset_date_time.rs","primitive_date_time.rs","time.rs","utc_offset.rs","util.rs","weekday.rs"]]],\
+["time",["",[["error",[],["component_range.rs","conversion_range.rs","different_variant.rs","format.rs","indeterminate_offset.rs","invalid_format_description.rs","invalid_variant.rs","mod.rs","parse.rs","parse_from_description.rs","try_from_parsed.rs"]],["ext",[],["digit_count.rs","instant.rs","mod.rs","numerical_duration.rs","numerical_std_duration.rs"]],["format_description",[["parse",[],["ast.rs","format_item.rs","lexer.rs","mod.rs"]],["well_known",[["iso8601",[],["adt_hack.rs"]]],["iso8601.rs","rfc2822.rs","rfc3339.rs"]]],["borrowed_format_item.rs","component.rs","mod.rs","modifier.rs","owned_format_item.rs"]],["formatting",[],["formattable.rs","iso8601.rs","mod.rs"]],["parsing",[["combinator",[["rfc",[],["iso8601.rs","mod.rs","rfc2234.rs","rfc2822.rs"]]],["mod.rs"]]],["component.rs","iso8601.rs","mod.rs","parsable.rs","parsed.rs","shim.rs"]],["sys",[["local_offset_at",[],["mod.rs","unix.rs"]]],["mod.rs"]]],["date.rs","duration.rs","instant.rs","internal_macros.rs","lib.rs","macros.rs","month.rs","offset_date_time.rs","primitive_date_time.rs","time.rs","utc_offset.rs","util.rs","weekday.rs"]]],\
 ["time_core",["",[],["convert.rs","lib.rs","util.rs"]]],\
 ["time_macros",["",[["format_description",[["public",[],["component.rs","mod.rs","modifier.rs"]]],["ast.rs","format_item.rs","lexer.rs","mod.rs"]],["helpers",[],["mod.rs","string.rs"]]],["date.rs","datetime.rs","error.rs","lib.rs","offset.rs","quote.rs","time.rs","to_tokens.rs"]]],\
 ["tiny_keccak",["",[],["keccak.rs","keccakf.rs","lib.rs"]]],\

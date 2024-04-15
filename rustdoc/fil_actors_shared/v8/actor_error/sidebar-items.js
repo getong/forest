@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ActorError"]};
+window.SIDEBAR_ITEMS = {"struct":["ActorError"],"trait":["AsActorError"]};
