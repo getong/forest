@@ -258,20 +258,50 @@
 <a href="#256" id="256">256</a>
 <a href="#257" id="257">257</a>
 <a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKey;
-<span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET, MINIMUM_BASE_FEE};
+<span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait};
-<span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::types::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
-<span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
-<span class="kw">use </span><span class="kw">crate</span>::shim::econ::BLOCK_GAS_LIMIT;
-<span class="kw">use </span><span class="kw">crate</span>::shim::{econ::TokenAmount, message::Message};
+<span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait, SignedMessage};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{error::ServerError, types::<span class="kw-2">*</span>, ApiVersion, Ctx, RpcMethod};
+<span class="kw">use </span><span class="kw">crate</span>::shim::{
+    address::{Address, Protocol},
+    crypto::{Signature, SignatureType, SECP_SIG_LEN},
+    econ::{TokenAmount, BLOCK_GAS_LIMIT},
+    message::Message,
+};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>jsonrpsee::types::Params;
 <span class="kw">use </span>num::BigInt;
@@ -286,6 +316,13 @@
 <span class="kw">pub const </span>GAS_ESTIMATE_GAS_PREMIUM: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateGasPremium"</span>;
 <span class="kw">pub const </span>GAS_ESTIMATE_GAS_LIMIT: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateGasLimit"</span>;
 <span class="kw">pub const </span>GAS_ESTIMATE_MESSAGE_GAS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateMessageGas"</span>;
+
+<span class="macro">macro_rules! </span>for_each_method {
+    (<span class="macro-nonterminal">$callback</span>:ident) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateGasLimit</span>);
+    };
+}
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
 
 <span class="doccomment">/// Estimate the fee cap
 </span><span class="kw">pub async fn </span>gas_estimate_fee_cap&lt;DB: Blockstore&gt;(
@@ -417,33 +454,40 @@
     <span class="prelude-val">Ok</span>(premium)
 }
 
-<span class="doccomment">/// Estimate the gas limit
-</span><span class="kw">pub async fn </span>gas_estimate_gas_limit&lt;DB&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;i64, ServerError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span>LotusJson((msg, tsk)): LotusJson&lt;(Message, ApiTipsetKey)&gt; = params.parse()<span class="question-mark">?</span>;
+<span class="kw">pub enum </span>GasEstimateGasLimit {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">2</span>&gt; <span class="kw">for </span>GasEstimateGasLimit {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.GasEstimateGasLimit"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"msg"</span>, <span class="string">"tsk"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    estimate_gas_limit::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, msg, tsk).<span class="kw">await
-</span>}
+    <span class="kw">type </span>Params = (LotusJson&lt;Message&gt;, LotusJson&lt;ApiTipsetKey&gt;);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= i64;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (LotusJson(msg), LotusJson(tsk)): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        estimate_gas_limit(<span class="kw-2">&amp;</span>ctx, msg, tsk).<span class="kw">await
+    </span>}
+}
 
 <span class="kw">async fn </span>estimate_gas_limit&lt;DB&gt;(
     data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
     msg: Message,
-    <span class="kw">_</span>: ApiTipsetKey,
+    ApiTipsetKey(tsk): ApiTipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;i64, ServerError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
     <span class="kw">let </span><span class="kw-2">mut </span>msg = msg;
     msg.set_gas_limit(BLOCK_GAS_LIMIT);
-    msg.set_gas_fee_cap(TokenAmount::from_atto(MINIMUM_BASE_FEE + <span class="number">1</span>));
-    msg.set_gas_premium(TokenAmount::from_atto(<span class="number">1</span>));
+    msg.set_gas_fee_cap(TokenAmount::from_atto(<span class="number">0</span>));
+    msg.set_gas_premium(TokenAmount::from_atto(<span class="number">0</span>));
 
-    <span class="kw">let </span>curr_ts = data.state_manager.chain_store().heaviest_tipset();
+    <span class="kw">let </span>curr_ts = data
+        .state_manager
+        .chain_store()
+        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>from_a = data
         .state_manager
         .resolve_to_key_addr(<span class="kw-2">&amp;</span>msg.from, <span class="kw-2">&amp;</span>curr_ts)
@@ -455,19 +499,33 @@
         .unwrap_or_default();
 
     <span class="kw">let </span>ts = data.mpool.cur_tipset.lock().clone();
+    <span class="comment">// Pretend that the message is signed. This has an influence on the gas
+    // cost. We obviously can't generate a valid signature. Instead, we just
+    // fill the signature with zeros. The validity is not checked.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>chain_msg = <span class="kw">match </span>from_a.protocol() {
+        Protocol::Secp256k1 =&gt; ChainMessage::Signed(SignedMessage::new_unchecked(
+            msg,
+            Signature::new_secp256k1(<span class="macro">vec!</span>[<span class="number">0</span>; SECP_SIG_LEN]),
+        )),
+        Protocol::Delegated =&gt; ChainMessage::Signed(SignedMessage::new_unchecked(
+            msg,
+            <span class="comment">// In Lotus, delegated signatures have the same length as SECP256k1.
+            // This may or may not change in the future.
+            </span>Signature::new(SignatureType::Delegated, <span class="macro">vec!</span>[<span class="number">0</span>; SECP_SIG_LEN]),
+        )),
+        <span class="kw">_ </span>=&gt; ChainMessage::Unsigned(msg),
+    };
+
     <span class="kw">let </span>res = data
         .state_manager
-        .call_with_gas(<span class="kw-2">&amp;mut </span>ChainMessage::Unsigned(msg), <span class="kw-2">&amp;</span>prior_messages, <span class="prelude-val">Some</span>(ts))
+        .call_with_gas(<span class="kw-2">&amp;mut </span>chain_msg, <span class="kw-2">&amp;</span>prior_messages, <span class="prelude-val">Some</span>(ts))
         .<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">match </span>res.msg_rct {
         <span class="prelude-val">Some</span>(rct) =&gt; {
             <span class="kw">if </span>rct.exit_code().value() != <span class="number">0 </span>{
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(-<span class="number">1</span>);
             }
-            <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/901
-            //               Figure out why we always under estimate the gas
-            //               calculation so we dont need to add 200000
-            </span><span class="prelude-val">Ok</span>(rct.gas_used() <span class="kw">as </span>i64 + <span class="number">200000</span>)
+            <span class="prelude-val">Ok</span>(rct.gas_used() <span class="kw">as </span>i64)
         }
         <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(-<span class="number">1</span>),
     }

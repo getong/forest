@@ -1261,6 +1261,33 @@
 <a href="#1259" id="1259">1259</a>
 <a href="#1260" id="1260">1260</a>
 <a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
+<a href="#1267" id="1267">1267</a>
+<a href="#1268" id="1268">1268</a>
+<a href="#1269" id="1269">1269</a>
+<a href="#1270" id="1270">1270</a>
+<a href="#1271" id="1271">1271</a>
+<a href="#1272" id="1272">1272</a>
+<a href="#1273" id="1273">1273</a>
+<a href="#1274" id="1274">1274</a>
+<a href="#1275" id="1275">1275</a>
+<a href="#1276" id="1276">1276</a>
+<a href="#1277" id="1277">1277</a>
+<a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
+<a href="#1287" id="1287">1287</a>
+<a href="#1288" id="1288">1288</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1279,6 +1306,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::beacon::BeaconGetEntry;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth::Address <span class="kw">as </span>EthAddress;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::gas::GasEstimateGasLimit;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageFilter, MessageLookup};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{prelude::<span class="kw-2">*</span>, start_rpc, RPCState, ServerError};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::{ApiInfo, RpcRequest, DEFAULT_PORT};
@@ -1286,6 +1314,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Protocol},
     crypto::Signature,
+    econ::TokenAmount,
+    message::{Message, METHOD_SEND},
     state_tree::StateTree,
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
@@ -1824,6 +1854,29 @@
     ]
 }
 
+<span class="kw">fn </span>gas_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
+    <span class="comment">// This is a testnet address with a few FILs. The private key has been
+    // discarded. If calibnet is reset, a new address should be created.
+    </span><span class="kw">let </span>addr = Address::from_str(<span class="string">"t15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla"</span>).unwrap();
+    <span class="kw">let </span>message = Message {
+        from: addr,
+        to: addr,
+        value: TokenAmount::from_whole(<span class="number">1</span>),
+        method_num: METHOD_SEND,
+        ..Default::default()
+    };
+
+    <span class="comment">// The tipset is only used for resolving the 'from' address and not when
+    // computing the gas cost. This means that the `GasEstimateGasLimit` method
+    // is inherently non-deterministic but I'm fairly sure we're compensated for
+    // everything. If not, this test will be flaky. Instead of disabling it, we
+    // should relax the verification requirement.
+    </span><span class="macro">vec!</span>[RpcTest::identity_raw(
+        GasEstimateGasLimit::request((message.into(), LotusJson(shared_tipset.key().into())))
+            .unwrap(),
+    )]
+}
+
 <span class="comment">// Extract tests that use chain-specific data such as block CIDs or message
 // CIDs. Right now, only the last `n_tipsets` tipsets are used.
 </span><span class="kw">fn </span>snapshot_tests(store: Arc&lt;ManyCar&gt;, n_tipsets: usize) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
@@ -1840,6 +1893,7 @@
     tests.extend(chain_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
     tests.extend(state_tests(<span class="kw-2">&amp;</span>shared_tipset));
     tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
+    tests.extend(gas_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
 
     <span class="comment">// Not easily verifiable by using addresses extracted from blocks as most of those yield `null`
     // for both Lotus and Forest. Therefore the actor addresses are hardcoded to values that allow
