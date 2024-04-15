@@ -317,33 +317,23 @@
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a>
-<a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
-<a href="#325" id="325">325</a>
-<a href="#326" id="326">326</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+</span><span class="kw">use </span>std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+<span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+<span class="kw">use </span><span class="kw">crate</span>::cli::humantoken::TokenAmountPretty;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
+<span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
+<span class="kw">use </span><span class="kw">crate</span>::shim::clock::{ChainEpoch, BLOCKS_PER_EPOCH, EPOCH_DURATION_SECONDS};
 <span class="kw">use </span><span class="kw">crate</span>::shim::econ::TokenAmount;
 <span class="kw">use </span>chrono::{DateTime, Utc};
 <span class="kw">use </span>clap::Subcommand;
 <span class="kw">use </span>futures::TryFutureExt <span class="kw">as _</span>;
-<span class="kw">use </span>jsonrpsee::core::ClientError;
-
-<span class="kw">use </span><span class="kw">crate</span>::shim::clock::{ChainEpoch, BLOCKS_PER_EPOCH, EPOCH_DURATION_SECONDS};
 <span class="kw">use </span>humantime::format_duration;
-<span class="kw">use </span>num::BigInt;
-<span class="kw">use </span>std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-<span class="kw">use </span><span class="kw">crate</span>::cli::humantoken::TokenAmountPretty;
+<span class="kw">use </span>jsonrpsee::core::ClientError;
 
 <span class="attr">#[derive(Debug, Subcommand)]
 </span><span class="kw">pub enum </span>InfoCommand {
@@ -367,8 +357,8 @@
     <span class="doccomment">/// Start time of the node
     </span><span class="kw">pub </span>start_time: DateTime&lt;Utc&gt;,
     <span class="kw">pub </span>network: String,
-    <span class="kw">pub </span>default_wallet_address: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>default_wallet_address_balance: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>default_wallet_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    <span class="kw">pub </span>default_wallet_address_balance: <span class="prelude-ty">Option</span>&lt;TokenAmount&gt;,
 }
 
 <span class="attr">#[derive(Debug, strum::Display, PartialEq)]
@@ -386,8 +376,8 @@
         head: <span class="kw-2">&amp;</span>Tipset,
         start_time: DateTime&lt;Utc&gt;,
         network: String,
-        default_wallet_address: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        default_wallet_address_balance: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        default_wallet_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+        default_wallet_address_balance: <span class="prelude-ty">Option</span>&lt;TokenAmount&gt;,
     ) -&gt; NodeStatusInfo {
         <span class="kw">let </span>ts = head.min_timestamp() <span class="kw">as </span>i64;
         <span class="kw">let </span>cur_duration_secs = cur_duration.as_secs() <span class="kw">as </span>i64;
@@ -458,21 +448,15 @@
         <span class="kw">let </span>wallet_info = {
             <span class="kw">let </span>wallet_address = <span class="self">self
                 </span>.default_wallet_address
-                .clone()
+                .as_ref()
+                .map(|it| it.to_string())
                 .unwrap_or(<span class="string">"address not set"</span>.to_string());
 
-            <span class="kw">let </span>wallet_balance = <span class="kw">match </span><span class="self">self
+            <span class="kw">let </span>wallet_balance = <span class="self">self
                 </span>.default_wallet_address_balance
                 .as_ref()
-                .map(|s| balance(s))
-                .transpose()
-            {
-                <span class="prelude-val">Ok</span>(bal) =&gt; <span class="macro">format!</span>(
-                    <span class="string">"[balance: {}]"</span>,
-                    bal.unwrap_or(<span class="string">"could not find balance"</span>.to_string())
-                ),
-                <span class="prelude-val">Err</span>(e) =&gt; e.to_string(),
-            };
+                .map(|balance| <span class="macro">format!</span>(<span class="string">"{:.4}"</span>, balance.pretty()))
+                .unwrap_or(<span class="string">"could not find balance"</span>.to_string());
 
             <span class="macro">format!</span>(
                 <span class="string">"Default wallet address: {} [{}]"</span>,
@@ -492,15 +476,18 @@
             ChainHead::call(<span class="kw-2">&amp;</span>client, ()),
             api.state_network_name().map_err(ClientError::from),
             StartTime::call(<span class="kw-2">&amp;</span>client, ()),
-            api.wallet_default_address().map_err(ClientError::from),
+            WalletDefaultAddress::call(<span class="kw-2">&amp;</span>client, ()),
         )<span class="question-mark">?</span>;
+        <span class="kw">let </span>default_wallet_address = default_wallet_address.into_inner();
 
         <span class="kw">let </span>cur_duration: Duration = SystemTime::now().duration_since(UNIX_EPOCH)<span class="question-mark">?</span>;
         <span class="kw">let </span>blocks_per_tipset_last_finality =
             node_status.chain_status.blocks_per_tipset_last_finality;
 
-        <span class="kw">let </span>default_wallet_address_balance = <span class="kw">if let </span><span class="prelude-val">Some</span>(def_addr) = <span class="kw-2">&amp;</span>default_wallet_address {
-            <span class="kw">let </span>balance = api.wallet_balance(def_addr.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>default_wallet_address_balance = <span class="kw">if let </span><span class="prelude-val">Some</span>(def_addr) = default_wallet_address {
+            <span class="kw">let </span>balance = WalletBalance::call(<span class="kw-2">&amp;</span>client, (def_addr.into(),))
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner();
             <span class="prelude-val">Some</span>(balance)
         } <span class="kw">else </span>{
             <span class="prelude-val">None
@@ -512,7 +499,7 @@
             <span class="kw-2">&amp;</span>head.into_inner(),
             start_time,
             network,
-            default_wallet_address.clone(),
+            default_wallet_address,
             default_wallet_address_balance,
         );
 
@@ -520,11 +507,6 @@
 
         <span class="prelude-val">Ok</span>(())
     }
-}
-
-<span class="kw">fn </span>balance(bal: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;String, anyhow::Error&gt; {
-    <span class="kw">let </span>balance_token_amount = TokenAmount::from_atto(bal.parse::&lt;BigInt&gt;()<span class="question-mark">?</span>);
-    <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">"{:.4}"</span>, balance_token_amount.pretty()))
 }
 
 <span class="attr">#[cfg(test)]
@@ -559,7 +541,7 @@
             sync_status: SyncStatus::Ok,
             start_time: DateTime::&lt;chrono::Utc&gt;::MIN_UTC,
             network: <span class="string">"calibnet"</span>.to_string(),
-            default_wallet_address: <span class="prelude-val">Some</span>(<span class="string">"-"</span>.to_string()),
+            default_wallet_address: <span class="prelude-val">None</span>,
             default_wallet_address_balance: <span class="prelude-val">None</span>,
         }
     }

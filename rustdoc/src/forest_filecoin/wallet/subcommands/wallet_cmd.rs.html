@@ -576,6 +576,15 @@
 <a href="#574" id="574">574</a>
 <a href="#575" id="575">575</a>
 <a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -585,19 +594,22 @@
     str::{<span class="self">self</span>, FromStr},
 };
 
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>};
 <span class="kw">use crate</span>::{
     cli::humantoken,
     message::SignedMessage,
     rpc::{
         mpool::{MpoolGetNonce, MpoolPush, MpoolPushMessage},
         types::ApiTipsetKey,
-        RpcMethodExt <span class="kw">as _</span>,
     },
     shim::address::Address,
     ENCRYPTED_KEYSTORE_NAME,
 };
-<span class="kw">use crate</span>::{key_management::Key, utils::io::read_file_to_string};
-<span class="kw">use crate</span>::{key_management::KeyInfo, rpc_client::ApiInfo};
+<span class="kw">use crate</span>::{
+    key_management::{Key, KeyInfo},
+    rpc_client::ApiInfo,
+    utils::io::read_file_to_string,
+};
 <span class="kw">use crate</span>::{lotus_json::LotusJson, KeyStore};
 <span class="kw">use crate</span>::{
     shim::{
@@ -613,7 +625,6 @@
 <span class="kw">use </span>clap::{arg, Subcommand};
 <span class="kw">use </span>dialoguer::{console::Term, theme::ColorfulTheme, Password};
 <span class="kw">use </span>directories::ProjectDirs;
-<span class="kw">use </span>num::BigInt;
 <span class="kw">use </span>num::Zero <span class="kw">as _</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::cli::humantoken::TokenAmountPretty <span class="kw">as _</span>;
@@ -623,19 +634,19 @@
 // local wallet is available, no sensitive information will be sent to the
 // remote Filecoin node.
 </span><span class="kw">struct </span>WalletBackend {
-    <span class="kw">pub </span>remote: ApiInfo,
+    <span class="kw">pub </span>remote: rpc::Client,
     <span class="kw">pub </span>local: <span class="prelude-ty">Option</span>&lt;KeyStore&gt;,
 }
 
 <span class="kw">impl </span>WalletBackend {
-    <span class="kw">fn </span>new_remote(api: ApiInfo) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>new_remote(client: rpc::Client) -&gt; <span class="self">Self </span>{
         WalletBackend {
-            remote: api,
+            remote: client,
             local: <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">fn </span>new_local(api: ApiInfo, want_encryption: bool) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>new_local(client: rpc::Client, want_encryption: bool) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span><span class="prelude-val">Some</span>(dir) = ProjectDirs::from(<span class="string">"com"</span>, <span class="string">"ChainSafe"</span>, <span class="string">"Forest-Wallet"</span>) <span class="kw">else </span>{
             <span class="macro">bail!</span>(<span class="string">"Failed to find wallet directory"</span>);
         };
@@ -653,7 +664,7 @@
         </span>};
 
         <span class="prelude-val">Ok</span>(WalletBackend {
-            remote: api,
+            remote: client,
             local: <span class="prelude-val">Some</span>(keystore),
         })
     }
@@ -662,7 +673,7 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;</span><span class="self">self</span>.local {
             <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::key_management::list_addrs(keystore)<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_list().<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletList::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, ()).<span class="kw">await</span><span class="question-mark">?</span>.into_inner())
         }
     }
 
@@ -670,7 +681,9 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;</span><span class="self">self</span>.local {
             <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::key_management::export_key_info(<span class="kw-2">&amp;</span>address, keystore)<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_export(address.to_string()).<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletExport::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (address.into(),))
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner())
         }
     }
 
@@ -682,7 +695,10 @@
             keystore.put(<span class="kw-2">&amp;</span>addr, key.key_info)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(key.address.to_string())
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_import(<span class="macro">vec!</span>[key_info]).<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletImport::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (key_info.into(),))
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner()
+                .to_string())
         }
     }
 
@@ -690,7 +706,7 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;</span><span class="self">self</span>.local {
             <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::key_management::find_key(<span class="kw-2">&amp;</span>address, keystore).is_ok())
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_has(address.to_string()).<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletHas::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (address.into(),)).<span class="kw">await</span><span class="question-mark">?</span>)
         }
     }
 
@@ -698,7 +714,7 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.local {
             <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::key_management::remove_key(<span class="kw-2">&amp;</span>address, keystore)<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_delete(address.to_string()).<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletDelete::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (address.into(),)).<span class="kw">await</span><span class="question-mark">?</span>)
         }
     }
 
@@ -715,7 +731,10 @@
 
             <span class="prelude-val">Ok</span>(key.address.to_string())
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_new(signature_type).<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletNew::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (signature_type.into(),))
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner()
+                .to_string())
         }
     }
 
@@ -723,7 +742,10 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;</span><span class="self">self</span>.local {
             <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::key_management::get_default(keystore)<span class="question-mark">?</span>.map(|s| s.to_string()))
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_default_address().<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletDefaultAddress::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, ())
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner()
+                .map(|it| it.to_string()))
         }
     }
 
@@ -735,7 +757,7 @@
             </span>keystore.put(<span class="string">"default"</span>, key_info)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_set_default(address).<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(WalletSetDefault::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (address.into(),)).<span class="kw">await</span><span class="question-mark">?</span>)
         }
     }
 
@@ -749,10 +771,11 @@
                 <span class="kw-2">&amp;</span>BASE64_STANDARD.decode(message)<span class="question-mark">?</span>,
             )<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="self">self
-                </span>.remote
-                .wallet_sign(address, message.into_bytes())
-                .<span class="kw">await</span><span class="question-mark">?</span>)
+            <span class="prelude-val">Ok</span>(
+                WalletSign::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (address.into(), message.into_bytes().into()))
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.into_inner(),
+            )
         }
     }
 
@@ -766,7 +789,10 @@
             <span class="prelude-val">Ok</span>(signature.verify(<span class="kw-2">&amp;</span>msg, <span class="kw-2">&amp;</span>address).is_ok())
         } <span class="kw">else </span>{
             <span class="comment">// Relying on a remote server to validate signatures is not secure but it's useful for testing.
-            </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.remote.wallet_verify(address, msg, signature).<span class="kw">await</span><span class="question-mark">?</span>)
+            </span><span class="prelude-val">Ok</span>(
+                WalletVerify::call(<span class="kw-2">&amp;</span><span class="self">self</span>.remote, (address.into(), msg.into(), signature.into()))
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
+            )
         }
     }
 }
@@ -870,10 +896,11 @@
 }
 <span class="kw">impl </span>WalletCommands {
     <span class="kw">pub async fn </span>run(<span class="self">self</span>, api: ApiInfo, remote_wallet: bool, encrypt: bool) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>client = rpc::Client::from(api.clone());
         <span class="kw">let </span><span class="kw-2">mut </span>backend = <span class="kw">if </span>remote_wallet {
-            WalletBackend::new_remote(api)
+            WalletBackend::new_remote(client)
         } <span class="kw">else </span>{
-            WalletBackend::new_local(api, encrypt)<span class="question-mark">?
+            WalletBackend::new_local(client, encrypt)<span class="question-mark">?
         </span>};
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::New { signature_type } =&gt; {
@@ -887,7 +914,11 @@
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::Balance { address } =&gt; {
-                <span class="kw">let </span>balance = backend.remote.wallet_balance(address.to_string()).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>StrictAddress(address) = StrictAddress::from_str(<span class="kw-2">&amp;</span>address)
+                    .with_context(|| <span class="macro">format!</span>(<span class="string">"Invalid address: {address}"</span>))<span class="question-mark">?</span>;
+                <span class="kw">let </span>balance = WalletBalance::call(<span class="kw-2">&amp;</span>backend.remote, (address.into(),))
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.into_inner();
                 <span class="macro">println!</span>(<span class="string">"{balance}"</span>);
                 <span class="prelude-val">Ok</span>(())
             }
@@ -967,17 +998,16 @@
                 <span class="macro">println!</span>(<span class="string">"{title_address:41} {title_default_mark:7} {title_balance}"</span>);
 
                 <span class="kw">for </span>address <span class="kw">in </span>key_pairs {
-                    <span class="kw">let </span>addr = address.to_string();
-                    <span class="kw">let </span>default_address_mark = <span class="kw">if </span>default.as_ref() == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>addr) {
+                    <span class="kw">let </span>default_address_mark = <span class="kw">if </span>default.as_ref() == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>address.to_string()) {
                         <span class="string">"X"
                     </span>} <span class="kw">else </span>{
                         <span class="string">""
                     </span>};
 
-                    <span class="kw">let </span>balance_string = backend.remote.wallet_balance(addr.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-
                     <span class="kw">let </span>balance_token_amount =
-                        TokenAmount::from_atto(balance_string.parse::&lt;BigInt&gt;()<span class="question-mark">?</span>);
+                        WalletBalance::call(<span class="kw-2">&amp;</span>backend.remote, (address.into(),))
+                            .<span class="kw">await</span><span class="question-mark">?
+                            </span>.into_inner();
 
                     <span class="kw">let </span>balance_string = <span class="kw">match </span>(no_round, no_abbrev) {
                         <span class="comment">// no_round, absolute
@@ -990,7 +1020,7 @@
                         </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:.4}"</span>, balance_token_amount.pretty()),
                     };
 
-                    <span class="macro">println!</span>(<span class="string">"{addr:41}  {default_address_mark:7}  {balance_string}"</span>);
+                    <span class="macro">println!</span>(<span class="string">"{address:41}  {default_address_mark:7}  {balance_string}"</span>);
                 }
                 <span class="prelude-val">Ok</span>(())
             }
@@ -1012,10 +1042,9 @@
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::ValidateAddress { address } =&gt; {
-                <span class="kw">let </span>response = backend
-                    .remote
-                    .wallet_validate_address(address.to_string())
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>response = WalletValidateAddress::call(<span class="kw-2">&amp;</span>backend.remote, (address,))
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.into_inner();
                 <span class="macro">println!</span>(<span class="string">"{response}"</span>);
                 <span class="prelude-val">Ok</span>(())
             }
@@ -1071,8 +1100,7 @@
 
                 <span class="kw">let </span>signed_msg = <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;</span>backend.local {
                     <span class="kw">let </span>spec = <span class="prelude-val">None</span>;
-                    <span class="kw">let </span><span class="kw-2">mut </span>message = backend
-                        .remote
+                    <span class="kw">let </span><span class="kw-2">mut </span>message = api
                         .gas_estimate_message_gas(message, spec, ApiTipsetKey(<span class="prelude-val">None</span>))
                         .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -1080,11 +1108,8 @@
                         <span class="macro">anyhow::bail!</span>(<span class="string">"After estimation, gas premium is greater than gas fee cap"</span>)
                     }
 
-                    message.sequence = MpoolGetNonce::call(
-                        <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::Client::from(backend.remote.clone()),
-                        (LotusJson(from),),
-                    )
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                    message.sequence =
+                        MpoolGetNonce::call(<span class="kw-2">&amp;</span>backend.remote, (LotusJson(from),)).<span class="kw">await</span><span class="question-mark">?</span>;
 
                     <span class="kw">let </span>key = <span class="kw">crate</span>::key_management::find_key(<span class="kw-2">&amp;</span>from, keystore)<span class="question-mark">?</span>;
                     <span class="kw">let </span>sig = <span class="kw">crate</span>::key_management::sign(
@@ -1095,19 +1120,12 @@
 
                     <span class="kw">let </span>smsg = SignedMessage::new_from_parts(message, sig)<span class="question-mark">?</span>;
 
-                    MpoolPush::call(
-                        <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::Client::from(backend.remote.clone()),
-                        (LotusJson(smsg.clone()),),
-                    )
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                    MpoolPush::call(<span class="kw-2">&amp;</span>backend.remote, (LotusJson(smsg.clone()),)).<span class="kw">await</span><span class="question-mark">?</span>;
                     smsg
                 } <span class="kw">else </span>{
-                    MpoolPushMessage::call(
-                        <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::Client::from(backend.remote.clone()),
-                        (LotusJson(message), <span class="prelude-val">None</span>),
-                    )
-                    .<span class="kw">await</span><span class="question-mark">?
-                    </span>.into_inner()
+                    MpoolPushMessage::call(<span class="kw-2">&amp;</span>backend.remote, (LotusJson(message), <span class="prelude-val">None</span>))
+                        .<span class="kw">await</span><span class="question-mark">?
+                        </span>.into_inner()
                 };
 
                 <span class="macro">println!</span>(<span class="string">"{}"</span>, signed_msg.cid().unwrap());

@@ -69,14 +69,12 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::str::FromStr <span class="kw">as _</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>};
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{Address, StrictAddress};
 <span class="kw">use </span><span class="kw">crate</span>::shim::econ::TokenAmount;
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::{Message, METHOD_SEND};
@@ -104,20 +102,20 @@
 }
 
 <span class="kw">impl </span>SendCommand {
-    <span class="kw">pub async fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">pub async fn </span>run(<span class="self">self</span>, client: rpc::Client) -&gt; anyhow::Result&lt;()&gt; {
         <span class="macro">eprintln!</span>(
             <span class="string">"This command has been deprecated and will be removed in the future.\n\
              Please use the 'forest-wallet' executable instead."
         </span>);
 
-        <span class="kw">let </span>from: Address =
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(from) = <span class="kw-2">&amp;</span><span class="self">self</span>.from {
-                StrictAddress::from_str(from)<span class="question-mark">?</span>.into()
-            } <span class="kw">else </span>{
-                Address::from_str(<span class="kw-2">&amp;</span>api.wallet_default_address().<span class="kw">await</span><span class="question-mark">?</span>.context(
-                    <span class="string">"No default wallet address selected. Please set a default address."</span>,
-                )<span class="question-mark">?</span>)<span class="question-mark">?
-            </span>};
+        <span class="kw">let </span>from: Address = <span class="kw">if let </span><span class="prelude-val">Some</span>(from) = <span class="kw-2">&amp;</span><span class="self">self</span>.from {
+            StrictAddress::from_str(from)<span class="question-mark">?</span>.into()
+        } <span class="kw">else </span>{
+            WalletDefaultAddress::call(<span class="kw-2">&amp;</span>client, ())
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner()
+                .context(<span class="string">"No default wallet address selected. Please set a default address."</span>)<span class="question-mark">?
+        </span>};
 
         <span class="kw">let </span>message = Message {
             from,
@@ -131,7 +129,7 @@
             </span>..Default::default()
         };
 
-        <span class="kw">let </span>signed_msg = MpoolPushMessage::call(<span class="kw-2">&amp;</span>rpc::Client::from(api), (message.into(), <span class="prelude-val">None</span>))
+        <span class="kw">let </span>signed_msg = MpoolPushMessage::call(<span class="kw-2">&amp;</span>client, (message.into(), <span class="prelude-val">None</span>))
             .<span class="kw">await</span><span class="question-mark">?
             </span>.into_inner();
 

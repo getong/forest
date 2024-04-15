@@ -492,7 +492,7 @@
 
 <span class="macro">thread_local! </span>{
     <span class="comment">// Thread local network identifier. Defaults to value in GLOBAL_NETWORK.
-    </span><span class="kw">static </span>LOCAL_NETWORK: AtomicU8 = AtomicU8::new(GLOBAL_NETWORK.load(Ordering::Relaxed));
+    </span><span class="kw">static </span>LOCAL_NETWORK: AtomicU8 = AtomicU8::new(GLOBAL_NETWORK.load(Ordering::Acquire));
 }
 
 <span class="doccomment">/// For user safety, Filecoin has different addresses for its mainnet and test networks: Mainnet
@@ -507,16 +507,16 @@
 </span><span class="kw">pub struct </span>CurrentNetwork();
 <span class="kw">impl </span>CurrentNetwork {
     <span class="kw">pub fn </span>get() -&gt; Network {
-        FromPrimitive::from_u8(LOCAL_NETWORK.with(|ident| ident.load(Ordering::Relaxed)))
+        FromPrimitive::from_u8(LOCAL_NETWORK.with(|ident| ident.load(Ordering::Acquire)))
             .unwrap_or(Network::Mainnet)
     }
 
     <span class="kw">pub fn </span>set(network: Network) {
-        LOCAL_NETWORK.with(|ident| ident.store(network <span class="kw">as </span>u8, Ordering::Relaxed));
+        LOCAL_NETWORK.with(|ident| ident.store(network <span class="kw">as </span>u8, Ordering::Release));
     }
 
     <span class="kw">pub fn </span>set_global(network: Network) {
-        GLOBAL_NETWORK.store(network <span class="kw">as </span>u8, Ordering::Relaxed);
+        GLOBAL_NETWORK.store(network <span class="kw">as </span>u8, Ordering::Release);
         CurrentNetwork::set(network);
     }
 
@@ -530,7 +530,7 @@
 
     <span class="attr">#[cfg(test)]
     </span><span class="kw">fn </span>get_global() -&gt; Network {
-        FromPrimitive::from_u8(GLOBAL_NETWORK.load(Ordering::Relaxed)).unwrap_or(Network::Mainnet)
+        FromPrimitive::from_u8(GLOBAL_NETWORK.load(Ordering::Acquire)).unwrap_or(Network::Mainnet)
     }
 }
 
