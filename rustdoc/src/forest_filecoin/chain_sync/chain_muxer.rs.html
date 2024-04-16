@@ -1032,6 +1032,9 @@
 <a href="#1030" id="1030">1030</a>
 <a href="#1031" id="1031">1031</a>
 <a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1058,6 +1061,7 @@
     try_join, StreamExt,
 };
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>thiserror::Error;
@@ -1264,20 +1268,22 @@
         chain_store: Arc&lt;ChainStore&lt;DB&gt;&gt;,
         tipset_keys: TipsetKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;FullTipset, ChainMuxerError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>blocks = Vec::new();
         <span class="comment">// Retrieve tipset from store based on passed in TipsetKey
         </span><span class="kw">let </span>ts = chain_store.chain_index.load_required_tipset(<span class="kw-2">&amp;</span>tipset_keys)<span class="question-mark">?</span>;
-        <span class="kw">for </span>header <span class="kw">in </span>ts.block_headers() {
-            <span class="comment">// Retrieve bls and secp messages from specified BlockHeader
-            </span><span class="kw">let </span>(bls_msgs, secp_msgs) =
-                <span class="kw">crate</span>::chain::block_messages(chain_store.blockstore(), header)<span class="question-mark">?</span>;
-            <span class="comment">// Construct a full block
-            </span>blocks.push(Block {
-                header: header.clone(),
-                bls_messages: bls_msgs,
-                secp_messages: secp_msgs,
-            });
-        }
+
+        <span class="kw">let </span>blocks: Vec&lt;<span class="kw">_</span>&gt; = ts
+            .block_headers()
+            .iter()
+            .map(|header| -&gt; <span class="prelude-ty">Result</span>&lt;Block, ChainMuxerError&gt; {
+                <span class="kw">let </span>(bls_msgs, secp_msgs) =
+                    <span class="kw">crate</span>::chain::block_messages(chain_store.blockstore(), header)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(Block {
+                    header: header.clone(),
+                    bls_messages: bls_msgs,
+                    secp_messages: secp_msgs,
+                })
+            })
+            .try_collect()<span class="question-mark">?</span>;
 
         <span class="comment">// Construct FullTipset
         </span><span class="kw">let </span>fts = FullTipset::new(blocks)<span class="question-mark">?</span>;
