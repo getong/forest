@@ -201,56 +201,137 @@
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
-</span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncState;
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::types::RPCSyncState;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
-
-<span class="kw">use </span>anyhow::Result;
+</span><span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiVersion, Ctx, RpcMethod, ServerError};
+<span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpsee::types::Params;
-<span class="kw">use </span>nonempty::nonempty;
-<span class="kw">use </span>parking_lot::RwLock;
+<span class="kw">use </span>nonempty::{nonempty, NonEmpty};
+<span class="kw">use </span>schemars::JsonSchema;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">pub const </span>SYNC_CHECK_BAD: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.SyncCheckBad"</span>;
-<span class="kw">pub const </span>SYNC_MARK_BAD: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.SyncMarkBad"</span>;
-<span class="kw">pub const </span>SYNC_STATE: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.SyncState"</span>;
+<span class="macro">macro_rules! </span>for_each_method {
+    (<span class="macro-nonterminal">$callback</span>:ident) =&gt; {
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::sync::SyncCheckBad</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::sync::SyncMarkBad</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::sync::SyncState</span>);
+    };
+}
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
 
-<span class="doccomment">/// Checks if a given block is marked as bad.
-</span><span class="kw">pub async fn </span>sync_check_bad&lt;DB: Blockstore&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, ServerError&gt; {
-    <span class="kw">let </span>LotusJson((cid,)) = params.parse()<span class="question-mark">?</span>;
+<span class="kw">pub enum </span>SyncCheckBad {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>SyncCheckBad {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.SyncCheckBad"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="prelude-val">Ok</span>(data.bad_blocks.peek(<span class="kw-2">&amp;</span>cid).unwrap_or_default())
+    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= String;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (LotusJson(cid),): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="prelude-val">Ok</span>(ctx.bad_blocks.peek(<span class="kw-2">&amp;</span>cid).unwrap_or_default())
+    }
 }
 
-<span class="doccomment">/// Marks a block as bad, meaning it will never be synced.
-</span><span class="kw">pub async fn </span>sync_mark_bad&lt;DB: Blockstore&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), ServerError&gt; {
-    <span class="kw">let </span>LotusJson((cid,)) = params.parse()<span class="question-mark">?</span>;
+<span class="kw">pub enum </span>SyncMarkBad {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">1</span>&gt; <span class="kw">for </span>SyncMarkBad {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.SyncMarkBad"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    data.bad_blocks
-        .put(cid, <span class="string">"Marked bad manually through RPC API"</span>.to_string());
-    <span class="prelude-val">Ok</span>(())
+    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= ();
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (LotusJson(cid),): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        ctx.bad_blocks
+            .put(cid, <span class="string">"Marked bad manually through RPC API"</span>.to_string());
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 
-<span class="kw">async fn </span>clone_state(state: <span class="kw-2">&amp;</span>RwLock&lt;SyncState&gt;) -&gt; SyncState {
-    state.read().clone()
+<span class="kw">pub enum </span>SyncState {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">0</span>&gt; <span class="kw">for </span>SyncState {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.SyncState"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">0</span>] = [];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+
+    <span class="kw">type </span>Params = ();
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= RPCSyncState;
+
+    <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>active_syncs = LotusJson(<span class="macro">nonempty!</span>[ctx.sync_state.as_ref().read().clone()]);
+        <span class="prelude-val">Ok</span>(RPCSyncState { active_syncs })
+    }
 }
 
-<span class="doccomment">/// Returns the current status of the `ChainSync` process.
-</span><span class="kw">pub async fn </span>sync_state&lt;DB: Blockstore&gt;(data: Ctx&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;RPCSyncState, ServerError&gt; {
-    <span class="kw">let </span>active_syncs = <span class="macro">nonempty!</span>[clone_state(data.sync_state.as_ref()).<span class="kw">await</span>];
-    <span class="prelude-val">Ok</span>(RPCSyncState { active_syncs })
+<span class="attr">#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = <span class="string">"PascalCase"</span>)]
+</span><span class="kw">pub struct </span>RPCSyncState {
+    <span class="kw">pub </span>active_syncs: LotusJson&lt;NonEmpty&lt;<span class="kw">crate</span>::chain_sync::SyncState&gt;&gt;,
+}
+
+<span class="attr">#[derive(JsonSchema)]
+#[serde(rename_all = <span class="string">"PascalCase"</span>)]
+#[allow(unused)]
+</span><span class="kw">struct </span>Helper {
+    <span class="kw">pub </span>active_syncs: LotusJson&lt;Vec&lt;<span class="kw">crate</span>::chain_sync::SyncState&gt;&gt;,
+}
+
+<span class="kw">impl </span>JsonSchema <span class="kw">for </span>RPCSyncState {
+    <span class="kw">fn </span>schema_name() -&gt; String {
+        Helper::schema_name()
+    }
+
+    <span class="kw">fn </span>json_schema(gen: <span class="kw-2">&amp;mut </span>schemars::gen::SchemaGenerator) -&gt; schemars::schema::Schema {
+        Helper::json_schema(gen)
+    }
 }
 
 <span class="attr">#[cfg(test)]
@@ -271,7 +352,6 @@
     <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address;
     <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
     <span class="kw">use </span><span class="kw">crate</span>::utils::encoding::from_slice_with_fallback;
-    <span class="kw">use </span>jsonrpsee::types::params::Params;
     <span class="kw">use </span>tokio::sync::mpsc;
     <span class="kw">use </span>tokio::{sync::RwLock, task::JoinSet};
 
@@ -279,7 +359,7 @@
 
     <span class="kw">const </span>TEST_NET_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"test"</span>;
 
-    <span class="kw">fn </span>state_setup() -&gt; (Arc&lt;RPCState&lt;MemoryDB&gt;&gt;, flume::Receiver&lt;NetworkMessage&gt;) {
+    <span class="kw">fn </span>ctx() -&gt; (Arc&lt;RPCState&lt;MemoryDB&gt;&gt;, flume::Receiver&lt;NetworkMessage&gt;) {
         <span class="kw">let </span>beacon = Arc::new(BeaconSchedule(<span class="macro">vec!</span>[BeaconPoint {
             height: <span class="number">0</span>,
             beacon: Box::&lt;MockBeacon&gt;::default(),
@@ -354,52 +434,50 @@
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>set_check_bad() {
-        <span class="kw">let </span>(state, <span class="kw">_</span>) = state_setup();
+        <span class="kw">let </span>(ctx, <span class="kw">_</span>) = ctx();
 
-        <span class="kw">let </span>cid = <span class="string">r#"[{"/":"bafy2bzacea3wsdh6y3a36tb3skempjoxqpuyompjbmfeyf34fi3uy6uue42v4"}]"#</span>;
+        <span class="kw">let </span>cid = <span class="string">"bafy2bzacea3wsdh6y3a36tb3skempjoxqpuyompjbmfeyf34fi3uy6uue42v4"
+            </span>.parse::&lt;Cid&gt;()
+            .unwrap();
 
-        <span class="kw">match </span>sync_check_bad(Params::new(<span class="prelude-val">Some</span>(cid)), state.clone()).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(reason) =&gt; <span class="macro">assert_eq!</span>(reason, <span class="string">""</span>),
-            <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
-        }
+        <span class="kw">let </span>reason = SyncCheckBad::handle(ctx.clone(), (cid.into(),))
+            .<span class="kw">await
+            </span>.unwrap();
+        <span class="macro">assert_eq!</span>(reason, <span class="string">""</span>);
 
         <span class="comment">// Mark that block as bad manually and check again to verify
-        </span><span class="macro">assert!</span>(sync_mark_bad(Params::new(<span class="prelude-val">Some</span>(cid)), state.clone())
+        </span>SyncMarkBad::handle(ctx.clone(), (cid.into(),))
             .<span class="kw">await
-            </span>.is_ok());
-        <span class="kw">match </span>sync_check_bad(Params::new(<span class="prelude-val">Some</span>(cid)), state.clone()).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(reason) =&gt; <span class="macro">assert_eq!</span>(reason, <span class="string">"Marked bad manually through RPC API"</span>),
-            <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
-        }
+            </span>.unwrap();
+
+        <span class="kw">let </span>reason = SyncCheckBad::handle(ctx.clone(), (cid.into(),))
+            .<span class="kw">await
+            </span>.unwrap();
+        <span class="macro">assert_eq!</span>(reason, <span class="string">"Marked bad manually through RPC API"</span>);
     }
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>sync_state_test() {
-        <span class="kw">let </span>(state, <span class="kw">_</span>) = state_setup();
+        <span class="kw">let </span>(ctx, <span class="kw">_</span>) = ctx();
 
-        <span class="kw">let </span>st_copy = state.sync_state.clone();
+        <span class="kw">let </span>st_copy = ctx.sync_state.clone();
 
-        <span class="kw">match </span>sync_state(state.clone()).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(ret) =&gt; <span class="macro">assert_eq!</span>(
-                ret.active_syncs,
-                <span class="macro">nonempty!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]
-            ),
-            <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
-        }
+        <span class="kw">let </span>ret = SyncState::handle(ctx.clone(), ()).<span class="kw">await</span>.unwrap();
+        <span class="macro">assert_eq!</span>(
+            ret.active_syncs,
+            <span class="macro">nonempty!</span>[st_copy.as_ref().read().clone()].into()
+        );
 
         <span class="comment">// update cloned state
         </span>st_copy.write().set_stage(SyncStage::Messages);
         st_copy.write().set_epoch(<span class="number">4</span>);
 
-        <span class="kw">match </span>sync_state(state.clone()).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(ret) =&gt; {
-                <span class="macro">assert_eq!</span>(
-                    ret.active_syncs,
-                    <span class="macro">nonempty!</span>[clone_state(st_copy.as_ref()).<span class="kw">await</span>]
-                );
-            }
-            <span class="prelude-val">Err</span>(e) =&gt; std::panic::panic_any(e),
-        }
+        <span class="kw">let </span>ret = SyncState::handle(ctx.clone(), ()).<span class="kw">await</span>.unwrap();
+
+        <span class="macro">assert_eq!</span>(
+            ret.active_syncs,
+            <span class="macro">nonempty!</span>[st_copy.as_ref().read().clone()].into()
+        );
     }
 }
 </code></pre></div></section></main></body></html>

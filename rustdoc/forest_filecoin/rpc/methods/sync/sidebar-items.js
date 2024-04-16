@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["SYNC_CHECK_BAD","SYNC_MARK_BAD","SYNC_STATE"],"fn":["clone_state","sync_check_bad","sync_mark_bad","sync_state"]};
+window.SIDEBAR_ITEMS = {"enum":["SyncCheckBad","SyncMarkBad","SyncState"],"macro":["for_each_method"],"struct":["Helper","RPCSyncState"]};

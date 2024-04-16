@@ -420,9 +420,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, HasLotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::sync::sync_state;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::types::RPCSyncState;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::Ctx;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{Ctx, RpcMethod};
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::Address <span class="kw">as </span>FilecoinAddress;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{clock::ChainEpoch, state_tree::StateTree};
 <span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
@@ -731,13 +729,15 @@
     <span class="prelude-val">Ok</span>(BigInt(actor.balance.atto().clone()))
 }
 
-<span class="kw">pub async fn </span>eth_syncing&lt;DB: Blockstore&gt;(
+<span class="kw">pub async fn </span>eth_syncing&lt;DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>&gt;(
     _params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Ctx&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;EthSyncingResult&gt;, ServerError&gt; {
-    <span class="kw">let </span>RPCSyncState { active_syncs } = sync_state(data).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw">crate</span>::rpc::sync::RPCSyncState { active_syncs } =
+        <span class="kw">crate</span>::rpc::sync::SyncState::handle(data.clone(), ()).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">match </span>active_syncs
-        .iter()
+        .into_inner()
+        .into_iter()
         .rev()
         .find_or_first(|ss| ss.stage() != SyncStage::Idle)
     {
