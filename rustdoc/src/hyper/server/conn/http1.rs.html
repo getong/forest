@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.2.0/src/server/conn/http1.rs`."><title>http1.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0 (aedd173a2 2024-03-17)" data-channel="1.77.0" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/hyper-1.3.0/src/server/conn/http1.rs`."><title>http1.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hyper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0 (aedd173a2 2024-03-17)" data-channel="1.77.0" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../hyper/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -508,6 +508,17 @@
 <a href="#506" id="506">506</a>
 <a href="#507" id="507">507</a>
 <a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! HTTP/1 Server Connections
 
 </span><span class="kw">use </span>std::error::Error <span class="kw">as </span>StdError;
@@ -567,7 +578,7 @@
 /// # fn main() {
 /// let mut http = Builder::new();
 /// // Set options one at a time
-/// http.header_read_timeout(Duration::from_millis(200));
+/// http.half_close(false);
 ///
 /// // Or, chain multiple options
 /// http.keep_alive(false).title_case_headers(true).max_buf_size(8192);
@@ -596,6 +607,7 @@
 /// This allows taking apart a `Connection` at a later time, in order to
 /// reclaim the IO object, and additional related pieces.
 </span><span class="attr">#[derive(Debug)]
+#[non_exhaustive]
 </span><span class="kw">pub struct </span>Parts&lt;T, S&gt; {
     <span class="doccomment">/// The original IO object used in the handshake.
     </span><span class="kw">pub </span>io: T,
@@ -610,7 +622,6 @@
     </span><span class="kw">pub </span>read_buf: Bytes,
     <span class="doccomment">/// The `Service` used to serve this connection.
     </span><span class="kw">pub </span>service: S,
-    _inner: (),
 }
 
 <span class="comment">// ===== impl Connection =====
@@ -661,7 +672,6 @@
             io,
             read_buf,
             service: dispatch.into_service(),
-            _inner: (),
         }
     }
 
@@ -715,7 +725,7 @@
 <span class="kw">where
     </span>S: HttpService&lt;IncomingBody, ResBody = B&gt;,
     S::Error: Into&lt;Box&lt;<span class="kw">dyn </span>StdError + Send + Sync&gt;&gt;,
-    I: Read + Write + Unpin + <span class="lifetime">'static</span>,
+    I: Read + Write + Unpin,
     B: Body + <span class="lifetime">'static</span>,
     B::Error: Into&lt;Box&lt;<span class="kw">dyn </span>StdError + Send + Sync&gt;&gt;,
 {
@@ -825,6 +835,9 @@
 
     <span class="doccomment">/// Set a timeout for reading client request headers. If a client does not
     /// transmit the entire header within this time, the connection is closed.
+    ///
+    /// Requires a [`Timer`] set by [`Builder::timer`] to take effect. Panics if `header_read_timeout` is configured
+    /// without a [`Timer`].
     ///
     /// Pass `None` to disable.
     ///
@@ -990,7 +1003,11 @@
     /// This `Connection` should continue to be polled until shutdown
     /// can finish.
     </span><span class="kw">pub fn </span>graceful_shutdown(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;) {
-        Pin::new(<span class="self">self</span>.inner.as_mut().unwrap()).graceful_shutdown()
+        <span class="comment">// Connection (`inner`) is `None` if it was upgraded (and `poll` is `Ready`).
+        // In that case, we don't need to call `graceful_shutdown`.
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(conn) = <span class="self">self</span>.inner.as_mut() {
+            Pin::new(conn).graceful_shutdown()
+        }
     }
 }
 
@@ -1005,14 +1022,19 @@
     <span class="kw">type </span>Output = <span class="kw">crate</span>::Result&lt;()&gt;;
 
     <span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
-        <span class="kw">match </span><span class="macro">ready!</span>(Pin::new(<span class="kw-2">&amp;mut </span><span class="self">self</span>.inner.as_mut().unwrap().conn).poll(cx)) {
-            <span class="prelude-val">Ok</span>(proto::Dispatched::Shutdown) =&gt; Poll::Ready(<span class="prelude-val">Ok</span>(())),
-            <span class="prelude-val">Ok</span>(proto::Dispatched::Upgrade(pending)) =&gt; {
-                <span class="kw">let </span>(io, buf, <span class="kw">_</span>) = <span class="self">self</span>.inner.take().unwrap().conn.into_inner();
-                pending.fulfill(Upgraded::new(io, buf));
-                Poll::Ready(<span class="prelude-val">Ok</span>(()))
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(conn) = <span class="self">self</span>.inner.as_mut() {
+            <span class="kw">match </span><span class="macro">ready!</span>(Pin::new(<span class="kw-2">&amp;mut </span>conn.conn).poll(cx)) {
+                <span class="prelude-val">Ok</span>(proto::Dispatched::Shutdown) =&gt; Poll::Ready(<span class="prelude-val">Ok</span>(())),
+                <span class="prelude-val">Ok</span>(proto::Dispatched::Upgrade(pending)) =&gt; {
+                    <span class="kw">let </span>(io, buf, <span class="kw">_</span>) = <span class="self">self</span>.inner.take().unwrap().conn.into_inner();
+                    pending.fulfill(Upgraded::new(io, buf));
+                    Poll::Ready(<span class="prelude-val">Ok</span>(()))
+                }
+                <span class="prelude-val">Err</span>(e) =&gt; Poll::Ready(<span class="prelude-val">Err</span>(e)),
             }
-            <span class="prelude-val">Err</span>(e) =&gt; Poll::Ready(<span class="prelude-val">Err</span>(e)),
+        } <span class="kw">else </span>{
+            <span class="comment">// inner is `None`, meaning the connection was upgraded, thus it's `Poll::Ready(Ok(()))`
+            </span>Poll::Ready(<span class="prelude-val">Ok</span>(()))
         }
     }
 }
