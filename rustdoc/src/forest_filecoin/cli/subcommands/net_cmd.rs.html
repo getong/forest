@@ -174,13 +174,11 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::libp2p::{Multiaddr, Protocol};
-<span class="kw">use </span><span class="kw">crate</span>::rpc::types::AddrInfo;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, net::AddrInfo, prelude::<span class="kw-2">*</span>};
 <span class="kw">use </span>ahash::{HashMap, HashSet};
 <span class="kw">use </span>cid::multibase;
 <span class="kw">use </span>clap::Subcommand;
@@ -215,10 +213,10 @@
 }
 
 <span class="kw">impl </span>NetCommands {
-    <span class="kw">pub async fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">pub async fn </span>run(<span class="self">self</span>, client: rpc::Client) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Listen =&gt; {
-                <span class="kw">let </span>info = api.net_addrs_listen().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>info = NetAddrsListen::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span>addresses: Vec&lt;String&gt; = info
                     .addrs
                     .iter()
@@ -228,7 +226,7 @@
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::Info =&gt; {
-                <span class="kw">let </span>info = api.net_info().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>info = NetInfo::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"forest libp2p swarm info:"</span>);
                 <span class="macro">println!</span>(<span class="string">"num peers: {}"</span>, info.num_peers);
                 <span class="macro">println!</span>(<span class="string">"num connections: {}"</span>, info.num_connections);
@@ -239,12 +237,12 @@
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::Peers { agent } =&gt; {
-                <span class="kw">let </span>addrs = api.net_peers().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>addrs = NetPeers::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span>peer_to_agents: HashMap&lt;String, String&gt; = <span class="kw">if </span>agent {
                     <span class="kw">let </span>agents = futures::future::join_all(
                         addrs
                             .iter()
-                            .map(|info| api.net_agent_version(info.id.to_owned())),
+                            .map(|info| NetAgentVersion::call(<span class="kw-2">&amp;</span>client, (info.id.clone(),))),
                     )
                     .<span class="kw">await
                     </span>.into_iter()
@@ -326,17 +324,17 @@
                     addrs,
                 };
 
-                api.net_connect(addr_info).<span class="kw">await</span><span class="question-mark">?</span>;
+                NetConnect::call(<span class="kw-2">&amp;</span>client, (addr_info,)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"connect {id}: success"</span>);
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::Disconnect { id } =&gt; {
-                api.net_disconnect(id.to_owned()).<span class="kw">await</span><span class="question-mark">?</span>;
+                NetDisconnect::call(<span class="kw-2">&amp;</span>client, (id.clone(),)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"disconnect {id}: success"</span>);
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::Reachability =&gt; {
-                <span class="kw">let </span>nat_status = api.net_auto_nat_status().<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>nat_status = NetAutoNatStatus::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"AutoNAT status:  {}"</span>, nat_status.reachability_as_str());
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(public_addrs) = nat_status.public_addrs {
                     <span class="kw">if </span>!public_addrs.is_empty() {
