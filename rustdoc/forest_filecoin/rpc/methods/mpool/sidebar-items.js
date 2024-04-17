@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["MpoolGetNonce","MpoolPending","MpoolPush","MpoolPushMessage"],"macro":["for_each_method"]};
+window.SIDEBAR_ITEMS = {"enum":["MpoolGetNonce","MpoolPending","MpoolPush","MpoolPushMessage","MpoolSelect"],"macro":["for_each_method"]};
