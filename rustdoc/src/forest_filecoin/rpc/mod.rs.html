@@ -388,6 +388,44 @@
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -444,6 +482,43 @@
 }
 
 <span class="doccomment">/// All the methods live in their own folder
+///
+/// # Handling types
+/// - If a `struct` or `enum` is only used in the RPC API, it should live in `src/rpc`.
+///   - If it is used in only one API vertical (i.e `auth` or `chain`), then it should live
+///     in either:
+///     - `src/rpc/methods/auth.rs` (if there are only a few).
+///     - `src/rpc/methods/auth/types.rs` (if there are so many that they would cause clutter).
+///   - If it is used _across_ API verticals, it should live in `src/rpc/types.rs`
+///
+/// # Interactions with the [`lotus_json`] APIs
+/// - Types defined in the module will only ever be deserialized as JSON, so there
+///   will NEVER be a need to implement [`HasLotusJson`] for them.
+/// - Types may have fields which must go through [`LotusJson`],
+///   and must reflect that in their [`JsonSchema`].
+///   You have two options for this:
+///   - Use `#[attributes]` to control serialization and schema generation:
+///     ```ignore
+///     #[derive(Deserialize, Serialize, JsonSchema)]
+///     struct Foo {
+///         #[serde(with = "crate::lotus_json")] // perform the conversion
+///         #[schemars(with = "LotusJson&lt;Cid&gt;")] // advertise the schema to be converted
+///         cid: Cid, // use the native type in application logic
+///     }
+///     ```
+///   - Use [`LotusJson`] directly. This means that serialization and the [`JsonSchema`]
+///     will never go out of sync.
+///     ```ignore
+///     #[derive(Deserialize, Serialize, JsonSchema)]
+///     struct Foo {
+///         cid: LotusJson&lt;Cid&gt;, // use the shim type in application logic, manually performing conversions
+///     }
+///     ```
+///
+/// [`lotus_json`]: crate::lotus_json
+/// [`HasLotusJson`]: crate::lotus_json::HasLotusJson
+/// [`LotusJson`]: crate::lotus_json::LotusJson
+/// [`JsonSchema`]: schemars::JsonSchema
 </span><span class="kw">mod </span>methods {
     <span class="kw">pub mod </span>auth;
     <span class="kw">pub mod </span>beacon;
@@ -727,6 +802,7 @@
     // `cargo test --lib -- --exact 'rpc::tests::openrpc'`
     // `cargo insta review`
     </span><span class="attr">#[tokio::test]
+    #[ignore = <span class="string">"https://github.com/ChainSafe/forest/issues/4032"</span>]
     </span><span class="kw">async fn </span>openrpc() {
         <span class="kw">let </span>(<span class="kw">_</span>, spec) = create_module(Arc::new(RPCState::calibnet()));
         <span class="macro">insta::assert_yaml_snapshot!</span>(spec);

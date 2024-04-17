@@ -1087,35 +1087,6 @@
 <a href="#1085" id="1085">1085</a>
 <a href="#1086" id="1086">1086</a>
 <a href="#1087" id="1087">1087</a>
-<a href="#1088" id="1088">1088</a>
-<a href="#1089" id="1089">1089</a>
-<a href="#1090" id="1090">1090</a>
-<a href="#1091" id="1091">1091</a>
-<a href="#1092" id="1092">1092</a>
-<a href="#1093" id="1093">1093</a>
-<a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
-<a href="#1096" id="1096">1096</a>
-<a href="#1097" id="1097">1097</a>
-<a href="#1098" id="1098">1098</a>
-<a href="#1099" id="1099">1099</a>
-<a href="#1100" id="1100">1100</a>
-<a href="#1101" id="1101">1101</a>
-<a href="#1102" id="1102">1102</a>
-<a href="#1103" id="1103">1103</a>
-<a href="#1104" id="1104">1104</a>
-<a href="#1105" id="1105">1105</a>
-<a href="#1106" id="1106">1106</a>
-<a href="#1107" id="1107">1107</a>
-<a href="#1108" id="1108">1108</a>
-<a href="#1109" id="1109">1109</a>
-<a href="#1110" id="1110">1110</a>
-<a href="#1111" id="1111">1111</a>
-<a href="#1112" id="1112">1112</a>
-<a href="#1113" id="1113">1113</a>
-<a href="#1114" id="1114">1114</a>
-<a href="#1115" id="1115">1115</a>
-<a href="#1116" id="1116">1116</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1125,7 +1096,6 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::index::ResolveNullTipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::{ChainStore, HeadChange};
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::lotus_json_with_self;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="attr">#[cfg(test)]
@@ -1213,7 +1183,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;ApiMessage&gt;&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;ApiMessage&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1224,11 +1194,11 @@
             .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
         <span class="kw">if </span>block_header.epoch == <span class="number">0 </span>{
-            <span class="prelude-val">Ok</span>(LotusJson(<span class="macro">vec!</span>[]))
+            <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[])
         } <span class="kw">else </span>{
             <span class="kw">let </span>parent_tipset = Tipset::load_required(store, <span class="kw-2">&amp;</span>block_header.parents)<span class="question-mark">?</span>;
             <span class="kw">let </span>messages = load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>parent_tipset)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(LotusJson(messages))
+            <span class="prelude-val">Ok</span>(messages)
         }
     }
 }
@@ -1240,7 +1210,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;ApiReceipt&gt;&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;ApiReceipt&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1252,7 +1222,7 @@
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>receipts = Vec::new();
         <span class="kw">if </span>block_header.epoch == <span class="number">0 </span>{
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(LotusJson(<span class="macro">vec!</span>[]));
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
         }
 
         <span class="comment">// Try Receipt_v4 first. (Receipt_v4 and Receipt_v3 are identical, use v4 here)
@@ -1272,9 +1242,9 @@
             amt.for_each(|<span class="kw">_</span>, receipt| {
                 receipts.push(ApiReceipt {
                     exit_code: receipt.exit_code.into(),
-                    return_data: receipt.return_data.clone().into(),
+                    return_data: receipt.return_data.clone(),
                     gas_used: receipt.gas_used,
-                    events_root: receipt.events_root.into(),
+                    events_root: receipt.events_root,
                 });
                 <span class="prelude-val">Ok</span>(())
             })<span class="question-mark">?</span>;
@@ -1297,15 +1267,15 @@
             amt.for_each(|<span class="kw">_</span>, receipt| {
                 receipts.push(ApiReceipt {
                     exit_code: receipt.exit_code.into(),
-                    return_data: receipt.return_data.clone().into(),
+                    return_data: receipt.return_data.clone(),
                     gas_used: receipt.gas_used <span class="kw">as _</span>,
-                    events_root: <span class="prelude-val">None</span>.into(),
+                    events_root: <span class="prelude-val">None</span>,
                 });
                 <span class="prelude-val">Ok</span>(())
             })<span class="question-mark">?</span>;
         }
 
-        <span class="prelude-val">Ok</span>(LotusJson(receipts))
+        <span class="prelude-val">Ok</span>(receipts)
     }
 }
 
@@ -1316,7 +1286,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;TipsetKey&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;ApiMessage&gt;&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;ApiMessage&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1325,7 +1295,7 @@
         <span class="kw">let </span>store = ctx.chain_store.blockstore();
         <span class="kw">let </span>tipset = Tipset::load_required(store, <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>messages = load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(LotusJson(messages))
+        <span class="prelude-val">Ok</span>(messages)
     }
 }
 
@@ -1466,15 +1436,11 @@
             <span class="kw-2">&amp;</span>unsigned_cids,
             <span class="kw-2">&amp;</span>signed_cids,
         )<span class="question-mark">?</span>;
-        <span class="kw">let </span>cids = unsigned_cids
-            .into_iter()
-            .chain(signed_cids)
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-            .into();
+        <span class="kw">let </span>cids = unsigned_cids.into_iter().chain(signed_cids).collect();
 
         <span class="kw">let </span>ret = BlockMessages {
-            bls_msg: bls_msg.into(),
-            secp_msg: secp_msg.into(),
+            bls_msg,
+            secp_msg,
             cids,
         };
         <span class="prelude-val">Ok</span>(ret)
@@ -1823,14 +1789,20 @@
         <span class="kw">for </span>msg <span class="kw">in </span>block.bls_msgs() {
             <span class="kw">let </span>cid = msg.cid()<span class="question-mark">?</span>;
             <span class="kw">if </span>seen.insert(cid) {
-                messages.push(ApiMessage::new(cid, msg.clone()));
+                messages.push(ApiMessage {
+                    cid,
+                    message: msg.clone(),
+                });
             }
         }
 
         <span class="kw">for </span>msg <span class="kw">in </span>block.secp_msgs() {
             <span class="kw">let </span>cid = msg.cid()<span class="question-mark">?</span>;
             <span class="kw">if </span>seen.insert(cid) {
-                messages.push(ApiMessage::new(cid, msg.message.clone()));
+                messages.push(ApiMessage {
+                    cid,
+                    message: msg.message.clone(),
+                });
             }
         }
     }
@@ -1840,15 +1812,16 @@
 
 <span class="attr">#[derive(Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 </span><span class="kw">pub struct </span>BlockMessages {
-    <span class="attr">#[serde(rename = <span class="string">"BlsMessages"</span>)]
-    </span><span class="kw">pub </span>bls_msg: LotusJson&lt;Vec&lt;Message&gt;&gt;,
-    <span class="attr">#[serde(rename = <span class="string">"SecpkMessages"</span>)]
-    </span><span class="kw">pub </span>secp_msg: LotusJson&lt;Vec&lt;SignedMessage&gt;&gt;,
-    <span class="attr">#[serde(rename = <span class="string">"Cids"</span>)]
-    </span><span class="kw">pub </span>cids: LotusJson&lt;Vec&lt;Cid&gt;&gt;,
+    <span class="attr">#[serde(rename = <span class="string">"BlsMessages"</span>, with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;Vec&lt;Message&gt;&gt;"</span>)]
+    </span><span class="kw">pub </span>bls_msg: Vec&lt;Message&gt;,
+    <span class="attr">#[serde(rename = <span class="string">"SecpkMessages"</span>, with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;Vec&lt;SignedMessage&gt;&gt;"</span>)]
+    </span><span class="kw">pub </span>secp_msg: Vec&lt;SignedMessage&gt;,
+    <span class="attr">#[serde(rename = <span class="string">"Cids"</span>, with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;Vec&lt;Cid&gt;&gt;"</span>)]
+    </span><span class="kw">pub </span>cids: Vec&lt;Cid&gt;,
 }
-
-<span class="macro">lotus_json_with_self!</span>(BlockMessages);
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, JsonSchema)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
@@ -1856,52 +1829,25 @@
     <span class="comment">// Exit status of message execution
     </span><span class="kw">pub </span>exit_code: ExitCode,
     <span class="comment">// `Return` value if the exit code is zero
-    </span><span class="attr">#[serde(rename = <span class="string">"Return"</span>)]
-    </span><span class="kw">pub </span>return_data: LotusJson&lt;RawBytes&gt;,
+    </span><span class="attr">#[serde(rename = <span class="string">"Return"</span>, with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;RawBytes&gt;"</span>)]
+    </span><span class="kw">pub </span>return_data: RawBytes,
     <span class="comment">// Non-negative value of GasUsed
     </span><span class="kw">pub </span>gas_used: u64,
-    <span class="kw">pub </span>events_root: LotusJson&lt;<span class="prelude-ty">Option</span>&lt;Cid&gt;&gt;,
+    <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;Option&lt;Cid&gt;&gt;"</span>)]
+    </span><span class="kw">pub </span>events_root: <span class="prelude-ty">Option</span>&lt;Cid&gt;,
 }
 
-<span class="macro">lotus_json_with_self!</span>(ApiReceipt);
-
-<span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-</span><span class="kw">pub struct </span>ApiMessage {
-    cid: Cid,
-    message: Message,
-}
-
-<span class="kw">impl </span>ApiMessage {
-    <span class="kw">pub fn </span>new(cid: Cid, message: Message) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ cid, message }
-    }
-}
-
-<span class="attr">#[derive(Serialize, Deserialize, JsonSchema)]
+<span class="attr">#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
-</span><span class="kw">pub struct </span>ApiMessageLotusJson {
-    cid: LotusJson&lt;Cid&gt;,
-    message: LotusJson&lt;Message&gt;,
-}
-
-<span class="kw">impl </span>HasLotusJson <span class="kw">for </span>ApiMessage {
-    <span class="kw">type </span>LotusJson = ApiMessageLotusJson;
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">vec!</span>[]
-    }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        ApiMessageLotusJson {
-            cid: LotusJson(<span class="self">self</span>.cid),
-            message: LotusJson(<span class="self">self</span>.message),
-        }
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        ApiMessage {
-            cid: lotus_json.cid.into_inner(),
-            message: lotus_json.message.into_inner(),
-        }
-    }
+</span><span class="kw">pub struct </span>ApiMessage {
+    <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;Cid&gt;"</span>)]
+    </span><span class="kw">pub </span>cid: Cid,
+    <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    #[schemars(with = <span class="string">"LotusJson&lt;Message&gt;"</span>)]
+    </span><span class="kw">pub </span>message: Message,
 }
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -1914,8 +1860,6 @@
     <span class="kw">pub </span>dry_run: bool,
 }
 
-<span class="macro">lotus_json_with_self!</span>(ChainExportParams);
-
 <span class="attr">#[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>ApiHeadChange {
@@ -1924,8 +1868,6 @@
     <span class="attr">#[serde(rename = <span class="string">"Val"</span>, with = <span class="string">"crate::lotus_json"</span>)]
     </span><span class="kw">pub </span>headers: Vec&lt;CachingBlockHeader&gt;,
 }
-
-<span class="macro">lotus_json_with_self!</span>(ApiHeadChange);
 
 <span class="attr">#[derive(PartialEq, Debug, Serialize, Deserialize, Clone, JsonSchema)]
 #[serde(rename_all = <span class="string">"snake_case"</span>)]
