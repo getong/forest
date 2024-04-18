@@ -449,39 +449,34 @@
 <a href="#447" id="447">447</a>
 <a href="#448" id="448">448</a>
 <a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span>std::{
-    fs::{canonicalize, read_to_string, OpenOptions},
-    path::PathBuf,
-    str::FromStr,
-};
-
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
-<span class="kw">use </span><span class="kw">crate</span>::rpc_client::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, message::Message};
-<span class="kw">use crate</span>::{
-    chain::ChainEpochDelta,
-    rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>},
-};
-<span class="kw">use crate</span>::{cli::humantoken, message::SignedMessage};
-<span class="kw">use </span>boa_engine::{
-    object::{builtins::JsArray, FunctionObjectBuilder},
-    prelude::JsObject,
-    property::Attribute,
-    Context, JsError, JsResult, JsString, JsValue, NativeFunction, Source,
-};
-<span class="kw">use </span>boa_interner::Interner;
-<span class="kw">use </span>boa_parser::Parser;
-<span class="kw">use </span>boa_runtime::Console;
-<span class="kw">use </span>convert_case::{Case, Casing};
-<span class="kw">use </span>directories::BaseDirs;
-<span class="kw">use </span>futures::Future;
-<span class="kw">use </span>rustyline::{config::Config <span class="kw">as </span>RustyLineConfig, history::FileHistory, EditMode, Editor};
-<span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
-<span class="kw">use </span>serde_json::Value <span class="kw">as </span>JsonValue;
-<span class="kw">use </span>tokio::time;
+</span><span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
+<span class="kw">use </span>std::path::PathBuf;
 
 <span class="attr">#[derive(Debug, clap::Args)]
 </span><span class="kw">pub struct </span>AttachCommand {
@@ -494,297 +489,346 @@
     </span>exec: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
-<span class="kw">const </span>PRELUDE_PATH: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="string">"./js/prelude.js"</span>);
+<span class="kw">impl </span>AttachCommand {
+    <span class="attr">#[cfg(not(feature = <span class="string">"attach"</span>))]
+    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, _api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="macro">tracing::warn!</span>(<span class="string">"`attach` command is unavailable, forest binaries need to be recompiled with `attach` feature"</span>);
+        <span class="prelude-val">Ok</span>(())
+    }
 
-<span class="kw">fn </span>set_module(context: <span class="kw-2">&amp;mut </span>Context) {
-    <span class="kw">let </span>module = JsObject::default();
-    module
-        .set(
-            JsString::from(<span class="string">"exports"</span>),
-            JsObject::default(),
-            <span class="bool-val">false</span>,
-            context,
-        )
-        .unwrap();
-    context
-        .register_global_property(
-            JsString::from(<span class="string">"module"</span>),
-            JsValue::from(module),
-            Attribute::default(),
-        )
-        .expect(<span class="string">"`register_global_property` should not fail"</span>);
-}
-
-<span class="kw">fn </span>to_position(err: boa_parser::Error) -&gt; <span class="prelude-ty">Option</span>&lt;(u32, u32)&gt; {
-    <span class="kw">use </span>boa_parser::Error::<span class="kw-2">*</span>;
-
-    <span class="kw">match </span>err {
-        Expected {
-            expected: <span class="kw">_</span>,
-            found: <span class="kw">_</span>,
-            span,
-            context: <span class="kw">_</span>,
-        } =&gt; <span class="prelude-val">Some</span>((span.start().line_number(), span.start().column_number())),
-        Unexpected {
-            found: <span class="kw">_</span>,
-            span,
-            message: <span class="kw">_</span>,
-        } =&gt; <span class="prelude-val">Some</span>((span.start().line_number(), span.start().column_number())),
-        General {
-            message: <span class="kw">_</span>,
-            position,
-        } =&gt; <span class="prelude-val">Some</span>((position.line_number(), position.column_number())),
-        Lex { err: <span class="kw">_ </span>} | AbruptEnd =&gt; <span class="prelude-val">None</span>,
+    <span class="attr">#[cfg(feature = <span class="string">"attach"</span>)]
+    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="self">self</span>.run_inner(api)
     }
 }
 
-<span class="kw">fn </span>eval(code: <span class="kw-2">&amp;</span>str, context: <span class="kw-2">&amp;mut </span>Context) {
-    <span class="kw">match </span>context.eval(Source::from_bytes(code)) {
-        <span class="prelude-val">Ok</span>(v) =&gt; <span class="kw">match </span>v {
-            JsValue::Undefined =&gt; (),
-            <span class="kw">_ </span>=&gt; <span class="macro">println!</span>(<span class="string">"{}"</span>, v.display()),
-        },
-        <span class="prelude-val">Err</span>(err) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">"Uncaught {err}"</span>);
+<span class="attr">#[cfg(feature = <span class="string">"attach"</span>)]
+</span><span class="kw">mod </span>inner {
+    <span class="kw">use </span>std::{
+        fs::{canonicalize, read_to_string, OpenOptions},
+        str::FromStr,
+    };
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
+    <span class="kw">use </span><span class="kw">crate</span>::rpc_client::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, message::Message};
+    <span class="kw">use crate</span>::{
+        chain::ChainEpochDelta,
+        rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>},
+    };
+    <span class="kw">use crate</span>::{cli::humantoken, message::SignedMessage};
+    <span class="kw">use </span>boa_engine::{
+        object::{builtins::JsArray, FunctionObjectBuilder},
+        prelude::JsObject,
+        property::Attribute,
+        Context, JsError, JsResult, JsString, JsValue, NativeFunction, Source,
+    };
+    <span class="kw">use </span>boa_interner::Interner;
+    <span class="kw">use </span>boa_parser::Parser;
+    <span class="kw">use </span>boa_runtime::Console;
+    <span class="kw">use </span>convert_case::{Case, Casing};
+    <span class="kw">use </span>directories::BaseDirs;
+    <span class="kw">use </span>futures::Future;
+    <span class="kw">use </span>rustyline::{config::Config <span class="kw">as </span>RustyLineConfig, history::FileHistory, EditMode, Editor};
+    <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
+    <span class="kw">use </span>serde_json::Value <span class="kw">as </span>JsonValue;
+    <span class="kw">use </span>tokio::time;
+
+    <span class="kw">const </span>PRELUDE_PATH: <span class="kw-2">&amp;</span>str = <span class="macro">include_str!</span>(<span class="string">"./js/prelude.js"</span>);
+
+    <span class="kw">fn </span>set_module(context: <span class="kw-2">&amp;mut </span>Context) {
+        <span class="kw">let </span>module = JsObject::default();
+        module
+            .set(
+                JsString::from(<span class="string">"exports"</span>),
+                JsObject::default(),
+                <span class="bool-val">false</span>,
+                context,
+            )
+            .unwrap();
+        context
+            .register_global_property(
+                JsString::from(<span class="string">"module"</span>),
+                JsValue::from(module),
+                Attribute::default(),
+            )
+            .expect(<span class="string">"`register_global_property` should not fail"</span>);
+    }
+
+    <span class="kw">fn </span>to_position(err: boa_parser::Error) -&gt; <span class="prelude-ty">Option</span>&lt;(u32, u32)&gt; {
+        <span class="kw">use </span>boa_parser::Error::<span class="kw-2">*</span>;
+
+        <span class="kw">match </span>err {
+            Expected {
+                expected: <span class="kw">_</span>,
+                found: <span class="kw">_</span>,
+                span,
+                context: <span class="kw">_</span>,
+            } =&gt; <span class="prelude-val">Some</span>((span.start().line_number(), span.start().column_number())),
+            Unexpected {
+                found: <span class="kw">_</span>,
+                span,
+                message: <span class="kw">_</span>,
+            } =&gt; <span class="prelude-val">Some</span>((span.start().line_number(), span.start().column_number())),
+            General {
+                message: <span class="kw">_</span>,
+                position,
+            } =&gt; <span class="prelude-val">Some</span>((position.line_number(), position.column_number())),
+            Lex { err: <span class="kw">_ </span>} | AbruptEnd =&gt; <span class="prelude-val">None</span>,
         }
     }
-}
 
-<span class="kw">fn </span>require(
-    <span class="kw">_</span>: <span class="kw-2">&amp;</span>JsValue,
-    params: <span class="kw-2">&amp;</span>[JsValue],
-    context: <span class="kw-2">&amp;mut </span>Context,
-    jspath: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-) -&gt; JsResult&lt;JsValue&gt; {
-    <span class="kw">let </span>param = <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = params.first() {
-        p
-    } <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(JsError::from_opaque(
-            JsString::from(<span class="string">"expecting string argument"</span>).into(),
-        ));
-    };
-
-    <span class="comment">// Resolve module path
-    </span><span class="kw">let </span>module_name = param.to_string(context)<span class="question-mark">?</span>.to_std_string_escaped();
-    <span class="kw">let </span><span class="kw-2">mut </span>path = <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = jspath {
-        path.join(module_name)
-    } <span class="kw">else </span>{
-        PathBuf::from(module_name)
-    };
-    <span class="comment">// Check if path does not exist and append .js if file has no extension
-    </span><span class="kw">if </span>!path.exists() &amp;&amp; path.extension().is_none() {
-        path.set_extension(<span class="string">"js"</span>);
+    <span class="kw">fn </span>eval(code: <span class="kw-2">&amp;</span>str, context: <span class="kw-2">&amp;mut </span>Context) {
+        <span class="kw">match </span>context.eval(Source::from_bytes(code)) {
+            <span class="prelude-val">Ok</span>(v) =&gt; <span class="kw">match </span>v {
+                JsValue::Undefined =&gt; (),
+                <span class="kw">_ </span>=&gt; <span class="macro">println!</span>(<span class="string">"{}"</span>, v.display()),
+            },
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="macro">eprintln!</span>(<span class="string">"Uncaught {err}"</span>);
+            }
+        }
     }
-    <span class="kw">let </span>result = <span class="kw">if </span>path.exists() {
-        read_to_string(path.clone())
-    } <span class="kw">else if </span>path == PathBuf::from(<span class="string">"prelude.js"</span>) {
-        <span class="prelude-val">Ok</span>(PRELUDE_PATH.into())
-    } <span class="kw">else </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(JsError::from_opaque(
-            JsString::from(<span class="string">"expecting valid module path"</span>).into(),
-        ));
-    };
-    <span class="kw">match </span>result {
-        <span class="prelude-val">Ok</span>(buffer) =&gt; {
-            <span class="kw">let </span><span class="kw-2">mut </span>parser = Parser::new(Source::from_bytes(<span class="kw-2">&amp;</span>buffer));
-            <span class="kw">let </span><span class="kw-2">mut </span>interner = Interner::new();
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = parser.parse_eval(<span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>interner) {
-                <span class="kw">let </span>canonical_path = canonicalize(path.clone()).unwrap_or(path.clone());
-                <span class="macro">eprintln!</span>(<span class="string">"{}"</span>, canonical_path.display());
 
-                <span class="kw">if let </span><span class="prelude-val">Some</span>((line, column)) = to_position(err) {
-                    <span class="comment">// Display a few lines for context
-                    </span><span class="kw">const </span>MAX_WINDOW: usize = <span class="number">3</span>;
-                    <span class="kw">let </span>start_index = <span class="number">0</span>.max(line <span class="kw">as </span>isize - MAX_WINDOW <span class="kw">as </span>isize) <span class="kw">as </span>usize;
-                    <span class="kw">let </span>window_len = line <span class="kw">as </span>usize - start_index;
-                    <span class="kw">for </span>l <span class="kw">in </span>buffer.split(<span class="string">'\n'</span>).skip(start_index).take(window_len) {
-                        <span class="macro">println!</span>(<span class="string">"{l}"</span>);
+    <span class="kw">fn </span>require(
+        <span class="kw">_</span>: <span class="kw-2">&amp;</span>JsValue,
+        params: <span class="kw-2">&amp;</span>[JsValue],
+        context: <span class="kw-2">&amp;mut </span>Context,
+        jspath: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    ) -&gt; JsResult&lt;JsValue&gt; {
+        <span class="kw">let </span>param = <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = params.first() {
+            p
+        } <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(JsError::from_opaque(
+                JsString::from(<span class="string">"expecting string argument"</span>).into(),
+            ));
+        };
+
+        <span class="comment">// Resolve module path
+        </span><span class="kw">let </span>module_name = param.to_string(context)<span class="question-mark">?</span>.to_std_string_escaped();
+        <span class="kw">let </span><span class="kw-2">mut </span>path = <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = jspath {
+            path.join(module_name)
+        } <span class="kw">else </span>{
+            PathBuf::from(module_name)
+        };
+        <span class="comment">// Check if path does not exist and append .js if file has no extension
+        </span><span class="kw">if </span>!path.exists() &amp;&amp; path.extension().is_none() {
+            path.set_extension(<span class="string">"js"</span>);
+        }
+        <span class="kw">let </span>result = <span class="kw">if </span>path.exists() {
+            read_to_string(path.clone())
+        } <span class="kw">else if </span>path == PathBuf::from(<span class="string">"prelude.js"</span>) {
+            <span class="prelude-val">Ok</span>(PRELUDE_PATH.into())
+        } <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(JsError::from_opaque(
+                JsString::from(<span class="string">"expecting valid module path"</span>).into(),
+            ));
+        };
+        <span class="kw">match </span>result {
+            <span class="prelude-val">Ok</span>(buffer) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>parser = Parser::new(Source::from_bytes(<span class="kw-2">&amp;</span>buffer));
+                <span class="kw">let </span><span class="kw-2">mut </span>interner = Interner::new();
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = parser.parse_eval(<span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>interner) {
+                    <span class="kw">let </span>canonical_path = canonicalize(path.clone()).unwrap_or(path.clone());
+                    <span class="macro">eprintln!</span>(<span class="string">"{}"</span>, canonical_path.display());
+
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>((line, column)) = to_position(err) {
+                        <span class="comment">// Display a few lines for context
+                        </span><span class="kw">const </span>MAX_WINDOW: usize = <span class="number">3</span>;
+                        <span class="kw">let </span>start_index = <span class="number">0</span>.max(line <span class="kw">as </span>isize - MAX_WINDOW <span class="kw">as </span>isize) <span class="kw">as </span>usize;
+                        <span class="kw">let </span>window_len = line <span class="kw">as </span>usize - start_index;
+                        <span class="kw">for </span>l <span class="kw">in </span>buffer.split(<span class="string">'\n'</span>).skip(start_index).take(window_len) {
+                            <span class="macro">println!</span>(<span class="string">"{l}"</span>);
+                        }
+                        <span class="comment">// Column is always strictly superior to zero
+                        </span><span class="macro">println!</span>(<span class="string">"{}^"</span>, <span class="string">" "</span>.to_owned().repeat(column <span class="kw">as </span>usize - <span class="number">1</span>));
                     }
-                    <span class="comment">// Column is always strictly superior to zero
-                    </span><span class="macro">println!</span>(<span class="string">"{}^"</span>, <span class="string">" "</span>.to_owned().repeat(column <span class="kw">as </span>usize - <span class="number">1</span>));
+                    <span class="macro">println!</span>();
                 }
-                <span class="macro">println!</span>();
+                context.eval(Source::from_bytes(<span class="kw-2">&amp;</span>buffer))<span class="question-mark">?</span>;
+
+                <span class="comment">// Access module.exports and return as ResultValue
+                </span><span class="kw">let </span>global_obj = context.global_object().to_owned();
+                <span class="kw">let </span>module = global_obj
+                    .get(JsString::from(<span class="string">"module"</span>), context)
+                    .expect(<span class="string">"get must succeed"</span>);
+                <span class="kw">let </span>exports = module
+                    .as_object()
+                    .expect(<span class="string">"as_object must succeed"</span>)
+                    .get(JsString::from(<span class="string">"exports"</span>), context);
+
+                exports
             }
-            context.eval(Source::from_bytes(<span class="kw-2">&amp;</span>buffer))<span class="question-mark">?</span>;
-
-            <span class="comment">// Access module.exports and return as ResultValue
-            </span><span class="kw">let </span>global_obj = context.global_object().to_owned();
-            <span class="kw">let </span>module = global_obj
-                .get(JsString::from(<span class="string">"module"</span>), context)
-                .expect(<span class="string">"get must succeed"</span>);
-            <span class="kw">let </span>exports = module
-                .as_object()
-                .expect(<span class="string">"as_object must succeed"</span>)
-                .get(JsString::from(<span class="string">"exports"</span>), context);
-
-            exports
-        }
-        <span class="prelude-val">Err</span>(err) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">"Error: {err}"</span>);
-            <span class="prelude-val">Ok</span>(JsValue::Undefined)
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="macro">eprintln!</span>(<span class="string">"Error: {err}"</span>);
+                <span class="prelude-val">Ok</span>(JsValue::Undefined)
+            }
         }
     }
-}
 
-<span class="kw">fn </span>check_result&lt;R&gt;(context: <span class="kw-2">&amp;mut </span>Context, result: anyhow::Result&lt;R&gt;) -&gt; JsResult&lt;JsValue&gt;
-<span class="kw">where
-    </span>R: Serialize,
-{
-    <span class="kw">match </span>result {
-        <span class="prelude-val">Ok</span>(v) =&gt; {
-            <span class="kw">let </span>value: JsonValue = serde_json::to_value(v)
-                .map_err(|e| JsError::from_opaque(JsString::from(e.to_string()).into()))<span class="question-mark">?</span>;
-            JsValue::from_json(<span class="kw-2">&amp;</span>value, context)
-        }
-        <span class="prelude-val">Err</span>(err) =&gt; {
-            <span class="macro">eprintln!</span>(<span class="string">"Error: {err}"</span>);
-            <span class="prelude-val">Ok</span>(JsValue::Undefined)
+    <span class="kw">fn </span>check_result&lt;R&gt;(context: <span class="kw-2">&amp;mut </span>Context, result: anyhow::Result&lt;R&gt;) -&gt; JsResult&lt;JsValue&gt;
+    <span class="kw">where
+        </span>R: Serialize,
+    {
+        <span class="kw">match </span>result {
+            <span class="prelude-val">Ok</span>(v) =&gt; {
+                <span class="kw">let </span>value: JsonValue = serde_json::to_value(v)
+                    .map_err(|e| JsError::from_opaque(JsString::from(e.to_string()).into()))<span class="question-mark">?</span>;
+                JsValue::from_json(<span class="kw-2">&amp;</span>value, context)
+            }
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="macro">eprintln!</span>(<span class="string">"Error: {err}"</span>);
+                <span class="prelude-val">Ok</span>(JsValue::Undefined)
+            }
         }
     }
-}
 
-<span class="kw">fn </span>bind_async&lt;T: DeserializeOwned, R: Serialize, Fut&gt;(
-    context: <span class="kw-2">&amp;mut </span>Context,
-    api: <span class="kw-2">&amp;</span>ApiInfo,
-    name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-    req: <span class="kw">impl </span>Fn(T, ApiInfo) -&gt; Fut + <span class="lifetime">'static</span>,
-) <span class="kw">where
-    </span>Fut: Future&lt;Output = anyhow::Result&lt;R&gt;&gt;,
-{
-    <span class="kw">let </span>js_func_name = name.to_case(Case::Camel);
-    <span class="comment">// Safety: This is unsafe since GC'ed variables caught in the closure will
-    // not get traced. We're safe because we do not use any GC'ed variables.
-    </span><span class="kw">let </span>js_func = FunctionObjectBuilder::new(context.realm(), <span class="kw">unsafe </span>{
-        NativeFunction::from_closure({
-            <span class="kw">let </span>api = api.clone();
-            <span class="kw">move </span>|_this, params, context| {
-                <span class="kw">let </span>handle = tokio::runtime::Handle::current();
+    <span class="kw">fn </span>bind_async&lt;T: DeserializeOwned, R: Serialize, Fut&gt;(
+        context: <span class="kw-2">&amp;mut </span>Context,
+        api: <span class="kw-2">&amp;</span>ApiInfo,
+        name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+        req: <span class="kw">impl </span>Fn(T, ApiInfo) -&gt; Fut + <span class="lifetime">'static</span>,
+    ) <span class="kw">where
+        </span>Fut: Future&lt;Output = anyhow::Result&lt;R&gt;&gt;,
+    {
+        <span class="kw">let </span>js_func_name = name.to_case(Case::Camel);
+        <span class="comment">// Safety: This is unsafe since GC'ed variables caught in the closure will
+        // not get traced. We're safe because we do not use any GC'ed variables.
+        </span><span class="kw">let </span>js_func = FunctionObjectBuilder::new(context.realm(), <span class="kw">unsafe </span>{
+            NativeFunction::from_closure({
+                <span class="kw">let </span>api = api.clone();
+                <span class="kw">move </span>|_this, params, context| {
+                    <span class="kw">let </span>handle = tokio::runtime::Handle::current();
 
-                <span class="kw">let </span>result = tokio::task::block_in_place(|| {
-                    <span class="kw">let </span>value = <span class="kw">if </span>params.is_empty() {
-                        JsValue::Null
-                    } <span class="kw">else </span>{
-                        <span class="kw">let </span>arr = JsArray::from_iter(params.to_vec(), context);
-                        <span class="kw">let </span>obj: JsObject = arr.into();
-                        JsValue::from(obj)
-                    };
-                    <span class="kw">let </span>args = serde_json::from_value(
-                        value.to_json(context).map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">"{e}"</span>))<span class="question-mark">?</span>,
-                    )<span class="question-mark">?</span>;
-                    handle.block_on(req(args, api.clone()))
-                });
-                check_result(context, result)
-            }
+                    <span class="kw">let </span>result = tokio::task::block_in_place(|| {
+                        <span class="kw">let </span>value = <span class="kw">if </span>params.is_empty() {
+                            JsValue::Null
+                        } <span class="kw">else </span>{
+                            <span class="kw">let </span>arr = JsArray::from_iter(params.to_vec(), context);
+                            <span class="kw">let </span>obj: JsObject = arr.into();
+                            JsValue::from(obj)
+                        };
+                        <span class="kw">let </span>args = serde_json::from_value(
+                            value.to_json(context).map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">"{e}"</span>))<span class="question-mark">?</span>,
+                        )<span class="question-mark">?</span>;
+                        handle.block_on(req(args, api.clone()))
+                    });
+                    check_result(context, result)
+                }
+            })
         })
-    })
-    .name(js_func_name.clone())
-    .build();
+        .name(js_func_name.clone())
+        .build();
 
-    <span class="kw">let </span>attr = Attribute::WRITABLE | Attribute::NON_ENUMERABLE | Attribute::CONFIGURABLE;
-    context
-        .register_global_property(JsString::from(js_func_name), js_func, attr)
-        .expect(<span class="string">"`register_global_property` should not fail"</span>);
-}
+        <span class="kw">let </span>attr = Attribute::WRITABLE | Attribute::NON_ENUMERABLE | Attribute::CONFIGURABLE;
+        context
+            .register_global_property(JsString::from(js_func_name), js_func, attr)
+            .expect(<span class="string">"`register_global_property` should not fail"</span>);
+    }
 
-<span class="macro">macro_rules! </span>bind_request {
+    <span class="macro">macro_rules! </span>bind_request {
     (<span class="macro-nonterminal">$context</span>:expr, <span class="macro-nonterminal">$api</span>:expr, $(<span class="macro-nonterminal">$name</span>:literal =&gt; <span class="macro-nonterminal">$req</span>:expr),* $(,)<span class="question-mark">?</span>) =&gt; {
     $(
         bind_async(<span class="macro-nonterminal">$context</span>, <span class="kw-2">&amp;</span><span class="macro-nonterminal">$api</span>, <span class="macro-nonterminal">$name</span>, <span class="kw">move </span>|args, api| {
             <span class="comment">// Some of the closures are redundant, others are not.
             </span><span class="attr">#[allow(clippy::redundant_closure_call)]
-            </span><span class="kw">let </span>rpc = <span class="macro-nonterminal">$req</span>(args).lower();
+            </span><span class="kw">let </span>rpc: <span class="kw">crate</span>::rpc_client::RpcRequest = <span class="macro-nonterminal">$req</span>(args).map_ty();
             <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(api.call(rpc).<span class="kw">await</span><span class="question-mark">?</span>) }
         });
     )*
     };
 }
 
-<span class="kw">type </span>SendMessageParams = (String, String, String);
+    <span class="kw">type </span>SendMessageParams = (String, String, String);
 
-<span class="kw">async fn </span>send_message(params: SendMessageParams, api: ApiInfo) -&gt; anyhow::Result&lt;SignedMessage&gt; {
-    <span class="kw">let </span>(from, to, value) = params;
+    <span class="kw">async fn </span>send_message(
+        params: SendMessageParams,
+        api: ApiInfo,
+    ) -&gt; anyhow::Result&lt;SignedMessage&gt; {
+        <span class="kw">let </span>(from, to, value) = params;
 
-    <span class="kw">let </span>message = Message::transfer(
-        Address::from_str(<span class="kw-2">&amp;</span>from)<span class="question-mark">?</span>,
-        Address::from_str(<span class="kw-2">&amp;</span>to)<span class="question-mark">?</span>,
-        humantoken::parse(<span class="kw-2">&amp;</span>value)<span class="question-mark">?</span>, <span class="comment">// Convert forest_shim::TokenAmount to TokenAmount3
-    </span>);
-    <span class="prelude-val">Ok</span>(
-        MpoolPushMessage::call(<span class="kw-2">&amp;</span>rpc::Client::from(api), (message.into(), <span class="prelude-val">None</span>))
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.into_inner(),
-    )
-}
+        <span class="kw">let </span>message = Message::transfer(
+            Address::from_str(<span class="kw-2">&amp;</span>from)<span class="question-mark">?</span>,
+            Address::from_str(<span class="kw-2">&amp;</span>to)<span class="question-mark">?</span>,
+            humantoken::parse(<span class="kw-2">&amp;</span>value)<span class="question-mark">?</span>, <span class="comment">// Convert forest_shim::TokenAmount to TokenAmount3
+        </span>);
+        <span class="prelude-val">Ok</span>(
+            MpoolPushMessage::call(<span class="kw-2">&amp;</span>rpc::Client::from(api), (message.into(), <span class="prelude-val">None</span>))
+                .<span class="kw">await</span><span class="question-mark">?
+                </span>.into_inner(),
+        )
+    }
 
-<span class="kw">type </span>SleepParams = (u64,);
-<span class="kw">type </span>SleepResult = ();
+    <span class="kw">type </span>SleepParams = (u64,);
+    <span class="kw">type </span>SleepResult = ();
 
-<span class="kw">async fn </span>sleep(params: SleepParams, _api: ApiInfo) -&gt; anyhow::Result&lt;SleepResult&gt; {
-    <span class="kw">let </span>secs = params.<span class="number">0</span>;
-    time::sleep(time::Duration::from_secs(secs)).<span class="kw">await</span>;
-    <span class="prelude-val">Ok</span>(())
-}
+    <span class="kw">async fn </span>sleep(params: SleepParams, _api: ApiInfo) -&gt; anyhow::Result&lt;SleepResult&gt; {
+        <span class="kw">let </span>secs = params.<span class="number">0</span>;
+        time::sleep(time::Duration::from_secs(secs)).<span class="kw">await</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
 
-<span class="kw">async fn </span>sleep_tipsets(epochs: ChainEpochDelta, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>client = rpc::Client::from(api);
-    <span class="kw">let </span><span class="kw-2">mut </span>epoch = <span class="prelude-val">None</span>;
-    <span class="kw">loop </span>{
-        <span class="kw">let </span>state = SyncState::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">if </span>state.active_syncs.as_ref().first().stage() == SyncStage::Complete {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = epoch {
-                <span class="kw">let </span>curr = state.active_syncs.as_ref().first().epoch();
-                <span class="kw">if </span>(curr - prev) &gt;= epochs {
-                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+    <span class="kw">async fn </span>sleep_tipsets(epochs: ChainEpochDelta, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>client = rpc::Client::from(api);
+        <span class="kw">let </span><span class="kw-2">mut </span>epoch = <span class="prelude-val">None</span>;
+        <span class="kw">loop </span>{
+            <span class="kw">let </span>state = SyncState::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">if </span>state.active_syncs.as_ref().first().stage() == SyncStage::Complete {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = epoch {
+                    <span class="kw">let </span>curr = state.active_syncs.as_ref().first().epoch();
+                    <span class="kw">if </span>(curr - prev) &gt;= epochs {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                    }
+                } <span class="kw">else </span>{
+                    epoch = <span class="prelude-val">Some</span>(state.active_syncs.as_ref().first().epoch());
                 }
-            } <span class="kw">else </span>{
-                epoch = <span class="prelude-val">Some</span>(state.active_syncs.as_ref().first().epoch());
             }
+            time::sleep(time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
         }
-        time::sleep(time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-    }
-}
-
-<span class="kw">impl </span>AttachCommand {
-    <span class="kw">fn </span>setup_context(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context, api: ApiInfo) {
-        <span class="kw">let </span>console = Console::init(context);
-        context
-            .register_global_property(JsString::from(Console::NAME), console, Attribute::all())
-            .expect(<span class="string">"the console object shouldn't exist yet"</span>);
-        context
-            .register_global_property(
-                JsString::from(<span class="string">"_BOA_VERSION"</span>),
-                JsString::from(<span class="string">"0.18.0"</span>),
-                Attribute::default(),
-            )
-            .expect(<span class="string">"`register_global_property` should not fail"</span>);
-
-        <span class="comment">// Safety: This is unsafe since GC'ed variables caught in the closure will
-        // not get traced. We're safe because we do not use any GC'ed variables.
-        // Add custom implementation that mimics `require`
-        </span><span class="kw">let </span>require_func = <span class="kw">unsafe </span>{
-            NativeFunction::from_closure_with_captures(
-                |_this, params, jspath, context| require(_this, params, context, jspath),
-                <span class="self">self</span>.jspath.clone(),
-            )
-        };
-
-        context
-            .register_global_builtin_callable(JsString::from(<span class="string">"require"</span>), <span class="number">1</span>, require_func)
-            .expect(<span class="string">"Registering the global`require` should succeed"</span>);
-
-        <span class="comment">// Add custom object that mimics `module.exports`
-        </span>set_module(context);
-
-        <span class="macro">bind_request!</span>(context, api,);
-
-        <span class="comment">// Bind send_message, sleep, sleep_tipsets
-        </span>bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"send_message"</span>, send_message);
-        bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"seep"</span>, sleep);
-        bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"sleep_tipsets"</span>, sleep_tipsets);
     }
 
-    <span class="kw">fn </span>import_prelude(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">const </span>INIT: <span class="kw-2">&amp;</span>str = <span class="string">r"
+    <span class="kw">impl </span>AttachCommand {
+        <span class="kw">fn </span>setup_context(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context, api: ApiInfo) {
+            <span class="kw">let </span>console = Console::init(context);
+            context
+                .register_global_property(JsString::from(Console::NAME), console, Attribute::all())
+                .expect(<span class="string">"the console object shouldn't exist yet"</span>);
+            context
+                .register_global_property(
+                    JsString::from(<span class="string">"_BOA_VERSION"</span>),
+                    JsString::from(<span class="string">"0.18.0"</span>),
+                    Attribute::default(),
+                )
+                .expect(<span class="string">"`register_global_property` should not fail"</span>);
+
+            <span class="comment">// Safety: This is unsafe since GC'ed variables caught in the closure will
+            // not get traced. We're safe because we do not use any GC'ed variables.
+            // Add custom implementation that mimics `require`
+            </span><span class="kw">let </span>require_func = <span class="kw">unsafe </span>{
+                NativeFunction::from_closure_with_captures(
+                    |_this, params, jspath, context| require(_this, params, context, jspath),
+                    <span class="self">self</span>.jspath.clone(),
+                )
+            };
+
+            context
+                .register_global_builtin_callable(JsString::from(<span class="string">"require"</span>), <span class="number">1</span>, require_func)
+                .expect(<span class="string">"Registering the global`require` should succeed"</span>);
+
+            <span class="comment">// Add custom object that mimics `module.exports`
+            </span>set_module(context);
+
+            <span class="macro">bind_request!</span>(context, api,);
+
+            <span class="comment">// Bind send_message, sleep, sleep_tipsets
+            </span>bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"send_message"</span>, send_message);
+            bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"seep"</span>, sleep);
+            bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"sleep_tipsets"</span>, sleep_tipsets);
+        }
+
+        <span class="kw">fn </span>import_prelude(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context) -&gt; anyhow::Result&lt;()&gt; {
+            <span class="kw">const </span>INIT: <span class="kw-2">&amp;</span>str = <span class="string">r"
             const Prelude = require('prelude.js')
             if (Prelude.showPeers) { showPeers = Prelude.showPeers; }
             if (Prelude.getPeer) { getPeer = Prelude.getPeer; }
@@ -795,107 +839,109 @@
             if (Prelude.sendFIL) { sendFIL = Prelude.sendFIL; }
         "</span>;
 
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = context.eval(Source::from_bytes(INIT)) {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"error {err:?}"</span>));
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = context.eval(Source::from_bytes(INIT)) {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"error {err:?}"</span>));
+            }
+
+            <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="prelude-val">Ok</span>(())
-    }
+        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>run_inner(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>context = Context::default();
+            <span class="self">self</span>.setup_context(<span class="kw-2">&amp;mut </span>context, api);
 
-    <span class="kw">pub fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>context = Context::default();
-        <span class="self">self</span>.setup_context(<span class="kw-2">&amp;mut </span>context, api);
+            <span class="self">self</span>.import_prelude(<span class="kw-2">&amp;mut </span>context)<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.import_prelude(<span class="kw-2">&amp;mut </span>context)<span class="question-mark">?</span>;
+            <span class="comment">// If only a short execution was requested, evaluate and return
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(code) = <span class="kw-2">&amp;</span><span class="self">self</span>.exec {
+                eval(code.trim_end(), <span class="kw-2">&amp;mut </span>context);
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+            }
 
-        <span class="comment">// If only a short execution was requested, evaluate and return
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(code) = <span class="kw-2">&amp;</span><span class="self">self</span>.exec {
-            eval(code.trim_end(), <span class="kw-2">&amp;mut </span>context);
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-        }
+            eval(<span class="string">"Prelude.greet()"</span>, <span class="kw-2">&amp;mut </span>context);
 
-        eval(<span class="string">"Prelude.greet()"</span>, <span class="kw-2">&amp;mut </span>context);
+            <span class="kw">let </span>config = RustyLineConfig::builder()
+                .keyseq_timeout(<span class="prelude-val">Some</span>(<span class="number">1</span>))
+                .edit_mode(EditMode::Emacs)
+                .build();
 
-        <span class="kw">let </span>config = RustyLineConfig::builder()
-            .keyseq_timeout(<span class="prelude-val">Some</span>(<span class="number">1</span>))
-            .edit_mode(EditMode::Emacs)
-            .build();
+            <span class="kw">let </span><span class="kw-2">mut </span>editor: Editor&lt;(), FileHistory&gt; = Editor::with_config(config)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>editor: Editor&lt;(), FileHistory&gt; = Editor::with_config(config)<span class="question-mark">?</span>;
+            <span class="kw">let </span>history_path = <span class="kw">if let </span><span class="prelude-val">Some</span>(dirs) = BaseDirs::new() {
+                <span class="kw">let </span>path = dirs.home_dir().join(<span class="string">".forest_history"</span>);
 
-        <span class="kw">let </span>history_path = <span class="kw">if let </span><span class="prelude-val">Some</span>(dirs) = BaseDirs::new() {
-            <span class="kw">let </span>path = dirs.home_dir().join(<span class="string">".forest_history"</span>);
+                <span class="comment">// Check if the history file exists. If it does not, create it.
+                </span>OpenOptions::new()
+                    .read(<span class="bool-val">true</span>)
+                    .write(<span class="bool-val">true</span>)
+                    .create(<span class="bool-val">true</span>)
+                    .truncate(<span class="bool-val">false</span>)
+                    .open(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
 
-            <span class="comment">// Check if the history file exists. If it does not, create it.
-            </span>OpenOptions::new()
-                .read(<span class="bool-val">true</span>)
-                .write(<span class="bool-val">true</span>)
-                .create(<span class="bool-val">true</span>)
-                .truncate(<span class="bool-val">false</span>)
-                .open(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>;
+                <span class="comment">// This is safe to call at this point
+                </span>editor.load_history(<span class="kw-2">&amp;</span>path).unwrap();
 
-            <span class="comment">// This is safe to call at this point
-            </span>editor.load_history(<span class="kw-2">&amp;</span>path).unwrap();
+                <span class="prelude-val">Some</span>(path)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>};
 
-            <span class="prelude-val">Some</span>(path)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>};
-
-        <span class="lifetime">'main</span>: <span class="kw">loop </span>{
-            <span class="kw">let </span><span class="kw-2">mut </span>prompt = <span class="string">"&gt; "</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>buffer = String::new();
-            <span class="kw">loop </span>{
-                <span class="kw">match </span>editor.readline(prompt) {
-                    <span class="prelude-val">Ok</span>(input) =&gt; {
-                        <span class="kw">if </span>input == <span class="string">":quit" </span>{
-                            <span class="kw">break </span><span class="lifetime">'main</span>;
+            <span class="lifetime">'main</span>: <span class="kw">loop </span>{
+                <span class="kw">let </span><span class="kw-2">mut </span>prompt = <span class="string">"&gt; "</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>buffer = String::new();
+                <span class="kw">loop </span>{
+                    <span class="kw">match </span>editor.readline(prompt) {
+                        <span class="prelude-val">Ok</span>(input) =&gt; {
+                            <span class="kw">if </span>input == <span class="string">":quit" </span>{
+                                <span class="kw">break </span><span class="lifetime">'main</span>;
+                            }
+                            <span class="kw">if </span>input == <span class="string">":clear" </span>{
+                                editor.clear_history()<span class="question-mark">?</span>;
+                                <span class="kw">break</span>;
+                            }
+                            <span class="kw">if </span>buffer.is_empty() &amp;&amp; input.is_empty() {
+                                <span class="comment">// No-op
+                                </span><span class="kw">continue </span><span class="lifetime">'main</span>;
+                            }
+                            buffer.push_str(<span class="kw-2">&amp;</span>input)
                         }
-                        <span class="kw">if </span>input == <span class="string">":clear" </span>{
-                            editor.clear_history()<span class="question-mark">?</span>;
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">break </span><span class="lifetime">'main</span>,
+                    }
+
+                    <span class="kw">let </span><span class="kw-2">mut </span>parser = Parser::new(Source::from_bytes(<span class="kw-2">&amp;</span>buffer));
+                    <span class="kw">let </span><span class="kw-2">mut </span>interner = Interner::new();
+                    <span class="kw">match </span>parser.parse_eval(<span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>interner) {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+                            editor.add_history_entry(<span class="kw-2">&amp;</span>buffer)<span class="question-mark">?</span>;
+                            eval(buffer.trim_end(), <span class="kw-2">&amp;mut </span>context);
                             <span class="kw">break</span>;
                         }
-                        <span class="kw">if </span>buffer.is_empty() &amp;&amp; input.is_empty() {
-                            <span class="comment">// No-op
-                            </span><span class="kw">continue </span><span class="lifetime">'main</span>;
-                        }
-                        buffer.push_str(<span class="kw-2">&amp;</span>input)
-                    }
-                    <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">break </span><span class="lifetime">'main</span>,
-                }
-
-                <span class="kw">let </span><span class="kw-2">mut </span>parser = Parser::new(Source::from_bytes(<span class="kw-2">&amp;</span>buffer));
-                <span class="kw">let </span><span class="kw-2">mut </span>interner = Interner::new();
-                <span class="kw">match </span>parser.parse_eval(<span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>interner) {
-                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                        editor.add_history_entry(<span class="kw-2">&amp;</span>buffer)<span class="question-mark">?</span>;
-                        eval(buffer.trim_end(), <span class="kw-2">&amp;mut </span>context);
-                        <span class="kw">break</span>;
-                    }
-                    <span class="prelude-val">Err</span>(err) =&gt; {
-                        <span class="kw">match </span>err {
-                            boa_parser::Error::Lex { err: <span class="kw">_ </span>} | boa_parser::Error::AbruptEnd =&gt; {
-                                <span class="comment">// Continue reading input and append it to buffer
-                                </span>buffer.push(<span class="string">'\n'</span>);
-                                prompt = <span class="string">"&gt;&gt; "</span>;
-                            }
-                            <span class="kw">_ </span>=&gt; {
-                                <span class="macro">eprintln!</span>(<span class="string">"Uncaught ParseError: {err}"</span>);
-                                <span class="kw">break</span>;
+                        <span class="prelude-val">Err</span>(err) =&gt; {
+                            <span class="kw">match </span>err {
+                                boa_parser::Error::Lex { err: <span class="kw">_ </span>}
+                                | boa_parser::Error::AbruptEnd =&gt; {
+                                    <span class="comment">// Continue reading input and append it to buffer
+                                    </span>buffer.push(<span class="string">'\n'</span>);
+                                    prompt = <span class="string">"&gt;&gt; "</span>;
+                                }
+                                <span class="kw">_ </span>=&gt; {
+                                    <span class="macro">eprintln!</span>(<span class="string">"Uncaught ParseError: {err}"</span>);
+                                    <span class="kw">break</span>;
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = history_path {
-            editor
-                .save_history(<span class="kw-2">&amp;</span>path)
-                .expect(<span class="string">"save_history should work"</span>);
-        }
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = history_path {
+                editor
+                    .save_history(<span class="kw-2">&amp;</span>path)
+                    .expect(<span class="string">"save_history should work"</span>);
+            }
 
-        <span class="prelude-val">Ok</span>(())
+            <span class="prelude-val">Ok</span>(())
+        }
     }
 }
 </code></pre></div></section></main></body></html>

@@ -510,7 +510,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["serde_derive",["",[["internals",[],["ast.rs","attr.rs","case.rs","check.rs","ctxt.rs","mod.rs","receiver.rs","respan.rs","symbol.rs"]]],["bound.rs","de.rs","dummy.rs","fragment.rs","lib.rs","pretend.rs","ser.rs","this.rs"]]],\
 ["serde_derive_internals",["",[["src",[],["ast.rs","attr.rs","case.rs","check.rs","ctxt.rs","mod.rs","receiver.rs","respan.rs","symbol.rs"]]],["lib.rs"]]],\
 ["serde_ipld_dagcbor",["",[],["cbor4ii_nonpub.rs","de.rs","error.rs","lib.rs","ser.rs"]]],\
-["serde_json",["",[["features_check",[],["mod.rs"]],["io",[],["mod.rs"]],["lexical",[],["algorithm.rs","bhcomp.rs","bignum.rs","cached.rs","cached_float80.rs","digit.rs","errors.rs","exponent.rs","float.rs","large_powers.rs","large_powers64.rs","math.rs","mod.rs","num.rs","parse.rs","rounding.rs","shift.rs","small_powers.rs"]],["value",[],["de.rs","from.rs","index.rs","mod.rs","partial_eq.rs","ser.rs"]]],["de.rs","error.rs","iter.rs","lib.rs","macros.rs","map.rs","number.rs","raw.rs","read.rs","ser.rs"]]],\
+["serde_json",["",[["io",[],["mod.rs"]],["lexical",[],["algorithm.rs","bhcomp.rs","bignum.rs","cached.rs","cached_float80.rs","digit.rs","errors.rs","exponent.rs","float.rs","large_powers.rs","large_powers64.rs","math.rs","mod.rs","num.rs","parse.rs","rounding.rs","shift.rs","small_powers.rs"]],["value",[],["de.rs","from.rs","index.rs","mod.rs","partial_eq.rs","ser.rs"]]],["de.rs","error.rs","iter.rs","lib.rs","macros.rs","map.rs","number.rs","raw.rs","read.rs","ser.rs"]]],\
 ["serde_path_to_error",["",[],["de.rs","lib.rs","path.rs","ser.rs","wrap.rs"]]],\
 ["serde_repr",["",[],["lib.rs","parse.rs"]]],\
 ["serde_spanned",["",[],["lib.rs","spanned.rs"]]],\

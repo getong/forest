@@ -140,6 +140,7 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -229,7 +230,7 @@
     <span class="comment">// Run forest as a daemon if no other subcommands are used. Otherwise, run the
     // subcommand.
 
-    </span><span class="kw">let </span>(loki_task, _chrome_flush_guard) = logger::setup_logger(<span class="kw-2">&amp;</span>opts);
+    </span><span class="kw">let </span>(background_tasks, _guards) = logger::setup_logger(<span class="kw-2">&amp;</span>opts);
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = <span class="kw-2">&amp;</span>path {
         <span class="kw">match </span>path {
@@ -269,9 +270,10 @@
                 .enable_all()
                 .build()<span class="question-mark">?</span>;
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(loki_task) = loki_task {
-                rt.spawn(loki_task);
+            <span class="kw">for </span>task <span class="kw">in </span>background_tasks {
+                rt.spawn(task);
             }
+
             <span class="kw">let </span>ret = rt.block_on(<span class="kw">super</span>::start_interruptable(opts, cfg));
             <span class="macro">info!</span>(<span class="string">"Shutting down tokio..."</span>);
             rt.shutdown_timeout(Duration::from_secs_f32(<span class="number">0.5</span>));
