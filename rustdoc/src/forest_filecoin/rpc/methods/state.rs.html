@@ -1387,6 +1387,26 @@
 <a href="#1385" id="1385">1385</a>
 <a href="#1386" id="1386">1386</a>
 <a href="#1387" id="1387">1387</a>
+<a href="#1388" id="1388">1388</a>
+<a href="#1389" id="1389">1389</a>
+<a href="#1390" id="1390">1390</a>
+<a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1438,6 +1458,7 @@
     (<span class="macro-nonterminal">$callback</span>:ident) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateGetBeaconEntry</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateSectorPreCommitInfo</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateSectorGetInfo</span>);
     };
 }
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
@@ -1470,7 +1491,6 @@
 <span class="kw">pub const </span>STATE_ACCOUNT_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateAccountKey"</span>;
 <span class="kw">pub const </span>STATE_CIRCULATING_SUPPLY: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateCirculatingSupply"</span>;
 <span class="kw">pub const </span>STATE_DECODE_PARAMS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateDecodeParams"</span>;
-<span class="kw">pub const </span>STATE_SECTOR_GET_INFO: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateSectorGetInfo"</span>;
 <span class="kw">pub const </span>STATE_SEARCH_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateSearchMsg"</span>;
 <span class="kw">pub const </span>STATE_SEARCH_MSG_LIMITED: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateSearchMsgLimited"</span>;
 <span class="kw">pub const </span>STATE_LIST_MESSAGES: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateListMessages"</span>;
@@ -2383,26 +2403,6 @@
     <span class="prelude-val">Ok</span>(LotusJson(txns))
 }
 
-<span class="doccomment">/// Get state sector info using sector no
-</span><span class="kw">pub async fn </span>state_sector_get_info&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;SectorOnChainInfo&gt;, ServerError&gt; {
-    <span class="kw">let </span>LotusJson((addr, sector_no, ApiTipsetKey(tsk))): LotusJson&lt;(Address, u64, ApiTipsetKey)&gt; =
-        params.parse()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(LotusJson(
-        data.state_manager
-            .get_all_sectors(<span class="kw-2">&amp;</span>addr, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?
-            </span>.into_iter()
-            .find(|info| info.sector_number == sector_no)
-            .map(SectorOnChainInfo::from)
-            .context(<span class="macro">format!</span>(<span class="string">"Info for sector number {sector_no} not found"</span>))<span class="question-mark">?</span>,
-    ))
-}
-
 <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_verified_client_status&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Ctx&lt;DB&gt;,
@@ -2701,12 +2701,7 @@
     ) -&gt; anyhow::Result&lt;Vec&lt;u64&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>sectors = <span class="macro">vec!</span>[];
         <span class="kw">let </span>state_tree = StateTree::new_from_root(store.clone(), tipset.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>actor = state_tree.get_actor(miner_address)<span class="question-mark">?</span>.with_context(|| {
-            <span class="macro">format!</span>(
-                <span class="string">"Failed to load actor with addr={miner_address}, state_cid={}"</span>,
-                tipset.parent_state()
-            )
-        })<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = state_tree.get_required_actor(miner_address)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
         <span class="kw">match </span><span class="kw-2">&amp;</span>state {
             miner::State::V8(s) =&gt; {
@@ -2772,6 +2767,51 @@
         }<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(sectors)
+    }
+}
+
+<span class="kw">pub enum </span>StateSectorGetInfo {}
+
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateSectorGetInfo {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateSectorGetInfo"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"miner_address"</span>, <span class="string">"sector_number"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+
+    <span class="kw">type </span>Params = (LotusJson&lt;Address&gt;, LotusJson&lt;u64&gt;, LotusJson&lt;ApiTipsetKey&gt;);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= SectorOnChainInfo;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (LotusJson(miner_address), LotusJson(sector_number), LotusJson(ApiTipsetKey(tsk))): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = ctx
+            .state_manager
+            .chain_store()
+            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(ctx
+            .state_manager
+            .get_all_sectors(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?
+            </span>.into_iter()
+            .find(|info| info.sector_number == sector_number)
+            .map(SectorOnChainInfo::from)
+            .context(<span class="macro">format!</span>(<span class="string">"Info for sector number {sector_number} not found"</span>))<span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">impl </span>StateSectorGetInfo {
+    <span class="kw">pub fn </span>get_sectors(
+        store: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">impl </span>Blockstore&gt;,
+        miner_address: <span class="kw-2">&amp;</span>Address,
+        tipset: <span class="kw-2">&amp;</span>Tipset,
+    ) -&gt; anyhow::Result&lt;Vec&lt;u64&gt;&gt; {
+        <span class="kw">let </span>state_tree = StateTree::new_from_root(store.clone(), tipset.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = state_tree.get_required_actor(miner_address)<span class="question-mark">?</span>;
+        <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(state
+            .load_sectors(store, <span class="prelude-val">None</span>)<span class="question-mark">?
+            </span>.into_iter()
+            .map(|s| s.sector_number)
+            .collect())
     }
 }
 </code></pre></div></section></main></body></html>
