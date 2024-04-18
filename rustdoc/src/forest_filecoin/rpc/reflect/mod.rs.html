@@ -389,6 +389,19 @@
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
 <a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -414,6 +427,8 @@
 
 <span class="kw">mod </span>parser;
 <span class="kw">mod </span>util;
+
+<span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 
 <span class="kw">use </span><span class="self">self</span>::{jsonrpc_types::RequestParameters, util::Optional <span class="kw">as _</span>};
 <span class="kw">use </span><span class="kw">super</span>::error::ServerError <span class="kw">as </span>Error;
@@ -457,7 +472,7 @@
     <span class="doccomment">/// Types of each argument. [`Option`]-al arguments MUST follow mandatory ones.
     </span><span class="kw">type </span>Params: Params&lt;ARITY&gt;;
     <span class="doccomment">/// Return value of this method.
-    </span><span class="kw">type </span><span class="prelude-val">Ok</span>;
+    </span><span class="kw">type </span><span class="prelude-val">Ok</span>: HasLotusJson;
     <span class="doccomment">/// Logic for this method.
     </span><span class="kw">fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
@@ -506,7 +521,7 @@
         calling_convention: ParamStructure,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Method, ParamListError&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>::Ok: JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt;,
+        </span>&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson: JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt;,
     {
         <span class="prelude-val">Ok</span>(Method {
             name: String::from(<span class="self">Self</span>::NAME),
@@ -522,8 +537,8 @@
             param_structure: calling_convention,
             result: <span class="prelude-val">Some</span>(ContentDescriptor {
                 name: <span class="macro">format!</span>(<span class="string">"{}::Result"</span>, <span class="self">Self</span>::NAME),
-                schema: <span class="self">Self</span>::Ok::json_schema(gen),
-                required: !<span class="self">Self</span>::Ok::optional(),
+                schema: &lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson::json_schema(gen),
+                required: !&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson::optional(),
             }),
         })
     }
@@ -533,7 +548,7 @@
         calling_convention: ParamStructure,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;mut </span>jsonrpsee::MethodCallback, jsonrpsee::core::RegisterMethodError&gt;
     <span class="kw">where
-        </span><span class="self">Self</span>::Ok: Serialize + Clone + <span class="lifetime">'static</span>,
+        </span>&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson: Clone + <span class="lifetime">'static</span>,
     {
         module.register_async_method(<span class="self">Self</span>::NAME, <span class="kw">move </span>|params, ctx| <span class="kw">async move </span>{
             <span class="kw">let </span>raw = params
@@ -543,7 +558,7 @@
                 .map_err(|e| Error::invalid_params(e, <span class="prelude-val">None</span>))<span class="question-mark">?</span>;
             <span class="kw">let </span>params = <span class="self">Self</span>::Params::parse(raw, <span class="self">Self</span>::PARAM_NAMES, calling_convention)<span class="question-mark">?</span>;
             <span class="kw">let </span>ok = <span class="self">Self</span>::handle(ctx, params).<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, jsonrpsee::types::ErrorObjectOwned&gt;::Ok(ok)
+            <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, jsonrpsee::types::ErrorObjectOwned&gt;::Ok(ok.into_lotus_json())
         })
     }
     <span class="doccomment">/// Register this method and generate a schema entry for it in a [`SelfDescribingRpcModule`].
@@ -552,8 +567,7 @@
             <span class="kw">crate</span>::rpc::RPCState&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         &gt;,
     ) <span class="kw">where
-        </span><span class="self">Self</span>::Ok: Serialize + Clone + <span class="lifetime">'static</span>,
-        <span class="self">Self</span>::Ok: JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt;,
+        </span>&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson: Clone + JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt; + <span class="lifetime">'static</span>,
     {
         <span class="self">Self</span>::register_raw(<span class="kw-2">&amp;mut </span>module.inner, module.calling_convention).unwrap();
         module
@@ -600,13 +614,12 @@
             timeout: <span class="kw">crate</span>::rpc_client::DEFAULT_TIMEOUT,
         })
     }
-    <span class="kw">fn </span>call(
+    <span class="kw">fn </span>call_raw(
         client: <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::client::Client,
         params: <span class="self">Self</span>::Params,
-    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, jsonrpsee::core::ClientError&gt;&gt;
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson, jsonrpsee::core::ClientError&gt;&gt;
     <span class="kw">where
         </span><span class="self">Self</span>::Params: Serialize,
-        <span class="self">Self</span>::Ok: DeserializeOwned,
     {
         <span class="kw">async </span>{
             <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
@@ -614,6 +627,19 @@
             //                  bound, work around it for now.
             </span><span class="kw">let </span>json = client.call(<span class="self">Self</span>::request(params)<span class="question-mark">?</span>.map_ty()).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(serde_json::from_value(json)<span class="question-mark">?</span>)
+        }
+    }
+    <span class="kw">fn </span>call(
+        client: <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::client::Client,
+        params: <span class="self">Self</span>::Params,
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, jsonrpsee::core::ClientError&gt;&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>::Params: Serialize,
+    {
+        <span class="kw">async </span>{
+            <span class="self">Self</span>::call_raw(client, params)
+                .<span class="kw">await
+                </span>.map(<span class="self">Self</span>::Ok::from_lotus_json)
         }
     }
 }

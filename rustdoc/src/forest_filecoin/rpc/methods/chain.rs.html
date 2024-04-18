@@ -1096,10 +1096,9 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::index::ResolveNullTipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::{ChainStore, HeadChange};
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="attr">#[cfg(test)]
 </span><span class="kw">use </span><span class="kw">crate</span>::lotus_json::{assert_all_snapshots, assert_unchanged_via_json};
+<span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, HasLotusJson, LotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::ApiTipsetKey;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiVersion, Ctx, RpcMethod, ServerError};
@@ -1158,7 +1157,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Message&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Message;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1169,10 +1168,10 @@
             .blockstore()
             .get_cbor(<span class="kw-2">&amp;</span>msg_cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find message with cid {msg_cid}"</span>))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(LotusJson(<span class="kw">match </span>chain_message {
+        <span class="prelude-val">Ok</span>(<span class="kw">match </span>chain_message {
             ChainMessage::Signed(m) =&gt; m.into_message(),
             ChainMessage::Unsigned(m) =&gt; m,
-        }))
+        })
     }
 }
 
@@ -1197,8 +1196,7 @@
             <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[])
         } <span class="kw">else </span>{
             <span class="kw">let </span>parent_tipset = Tipset::load_required(store, <span class="kw-2">&amp;</span>block_header.parents)<span class="question-mark">?</span>;
-            <span class="kw">let </span>messages = load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>parent_tipset)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(messages)
+            load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>parent_tipset)
         }
     }
 }
@@ -1294,8 +1292,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>store = ctx.chain_store.blockstore();
         <span class="kw">let </span>tipset = Tipset::load_required(store, <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>messages = load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(messages)
+        load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>tipset)
     }
 }
 
@@ -1378,7 +1375,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;u8&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1389,7 +1386,7 @@
             .blockstore()
             .get(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find object with cid={cid}"</span>))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(LotusJson(bytes))
+        <span class="prelude-val">Ok</span>(bytes)
     }
 }
 
@@ -1454,15 +1451,13 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;TipsetKey&gt;, LotusJson&lt;TipsetKey&gt;);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Vec&lt;PathChange&gt;&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;PathChange&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (LotusJson(from), LotusJson(to)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        impl_chain_get_path(<span class="kw-2">&amp;</span>ctx.chain_store, <span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>to)
-            .map(LotusJson)
-            .map_err(Into::into)
+        impl_chain_get_path(<span class="kw-2">&amp;</span>ctx.chain_store, <span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>to).map_err(Into::into)
     }
 }
 
@@ -1532,7 +1527,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (ChainEpoch, LotusJson&lt;ApiTipsetKey&gt;);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Tipset&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1547,7 +1542,7 @@
             .chain_store()
             .chain_index
             .tipset_by_height(height, ts, ResolveNullTipset::TakeOlder)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tss).clone().into())
+        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tss).clone())
     }
 }
 
@@ -1558,7 +1553,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V1;
 
     <span class="kw">type </span>Params = (ChainEpoch, LotusJson&lt;ApiTipsetKey&gt;);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Tipset&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1573,7 +1568,7 @@
             .chain_store()
             .chain_index
             .tipset_by_height(height, ts, ResolveNullTipset::TakeNewer)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tss).clone().into())
+        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tss).clone())
     }
 }
 
@@ -1584,11 +1579,11 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = ();
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= <span class="prelude-ty">Option</span>&lt;LotusJson&lt;Tipset&gt;&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= <span class="prelude-ty">Option</span>&lt;Tipset&gt;;
 
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>genesis = ctx.state_manager.chain_store().genesis_block_header();
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Tipset::from(genesis).into()))
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Tipset::from(genesis)))
     }
 }
 
@@ -1599,11 +1594,11 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = ();
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Tipset&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>heaviest = ctx.state_manager.chain_store().heaviest_tipset();
-        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>heaviest).clone().into())
+        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>heaviest).clone())
     }
 }
 
@@ -1614,7 +1609,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;CachingBlockHeader&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= CachingBlockHeader;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1625,7 +1620,7 @@
             .blockstore()
             .get_cbor(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?
             </span>.context(<span class="string">"can't find BlockHeader with that cid"</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(blk.into())
+        <span class="prelude-val">Ok</span>(blk)
     }
 }
 
@@ -1636,7 +1631,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;ApiTipsetKey&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;Tipset&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1646,7 +1641,7 @@
             .state_manager
             .chain_store()
             .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>ts).clone().into())
+        <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>ts).clone())
     }
 }
 
@@ -1730,7 +1725,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
     <span class="kw">type </span>Params = (LotusJson&lt;ApiTipsetKey&gt;,);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= LotusJson&lt;BigInt&gt;;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= BigInt;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
@@ -1738,7 +1733,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>tsk = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>weight = <span class="kw">crate</span>::fil_cns::weight(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(LotusJson(weight))
+        <span class="prelude-val">Ok</span>(weight)
     }
 }
 
@@ -1822,6 +1817,7 @@
     #[schemars(with = <span class="string">"LotusJson&lt;Vec&lt;Cid&gt;&gt;"</span>)]
     </span><span class="kw">pub </span>cids: Vec&lt;Cid&gt;,
 }
+<span class="macro">lotus_json_with_self!</span>(BlockMessages);
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, JsonSchema)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
@@ -1839,6 +1835,8 @@
     </span><span class="kw">pub </span>events_root: <span class="prelude-ty">Option</span>&lt;Cid&gt;,
 }
 
+<span class="macro">lotus_json_with_self!</span>(ApiReceipt);
+
 <span class="attr">#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>ApiMessage {
@@ -1849,6 +1847,8 @@
     #[schemars(with = <span class="string">"LotusJson&lt;Message&gt;"</span>)]
     </span><span class="kw">pub </span>message: Message,
 }
+
+<span class="macro">lotus_json_with_self!</span>(ApiMessage);
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 </span><span class="kw">pub struct </span>ChainExportParams {

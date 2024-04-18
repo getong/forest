@@ -220,14 +220,10 @@
 <a href="#218" id="218">218</a>
 <a href="#219" id="219">219</a>
 <a href="#220" id="220">220</a>
-<a href="#221" id="221">221</a>
-<a href="#222" id="222">222</a>
-<a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
+</span><span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, LotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiVersion, Ctx, RpcMethod, ServerError};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -290,7 +286,7 @@
     <span class="kw">type </span><span class="prelude-val">Ok </span>= RPCSyncState;
 
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>active_syncs = LotusJson(<span class="macro">nonempty!</span>[ctx.sync_state.as_ref().read().clone()]);
+        <span class="kw">let </span>active_syncs = <span class="macro">nonempty!</span>[ctx.sync_state.as_ref().read().clone()];
         <span class="prelude-val">Ok</span>(RPCSyncState { active_syncs })
     }
 }
@@ -299,8 +295,10 @@
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>RPCSyncState {
     <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Vec&lt;crate::chain_sync::SyncState&gt;&gt;"</span>)]
-    </span><span class="kw">pub </span>active_syncs: LotusJson&lt;NonEmpty&lt;<span class="kw">crate</span>::chain_sync::SyncState&gt;&gt;,
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span><span class="kw">pub </span>active_syncs: NonEmpty&lt;<span class="kw">crate</span>::chain_sync::SyncState&gt;,
 }
+<span class="macro">lotus_json_with_self!</span>(RPCSyncState);
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
@@ -431,10 +429,7 @@
         <span class="kw">let </span>st_copy = ctx.sync_state.clone();
 
         <span class="kw">let </span>ret = SyncState::handle(ctx.clone(), ()).<span class="kw">await</span>.unwrap();
-        <span class="macro">assert_eq!</span>(
-            ret.active_syncs,
-            <span class="macro">nonempty!</span>[st_copy.as_ref().read().clone()].into()
-        );
+        <span class="macro">assert_eq!</span>(ret.active_syncs, <span class="macro">nonempty!</span>[st_copy.as_ref().read().clone()]);
 
         <span class="comment">// update cloned state
         </span>st_copy.write().set_stage(SyncStage::Messages);
@@ -442,10 +437,7 @@
 
         <span class="kw">let </span>ret = SyncState::handle(ctx.clone(), ()).<span class="kw">await</span>.unwrap();
 
-        <span class="macro">assert_eq!</span>(
-            ret.active_syncs,
-            <span class="macro">nonempty!</span>[st_copy.as_ref().read().clone()].into()
-        );
+        <span class="macro">assert_eq!</span>(ret.active_syncs, <span class="macro">nonempty!</span>[st_copy.as_ref().read().clone()]);
     }
 }
 </code></pre></div></section></main></body></html>

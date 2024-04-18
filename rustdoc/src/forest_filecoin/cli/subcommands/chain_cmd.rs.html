@@ -150,11 +150,6 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -219,12 +214,10 @@
             <span class="self">Self</span>::Block { cid } =&gt; {
                 print_pretty_json(ChainGetBlock::call(<span class="kw-2">&amp;</span>client, (cid.into(),)).<span class="kw">await</span><span class="question-mark">?</span>)
             }
-            <span class="self">Self</span>::Genesis =&gt; print_pretty_json(ChainGetGenesis::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>),
-            <span class="self">Self</span>::Head =&gt; print_rpc_res_cids(ChainHead::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>.into_inner()),
+            <span class="self">Self</span>::Genesis =&gt; print_pretty_json(ChainGetGenesis::call_raw(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>),
+            <span class="self">Self</span>::Head =&gt; print_rpc_res_cids(ChainHead::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>),
             <span class="self">Self</span>::Message { cid } =&gt; {
-                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid.into(),))
-                    .<span class="kw">await</span><span class="question-mark">?
-                    </span>.into_inner();
+                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid.into(),)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">match </span>fvm_ipld_encoding::from_slice::&lt;ChainMessage&gt;(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">? </span>{
                     ChainMessage::Unsigned(m) =&gt; print_pretty_json(LotusJson(m)),
                     ChainMessage::Signed(m) =&gt; {
@@ -234,9 +227,7 @@
                 }
             }
             <span class="self">Self</span>::ReadObj { cid } =&gt; {
-                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid.into(),))
-                    .<span class="kw">await</span><span class="question-mark">?
-                    </span>.into_inner();
+                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid.into(),)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"{}"</span>, hex::encode(bytes));
                 <span class="prelude-val">Ok</span>(())
             }
@@ -279,19 +270,18 @@
     client: <span class="kw-2">&amp;</span>rpc::Client,
     epoch_or_offset: i64,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Tipset, jsonrpsee::core::ClientError&gt; {
-    <span class="kw">let </span>current_head = ChainHead::call(client, ()).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>current_head = ChainHead::call(client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>target_epoch = <span class="kw">match </span>epoch_or_offset.is_negative() {
         <span class="bool-val">true </span>=&gt; current_head.epoch() + epoch_or_offset, <span class="comment">// adding negative number
         </span><span class="bool-val">false </span>=&gt; epoch_or_offset,
     };
-    <span class="prelude-val">Ok</span>(ChainGetTipSetByHeight::call(
+    ChainGetTipSetByHeight::call(
         client,
         (target_epoch, LotusJson(current_head.key().clone().into())),
     )
-    .<span class="kw">await</span><span class="question-mark">?
-    </span>.into_inner())
-}
+    .<span class="kw">await
+</span>}
 
 <span class="kw">const </span>SET_HEAD_CONFIRMATION_MESSAGE: <span class="kw-2">&amp;</span>str =
     <span class="string">"Manually setting head is an unsafe operation that could brick the node! Continue?"</span>;
