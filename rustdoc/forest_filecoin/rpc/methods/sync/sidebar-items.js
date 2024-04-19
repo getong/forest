@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["SyncCheckBad","SyncMarkBad","SyncState"],"macro":["for_each_method"],"struct":["RPCSyncState"]};
+window.SIDEBAR_ITEMS = {"enum":["SyncCheckBad","SyncMarkBad","SyncState","SyncSubmitBlock"],"macro":["for_each_method"],"struct":["RPCSyncState"]};
