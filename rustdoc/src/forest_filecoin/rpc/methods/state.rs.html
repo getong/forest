@@ -1412,11 +1412,19 @@
 <a href="#1410" id="1410">1410</a>
 <a href="#1411" id="1411">1411</a>
 <a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+</span><span class="kw">mod </span>types;
+<span class="kw">pub use </span>types::<span class="kw-2">*</span>;
+
+<span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
@@ -2326,11 +2334,13 @@
         </span>.context(<span class="string">"Failed to get block from blockstore"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>state = <span class="kw-2">*</span>fvm_ipld_encoding::from_slice::&lt;NonEmpty&lt;Cid&gt;&gt;(<span class="kw-2">&amp;</span>blk)<span class="question-mark">?</span>.first();
 
-    <span class="prelude-val">Ok</span>(LotusJson(ApiActorState::new(
-        actor.balance.clone().into(),
-        actor.code,
-        Ipld::Link(state),
-    )))
+    <span class="prelude-val">Ok</span>(LotusJson(ApiActorState {
+        balance: actor.balance.clone().into(),
+        code: actor.code,
+        state: <span class="kw">crate</span>::rpc::types::ApiState {
+            builtin_actors: Ipld::Link(state),
+        },
+    }))
 }
 
 <span class="kw">pub async fn </span>state_circulating_supply&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(

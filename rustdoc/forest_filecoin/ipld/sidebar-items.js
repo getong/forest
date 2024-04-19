@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Ipld"],"mod":["json","selector","util"],"struct":["Path"]};
+window.SIDEBAR_ITEMS = {"enum":["Ipld"],"mod":["selector","util"],"struct":["Path"]};

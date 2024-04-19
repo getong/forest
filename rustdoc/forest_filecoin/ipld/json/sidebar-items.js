@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["BYTES_JSON_KEY","FLOAT_JSON_KEY","INT_JSON_KEY"],"fn":["deserialize","serialize"],"struct":["IpldJson","IpldJsonRef","JSONVisitor"]};

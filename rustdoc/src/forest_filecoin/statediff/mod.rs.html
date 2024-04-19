@@ -307,6 +307,9 @@
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
 <a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -318,10 +321,12 @@
     sync::Arc,
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::ipld::json::{IpldJson, IpldJsonRef};
-<span class="kw">use </span><span class="kw">crate</span>::shim::{
-    address::Address,
-    state_tree::{ActorState, StateTree},
+<span class="kw">use crate</span>::{
+    lotus_json::LotusJson,
+    shim::{
+        address::Address,
+        state_tree::{ActorState, StateTree},
+    },
 };
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>cid::Cid;
@@ -344,7 +349,8 @@
     </span>code: Cid,
     sequence: u64,
     balance: String,
-    state: IpldJson,
+    <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span>state: Ipld,
 }
 
 <span class="kw">fn </span>actor_to_resolved(
@@ -355,7 +361,7 @@
     <span class="kw">let </span>resolved =
         resolve_cids_recursive(bs, <span class="kw-2">&amp;</span>actor.state, depth).unwrap_or(Ipld::Link(actor.state));
     ActorStateResolved {
-        state: IpldJson(resolved),
+        state: resolved,
         code: actor.code,
         balance: actor.balance.to_string(),
         sequence: actor.sequence,
@@ -519,8 +525,8 @@
         <span class="kw">let </span>expected = resolve_cids_recursive(bs, expected_root, depth)<span class="question-mark">?</span>;
         <span class="kw">let </span>actual = resolve_cids_recursive(bs, root, depth)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>expected_json = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>IpldJsonRef(<span class="kw-2">&amp;</span>expected))<span class="question-mark">?</span>;
-        <span class="kw">let </span>actual_json = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>IpldJsonRef(<span class="kw-2">&amp;</span>actual))<span class="question-mark">?</span>;
+        <span class="kw">let </span>expected_json = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>LotusJson(expected))<span class="question-mark">?</span>;
+        <span class="kw">let </span>actual_json = serde_json::to_string_pretty(<span class="kw-2">&amp;</span>LotusJson(actual))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>diffs = TextDiff::from_lines(<span class="kw-2">&amp;</span>expected_json, <span class="kw-2">&amp;</span>actual_json);
 

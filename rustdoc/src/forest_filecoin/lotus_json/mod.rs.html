@@ -578,54 +578,6 @@
 <a href="#576" id="576">576</a>
 <a href="#577" id="577">577</a>
 <a href="#578" id="578">578</a>
-<a href="#579" id="579">579</a>
-<a href="#580" id="580">580</a>
-<a href="#581" id="581">581</a>
-<a href="#582" id="582">582</a>
-<a href="#583" id="583">583</a>
-<a href="#584" id="584">584</a>
-<a href="#585" id="585">585</a>
-<a href="#586" id="586">586</a>
-<a href="#587" id="587">587</a>
-<a href="#588" id="588">588</a>
-<a href="#589" id="589">589</a>
-<a href="#590" id="590">590</a>
-<a href="#591" id="591">591</a>
-<a href="#592" id="592">592</a>
-<a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
-<a href="#596" id="596">596</a>
-<a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
-<a href="#601" id="601">601</a>
-<a href="#602" id="602">602</a>
-<a href="#603" id="603">603</a>
-<a href="#604" id="604">604</a>
-<a href="#605" id="605">605</a>
-<a href="#606" id="606">606</a>
-<a href="#607" id="607">607</a>
-<a href="#608" id="608">608</a>
-<a href="#609" id="609">609</a>
-<a href="#610" id="610">610</a>
-<a href="#611" id="611">611</a>
-<a href="#612" id="612">612</a>
-<a href="#613" id="613">613</a>
-<a href="#614" id="614">614</a>
-<a href="#615" id="615">615</a>
-<a href="#616" id="616">616</a>
-<a href="#617" id="617">617</a>
-<a href="#618" id="618">618</a>
-<a href="#619" id="619">619</a>
-<a href="#620" id="620">620</a>
-<a href="#621" id="621">621</a>
-<a href="#622" id="622">622</a>
-<a href="#623" id="623">623</a>
-<a href="#624" id="624">624</a>
-<a href="#625" id="625">625</a>
-<a href="#626" id="626">626</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -749,11 +701,8 @@
 //! - use [`proptest`](https://docs.rs/proptest/) to test the parser pipeline
 //! - use a derive macro for simple compound structs
 
-</span><span class="kw">use </span><span class="kw">crate</span>::ipld::{json::IpldJson, Ipld};
-<span class="kw">use </span>derive_more::From;
-<span class="kw">use </span>fil_actor_interface::{miner::DeadlineInfo, power::Claim};
-<span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::json::BitFieldJson;
-<span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::BitField;
+</span><span class="kw">use </span>derive_more::From;
+<span class="kw">use </span>fil_actor_interface::miner::DeadlineInfo;
 <span class="kw">use </span>fvm_shared2::piece::PaddedPieceSize;
 <span class="kw">use </span>schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 <span class="kw">use </span>serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
@@ -811,6 +760,7 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>decl_and_test;
 
 <span class="macro">decl_and_test!</span>(
+    actor_state <span class="kw">for </span><span class="kw">crate</span>::shim::state_tree::ActorState,
     address <span class="kw">for </span><span class="kw">crate</span>::shim::address::Address,
     beacon_entry <span class="kw">for </span><span class="kw">crate</span>::beacon::BeaconEntry,
     big_int <span class="kw">for </span>num::BigInt,
@@ -834,7 +784,10 @@
     vrf_proof <span class="kw">for </span><span class="kw">crate</span>::blocks::VRFProof,
 );
 
-<span class="kw">mod </span>cid; <span class="comment">// can't make snapshots of generic type
+<span class="kw">mod </span>bit_field; <span class="comment">//  fil_actors_shared::fvm_ipld_bitfield::BitField: !quickcheck::Arbitrary
+</span><span class="kw">mod </span>cid; <span class="comment">// can't make snapshots of generic type
+</span><span class="kw">mod </span>claim; <span class="comment">// fil_actor_interface::power::Claim: !quickcheck::Arbitrary
+</span><span class="kw">mod </span>ipld; <span class="comment">// NaN != NaN
 </span><span class="kw">mod </span>nonempty;
 <span class="kw">mod </span>opt; <span class="comment">// can't make snapshots of generic type
 </span><span class="kw">mod </span>raw_bytes; <span class="comment">// fvm_ipld_encoding::RawBytes: !quickcheck::Arbitrary
@@ -1047,7 +1000,9 @@
     </span>}
 }
 
-<span class="kw">impl</span>&lt;T&gt; LotusJson&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
+<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
+//                  This shouldn't be needed, we only want non-recursive definitions now
+</span><span class="kw">impl</span>&lt;T&gt; LotusJson&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
     <span class="comment">// don't want to impl Deref&lt;T&gt; for LotusJson&lt;T&gt;
     </span><span class="kw">pub fn </span>is_none(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.<span class="number">0</span>.is_none()
@@ -1117,139 +1072,88 @@
     Uuid,
 );
 
-<span class="attr">#[derive(Default, Debug, Serialize, Deserialize)]
-#[serde(rename_all = <span class="string">"PascalCase"</span>)]
-</span><span class="kw">pub struct </span>ClaimLotusJson {
-    <span class="doccomment">/// Sum of raw byte power for a miner's sectors.
-    </span><span class="kw">pub </span>raw_byte_power: LotusJson&lt;num::BigInt&gt;,
-    <span class="doccomment">/// Sum of quality adjusted power for a miner's sectors.
-    </span><span class="kw">pub </span>quality_adj_power: LotusJson&lt;num::BigInt&gt;,
-}
+<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
+//                  remove this impls
+</span><span class="kw">mod </span>fixme {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">impl </span>HasLotusJson <span class="kw">for </span>Claim {
-    <span class="kw">type </span>LotusJson = ClaimLotusJson;
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">vec!</span>[]
-    }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        ClaimLotusJson {
-            raw_byte_power: LotusJson(<span class="self">self</span>.raw_byte_power),
-            quality_adj_power: LotusJson(<span class="self">self</span>.quality_adj_power),
+    <span class="kw">impl</span>&lt;T: HasLotusJson&gt; HasLotusJson <span class="kw">for </span>(T,) {
+        <span class="kw">type </span>LotusJson = (T::LotusJson,);
+        <span class="attr">#[cfg(test)]
+        </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
+            <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
+        }
+        <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
+            (<span class="self">self</span>.<span class="number">0</span>.into_lotus_json(),)
+        }
+        <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
+            (HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),)
         }
     }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        Claim {
-            raw_byte_power: lotus_json.raw_byte_power.into_inner(),
-            quality_adj_power: lotus_json.quality_adj_power.into_inner(),
+
+    <span class="kw">impl</span>&lt;A: HasLotusJson, B: HasLotusJson&gt; HasLotusJson <span class="kw">for </span>(A, B) {
+        <span class="kw">type </span>LotusJson = (A::LotusJson, B::LotusJson);
+        <span class="attr">#[cfg(test)]
+        </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
+            <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
+        }
+        <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
+            (<span class="self">self</span>.<span class="number">0</span>.into_lotus_json(), <span class="self">self</span>.<span class="number">1</span>.into_lotus_json())
+        }
+        <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
+            (
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">1</span>),
+            )
         }
     }
-}
 
-<span class="kw">impl</span>&lt;T: HasLotusJson&gt; HasLotusJson <span class="kw">for </span>(T,) {
-    <span class="kw">type </span>LotusJson = (T::LotusJson,);
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
+    <span class="kw">impl</span>&lt;A: HasLotusJson, B: HasLotusJson, C: HasLotusJson&gt; HasLotusJson <span class="kw">for </span>(A, B, C) {
+        <span class="kw">type </span>LotusJson = (A::LotusJson, B::LotusJson, C::LotusJson);
+        <span class="attr">#[cfg(test)]
+        </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
+            <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
+        }
+        <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
+            (
+                <span class="self">self</span>.<span class="number">0</span>.into_lotus_json(),
+                <span class="self">self</span>.<span class="number">1</span>.into_lotus_json(),
+                <span class="self">self</span>.<span class="number">2</span>.into_lotus_json(),
+            )
+        }
+        <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
+            (
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">1</span>),
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">2</span>),
+            )
+        }
     }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        (<span class="self">self</span>.<span class="number">0</span>.into_lotus_json(),)
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        (HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),)
-    }
-}
 
-<span class="kw">impl</span>&lt;A: HasLotusJson, B: HasLotusJson&gt; HasLotusJson <span class="kw">for </span>(A, B) {
-    <span class="kw">type </span>LotusJson = (A::LotusJson, B::LotusJson);
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
+    <span class="kw">impl</span>&lt;A: HasLotusJson, B: HasLotusJson, C: HasLotusJson, D: HasLotusJson&gt; HasLotusJson
+        <span class="kw">for </span>(A, B, C, D)
+    {
+        <span class="kw">type </span>LotusJson = (A::LotusJson, B::LotusJson, C::LotusJson, D::LotusJson);
+        <span class="attr">#[cfg(test)]
+        </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
+            <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
+        }
+        <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
+            (
+                <span class="self">self</span>.<span class="number">0</span>.into_lotus_json(),
+                <span class="self">self</span>.<span class="number">1</span>.into_lotus_json(),
+                <span class="self">self</span>.<span class="number">2</span>.into_lotus_json(),
+                <span class="self">self</span>.<span class="number">3</span>.into_lotus_json(),
+            )
+        }
+        <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
+            (
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">1</span>),
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">2</span>),
+                HasLotusJson::from_lotus_json(lotus_json.<span class="number">3</span>),
+            )
+        }
     }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        (<span class="self">self</span>.<span class="number">0</span>.into_lotus_json(), <span class="self">self</span>.<span class="number">1</span>.into_lotus_json())
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        (
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">1</span>),
-        )
-    }
-}
-
-<span class="kw">impl</span>&lt;A: HasLotusJson, B: HasLotusJson, C: HasLotusJson&gt; HasLotusJson <span class="kw">for </span>(A, B, C) {
-    <span class="kw">type </span>LotusJson = (A::LotusJson, B::LotusJson, C::LotusJson);
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
-    }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        (
-            <span class="self">self</span>.<span class="number">0</span>.into_lotus_json(),
-            <span class="self">self</span>.<span class="number">1</span>.into_lotus_json(),
-            <span class="self">self</span>.<span class="number">2</span>.into_lotus_json(),
-        )
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        (
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">1</span>),
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">2</span>),
-        )
-    }
-}
-
-<span class="kw">impl</span>&lt;A: HasLotusJson, B: HasLotusJson, C: HasLotusJson, D: HasLotusJson&gt; HasLotusJson
-    <span class="kw">for </span>(A, B, C, D)
-{
-    <span class="kw">type </span>LotusJson = (A::LotusJson, B::LotusJson, C::LotusJson, D::LotusJson);
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">unimplemented!</span>(<span class="string">"tests are trivial for HasLotusJson&lt;LotusJson = Self&gt;"</span>)
-    }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        (
-            <span class="self">self</span>.<span class="number">0</span>.into_lotus_json(),
-            <span class="self">self</span>.<span class="number">1</span>.into_lotus_json(),
-            <span class="self">self</span>.<span class="number">2</span>.into_lotus_json(),
-            <span class="self">self</span>.<span class="number">3</span>.into_lotus_json(),
-        )
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        (
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">0</span>),
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">1</span>),
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">2</span>),
-            HasLotusJson::from_lotus_json(lotus_json.<span class="number">3</span>),
-        )
-    }
-}
-
-<span class="kw">impl </span>HasLotusJson <span class="kw">for </span>Ipld {
-    <span class="kw">type </span>LotusJson = IpldJson;
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">vec!</span>[]
-    }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        IpldJson(<span class="self">self</span>)
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        lotus_json.<span class="number">0
-    </span>}
-}
-
-<span class="kw">impl </span>HasLotusJson <span class="kw">for </span>BitField {
-    <span class="kw">type </span>LotusJson = BitFieldJson;
-    <span class="attr">#[cfg(test)]
-    </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
-        <span class="macro">vec!</span>[]
-    }
-    <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        BitFieldJson(<span class="self">self</span>)
-    }
-    <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        lotus_json.<span class="number">0
-    </span>}
 }
 </code></pre></div></section></main></body></html>
