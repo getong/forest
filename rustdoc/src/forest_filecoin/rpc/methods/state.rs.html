@@ -1407,6 +1407,11 @@
 <a href="#1405" id="1405">1405</a>
 <a href="#1406" id="1406">1406</a>
 <a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1459,6 +1464,7 @@
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateGetBeaconEntry</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateSectorPreCommitInfo</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateSectorGetInfo</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateListMessages</span>);
     };
 }
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
@@ -1493,7 +1499,6 @@
 <span class="kw">pub const </span>STATE_DECODE_PARAMS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateDecodeParams"</span>;
 <span class="kw">pub const </span>STATE_SEARCH_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateSearchMsg"</span>;
 <span class="kw">pub const </span>STATE_SEARCH_MSG_LIMITED: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateSearchMsgLimited"</span>;
-<span class="kw">pub const </span>STATE_LIST_MESSAGES: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateListMessages"</span>;
 <span class="kw">pub const </span>STATE_LIST_MINERS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateListMiners"</span>;
 <span class="kw">pub const </span>STATE_MINER_SECTOR_COUNT: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateMinerSectorCount"</span>;
 <span class="kw">pub const </span>STATE_VERIFIED_CLIENT_STATUS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateVerifiedClientStatus"</span>;
@@ -1618,8 +1623,7 @@
         .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tipset_keys.<span class="number">0</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>ret = data
         .state_manager
-        .lookup_id(<span class="kw-2">&amp;</span>address, ts.as_ref())<span class="question-mark">?
-        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"Failed to lookup the id address for address: {address} and tipset keys: {tipset_keys}"</span>))<span class="question-mark">?</span>;
+        .lookup_required_id(<span class="kw-2">&amp;</span>address, ts.as_ref())<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(LotusJson(ret))
 }
 
@@ -2433,69 +2437,6 @@
     )<span class="question-mark">?</span>))
 }
 
-<span class="doccomment">/// Looks back and returns all messages with a matching to or from address, stopping at the given height.
-</span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::rpc) <span class="kw">async fn </span>state_list_messages&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Vec&lt;Cid&gt;&gt;, ServerError&gt; {
-    <span class="kw">let </span>LotusJson((from_to, tsk, max_height)): LotusJson&lt;(MessageFilter, ApiTipsetKey, i64)&gt; =
-        params.parse()<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>ts = data.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk.<span class="number">0</span>)<span class="question-mark">?</span>;
-
-    <span class="kw">if </span>from_to.is_empty() {
-        <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorObject::owned(
-            <span class="number">1</span>,
-            <span class="string">"must specify at least To or From in message filter"</span>,
-            <span class="prelude-val">Some</span>(from_to),
-        )
-        .into());
-    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(to) = from_to.to {
-        <span class="comment">// this is following lotus logic, it probably should be `if let` instead of `else if let`
-        // see &lt;https://github.com/ChainSafe/forest/pull/3827#discussion_r1462691005&gt;
-        </span>data.state_manager
-            .lookup_id(<span class="kw-2">&amp;</span>to, ts.as_ref())<span class="question-mark">?
-            </span>.with_context(|| {
-                <span class="macro">format!</span>(<span class="string">"Failed to lookup the id address for address: {to} and tipset keys: {tsk}"</span>)
-            })<span class="question-mark">?</span>;
-    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(from) = from_to.from {
-        data.state_manager
-            .lookup_id(<span class="kw-2">&amp;</span>from, ts.as_ref())<span class="question-mark">?
-            </span>.with_context(|| {
-                <span class="macro">format!</span>(
-                    <span class="string">"Failed to lookup the id address for address: {from} and tipset keys: {tsk}"
-                </span>)
-            })<span class="question-mark">?</span>;
-    }
-
-    <span class="kw">let </span><span class="kw-2">mut </span>out = Vec::new();
-    <span class="kw">let </span><span class="kw-2">mut </span>cur_ts = ts.clone();
-
-    <span class="kw">while </span>cur_ts.epoch() &gt;= max_height {
-        <span class="kw">let </span>msgs = data.chain_store.messages_for_tipset(<span class="kw-2">&amp;</span>cur_ts)<span class="question-mark">?</span>;
-
-        <span class="kw">for </span>msg <span class="kw">in </span>msgs {
-            <span class="kw">if </span>from_to.matches(msg.message()) {
-                out.push(msg.cid()<span class="question-mark">?</span>);
-            }
-        }
-
-        <span class="kw">if </span>cur_ts.epoch() == <span class="number">0 </span>{
-            <span class="kw">break</span>;
-        }
-
-        <span class="kw">let </span>next = data
-            .state_manager
-            .chain_store()
-            .chain_index
-            .load_tipset(cur_ts.parents())<span class="question-mark">?
-            </span>.context(<span class="string">"failed to load next tipset"</span>)<span class="question-mark">?</span>;
-        cur_ts = next;
-    }
-
-    <span class="prelude-val">Ok</span>(LotusJson(out))
-}
-
 <span class="kw">pub async fn </span>state_list_miners&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
     params: Params&lt;<span class="lifetime">'_</span>&gt;,
     data: Ctx&lt;DB&gt;,
@@ -2812,6 +2753,75 @@
             </span>.into_iter()
             .map(|s| s.sector_number)
             .collect())
+    }
+}
+
+<span class="doccomment">/// Looks back and returns all messages with a matching to or from address, stopping at the given height.
+</span><span class="kw">pub enum </span>StateListMessages {}
+
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateListMessages {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateListMessages"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"message_filter"</span>, <span class="string">"tipset_key"</span>, <span class="string">"max_height"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+
+    <span class="kw">type </span>Params = (
+        LotusJson&lt;MessageFilter&gt;,
+        LotusJson&lt;ApiTipsetKey&gt;,
+        LotusJson&lt;i64&gt;,
+    );
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;Cid&gt;;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (LotusJson(from_to), LotusJson(ApiTipsetKey(tsk)), LotusJson(max_height)): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = ctx
+            .state_manager
+            .chain_store()
+            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">if </span>from_to.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorObject::owned(
+                <span class="number">1</span>,
+                <span class="string">"must specify at least To or From in message filter"</span>,
+                <span class="prelude-val">Some</span>(from_to),
+            )
+            .into());
+        } <span class="kw">else if let </span><span class="prelude-val">Some</span>(to) = from_to.to {
+            <span class="comment">// this is following lotus logic, it probably should be `if let` instead of `else if let`
+            // see &lt;https://github.com/ChainSafe/forest/pull/3827#discussion_r1462691005&gt;
+            </span><span class="kw">if </span>ctx.state_manager.lookup_id(<span class="kw-2">&amp;</span>to, ts.as_ref())<span class="question-mark">?</span>.is_none() {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
+            }
+        } <span class="kw">else if let </span><span class="prelude-val">Some</span>(from) = from_to.from {
+            <span class="kw">if </span>ctx.state_manager.lookup_id(<span class="kw-2">&amp;</span>from, ts.as_ref())<span class="question-mark">?</span>.is_none() {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
+            }
+        }
+
+        <span class="kw">let </span><span class="kw-2">mut </span>out = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>cur_ts = ts.clone();
+
+        <span class="kw">while </span>cur_ts.epoch() &gt;= max_height {
+            <span class="kw">let </span>msgs = ctx.chain_store.messages_for_tipset(<span class="kw-2">&amp;</span>cur_ts)<span class="question-mark">?</span>;
+
+            <span class="kw">for </span>msg <span class="kw">in </span>msgs {
+                <span class="kw">if </span>from_to.matches(msg.message()) {
+                    out.push(msg.cid()<span class="question-mark">?</span>);
+                }
+            }
+
+            <span class="kw">if </span>cur_ts.epoch() == <span class="number">0 </span>{
+                <span class="kw">break</span>;
+            }
+
+            <span class="kw">let </span>next = ctx
+                .chain_store
+                .chain_index
+                .load_required_tipset(cur_ts.parents())<span class="question-mark">?</span>;
+            cur_ts = next;
+        }
+
+        <span class="prelude-val">Ok</span>(out)
     }
 }
 </code></pre></div></section></main></body></html>
