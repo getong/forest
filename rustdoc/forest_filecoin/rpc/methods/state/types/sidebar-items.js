@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ActorTrace","ApiInvocResult","ExecutionTrace","GasTrace","MessageGasCost","MessageTrace","ReturnTrace"]};
+window.SIDEBAR_ITEMS = {"struct":["ActorTrace","ApiInvocResult","ExecutionTrace","GasTrace","MessageGasCost","MessageTrace","MiningBaseInfo","ReturnTrace"]};

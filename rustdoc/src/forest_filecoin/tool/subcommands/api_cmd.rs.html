@@ -1455,6 +1455,12 @@
 <a href="#1453" id="1453">1453</a>
 <a href="#1454" id="1454">1454</a>
 <a href="#1455" id="1455">1455</a>
+<a href="#1456" id="1456">1456</a>
+<a href="#1457" id="1457">1457</a>
+<a href="#1458" id="1458">1458</a>
+<a href="#1459" id="1459">1459</a>
+<a href="#1460" id="1460">1460</a>
+<a href="#1461" id="1461">1461</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2379,11 +2385,14 @@
                 block.miner_address,
                 tipset.key().into(),
             )));
-            tests.push(RpcTest::identity(ApiInfo::miner_get_base_info_req(
-                block.miner_address,
-                block.epoch,
-                tipset.key().into(),
-            )));
+            tests.push(RpcTest::identity(
+                MinerGetBaseInfo::request((
+                    block.miner_address.into(),
+                    block.epoch,
+                    LotusJson(tipset.key().into()),
+                ))
+                .unwrap(),
+            ));
             tests.push(RpcTest::identity(ApiInfo::state_miner_recoveries_req(
                 block.miner_address,
                 tipset.key().into(),
@@ -2403,16 +2412,19 @@
         <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
             <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
             <span class="kw">for </span>msg <span class="kw">in </span>secp_messages {
-                tests.push(RpcTest::identity(ApiInfo::state_call_req(
-                    msg.message().clone(),
-                    shared_tipset.key().into(),
-                )));
+                tests.push(RpcTest::identity(
+                    StateCall::request((
+                        msg.message().clone().into(),
+                        LotusJson(shared_tipset.key().into()),
+                    ))
+                    .unwrap(),
+                ));
             }
             <span class="kw">for </span>msg <span class="kw">in </span>bls_messages {
-                tests.push(RpcTest::identity(ApiInfo::state_call_req(
-                    msg.clone(),
-                    shared_tipset.key().into(),
-                )));
+                tests.push(RpcTest::identity(
+                    StateCall::request((msg.clone().into(), LotusJson(shared_tipset.key().into())))
+                        .unwrap(),
+                ));
             }
 
             tests.push(RpcTest::identity(ApiInfo::state_market_balance_req(
