@@ -30,6 +30,7 @@ use fil_actor_interface::{
     miner::{MinerInfo, MinerPower},
     multisig, power, reward,
 };
+use fil_actor_miner_state::v10::qa_power_for_weight;
 use fil_actors_shared::fvm_ipld_bitfield::BitField;
 use futures::StreamExt;
 use fvm_ipld_blockstore::Blockstore;
@@ -292,7 +293,52 @@ pub async fn state_miner_pre_commit_deposit_for_power<DB: Blockstore + Send + Sy
         SectorPreCommitInfo,
         ApiTipsetKey,
     )> = params.parse()?;
-    unimplemented!()
+
+    let bs = data.state_manager.blockstore();
+    let ts = data.chain_store.load_required_tipset_or_heaviest(&tsk)?;
+
+    let state = *ts.parent_state();
+
+    let sector_size = sector_pci
+        .seal_proof
+        .sector_size()
+        .map_err(|e| anyhow::anyhow!("failed to get resolve size: {e}"))?;
+
+    let actor = data
+        .state_manager
+        .get_actor(&Address::MARKET_ACTOR, state)?
+        .context("Market actor address could not be resolved")?;
+    let market_state = market::State::load(bs, actor.code, actor.state)?;
+    let (w, vw) = market_state.verify_deals_for_activation(
+        maddr.into(),
+        sector_pci.deal_ids,
+        ts.epoch(),
+        sector_pci.expiration,
+    )?;
+    let duration = sector_pci.expiration - ts.epoch();
+    let sector_weight = qa_power_for_weight(sector_size, duration, &w, &vw);
+
+    let power_actor = data
+        .state_manager
+        .get_actor(&Address::POWER_ACTOR, state)?
+        .context("Power actor address could not be resolved")?;
+    let power_state = power::State::load(bs, power_actor.code, power_actor.state)?;
+    let power_smoothed = power_state.total_power_smoothed();
+
+    let reward_actor = data
+        .state_manager
+        .get_actor(&Address::REWARD_ACTOR, state)?
+        .context("Reward actor address could not be resolved")?;
+    let reward_state = reward::State::load(bs, reward_actor.code, reward_actor.state)?;
+    let genesis_info = GenesisInfo::from_chain_config(data.state_manager.chain_config());
+    let deposit = reward_state.pre_commit_deposit_for_power(power_smoothed, sector_weight)?;
+    let initial_pledge_num = BigInt::from(110);
+    let initial_pledge_den = BigInt::from(100);
+    let result = deposit
+        .atto()
+        .mul(initial_pledge_num)
+        .div_euclid(&initial_pledge_den);
+    Ok(LotusJson(result))
 }
 
 /// looks up the miner info of the given address.
