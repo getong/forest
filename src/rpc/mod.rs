@@ -344,6 +344,10 @@ where
     module.register_method(WEB3_CLIENT_VERSION, move |_, _| {
         crate::utils::version::FOREST_VERSION_STRING.clone()
     })?;
+    module.register_async_method(
+        STATE_MINER_PRE_COMMIT_DEPOSIT_FOR_POWER,
+        state_miner_pre_commit_deposit_for_power::<DB>,
+    )?;
 
     Ok(())
 }

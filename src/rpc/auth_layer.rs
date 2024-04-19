@@ -133,6 +133,10 @@ static ACCESS_MAP: Lazy<HashMap<&str, Access>> = Lazy::new(|| {
     access.insert(state::STATE_DEAL_PROVIDER_COLLATERAL_BOUNDS, Access::Read);
     access.insert(state::StateGetBeaconEntry::NAME, Access::Read);
     access.insert(state::StateSectorPreCommitInfo::NAME, Access::Read);
+    access.insert(
+        state::STATE_MINER_PRE_COMMIT_DEPOSIT_FOR_POWER,
+        Access::Read,
+    );
 
     // Gas API
     access.insert(gas::GAS_ESTIMATE_GAS_LIMIT, Access::Read);

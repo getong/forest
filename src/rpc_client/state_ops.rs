@@ -116,6 +116,17 @@ impl ApiInfo {
         RpcRequest::new(STATE_MINER_AVAILABLE_BALANCE, (miner, tsk))
     }
 
+    pub fn state_miner_pre_commit_deposit_for_power_req(
+        miner: Address,
+        sector_pci: SectorPreCommitInfo,
+        tsk: ApiTipsetKey,
+    ) -> RpcRequest<TokenAmount> {
+        RpcRequest::new(
+            STATE_MINER_PRE_COMMIT_DEPOSIT_FOR_POWER,
+            (miner, sector_pci, tsk),
+        )
+    }
+
     pub fn state_get_randomness_from_tickets_req(
         tsk: ApiTipsetKey,
         personalization: DomainSeparationTag,

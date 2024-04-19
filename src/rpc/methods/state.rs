@@ -96,6 +96,8 @@ pub const MSIG_GET_AVAILABLE_BALANCE: &str = "Filecoin.MsigGetAvailableBalance";
 pub const MSIG_GET_PENDING: &str = "Filecoin.MsigGetPending";
 pub const STATE_MINER_SECTORS: &str = "Filecoin.StateMinerSectors";
 pub const STATE_MINER_PARTITIONS: &str = "Filecoin.StateMinerPartitions";
+pub const STATE_MINER_PRE_COMMIT_DEPOSIT_FOR_POWER: &str =
+    "Filecoin.StateMinerPreCommitDepositForPower";
 
 pub async fn miner_get_base_info<DB: Blockstore + Send + Sync + 'static>(
     params: Params<'_>,
@@ -279,6 +281,18 @@ pub async fn state_market_deals<DB: Blockstore>(
         Ok(())
     })?;
     Ok(out)
+}
+
+pub async fn state_miner_pre_commit_deposit_for_power<DB: Blockstore + Send + Sync + 'static>(
+    params: Params<'_>,
+    data: Ctx<DB>,
+) -> Result<LotusJson<TokenAmount>, ServerError> {
+    let LotusJson((maddr, sector_pci, ApiTipsetKey(tsk))): LotusJson<(
+        Address,
+        SectorPreCommitInfo,
+        ApiTipsetKey,
+    )> = params.parse()?;
+    unimplemented!()
 }
 
 /// looks up the miner info of the given address.
