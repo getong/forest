@@ -1425,42 +1425,6 @@
 <a href="#1423" id="1423">1423</a>
 <a href="#1424" id="1424">1424</a>
 <a href="#1425" id="1425">1425</a>
-<a href="#1426" id="1426">1426</a>
-<a href="#1427" id="1427">1427</a>
-<a href="#1428" id="1428">1428</a>
-<a href="#1429" id="1429">1429</a>
-<a href="#1430" id="1430">1430</a>
-<a href="#1431" id="1431">1431</a>
-<a href="#1432" id="1432">1432</a>
-<a href="#1433" id="1433">1433</a>
-<a href="#1434" id="1434">1434</a>
-<a href="#1435" id="1435">1435</a>
-<a href="#1436" id="1436">1436</a>
-<a href="#1437" id="1437">1437</a>
-<a href="#1438" id="1438">1438</a>
-<a href="#1439" id="1439">1439</a>
-<a href="#1440" id="1440">1440</a>
-<a href="#1441" id="1441">1441</a>
-<a href="#1442" id="1442">1442</a>
-<a href="#1443" id="1443">1443</a>
-<a href="#1444" id="1444">1444</a>
-<a href="#1445" id="1445">1445</a>
-<a href="#1446" id="1446">1446</a>
-<a href="#1447" id="1447">1447</a>
-<a href="#1448" id="1448">1448</a>
-<a href="#1449" id="1449">1449</a>
-<a href="#1450" id="1450">1450</a>
-<a href="#1451" id="1451">1451</a>
-<a href="#1452" id="1452">1452</a>
-<a href="#1453" id="1453">1453</a>
-<a href="#1454" id="1454">1454</a>
-<a href="#1455" id="1455">1455</a>
-<a href="#1456" id="1456">1456</a>
-<a href="#1457" id="1457">1457</a>
-<a href="#1458" id="1458">1458</a>
-<a href="#1459" id="1459">1459</a>
-<a href="#1460" id="1460">1460</a>
-<a href="#1461" id="1461">1461</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1473,7 +1437,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::genesis::{get_network_name_from_genesis, read_genesis_header};
 <span class="kw">use </span><span class="kw">crate</span>::key_management::{KeyStore, KeyStoreConfig};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::{HasLotusJson, LotusJson};
-<span class="kw">use </span><span class="kw">crate</span>::message::Message <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::message::{Message <span class="kw">as _</span>, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
 <span class="kw">use </span><span class="kw">crate</span>::networks::{parse_bootstrap_peers, ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::beacon::BeaconGetEntry;
@@ -1494,6 +1458,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
+<span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>clap::{Subcommand, ValueEnum};
 <span class="kw">use </span>fil_actor_interface::market;
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_bitfield::BitField;
@@ -1522,6 +1487,8 @@
     task::JoinSet,
 };
 <span class="kw">use </span>tracing::{debug, info, warn};
+
+<span class="kw">const </span>COLLECTION_SAMPLE_SIZE: usize = <span class="number">5</span>;
 
 <span class="attr">#[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
@@ -1567,7 +1534,7 @@
         <span class="doccomment">/// Cancel test run on the first failure
         </span><span class="attr">#[arg(long)]
         </span>fail_fast: bool,
-        <span class="attr">#[arg(short, long, default_value = <span class="string">"20"</span>)]
+        <span class="attr">#[arg(short, long, default_value = <span class="string">"10"</span>)]
         </span><span class="doccomment">/// The number of tipsets to use to generate test cases.
         </span>n_tipsets: usize,
         <span class="attr">#[arg(long, value_enum, default_value_t = RunIgnored::Default)]
@@ -1929,32 +1896,55 @@
     ]
 }
 
-<span class="kw">fn </span>chain_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
-    <span class="kw">let </span>shared_block_cid = (<span class="kw-2">*</span>shared_tipset.min_ticket_block().cid()).into();
+<span class="kw">fn </span>chain_tests_with_tipset&lt;DB: Blockstore&gt;(
+    store: <span class="kw-2">&amp;</span>Arc&lt;DB&gt;,
+    tipset: <span class="kw-2">&amp;</span>Tipset,
+) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[
+        RpcTest::identity(ChainGetTipSetAfterHeight::request((
+            tipset.epoch(),
+            Default::default(),
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(ChainGetTipSetAfterHeight::request((
+            tipset.epoch(),
+            Default::default(),
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(ChainGetTipSet::request((LotusJson(
+            tipset.key().clone().into(),
+        ),))<span class="question-mark">?</span>),
+        RpcTest::identity(ChainGetPath::request((
+            tipset.key().clone().into(),
+            tipset.parents().clone().into(),
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(ChainGetMessagesInTipset::request((tipset
+            .key()
+            .clone()
+            .into(),))<span class="question-mark">?</span>),
+        RpcTest::identity(ChainTipSetWeight::request((LotusJson(
+            tipset.key().into(),
+        ),))<span class="question-mark">?</span>),
+    ];
 
-    <span class="macro">vec!</span>[
-        RpcTest::identity(ChainReadObj::request((shared_block_cid,)).unwrap()),
-        RpcTest::identity(ChainHasObj::request((shared_block_cid,)).unwrap()),
-        RpcTest::identity(ChainGetBlock::request((shared_block_cid,)).unwrap()),
-        RpcTest::identity(
-            ChainGetTipSetAfterHeight::request((shared_tipset.epoch(), Default::default()))
-                .unwrap(),
-        ),
-        RpcTest::identity(
-            ChainGetTipSetAfterHeight::request((shared_tipset.epoch(), Default::default()))
-                .unwrap(),
-        ),
-        RpcTest::identity(
-            ChainGetTipSet::request((LotusJson(shared_tipset.key().clone().into()),)).unwrap(),
-        ),
-        RpcTest::identity(
-            ChainGetPath::request((
-                shared_tipset.key().clone().into(),
-                shared_tipset.parents().clone().into(),
-            ))
-            .unwrap(),
-        ),
-    ]
+    <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
+        <span class="kw">let </span>block_cid = <span class="kw-2">*</span>block.cid();
+        tests.extend([
+            RpcTest::identity(ChainReadObj::request((block_cid.into(),))<span class="question-mark">?</span>),
+            RpcTest::identity(ChainHasObj::request((block_cid.into(),))<span class="question-mark">?</span>),
+            RpcTest::identity(ChainGetBlock::request((block_cid.into(),))<span class="question-mark">?</span>),
+            RpcTest::identity(ChainGetBlockMessages::request((block_cid.into(),))<span class="question-mark">?</span>),
+            RpcTest::identity(ChainGetParentMessages::request((block_cid.into(),))<span class="question-mark">?</span>),
+            RpcTest::identity(ChainGetParentReceipts::request((block_cid.into(),))<span class="question-mark">?</span>),
+        ]);
+
+        <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
+        <span class="kw">for </span>msg_cid <span class="kw">in </span>sample_message_cids(bls_messages.iter(), secp_messages.iter()) {
+            tests.extend([RpcTest::identity(ChainGetMessage::request((
+                msg_cid.into(),
+            ))<span class="question-mark">?</span>)]);
+        }
+    }
+
+    <span class="prelude-val">Ok</span>(tests)
 }
 
 <span class="kw">fn </span>mpool_tests() -&gt; Vec&lt;RpcTest&gt; {
@@ -2004,73 +1994,261 @@
     ]
 }
 
-<span class="kw">fn </span>state_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
-    <span class="kw">let </span>shared_block = shared_tipset.min_ticket_block();
-    <span class="kw">let </span><span class="kw-2">mut </span>sectors = BitField::new();
-    sectors.set(<span class="number">101</span>);
-    <span class="macro">vec!</span>[
-        RpcTest::identity(StateNetworkName::request(()).unwrap()),
+<span class="kw">fn </span>state_tests_with_tipset&lt;DB: Blockstore&gt;(
+    store: <span class="kw-2">&amp;</span>Arc&lt;DB&gt;,
+    tipset: <span class="kw-2">&amp;</span>Tipset,
+) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[
+        RpcTest::identity(StateNetworkName::request(())<span class="question-mark">?</span>),
         RpcTest::identity(ApiInfo::state_get_actor_req(
             Address::SYSTEM_ACTOR,
-            shared_tipset.key().clone(),
+            tipset.key().into(),
         )),
         RpcTest::identity(ApiInfo::state_get_randomness_from_tickets_req(
-            shared_tipset.key().into(),
+            tipset.key().into(),
             DomainSeparationTag::ElectionProofProduction,
-            shared_tipset.epoch(),
+            tipset.epoch(),
             <span class="string">"dead beef"</span>.as_bytes().to_vec(),
         )),
         RpcTest::identity(ApiInfo::state_get_randomness_from_beacon_req(
-            shared_tipset.key().into(),
+            tipset.key().into(),
             DomainSeparationTag::ElectionProofProduction,
-            shared_tipset.epoch(),
+            tipset.epoch(),
             <span class="string">"dead beef"</span>.as_bytes().to_vec(),
         )),
         RpcTest::identity(ApiInfo::state_read_state_req(
             Address::SYSTEM_ACTOR,
-            shared_tipset.key().into(),
+            tipset.key().into(),
         )),
         RpcTest::identity(ApiInfo::state_read_state_req(
             Address::SYSTEM_ACTOR,
             Default::default(),
         )),
-        RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
-            shared_block.miner_address,
-            shared_tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::state_lookup_id_req(
-            shared_block.miner_address,
-            shared_tipset.key().into(),
-        )),
         <span class="comment">// This should return `Address::new_id(0xdeadbeef)`
         </span>RpcTest::identity(ApiInfo::state_lookup_id_req(
             Address::new_id(<span class="number">0xdeadbeef</span>),
-            shared_tipset.key().into(),
+            tipset.key().into(),
         )),
-        RpcTest::identity(ApiInfo::state_network_version_req(
-            shared_tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::state_list_miners_req(shared_tipset.key().into())),
-        RpcTest::identity(ApiInfo::state_miner_sectors_req(
-            shared_block.miner_address,
-            sectors,
-            shared_tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::state_miner_partitions_req(
-            shared_block.miner_address,
-            <span class="number">0</span>,
-            shared_tipset.key().into(),
-        )),
+        RpcTest::identity(ApiInfo::state_network_version_req(tipset.key().into())),
+        RpcTest::identity(ApiInfo::state_list_miners_req(tipset.key().into())),
         RpcTest::identity(ApiInfo::msig_get_available_balance_req(
             Address::new_id(<span class="number">18101</span>), <span class="comment">// msig address id
-            </span>shared_tipset.key().into(),
+            </span>tipset.key().into(),
         )),
         RpcTest::identity(ApiInfo::msig_get_pending_req(
             Address::new_id(<span class="number">18101</span>), <span class="comment">// msig address id
-            </span>shared_tipset.key().into(),
+            </span>tipset.key().into(),
         )),
-        RpcTest::identity(StateGetBeaconEntry::request((shared_tipset.epoch().into(),)).unwrap()),
-    ]
+        RpcTest::identity(StateGetBeaconEntry::request((tipset.epoch().into(),))<span class="question-mark">?</span>),
+        <span class="comment">// Not easily verifiable by using addresses extracted from blocks as most of those yield `null`
+        // for both Lotus and Forest. Therefore the actor addresses are hardcoded to values that allow
+        // for API compatibility verification.
+        </span>RpcTest::identity(ApiInfo::state_verified_client_status(
+            Address::VERIFIED_REGISTRY_ACTOR,
+            tipset.key().into(),
+        )),
+        RpcTest::identity(ApiInfo::state_verified_client_status(
+            Address::DATACAP_TOKEN_ACTOR,
+            tipset.key().into(),
+        )),
+        RpcTest::identity(ApiInfo::state_deal_provider_collateral_bounds_req(
+            PaddedPieceSize(<span class="number">1</span>),
+            <span class="bool-val">true</span>,
+            tipset.key().into(),
+        )),
+        RpcTest::identity(ApiInfo::state_circulating_supply_req(tipset.key().into())),
+        RpcTest::identity(ApiInfo::state_vm_circulating_supply_internal_req(
+            tipset.key().into(),
+        )),
+    ];
+
+    <span class="comment">// Get deals
+    </span><span class="kw">let </span>deals = {
+        <span class="kw">let </span>state = StateTree::new_from_root(store.clone(), tipset.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = state
+            .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?
+            </span>.context(<span class="string">"Market actor not found"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>market_state = market::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
+        <span class="kw">let </span>proposals = market_state.proposals(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>deals = <span class="macro">vec!</span>[];
+        proposals.for_each(|deal_id, <span class="kw">_</span>| {
+            deals.push(deal_id);
+            <span class="prelude-val">Ok</span>(())
+        })<span class="question-mark">?</span>;
+        deals
+    };
+
+    <span class="comment">// Take 5 deals from each tipset
+    </span><span class="kw">for </span>deal <span class="kw">in </span>deals.into_iter().take(COLLECTION_SAMPLE_SIZE) {
+        tests.push(RpcTest::identity(ApiInfo::state_market_storage_deal_req(
+            deal,
+            tipset.key().into(),
+        )));
+    }
+
+    <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
+        tests.extend([
+            RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_lookup_id_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_sectors_req(
+                block.miner_address,
+                <span class="prelude-val">None</span>,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_partitions_req(
+                block.miner_address,
+                <span class="number">0</span>,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_market_balance_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_info_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_power_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_deadlines_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_proving_deadline_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_available_balance_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_faults_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(MinerGetBaseInfo::request((
+                block.miner_address.into(),
+                block.epoch,
+                LotusJson(tipset.key().into()),
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(ApiInfo::state_miner_recoveries_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+            RpcTest::identity(ApiInfo::state_miner_sector_count_req(
+                block.miner_address,
+                tipset.key().into(),
+            )),
+        ]);
+
+        <span class="kw">for </span>sector <span class="kw">in </span>StateSectorGetInfo::get_sectors(store, <span class="kw-2">&amp;</span>block.miner_address, tipset)<span class="question-mark">?
+            </span>.into_iter()
+            .take(COLLECTION_SAMPLE_SIZE)
+        {
+            tests.extend([
+                RpcTest::identity(StateSectorGetInfo::request((
+                    block.miner_address.into(),
+                    sector.into(),
+                    LotusJson(tipset.key().into()),
+                ))<span class="question-mark">?</span>),
+                RpcTest::identity(ApiInfo::state_miner_sectors_req(
+                    block.miner_address,
+                    {
+                        <span class="kw">let </span><span class="kw-2">mut </span>bf = BitField::new();
+                        bf.set(sector);
+                        <span class="prelude-val">Some</span>(bf)
+                    },
+                    tipset.key().into(),
+                )),
+            ]);
+        }
+        <span class="kw">for </span>sector <span class="kw">in </span>StateSectorPreCommitInfo::get_sectors(store, <span class="kw-2">&amp;</span>block.miner_address, tipset)<span class="question-mark">?
+            </span>.into_iter()
+            .take(COLLECTION_SAMPLE_SIZE)
+        {
+            tests.extend([RpcTest::identity(StateSectorPreCommitInfo::request((
+                block.miner_address.into(),
+                sector.into(),
+                LotusJson(tipset.key().into()),
+            ))<span class="question-mark">?</span>)]);
+        }
+
+        <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(store, block)<span class="question-mark">?</span>;
+        <span class="kw">for </span>msg_cid <span class="kw">in </span>sample_message_cids(bls_messages.iter(), secp_messages.iter()) {
+            tests.extend([
+                validate_message_lookup(ApiInfo::state_wait_msg_req(msg_cid, <span class="number">0</span>))
+                    .with_timeout(Duration::from_secs(<span class="number">30</span>)),
+                validate_message_lookup(ApiInfo::state_search_msg_req(msg_cid)),
+                validate_message_lookup(ApiInfo::state_search_msg_limited_req(msg_cid, <span class="number">800</span>)),
+            ]);
+        }
+        <span class="kw">for </span>msg <span class="kw">in </span>sample_messages(bls_messages.iter(), secp_messages.iter()) {
+            tests.extend([
+                RpcTest::identity(ApiInfo::state_account_key_req(
+                    msg.from(),
+                    tipset.key().into(),
+                )),
+                RpcTest::identity(ApiInfo::state_account_key_req(
+                    msg.from(),
+                    Default::default(),
+                )),
+                RpcTest::identity(ApiInfo::state_lookup_id_req(
+                    msg.from(),
+                    tipset.key().into(),
+                )),
+                RpcTest::identity(StateListMessages::request((
+                    MessageFilter {
+                        from: <span class="prelude-val">Some</span>(msg.from()),
+                        to: <span class="prelude-val">Some</span>(msg.to()),
+                    }
+                    .into(),
+                    LotusJson(tipset.key().into()),
+                    tipset.epoch().into(),
+                ))<span class="question-mark">?</span>),
+                RpcTest::identity(StateListMessages::request((
+                    MessageFilter {
+                        from: <span class="prelude-val">Some</span>(msg.from()),
+                        to: <span class="prelude-val">None</span>,
+                    }
+                    .into(),
+                    LotusJson(tipset.key().into()),
+                    tipset.epoch().into(),
+                ))<span class="question-mark">?</span>),
+                RpcTest::identity(StateListMessages::request((
+                    MessageFilter {
+                        from: <span class="prelude-val">None</span>,
+                        to: <span class="prelude-val">Some</span>(msg.to()),
+                    }
+                    .into(),
+                    LotusJson(tipset.key().into()),
+                    tipset.epoch().into(),
+                ))<span class="question-mark">?</span>),
+                RpcTest::identity(StateCall::request((
+                    msg.clone().into(),
+                    LotusJson(tipset.key().into()),
+                ))<span class="question-mark">?</span>),
+            ]);
+            <span class="kw">if </span>!msg.params().is_empty() {
+                tests.extend([RpcTest::identity(ApiInfo::state_decode_params_req(
+                        msg.to(),
+                        msg.method_num(),
+                        msg.params().to_vec(),
+                        tipset.key().into(),
+                    )).ignore(<span class="string">"Difficult to implement. Tracking issue: https://github.com/ChainSafe/forest/issues/3769"</span>)
+                ]);
+            }
+        }
+    }
+
+    <span class="prelude-val">Ok</span>(tests)
 }
 
 <span class="kw">fn </span>wallet_tests() -&gt; Vec&lt;RpcTest&gt; {
@@ -2168,294 +2346,11 @@
         .take(<span class="number">10</span>)
         .last()
         .expect(<span class="string">"Infallible"</span>);
-    <span class="kw">let </span>shared_tipset_key = shared_tipset.key();
-    tests.extend(chain_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
-    tests.extend(state_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
-    tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
-    tests.extend(gas_tests_with_tipset(<span class="kw-2">&amp;</span>shared_tipset));
-
-    <span class="comment">// Not easily verifiable by using addresses extracted from blocks as most of those yield `null`
-    // for both Lotus and Forest. Therefore the actor addresses are hardcoded to values that allow
-    // for API compatibility verification.
-    </span>tests.push(RpcTest::identity(ApiInfo::state_verified_client_status(
-        Address::VERIFIED_REGISTRY_ACTOR,
-        shared_tipset.key().into(),
-    )));
-    tests.push(RpcTest::identity(ApiInfo::state_verified_client_status(
-        Address::DATACAP_TOKEN_ACTOR,
-        shared_tipset.key().into(),
-    )));
-
-    <span class="kw">for </span>tipset <span class="kw">in </span>shared_tipset.clone().chain(<span class="kw-2">&amp;</span>store).take(n_tipsets) {
-        tests.push(RpcTest::identity(ChainGetMessagesInTipset::request((
-            tipset.key().clone().into(),
-        ))<span class="question-mark">?</span>));
-        tests.push(RpcTest::identity(
-            ApiInfo::state_deal_provider_collateral_bounds_req(
-                PaddedPieceSize(<span class="number">1</span>),
-                <span class="bool-val">true</span>,
-                tipset.key().into(),
-            ),
-        ));
-        tests.push(RpcTest::identity(ChainTipSetWeight::request((LotusJson(
-            tipset.key().into(),
-        ),))<span class="question-mark">?</span>));
-        <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
-            <span class="kw">let </span>block_cid = (<span class="kw-2">*</span>block.cid()).into();
-            tests.extend([
-                RpcTest::identity(ChainGetBlockMessages::request((block_cid,))<span class="question-mark">?</span>),
-                RpcTest::identity(ChainGetParentMessages::request((block_cid,))<span class="question-mark">?</span>),
-                RpcTest::identity(ChainGetParentReceipts::request((block_cid,))<span class="question-mark">?</span>),
-            ]);
-            tests.push(RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
-                block.miner_address,
-                shared_tipset_key.into(),
-            )));
-            <span class="kw">for </span>sector <span class="kw">in </span>StateSectorGetInfo::get_sectors(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>block.miner_address, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?
-                </span>.into_iter()
-                .take(<span class="number">5</span>)
-            {
-                tests.push(RpcTest::identity(StateSectorGetInfo::request((
-                    block.miner_address.into(),
-                    sector.into(),
-                    LotusJson(tipset.key().into()),
-                ))<span class="question-mark">?</span>));
-            }
-            <span class="kw">for </span>sector <span class="kw">in
-                </span>StateSectorPreCommitInfo::get_sectors(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>block.miner_address, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?
-                    </span>.into_iter()
-                    .take(<span class="number">5</span>)
-            {
-                tests.push(RpcTest::identity(StateSectorPreCommitInfo::request((
-                    block.miner_address.into(),
-                    sector.into(),
-                    LotusJson(tipset.key().into()),
-                ))<span class="question-mark">?</span>));
-            }
-
-            <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
-            <span class="kw">for </span>msg <span class="kw">in </span>bls_messages.into_iter().unique().take(<span class="number">5</span>) {
-                tests.push(RpcTest::identity(ChainGetMessage::request((msg
-                    .cid()<span class="question-mark">?
-                    </span>.into(),))<span class="question-mark">?</span>));
-                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                    msg.from(),
-                    shared_tipset_key.into(),
-                )));
-                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                    msg.from(),
-                    Default::default(),
-                )));
-                tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
-                    msg.from(),
-                    shared_tipset_key.into(),
-                )));
-                tests.push(
-                    validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
-                        .with_timeout(Duration::from_secs(<span class="number">30</span>)),
-                );
-                tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
-                    msg.cid()<span class="question-mark">?</span>,
-                )));
-                tests.push(validate_message_lookup(
-                    ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
-                ));
-                tests.push(RpcTest::identity(StateListMessages::request((
-                    MessageFilter {
-                        from: <span class="prelude-val">Some</span>(msg.from()),
-                        to: <span class="prelude-val">Some</span>(msg.to()),
-                    }
-                    .into(),
-                    LotusJson(tipset.key().into()),
-                    tipset.epoch().into(),
-                ))<span class="question-mark">?</span>));
-                tests.push(RpcTest::identity(StateListMessages::request((
-                    MessageFilter {
-                        from: <span class="prelude-val">Some</span>(msg.to()),
-                        to: <span class="prelude-val">None</span>,
-                    }
-                    .into(),
-                    LotusJson(tipset.key().into()),
-                    tipset.epoch().into(),
-                ))<span class="question-mark">?</span>));
-                tests.push(RpcTest::identity(StateListMessages::request((
-                    MessageFilter {
-                        from: <span class="prelude-val">None</span>,
-                        to: <span class="prelude-val">Some</span>(msg.to()),
-                    }
-                    .into(),
-                    LotusJson(tipset.key().into()),
-                    tipset.epoch().into(),
-                ))<span class="question-mark">?</span>));
-                tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
-                    msg.cid()<span class="question-mark">?</span>,
-                )));
-                tests.push(validate_message_lookup(
-                    ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
-                ));
-            }
-            <span class="kw">for </span>msg <span class="kw">in </span>secp_messages.into_iter().unique().take(<span class="number">5</span>) {
-                tests.push(RpcTest::identity(ChainGetMessage::request((msg
-                    .cid()<span class="question-mark">?
-                    </span>.into(),))<span class="question-mark">?</span>));
-                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                    msg.from(),
-                    shared_tipset_key.into(),
-                )));
-                tests.push(RpcTest::identity(ApiInfo::state_account_key_req(
-                    msg.from(),
-                    Default::default(),
-                )));
-                tests.push(RpcTest::identity(ApiInfo::state_lookup_id_req(
-                    msg.from(),
-                    shared_tipset_key.into(),
-                )));
-                tests.push(
-                    validate_message_lookup(ApiInfo::state_wait_msg_req(msg.cid()<span class="question-mark">?</span>, <span class="number">0</span>))
-                        .with_timeout(Duration::from_secs(<span class="number">30</span>)),
-                );
-                tests.push(validate_message_lookup(ApiInfo::state_search_msg_req(
-                    msg.cid()<span class="question-mark">?</span>,
-                )));
-                tests.push(validate_message_lookup(
-                    ApiInfo::state_search_msg_limited_req(msg.cid()<span class="question-mark">?</span>, <span class="number">800</span>),
-                ));
-                tests.push(RpcTest::basic(
-                    MpoolGetNonce::request((msg.from().into(),)).unwrap(),
-                ));
-                tests.push(RpcTest::identity(StateListMessages::request((
-                    MessageFilter {
-                        from: <span class="prelude-val">Some</span>(msg.from()),
-                        to: <span class="prelude-val">Some</span>(msg.to()),
-                    }
-                    .into(),
-                    LotusJson(tipset.key().into()),
-                    tipset.epoch().into(),
-                ))<span class="question-mark">?</span>));
-                tests.push(RpcTest::identity(StateListMessages::request((
-                    MessageFilter {
-                        from: <span class="prelude-val">Some</span>(msg.to()),
-                        to: <span class="prelude-val">None</span>,
-                    }
-                    .into(),
-                    LotusJson(tipset.key().into()),
-                    tipset.epoch().into(),
-                ))<span class="question-mark">?</span>));
-                tests.push(RpcTest::identity(StateListMessages::request((
-                    MessageFilter {
-                        from: <span class="prelude-val">None</span>,
-                        to: <span class="prelude-val">Some</span>(msg.to()),
-                    }
-                    .into(),
-                    LotusJson(tipset.key().into()),
-                    tipset.epoch().into(),
-                ))<span class="question-mark">?</span>));
-
-                <span class="kw">if </span>!msg.params().is_empty() {
-                    tests.push(RpcTest::identity(ApiInfo::state_decode_params_req(
-                            msg.to(),
-                            msg.method_num(),
-                            msg.params().to_vec(),
-                            shared_tipset_key.into(),
-                        )).ignore(<span class="string">"Difficult to implement. Tracking issue: https://github.com/ChainSafe/forest/issues/3769"</span>));
-                }
-            }
-            tests.push(RpcTest::identity(ApiInfo::state_miner_info_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-            tests.push(RpcTest::identity(ApiInfo::state_miner_power_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-            tests.push(RpcTest::identity(ApiInfo::state_miner_deadlines_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-            tests.push(RpcTest::identity(
-                ApiInfo::state_miner_proving_deadline_req(block.miner_address, tipset.key().into()),
-            ));
-            tests.push(RpcTest::identity(
-                ApiInfo::state_miner_available_balance_req(
-                    block.miner_address,
-                    tipset.key().into(),
-                ),
-            ));
-            tests.push(RpcTest::identity(ApiInfo::state_miner_faults_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-            tests.push(RpcTest::identity(
-                MinerGetBaseInfo::request((
-                    block.miner_address.into(),
-                    block.epoch,
-                    LotusJson(tipset.key().into()),
-                ))
-                .unwrap(),
-            ));
-            tests.push(RpcTest::identity(ApiInfo::state_miner_recoveries_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-            tests.push(RpcTest::identity(ApiInfo::state_miner_sector_count_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-        }
-        tests.push(RpcTest::identity(ApiInfo::state_circulating_supply_req(
-            tipset.key().into(),
-        )));
-        tests.push(RpcTest::identity(
-            ApiInfo::state_vm_circulating_supply_internal_req(tipset.key().into()),
-        ));
-
-        <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
-            <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(<span class="kw-2">&amp;</span>store, block)<span class="question-mark">?</span>;
-            <span class="kw">for </span>msg <span class="kw">in </span>secp_messages {
-                tests.push(RpcTest::identity(
-                    StateCall::request((
-                        msg.message().clone().into(),
-                        LotusJson(shared_tipset.key().into()),
-                    ))
-                    .unwrap(),
-                ));
-            }
-            <span class="kw">for </span>msg <span class="kw">in </span>bls_messages {
-                tests.push(RpcTest::identity(
-                    StateCall::request((msg.clone().into(), LotusJson(shared_tipset.key().into())))
-                        .unwrap(),
-                ));
-            }
-
-            tests.push(RpcTest::identity(ApiInfo::state_market_balance_req(
-                block.miner_address,
-                tipset.key().into(),
-            )));
-        }
-
-        <span class="comment">// Get deals
-        </span><span class="kw">let </span>deals = {
-            <span class="kw">let </span>state = StateTree::new_from_root(store.clone(), tipset.parent_state())<span class="question-mark">?</span>;
-            <span class="kw">let </span>actor = state
-                .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?
-                </span>.context(<span class="string">"Market actor not found"</span>)<span class="question-mark">?</span>;
-            <span class="kw">let </span>market_state = market::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
-            <span class="kw">let </span>proposals = market_state.proposals(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>deals = <span class="macro">vec!</span>[];
-            proposals.for_each(|deal_id, <span class="kw">_</span>| {
-                deals.push(deal_id);
-                <span class="prelude-val">Ok</span>(())
-            })<span class="question-mark">?</span>;
-            deals
-        };
-
-        <span class="comment">// Take 5 deals from each tipset
-        </span><span class="kw">for </span>deal <span class="kw">in </span>deals.into_iter().take(<span class="number">5</span>) {
-            tests.push(RpcTest::identity(ApiInfo::state_market_storage_deal_req(
-                deal,
-                tipset.key().into(),
-            )));
-        }
+    <span class="kw">for </span>tipset <span class="kw">in </span>shared_tipset.chain(<span class="kw-2">&amp;</span>store).take(n_tipsets) {
+        tests.extend(chain_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>);
+        tests.extend(state_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>);
+        tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
+        tests.extend(gas_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
     }
     <span class="prelude-val">Ok</span>(tests)
 }
@@ -2463,6 +2358,39 @@
 <span class="kw">fn </span>websocket_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="kw">let </span>test = RpcTest::identity(ApiInfo::chain_notify_req()).ignore(<span class="string">"Not implemented yet"</span>);
     <span class="macro">vec!</span>[test]
+}
+
+<span class="kw">fn </span>sample_message_cids&lt;<span class="lifetime">'a</span>&gt;(
+    bls_messages: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Message&gt; + <span class="lifetime">'a</span>,
+    secp_messages: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>SignedMessage&gt; + <span class="lifetime">'a</span>,
+) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Cid&gt; + <span class="lifetime">'a </span>{
+    bls_messages
+        .filter_map(|m| m.cid().ok())
+        .unique()
+        .take(COLLECTION_SAMPLE_SIZE)
+        .chain(
+            secp_messages
+                .filter_map(|m| m.cid().ok())
+                .unique()
+                .take(COLLECTION_SAMPLE_SIZE),
+        )
+        .unique()
+}
+
+<span class="kw">fn </span>sample_messages&lt;<span class="lifetime">'a</span>&gt;(
+    bls_messages: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Message&gt; + <span class="lifetime">'a</span>,
+    secp_messages: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>SignedMessage&gt; + <span class="lifetime">'a</span>,
+) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Message&gt; + <span class="lifetime">'a </span>{
+    bls_messages
+        .unique()
+        .take(COLLECTION_SAMPLE_SIZE)
+        .chain(
+            secp_messages
+                .map(SignedMessage::message)
+                .unique()
+                .take(COLLECTION_SAMPLE_SIZE),
+        )
+        .unique()
 }
 
 <span class="doccomment">/// Compare two RPC providers. The providers are labeled `forest` and `lotus`,
