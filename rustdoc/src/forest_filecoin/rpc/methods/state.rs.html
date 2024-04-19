@@ -1434,6 +1434,21 @@
 <a href="#1432" id="1432">1432</a>
 <a href="#1433" id="1433">1433</a>
 <a href="#1434" id="1434">1434</a>
+<a href="#1435" id="1435">1435</a>
+<a href="#1436" id="1436">1436</a>
+<a href="#1437" id="1437">1437</a>
+<a href="#1438" id="1438">1438</a>
+<a href="#1439" id="1439">1439</a>
+<a href="#1440" id="1440">1440</a>
+<a href="#1441" id="1441">1441</a>
+<a href="#1442" id="1442">1442</a>
+<a href="#1443" id="1443">1443</a>
+<a href="#1444" id="1444">1444</a>
+<a href="#1445" id="1445">1445</a>
+<a href="#1446" id="1446">1446</a>
+<a href="#1447" id="1447">1447</a>
+<a href="#1448" id="1448">1448</a>
+<a href="#1449" id="1449">1449</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1453,7 +1468,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::circulating_supply::GenesisInfo;
-<span class="kw">use </span><span class="kw">crate</span>::state_manager::{InvocResult, MarketBalance};
+<span class="kw">use </span><span class="kw">crate</span>::state_manager::MarketBalance;
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::car_stream::{CarBlock, CarWriter};
 <span class="kw">use crate</span>::{
     beacon::BeaconEntry,
@@ -1491,6 +1506,8 @@
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateCall</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateGetBeaconEntry</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateListMessages</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateNetworkName</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateReplay</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateSectorGetInfo</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::state::StateSectorPreCommitInfo</span>);
     };
@@ -1499,8 +1516,6 @@
 
 <span class="kw">type </span>RandomnessParams = (i64, ChainEpoch, Vec&lt;u8&gt;, ApiTipsetKey);
 
-<span class="kw">pub const </span>STATE_REPLAY: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateReplay"</span>;
-<span class="kw">pub const </span>STATE_NETWORK_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateNetworkName"</span>;
 <span class="kw">pub const </span>STATE_NETWORK_VERSION: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateNetworkVersion"</span>;
 <span class="kw">pub const </span>STATE_GET_ACTOR: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateGetActor"</span>;
 <span class="kw">pub const </span>STATE_MARKET_BALANCE: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.StateMarketBalance"</span>;
@@ -1586,36 +1601,51 @@
     }
 }
 
-<span class="doccomment">/// returns the result of executing the indicated message, assuming it was
-/// executed in the indicated tipset.
-</span><span class="kw">pub async fn </span>state_replay&lt;DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;InvocResult, ServerError&gt; {
-    <span class="kw">let </span>LotusJson((cid, ApiTipsetKey(key))) = params.parse()<span class="question-mark">?</span>;
+<span class="kw">pub enum </span>StateReplay {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">2</span>&gt; <span class="kw">for </span>StateReplay {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateReplay"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"cid"</span>, <span class="string">"tsk"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
-    <span class="kw">let </span>tipset = data
-        .state_manager
-        .chain_store()
-        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>key)<span class="question-mark">?</span>;
-    <span class="kw">let </span>(msg, ret) = state_manager.replay(<span class="kw-2">&amp;</span>tipset, cid).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;, LotusJson&lt;ApiTipsetKey&gt;);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= InvocResult;
 
-    <span class="prelude-val">Ok</span>(InvocResult {
-        msg,
-        msg_rct: <span class="prelude-val">Some</span>(ret.msg_receipt()),
-        error: ret.failure_info(),
-    })
+    <span class="doccomment">/// returns the result of executing the indicated message, assuming it was
+    /// executed in the indicated tipset.
+    </span><span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (LotusJson(cid), LotusJson(ApiTipsetKey(tsk))): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>ctx.state_manager;
+        <span class="kw">let </span>tipset = ctx
+            .state_manager
+            .chain_store()
+            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(msg, ret) = state_manager.replay(<span class="kw-2">&amp;</span>tipset, cid).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(InvocResult {
+            msg,
+            msg_rct: <span class="prelude-val">Some</span>(ret.msg_receipt()),
+            error: ret.failure_info(),
+        })
+    }
 }
 
-<span class="doccomment">/// gets network name from state manager
-</span><span class="kw">pub async fn </span>state_network_name&lt;DB: Blockstore&gt;(data: Ctx&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;String, ServerError&gt; {
-    <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>data.state_manager;
-    <span class="kw">let </span>heaviest_tipset = state_manager.chain_store().heaviest_tipset();
+<span class="kw">pub enum </span>StateNetworkName {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">0</span>&gt; <span class="kw">for </span>StateNetworkName {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateNetworkName"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">0</span>] = [];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    state_manager
-        .get_network_name(heaviest_tipset.parent_state())
-        .map_err(|e| e.into())
+    <span class="kw">type </span>Params = ();
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= String;
+
+    <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>ctx.state_manager;
+        <span class="kw">let </span>heaviest_tipset = state_manager.chain_store().heaviest_tipset();
+
+        <span class="prelude-val">Ok</span>(state_manager.get_network_name(heaviest_tipset.parent_state())<span class="question-mark">?</span>)
+    }
 }
 
 <span class="kw">pub async fn </span>state_get_network_version&lt;DB: Blockstore&gt;(
