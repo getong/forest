@@ -1156,12 +1156,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"msg_cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Message;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(msg_cid),): <span class="self">Self</span>::Params,
+        (msg_cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>chain_message: ChainMessage = ctx
             .state_manager
@@ -1181,12 +1181,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"block_cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;ApiMessage&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(block_cid),): <span class="self">Self</span>::Params,
+        (block_cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>store = ctx.state_manager.blockstore();
         <span class="kw">let </span>block_header: CachingBlockHeader = store
@@ -1207,12 +1207,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"block_cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;ApiReceipt&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(block_cid),): <span class="self">Self</span>::Params,
+        (block_cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>store = ctx.state_manager.blockstore();
         <span class="kw">let </span>block_header: CachingBlockHeader = store
@@ -1283,16 +1283,15 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"tsk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;TipsetKey&gt;,);
+    <span class="kw">type </span>Params = (ApiTipsetKey,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;ApiMessage&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(tsk),): <span class="self">Self</span>::Params,
+        (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>store = ctx.chain_store.blockstore();
-        <span class="kw">let </span>tipset = Tipset::load_required(store, <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        load_api_messages_from_tipset(store, <span class="kw-2">&amp;</span>tipset)
+        <span class="kw">let </span>tipset = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        load_api_messages_from_tipset(ctx.store(), <span class="kw-2">&amp;</span>tipset)
     }
 }
 
@@ -1374,12 +1373,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;u8&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(cid),): <span class="self">Self</span>::Params,
+        (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>bytes = ctx
             .state_manager
@@ -1396,12 +1395,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= bool;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(cid),): <span class="self">Self</span>::Params,
+        (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="prelude-val">Ok</span>(ctx.state_manager.blockstore().get(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>.is_some())
     }
@@ -1413,12 +1412,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= BlockMessages;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(cid),): <span class="self">Self</span>::Params,
+        (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>blk: CachingBlockHeader = ctx
             .state_manager
@@ -1450,12 +1449,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"from"</span>, <span class="string">"to"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;TipsetKey&gt;, LotusJson&lt;TipsetKey&gt;);
+    <span class="kw">type </span>Params = (TipsetKey, TipsetKey);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Vec&lt;PathChange&gt;;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(from), LotusJson(to)): <span class="self">Self</span>::Params,
+        (from, to): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         impl_chain_get_path(<span class="kw-2">&amp;</span>ctx.chain_store, <span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>to).map_err(Into::into)
     }
@@ -1526,12 +1525,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"height"</span>, <span class="string">"tsk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (ChainEpoch, LotusJson&lt;ApiTipsetKey&gt;);
+    <span class="kw">type </span>Params = (ChainEpoch, ApiTipsetKey);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (height, LotusJson(ApiTipsetKey(tsk))): <span class="self">Self</span>::Params,
+        (height, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx
             .state_manager
@@ -1552,12 +1551,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"height"</span>, <span class="string">"tsk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V1;
 
-    <span class="kw">type </span>Params = (ChainEpoch, LotusJson&lt;ApiTipsetKey&gt;);
+    <span class="kw">type </span>Params = (ChainEpoch, ApiTipsetKey);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (height, LotusJson(ApiTipsetKey(tsk))): <span class="self">Self</span>::Params,
+        (height, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx
             .state_manager
@@ -1608,12 +1607,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= CachingBlockHeader;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(cid),): <span class="self">Self</span>::Params,
+        (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>blk: CachingBlockHeader = ctx
             .state_manager
@@ -1630,12 +1629,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"tsk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;ApiTipsetKey&gt;,);
+    <span class="kw">type </span>Params = (ApiTipsetKey,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(ApiTipsetKey(tsk)),): <span class="self">Self</span>::Params,
+        (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx
             .state_manager
@@ -1651,12 +1650,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"tsk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;ApiTipsetKey&gt;,);
+    <span class="kw">type </span>Params = (ApiTipsetKey,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= ();
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(ApiTipsetKey(tsk)),): <span class="self">Self</span>::Params,
+        (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="comment">// This is basically a port of the reference implementation at
         // https://github.com/filecoin-project/lotus/blob/v1.23.0/node/impl/full/chain.go#L321
@@ -1724,12 +1723,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"tsk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;ApiTipsetKey&gt;,);
+    <span class="kw">type </span>Params = (ApiTipsetKey,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= BigInt;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(ApiTipsetKey(tsk)),): <span class="self">Self</span>::Params,
+        (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>tsk = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>weight = <span class="kw">crate</span>::fil_cns::weight(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
@@ -1859,6 +1858,7 @@
     <span class="kw">pub </span>skip_checksum: bool,
     <span class="kw">pub </span>dry_run: bool,
 }
+<span class="macro">lotus_json_with_self!</span>(ChainExportParams);
 
 <span class="attr">#[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]

@@ -142,14 +142,6 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
-<a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -211,13 +203,11 @@
 <span class="kw">impl </span>ChainCommands {
     <span class="kw">pub async fn </span>run(<span class="self">self</span>, client: rpc::Client) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Block { cid } =&gt; {
-                print_pretty_json(ChainGetBlock::call(<span class="kw-2">&amp;</span>client, (cid.into(),)).<span class="kw">await</span><span class="question-mark">?</span>)
-            }
+            <span class="self">Self</span>::Block { cid } =&gt; print_pretty_json(ChainGetBlock::call(<span class="kw-2">&amp;</span>client, (cid,)).<span class="kw">await</span><span class="question-mark">?</span>),
             <span class="self">Self</span>::Genesis =&gt; print_pretty_json(ChainGetGenesis::call_raw(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>),
             <span class="self">Self</span>::Head =&gt; print_rpc_res_cids(ChainHead::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>),
             <span class="self">Self</span>::Message { cid } =&gt; {
-                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid.into(),)).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid,)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">match </span>fvm_ipld_encoding::from_slice::&lt;ChainMessage&gt;(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">? </span>{
                     ChainMessage::Unsigned(m) =&gt; print_pretty_json(LotusJson(m)),
                     ChainMessage::Signed(m) =&gt; {
@@ -227,7 +217,7 @@
                 }
             }
             <span class="self">Self</span>::ReadObj { cid } =&gt; {
-                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid.into(),)).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>bytes = ChainReadObj::call(<span class="kw-2">&amp;</span>client, (cid,)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"{}"</span>, hex::encode(bytes));
                 <span class="prelude-val">Ok</span>(())
             }
@@ -239,7 +229,7 @@
                 maybe_confirm(no_confirm, SET_HEAD_CONFIRMATION_MESSAGE)<span class="question-mark">?</span>;
                 <span class="macro">assert!</span>(cids.is_empty(), <span class="string">"should be disallowed by clap"</span>);
                 <span class="kw">let </span>tipset = tipset_by_epoch_or_offset(<span class="kw-2">&amp;</span>client, epoch).<span class="kw">await</span><span class="question-mark">?</span>;
-                ChainSetHead::call(<span class="kw-2">&amp;</span>client, (LotusJson(tipset.key().into()),)).<span class="kw">await</span><span class="question-mark">?</span>;
+                ChainSetHead::call(<span class="kw-2">&amp;</span>client, (tipset.key().into(),)).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::SetHead {
@@ -250,12 +240,10 @@
                 maybe_confirm(no_confirm, SET_HEAD_CONFIRMATION_MESSAGE)<span class="question-mark">?</span>;
                 ChainSetHead::call(
                     <span class="kw-2">&amp;</span>client,
-                    (LotusJson(
-                        TipsetKey::from(
-                            NonEmpty::from_vec(cids).expect(<span class="string">"empty vec disallowed by clap"</span>),
-                        )
-                        .into(),
-                    ),),
+                    (TipsetKey::from(
+                        NonEmpty::from_vec(cids).expect(<span class="string">"empty vec disallowed by clap"</span>),
+                    )
+                    .into(),),
                 )
                 .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
@@ -276,11 +264,7 @@
         <span class="bool-val">true </span>=&gt; current_head.epoch() + epoch_or_offset, <span class="comment">// adding negative number
         </span><span class="bool-val">false </span>=&gt; epoch_or_offset,
     };
-    ChainGetTipSetByHeight::call(
-        client,
-        (target_epoch, LotusJson(current_head.key().clone().into())),
-    )
-    .<span class="kw">await
+    ChainGetTipSetByHeight::call(client, (target_epoch, current_head.key().clone().into())).<span class="kw">await
 </span>}
 
 <span class="kw">const </span>SET_HEAD_CONFIRMATION_MESSAGE: <span class="kw-2">&amp;</span>str =

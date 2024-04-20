@@ -387,21 +387,6 @@
 <a href="#385" id="385">385</a>
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -501,10 +486,7 @@
     </span><span class="kw">fn </span>build_params(
         params: <span class="self">Self</span>::Params,
         calling_convention: ConcreteCallingConvention,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;RequestParameters, serde_json::Error&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>::Params: Serialize,
-    {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RequestParameters, serde_json::Error&gt; {
         <span class="kw">let </span>args = params.unparse()<span class="question-mark">?</span>;
         <span class="kw">match </span>calling_convention {
             ConcreteCallingConvention::ByPosition =&gt; {
@@ -581,8 +563,7 @@
         params: <span class="self">Self</span>::Params,
     ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, MethodsError&gt;&gt; + Send
     <span class="kw">where
-        </span><span class="self">Self</span>::Params: Serialize,
-        <span class="self">Self</span>::Ok: DeserializeOwned + Clone + Send,
+        </span><span class="self">Self</span>::Ok: DeserializeOwned + Clone + Send,
     {
         <span class="comment">// stay on current thread so don't require `Self::Params: Send`
         // hardcode calling convention because lotus is by-position only
@@ -597,10 +578,7 @@
     <span class="doccomment">/// Returns [`Err`] if any of the parameters fail to serialize.
     </span><span class="kw">fn </span>request(
         params: <span class="self">Self</span>::Params,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">crate</span>::rpc_client::RpcRequest&lt;<span class="self">Self</span>::Ok&gt;, serde_json::Error&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>::Params: Serialize,
-    {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">crate</span>::rpc_client::RpcRequest&lt;<span class="self">Self</span>::Ok&gt;, serde_json::Error&gt; {
         <span class="comment">// hardcode calling convention because lotus is by-position only
         </span><span class="kw">let </span>params = <span class="kw">match </span><span class="self">Self</span>::build_params(params, ConcreteCallingConvention::ByPosition)<span class="question-mark">? </span>{
             RequestParameters::ByPosition(it) =&gt; serde_json::Value::Array(it),
@@ -618,8 +596,6 @@
         client: <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::client::Client,
         params: <span class="self">Self</span>::Params,
     ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson, jsonrpsee::core::ClientError&gt;&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>::Params: Serialize,
     {
         <span class="kw">async </span>{
             <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
@@ -632,10 +608,7 @@
     <span class="kw">fn </span>call(
         client: <span class="kw-2">&amp;</span><span class="kw">crate</span>::rpc::client::Client,
         params: <span class="self">Self</span>::Params,
-    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, jsonrpsee::core::ClientError&gt;&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>::Params: Serialize,
-    {
+    ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, jsonrpsee::core::ClientError&gt;&gt; {
         <span class="kw">async </span>{
             <span class="self">Self</span>::call_raw(client, params)
                 .<span class="kw">await
@@ -648,7 +621,7 @@
 <span class="doccomment">/// A tuple of `ARITY` arguments.
 ///
 /// This should NOT be manually implemented.
-</span><span class="kw">pub trait </span>Params&lt;<span class="kw">const </span>ARITY: usize&gt; {
+</span><span class="kw">pub trait </span>Params&lt;<span class="kw">const </span>ARITY: usize&gt;: HasLotusJson {
     <span class="doccomment">/// A [`Schema`] and [`Optional::optional`](`util::Optional::optional`)
     /// pair for argument, in-order.
     </span><span class="kw">fn </span>schemas(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; [(Schema, bool); ARITY];
@@ -664,11 +637,8 @@
     <span class="doccomment">/// Convert from an argument tuple to un-typed JSON.
     ///
     /// Exposes de-serialization errors, or mis-implementation of this trait.
-    </span><span class="kw">fn </span>unparse(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[serde_json::Value; ARITY], serde_json::Error&gt;
-    <span class="kw">where
-        </span><span class="self">Self</span>: Serialize,
-    {
-        <span class="kw">match </span>serde_json::to_value(<span class="self">self</span>) {
+    </span><span class="kw">fn </span>unparse(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[serde_json::Value; ARITY], serde_json::Error&gt; {
+        <span class="kw">match </span>serde_json::to_value(<span class="self">self</span>.into_lotus_json()) {
             <span class="prelude-val">Ok</span>(serde_json::Value::Array(args)) =&gt; <span class="kw">match </span>args.try_into() {
                 <span class="prelude-val">Ok</span>(it) =&gt; <span class="prelude-val">Ok</span>(it),
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(serde_json::Error::custom(<span class="string">"ARITY mismatch"</span>)),
@@ -709,7 +679,7 @@
 
         <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$arg</span>),<span class="kw-2">*</span>&gt; Params&lt;<span class="macro-nonterminal">$arity</span>&gt; <span class="kw">for </span>($(<span class="macro-nonterminal">$arg</span>,)<span class="kw-2">*</span>)
         <span class="kw">where
-            </span>$(<span class="macro-nonterminal">$arg</span>: DeserializeOwned + Serialize + JsonSchema),*
+            </span>$(<span class="macro-nonterminal">$arg</span>: HasLotusJson + Clone, &lt;<span class="macro-nonterminal">$arg </span><span class="kw">as </span>HasLotusJson&gt;::LotusJson: JsonSchema, )*
         {
             <span class="kw">fn </span>parse(
                 raw: <span class="prelude-ty">Option</span>&lt;RequestParameters&gt;,
@@ -717,10 +687,10 @@
                 calling_convention: ParamStructure,
             ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>_parser = Parser::new(raw, <span class="kw-2">&amp;</span>arg_names, calling_convention)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(($(_parser.parse::&lt;<span class="macro-nonterminal">$arg</span>&gt;()<span class="question-mark">?</span>,)<span class="kw-2">*</span>))
+                <span class="prelude-val">Ok</span>(($(_parser.parse::&lt;<span class="kw">crate</span>::lotus_json::LotusJson&lt;<span class="macro-nonterminal">$arg</span>&gt;&gt;()<span class="question-mark">?</span>.into_inner(),)<span class="kw-2">*</span>))
             }
             <span class="kw">fn </span>schemas(_gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; [(Schema, bool); <span class="macro-nonterminal">$arity</span>] {
-                [$((<span class="macro-nonterminal">$arg::json_schema</span>(_gen), <span class="macro-nonterminal">$arg::optional</span>())),<span class="kw-2">*</span>]
+                [$((<span class="macro-nonterminal">$arg::LotusJson::json_schema</span>(_gen), <span class="macro-nonterminal">$arg::LotusJson::optional</span>())),<span class="kw-2">*</span>]
             }
         }
     };
@@ -730,15 +700,15 @@
 <span class="macro">do_impls!</span>(<span class="number">1</span>, T0);
 <span class="macro">do_impls!</span>(<span class="number">2</span>, T0, T1);
 <span class="macro">do_impls!</span>(<span class="number">3</span>, T0, T1, T2);
-<span class="macro">do_impls!</span>(<span class="number">4</span>, T0, T1, T2, T3);
-<span class="macro">do_impls!</span>(<span class="number">5</span>, T0, T1, T2, T3, T4);
-<span class="macro">do_impls!</span>(<span class="number">6</span>, T0, T1, T2, T3, T4, T5);
-<span class="macro">do_impls!</span>(<span class="number">7</span>, T0, T1, T2, T3, T4, T5, T6);
-<span class="macro">do_impls!</span>(<span class="number">8</span>, T0, T1, T2, T3, T4, T5, T6, T7);
-<span class="macro">do_impls!</span>(<span class="number">9</span>, T0, T1, T2, T3, T4, T5, T6, T7, T8);
-<span class="macro">do_impls!</span>(<span class="number">10</span>, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
+<span class="comment">// do_impls!(4, T0, T1, T2, T3);
+// do_impls!(5, T0, T1, T2, T3, T4);
+// do_impls!(6, T0, T1, T2, T3, T4, T5);
+// do_impls!(7, T0, T1, T2, T3, T4, T5, T6);
+// do_impls!(8, T0, T1, T2, T3, T4, T5, T6, T7);
+// do_impls!(9, T0, T1, T2, T3, T4, T5, T6, T7, T8);
+// do_impls!(10, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9);
 
-<span class="kw">pub struct </span>SelfDescribingRpcModule&lt;Ctx&gt; {
+</span><span class="kw">pub struct </span>SelfDescribingRpcModule&lt;Ctx&gt; {
     inner: jsonrpsee::server::RpcModule&lt;Ctx&gt;,
     schema_generator: SchemaGenerator,
     calling_convention: ParamStructure,

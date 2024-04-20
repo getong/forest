@@ -246,12 +246,6 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a>
-<a href="#249" id="249">249</a>
-<a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -284,12 +278,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= String;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(cid),): <span class="self">Self</span>::Params,
+        (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="prelude-val">Ok</span>(ctx.bad_blocks.peek(<span class="kw-2">&amp;</span>cid).unwrap_or_default())
     }
@@ -301,12 +295,12 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"cid"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;Cid&gt;,);
+    <span class="kw">type </span>Params = (Cid,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= ();
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(cid),): <span class="self">Self</span>::Params,
+        (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         ctx.bad_blocks
             .put(cid, <span class="string">"Marked bad manually through RPC API"</span>.to_string());
@@ -335,14 +329,14 @@
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">1</span>] = [<span class="string">"blk"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    <span class="kw">type </span>Params = (LotusJson&lt;GossipBlock&gt;,);
+    <span class="kw">type </span>Params = (GossipBlock,);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= ();
 
     <span class="comment">// NOTE: This currently skips all the sanity-checks and directly passes the message onto the
     // swarm.
     </span><span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
-        (LotusJson(block_msg),): <span class="self">Self</span>::Params,
+        (block_msg,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>encoded_message = to_vec(<span class="kw-2">&amp;</span>block_msg)<span class="question-mark">?</span>;
         <span class="kw">let </span>pubsub_block_str = <span class="macro">format!</span>(<span class="string">"{}/{}"</span>, PUBSUB_BLOCK_STR, ctx.network_name);
@@ -470,19 +464,13 @@
             </span>.parse::&lt;Cid&gt;()
             .unwrap();
 
-        <span class="kw">let </span>reason = SyncCheckBad::handle(ctx.clone(), (cid.into(),))
-            .<span class="kw">await
-            </span>.unwrap();
+        <span class="kw">let </span>reason = SyncCheckBad::handle(ctx.clone(), (cid,)).<span class="kw">await</span>.unwrap();
         <span class="macro">assert_eq!</span>(reason, <span class="string">""</span>);
 
         <span class="comment">// Mark that block as bad manually and check again to verify
-        </span>SyncMarkBad::handle(ctx.clone(), (cid.into(),))
-            .<span class="kw">await
-            </span>.unwrap();
+        </span>SyncMarkBad::handle(ctx.clone(), (cid,)).<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>reason = SyncCheckBad::handle(ctx.clone(), (cid.into(),))
-            .<span class="kw">await
-            </span>.unwrap();
+        <span class="kw">let </span>reason = SyncCheckBad::handle(ctx.clone(), (cid,)).<span class="kw">await</span>.unwrap();
         <span class="macro">assert_eq!</span>(reason, <span class="string">"Marked bad manually through RPC API"</span>);
     }
 
