@@ -563,6 +563,23 @@
 <a href="#561" id="561">561</a>
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -774,6 +791,15 @@
     </span>Balance {
         <span class="doccomment">/// The address of the account to check
         </span>address: String,
+        <span class="doccomment">/// Output is rounded to 4 significant figures by default.
+        /// Do not round
+        </span><span class="comment">// ENHANCE(aatifsyed): add a --round/--no-round argument pair
+        </span><span class="attr">#[arg(long, alias = <span class="string">"exact-balance"</span>, short_alias = <span class="string">'e'</span>)]
+        </span>no_round: bool,
+        <span class="doccomment">/// Output may be given an SI prefix like `atto` by default.
+        /// Do not do this, showing whole FIL at all times.
+        </span><span class="attr">#[arg(long, alias = <span class="string">"fixed-unit"</span>, short_alias = <span class="string">'f'</span>)]
+        </span>no_abbrev: bool,
     },
     <span class="doccomment">/// Get the default address of the wallet
     </span>Default,
@@ -878,11 +904,15 @@
                 <span class="macro">println!</span>(<span class="string">"{addr}"</span>);
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="self">Self</span>::Balance { address } =&gt; {
+            <span class="self">Self</span>::Balance {
+                address,
+                no_round,
+                no_abbrev,
+            } =&gt; {
                 <span class="kw">let </span>StrictAddress(address) = StrictAddress::from_str(<span class="kw-2">&amp;</span>address)
                     .with_context(|| <span class="macro">format!</span>(<span class="string">"Invalid address: {address}"</span>))<span class="question-mark">?</span>;
                 <span class="kw">let </span>balance = WalletBalance::call(<span class="kw-2">&amp;</span>backend.remote, (address,)).<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="macro">println!</span>(<span class="string">"{balance}"</span>);
+                <span class="macro">println!</span>(<span class="string">"{}"</span>, format_balance(<span class="kw-2">&amp;</span>balance, no_round, no_abbrev));
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="self">Self</span>::Default =&gt; {
@@ -970,16 +1000,7 @@
                     <span class="kw">let </span>balance_token_amount =
                         WalletBalance::call(<span class="kw-2">&amp;</span>backend.remote, (address,)).<span class="kw">await</span><span class="question-mark">?</span>;
 
-                    <span class="kw">let </span>balance_string = <span class="kw">match </span>(no_round, no_abbrev) {
-                        <span class="comment">// no_round, absolute
-                        </span>(<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:#}"</span>, balance_token_amount.pretty()),
-                        <span class="comment">// no_round, relative
-                        </span>(<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{}"</span>, balance_token_amount.pretty()),
-                        <span class="comment">// round, absolute
-                        </span>(<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:#.4}"</span>, balance_token_amount.pretty()),
-                        <span class="comment">// round, relative
-                        </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:.4}"</span>, balance_token_amount.pretty()),
-                    };
+                    <span class="kw">let </span>balance_string = format_balance(<span class="kw-2">&amp;</span>balance_token_amount, no_round, no_abbrev);
 
                     <span class="macro">println!</span>(<span class="string">"{address:41}  {default_address_mark:7}  {balance_string}"</span>);
                 }
@@ -1125,5 +1146,18 @@
     <span class="prelude-val">Ok</span>(keystore
         .into_inner()
         .expect(<span class="string">"validation succeeded, so keystore must be emplaced"</span>))
+}
+
+<span class="kw">fn </span>format_balance(balance: <span class="kw-2">&amp;</span>TokenAmount, no_round: bool, no_abbrev: bool) -&gt; String {
+    <span class="kw">match </span>(no_round, no_abbrev) {
+        <span class="comment">// no_round, absolute
+        </span>(<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:#}"</span>, balance.pretty()),
+        <span class="comment">// no_round, relative
+        </span>(<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{}"</span>, balance.pretty()),
+        <span class="comment">// round, absolute
+        </span>(<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:#.4}"</span>, balance.pretty()),
+        <span class="comment">// round, relative
+        </span>(<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">format!</span>(<span class="string">"{:.4}"</span>, balance.pretty()),
+    }
 }
 </code></pre></div></section></main></body></html>

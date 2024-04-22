@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["WalletCommands"],"fn":["input_password_to_load_encrypted_keystore"],"struct":["WalletBackend"]};
+window.SIDEBAR_ITEMS = {"enum":["WalletCommands"],"fn":["format_balance","input_password_to_load_encrypted_keystore"],"struct":["WalletBackend"]};
