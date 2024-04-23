@@ -80,6 +80,16 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -92,15 +102,25 @@
 <span class="attr">#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>SignedMessageLotusJson {
-    message: LotusJson&lt;Message&gt;,
-    signature: LotusJson&lt;Signature&gt;,
-    <span class="attr">#[serde(rename = <span class="string">"CID"</span>, skip_serializing_if = <span class="string">"LotusJson::is_none"</span>, default)]
-    </span>cid: LotusJson&lt;<span class="prelude-ty">Option</span>&lt;Cid&gt;&gt;,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Message&gt;"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span>message: Message,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Signature&gt;"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span>signature: Signature,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Option&lt;Cid&gt;&gt;"</span>)]
+    #[serde(
+        with = <span class="string">"crate::lotus_json"</span>,
+        rename = <span class="string">"CID"</span>,
+        skip_serializing_if = <span class="string">"Option::is_none"</span>,
+        default
+    )]
+    </span>cid: <span class="prelude-ty">Option</span>&lt;Cid&gt;,
 }
 
 <span class="kw">impl </span>SignedMessageLotusJson {
     <span class="kw">pub fn </span>with_cid(<span class="kw-2">mut </span><span class="self">self</span>, cid: Cid) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.cid = LotusJson(<span class="prelude-val">Some</span>(cid));
+        <span class="self">self</span>.cid = <span class="prelude-val">Some</span>(cid);
         <span class="self">self
     </span>}
 }
@@ -142,9 +162,9 @@
     <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
         <span class="kw">let </span><span class="self">Self </span>{ message, signature } = <span class="self">self</span>;
         <span class="self">Self</span>::LotusJson {
-            message: message.into(),
-            signature: signature.into(),
-            cid: <span class="prelude-val">None</span>.into(), <span class="comment">// See notes on Message
+            message,
+            signature,
+            cid: <span class="prelude-val">None</span>, <span class="comment">// See notes on Message
         </span>}
     }
 
@@ -155,8 +175,8 @@
             cid: _ignored, <span class="comment">// See notes on Message
         </span>} = lotus_json;
         <span class="self">Self </span>{
-            message: message.into_inner(),
-            signature: signature.into_inner(),
+            message,
+            signature,
         }
     }
 }

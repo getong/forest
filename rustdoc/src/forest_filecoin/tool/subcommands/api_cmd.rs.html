@@ -1407,17 +1407,6 @@
 <a href="#1405" id="1405">1405</a>
 <a href="#1406" id="1406">1406</a>
 <a href="#1407" id="1407">1407</a>
-<a href="#1408" id="1408">1408</a>
-<a href="#1409" id="1409">1409</a>
-<a href="#1410" id="1410">1410</a>
-<a href="#1411" id="1411">1411</a>
-<a href="#1412" id="1412">1412</a>
-<a href="#1413" id="1413">1413</a>
-<a href="#1414" id="1414">1414</a>
-<a href="#1415" id="1415">1415</a>
-<a href="#1416" id="1416">1416</a>
-<a href="#1417" id="1417">1417</a>
-<a href="#1418" id="1418">1418</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1987,74 +1976,72 @@
 ) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[
         RpcTest::identity(StateNetworkName::request(())<span class="question-mark">?</span>),
-        RpcTest::identity(ApiInfo::state_get_actor_req(
+        RpcTest::identity(StateGetActor::request((
             Address::SYSTEM_ACTOR,
             tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::state_get_randomness_from_tickets_req(
-            tipset.key().into(),
-            DomainSeparationTag::ElectionProofProduction,
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(StateGetRandomnessFromTickets::request((
+            DomainSeparationTag::ElectionProofProduction <span class="kw">as </span>i64,
             tipset.epoch(),
             <span class="string">"dead beef"</span>.as_bytes().to_vec(),
-        )),
-        RpcTest::identity(ApiInfo::state_get_randomness_from_beacon_req(
             tipset.key().into(),
-            DomainSeparationTag::ElectionProofProduction,
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(StateGetRandomnessFromBeacon::request((
+            DomainSeparationTag::ElectionProofProduction <span class="kw">as </span>i64,
             tipset.epoch(),
             <span class="string">"dead beef"</span>.as_bytes().to_vec(),
-        )),
-        RpcTest::identity(ApiInfo::state_read_state_req(
+            tipset.key().into(),
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(StateReadState::request((
             Address::SYSTEM_ACTOR,
             tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::state_read_state_req(
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(StateReadState::request((
             Address::SYSTEM_ACTOR,
             Default::default(),
-        )),
+        ))<span class="question-mark">?</span>),
         <span class="comment">// This should return `Address::new_id(0xdeadbeef)`
-        </span>RpcTest::identity(ApiInfo::state_lookup_id_req(
+        </span>RpcTest::identity(StateLookupID::request((
             Address::new_id(<span class="number">0xdeadbeef</span>),
             tipset.key().into(),
-        )),
+        ))<span class="question-mark">?</span>),
         RpcTest::identity(ApiInfo::state_network_version_req(tipset.key().into())),
-        RpcTest::identity(ApiInfo::state_list_miners_req(tipset.key().into())),
-        RpcTest::identity(ApiInfo::msig_get_available_balance_req(
+        RpcTest::identity(StateListMiners::request((tipset.key().into(),))<span class="question-mark">?</span>),
+        RpcTest::identity(MsigGetAvailableBalance::request((
             Address::new_id(<span class="number">18101</span>), <span class="comment">// msig address id
             </span>tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::msig_get_pending_req(
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(MsigGetPending::request((
             Address::new_id(<span class="number">18101</span>), <span class="comment">// msig address id
             </span>tipset.key().into(),
-        )),
+        ))<span class="question-mark">?</span>),
         RpcTest::identity(StateGetBeaconEntry::request((tipset.epoch(),))<span class="question-mark">?</span>),
         <span class="comment">// Not easily verifiable by using addresses extracted from blocks as most of those yield `null`
         // for both Lotus and Forest. Therefore the actor addresses are hardcoded to values that allow
         // for API compatibility verification.
-        </span>RpcTest::identity(ApiInfo::state_verified_client_status(
+        </span>RpcTest::identity(StateVerifiedClientStatus::request((
             Address::VERIFIED_REGISTRY_ACTOR,
             tipset.key().into(),
-        )),
-        RpcTest::identity(ApiInfo::state_verified_client_status(
+        ))<span class="question-mark">?</span>),
+        RpcTest::identity(StateVerifiedClientStatus::request((
             Address::DATACAP_TOKEN_ACTOR,
             tipset.key().into(),
-        )),
+        ))<span class="question-mark">?</span>),
         RpcTest::identity(ApiInfo::state_deal_provider_collateral_bounds_req(
             PaddedPieceSize(<span class="number">1</span>),
             <span class="bool-val">true</span>,
             tipset.key().into(),
         )),
-        RpcTest::identity(ApiInfo::state_circulating_supply_req(tipset.key().into())),
-        RpcTest::identity(ApiInfo::state_vm_circulating_supply_internal_req(
-            tipset.key().into(),
-        )),
+        RpcTest::identity(StateCirculatingSupply::request((tipset.key().into(),))<span class="question-mark">?</span>),
+        RpcTest::identity(StateVMCirculatingSupplyInternal::request((tipset
+            .key()
+            .into(),))<span class="question-mark">?</span>),
     ];
 
     <span class="comment">// Get deals
     </span><span class="kw">let </span>deals = {
         <span class="kw">let </span>state = StateTree::new_from_root(store.clone(), tipset.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>actor = state
-            .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?
-            </span>.context(<span class="string">"Market actor not found"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = state.get_required_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?</span>;
         <span class="kw">let </span>market_state = market::State::load(<span class="kw-2">&amp;</span>store, actor.code, actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>proposals = market_state.proposals(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>deals = <span class="macro">vec!</span>[];
@@ -2075,65 +2062,65 @@
 
     <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
         tests.extend([
-            RpcTest::identity(ApiInfo::state_miner_active_sectors_req(
+            RpcTest::identity(StateMinerActiveSectors::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_lookup_id_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateLookupID::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_sectors_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerSectors::request((
                 block.miner_address,
                 <span class="prelude-val">None</span>,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_partitions_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerPartitions::request((
                 block.miner_address,
                 <span class="number">0</span>,
                 tipset.key().into(),
-            )),
+            ))<span class="question-mark">?</span>),
             RpcTest::identity(ApiInfo::state_market_balance_req(
                 block.miner_address,
                 tipset.key().into(),
             )),
-            RpcTest::identity(ApiInfo::state_miner_info_req(
+            RpcTest::identity(StateMinerInfo::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_power_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerPower::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_deadlines_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerDeadlines::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_proving_deadline_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerProvingDeadline::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_available_balance_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerAvailableBalance::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_faults_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerFaults::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
+            ))<span class="question-mark">?</span>),
             RpcTest::identity(MinerGetBaseInfo::request((
                 block.miner_address,
                 block.epoch,
                 tipset.key().into(),
             ))<span class="question-mark">?</span>),
-            RpcTest::identity(ApiInfo::state_miner_recoveries_req(
+            RpcTest::identity(StateMinerRecoveries::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
-            RpcTest::identity(ApiInfo::state_miner_sector_count_req(
+            ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateMinerSectorCount::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
+            ))<span class="question-mark">?</span>),
         ]);
 
         <span class="kw">for </span>sector <span class="kw">in </span>StateSectorGetInfo::get_sectors(store, <span class="kw-2">&amp;</span>block.miner_address, tipset)<span class="question-mark">?
@@ -2146,7 +2133,7 @@
                     sector,
                     tipset.key().into(),
                 ))<span class="question-mark">?</span>),
-                RpcTest::identity(ApiInfo::state_miner_sectors_req(
+                RpcTest::identity(StateMinerSectors::request((
                     block.miner_address,
                     {
                         <span class="kw">let </span><span class="kw-2">mut </span>bf = BitField::new();
@@ -2154,7 +2141,7 @@
                         <span class="prelude-val">Some</span>(bf)
                     },
                     tipset.key().into(),
-                )),
+                ))<span class="question-mark">?</span>),
             ]);
         }
         <span class="kw">for </span>sector <span class="kw">in </span>StateSectorPreCommitInfo::get_sectors(store, <span class="kw-2">&amp;</span>block.miner_address, tipset)<span class="question-mark">?
@@ -2179,18 +2166,9 @@
         }
         <span class="kw">for </span>msg <span class="kw">in </span>sample_messages(bls_messages.iter(), secp_messages.iter()) {
             tests.extend([
-                RpcTest::identity(ApiInfo::state_account_key_req(
-                    msg.from(),
-                    tipset.key().into(),
-                )),
-                RpcTest::identity(ApiInfo::state_account_key_req(
-                    msg.from(),
-                    Default::default(),
-                )),
-                RpcTest::identity(ApiInfo::state_lookup_id_req(
-                    msg.from(),
-                    tipset.key().into(),
-                )),
+                RpcTest::identity(StateAccountKey::request((msg.from(), tipset.key().into()))<span class="question-mark">?</span>),
+                RpcTest::identity(StateAccountKey::request((msg.from(), Default::default()))<span class="question-mark">?</span>),
+                RpcTest::identity(StateLookupID::request((msg.from(), tipset.key().into()))<span class="question-mark">?</span>),
                 RpcTest::identity(StateListMessages::request((
                     MessageFilter {
                         from: <span class="prelude-val">Some</span>(msg.from()),
@@ -2264,7 +2242,7 @@
         RpcTest::identity(ApiInfo::eth_chain_id_req()),
         <span class="comment">// There is randomness in the result of this API
         </span>RpcTest::basic(ApiInfo::eth_gas_price_req()),
-        RpcTest::basic(ApiInfo::eth_syncing_req()),
+        RpcTest::basic(EthSyncing::request(()).unwrap()),
         RpcTest::identity(ApiInfo::eth_get_balance_req(
             EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
             BlockNumberOrHash::from_predefined(Predefined::Latest),

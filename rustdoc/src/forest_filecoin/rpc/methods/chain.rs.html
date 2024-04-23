@@ -1087,6 +1087,10 @@
 <a href="#1085" id="1085">1085</a>
 <a href="#1086" id="1086">1086</a>
 <a href="#1087" id="1087">1087</a>
+<a href="#1088" id="1088">1088</a>
+<a href="#1089" id="1089">1089</a>
+<a href="#1090" id="1090">1090</a>
+<a href="#1091" id="1091">1091</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1312,7 +1316,7 @@
             epoch,
             recent_roots,
             output_path,
-            tipset_keys: LotusJson(ApiTipsetKey(tsk)),
+            tipset_keys: ApiTipsetKey(tsk),
             skip_checksum,
             dry_run,
         } = params;
@@ -1854,7 +1858,9 @@
     <span class="kw">pub </span>epoch: ChainEpoch,
     <span class="kw">pub </span>recent_roots: i64,
     <span class="kw">pub </span>output_path: PathBuf,
-    <span class="kw">pub </span>tipset_keys: LotusJson&lt;ApiTipsetKey&gt;,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;ApiTipsetKey&gt;"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span><span class="kw">pub </span>tipset_keys: ApiTipsetKey,
     <span class="kw">pub </span>skip_checksum: bool,
     <span class="kw">pub </span>dry_run: bool,
 }
@@ -1876,7 +1882,7 @@
     Apply(T),
 }
 <span class="kw">impl </span>HasLotusJson <span class="kw">for </span>PathChange {
-    <span class="kw">type </span>LotusJson = PathChange&lt;LotusJson&lt;Tipset&gt;&gt;;
+    <span class="kw">type </span>LotusJson = PathChange&lt;&lt;Tipset <span class="kw">as </span>HasLotusJson&gt;::LotusJson&gt;;
 
     <span class="attr">#[cfg(test)]
     </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
@@ -1912,15 +1918,17 @@
 
     <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
         <span class="kw">match </span><span class="self">self </span>{
-            PathChange::Revert(it) =&gt; PathChange::Revert(LotusJson(Tipset::clone(<span class="kw-2">&amp;</span>it))),
-            PathChange::Apply(it) =&gt; PathChange::Apply(LotusJson(Tipset::clone(<span class="kw-2">&amp;</span>it))),
+            PathChange::Revert(it) =&gt; {
+                PathChange::Revert(Arc::unwrap_or_clone(it).into_lotus_json())
+            }
+            PathChange::Apply(it) =&gt; PathChange::Apply(Arc::unwrap_or_clone(it).into_lotus_json()),
         }
     }
 
     <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>lotus_json {
-            PathChange::Revert(it) =&gt; PathChange::Revert(it.into_inner().into()),
-            PathChange::Apply(it) =&gt; PathChange::Apply(it.into_inner().into()),
+            PathChange::Revert(it) =&gt; PathChange::Revert(Tipset::from_lotus_json(it).into()),
+            PathChange::Apply(it) =&gt; PathChange::Apply(Tipset::from_lotus_json(it).into()),
         }
     }
 }

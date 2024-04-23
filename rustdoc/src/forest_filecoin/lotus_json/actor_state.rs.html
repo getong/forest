@@ -80,6 +80,9 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -87,15 +90,26 @@
 <span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, econ::TokenAmount, state_tree::ActorState};
 <span class="kw">use </span>::cid::Cid;
 
-<span class="attr">#[derive(Serialize, Deserialize, JsonSchema)]
+<span class="attr">#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]
 </span><span class="kw">pub struct </span>ActorStateLotusJson {
-    code: LotusJson&lt;Cid&gt;,
-    head: LotusJson&lt;Cid&gt;,
-    nonce: LotusJson&lt;u64&gt;,
-    balance: LotusJson&lt;TokenAmount&gt;,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">"LotusJson::is_none"</span>, default)]
-    </span>delegated_address: LotusJson&lt;<span class="prelude-ty">Option</span>&lt;Address&gt;&gt;,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Cid&gt;"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span>code: Cid,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Cid&gt;"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span>head: Cid,
+    nonce: u64,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;TokenAmount&gt;"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json"</span>)]
+    </span>balance: TokenAmount,
+    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;Option&lt;Address&gt;&gt;"</span>)]
+    #[serde(
+        with = <span class="string">"crate::lotus_json"</span>,
+        skip_serializing_if = <span class="string">"Option::is_none"</span>,
+        default
+    )]
+    </span>delegated_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
 }
 
 <span class="kw">impl </span>HasLotusJson <span class="kw">for </span>ActorState {
@@ -133,13 +147,11 @@
             delegated_address,
         } = From::from(<span class="self">self</span>);
         <span class="self">Self</span>::LotusJson {
-            code: code.into(),
-            head: state.into(),
-            nonce: sequence.into(),
-            balance: <span class="kw">crate</span>::shim::econ::TokenAmount::from(balance).into(),
-            delegated_address: delegated_address
-                .map(<span class="kw">crate</span>::shim::address::Address::from)
-                .into(),
+            code,
+            head: state,
+            nonce: sequence,
+            balance: <span class="kw">crate</span>::shim::econ::TokenAmount::from(balance),
+            delegated_address: delegated_address.map(<span class="kw">crate</span>::shim::address::Address::from),
         }
     }
 
@@ -151,13 +163,7 @@
             balance,
             delegated_address,
         } = lotus_json;
-        <span class="self">Self</span>::new(
-            code.into_inner(),
-            head.into_inner(),
-            balance.into_inner(),
-            nonce.into_inner(),
-            delegated_address.into_inner(),
-        )
+        <span class="self">Self</span>::new(code, head, balance, nonce, delegated_address)
     }
 }
 </code></pre></div></section></main></body></html>

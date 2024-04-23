@@ -499,12 +499,14 @@
 <a href="#497" id="497">497</a>
 <a href="#498" id="498">498</a>
 <a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::str::FromStr <span class="kw">as _</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+<span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::message::SignedMessage;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>, types::ApiTipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
@@ -577,10 +579,13 @@
     <span class="prelude-val">Ok</span>(filtered)
 }
 
-<span class="kw">async fn </span>get_actor_sequence(message: <span class="kw-2">&amp;</span>Message, tipset: <span class="kw-2">&amp;</span>Tipset, api: <span class="kw-2">&amp;</span>ApiInfo) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
+<span class="kw">async fn </span>get_actor_sequence(
+    message: <span class="kw-2">&amp;</span>Message,
+    tipset: <span class="kw-2">&amp;</span>Tipset,
+    client: <span class="kw-2">&amp;</span>rpc::Client,
+) -&gt; <span class="prelude-ty">Option</span>&lt;u64&gt; {
     <span class="kw">let </span>address = message.from;
-    <span class="kw">let </span>get_actor_result = api.state_get_actor(address, tipset.key().into()).<span class="kw">await</span>;
-
+    <span class="kw">let </span>get_actor_result = StateGetActor::call(client, (address, tipset.key().into())).<span class="kw">await</span>;
     <span class="kw">let </span>actor_state = <span class="kw">match </span>get_actor_result {
         <span class="prelude-val">Ok</span>(maybe_actor) =&gt; {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = maybe_actor {
@@ -729,10 +734,7 @@
                     <span class="kw">if </span>cids {
                         <span class="macro">println!</span>(<span class="string">"{}"</span>, msg.cid().unwrap());
                     } <span class="kw">else </span>{
-                        <span class="macro">println!</span>(
-                            <span class="string">"{}"</span>,
-                            serde_json::to_string_pretty(<span class="kw-2">&amp;</span><span class="kw">crate</span>::lotus_json::LotusJson(msg))<span class="question-mark">?
-                        </span>);
+                        <span class="macro">println!</span>(<span class="string">"{}"</span>, msg.into_lotus_json_string_pretty()<span class="question-mark">?</span>);
                     }
                 }
 
@@ -764,7 +766,7 @@
 
                 <span class="kw">let </span><span class="kw-2">mut </span>actor_sequences: HashMap&lt;Address, u64&gt; = HashMap::default();
                 <span class="kw">for </span>msg <span class="kw">in </span>messages.iter() {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(sequence) = get_actor_sequence(msg, <span class="kw-2">&amp;</span>tipset, <span class="kw-2">&amp;</span>api).<span class="kw">await </span>{
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(sequence) = get_actor_sequence(msg, <span class="kw-2">&amp;</span>tipset, <span class="kw-2">&amp;</span>client).<span class="kw">await </span>{
                         actor_sequences.insert(msg.from, sequence);
                     }
                 }

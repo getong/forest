@@ -973,10 +973,10 @@
     <span class="kw">use </span>cid::Cid;
     <span class="kw">use </span>serde_json::json;
 
+    <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson <span class="kw">as _</span>;
     <span class="kw">use </span><span class="kw">crate</span>::state_manager::utils::structured;
     <span class="kw">use crate</span>::{
         interpreter::CalledAt,
-        lotus_json::LotusJson,
         message::{ChainMessage, Message <span class="kw">as _</span>},
         shim::executor::ApplyRet,
     };
@@ -987,7 +987,7 @@
         contexts: Vec&lt;(ChainMessage, ApplyRet, CalledAt, Duration)&gt;,
     ) -&gt; anyhow::Result&lt;serde_json::Value&gt; {
         <span class="prelude-val">Ok</span>(<span class="macro">json!</span>({
-        <span class="string">"Root"</span>: LotusJson(state_root),
+        <span class="string">"Root"</span>: state_root.into_lotus_json(),
         <span class="string">"Trace"</span>: contexts
             .into_iter()
             .map(|(message, apply_ret, called_at, duration)| call_json(message, apply_ret, called_at, duration))
@@ -1009,21 +1009,21 @@
         <span class="kw">let </span>unsigned_message_cid = chain_message.message().cid()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="macro">json!</span>({
-            <span class="string">"MsgCid"</span>: LotusJson(chain_message_cid),
-            <span class="string">"Msg"</span>: LotusJson(chain_message.message().clone()),
-            <span class="string">"MsgRct"</span>: LotusJson(apply_ret.msg_receipt()),
+            <span class="string">"MsgCid"</span>: chain_message_cid.into_lotus_json(),
+            <span class="string">"Msg"</span>: chain_message.message().clone().into_lotus_json(),
+            <span class="string">"MsgRct"</span>: apply_ret.msg_receipt().into_lotus_json(),
             <span class="string">"Error"</span>: apply_ret.failure_info().unwrap_or_default(),
             <span class="string">"GasCost"</span>: {
-                <span class="string">"Message"</span>: is_explicit.then_some(LotusJson(unsigned_message_cid)),
+                <span class="string">"Message"</span>: is_explicit.then_some(unsigned_message_cid.into_lotus_json()),
                 <span class="string">"GasUsed"</span>: is_explicit.then_some(Stringify(apply_ret.msg_receipt().gas_used())).unwrap_or_default(),
-                <span class="string">"BaseFeeBurn"</span>: LotusJson(apply_ret.base_fee_burn()),
-                <span class="string">"OverEstimationBurn"</span>: LotusJson(apply_ret.over_estimation_burn()),
-                <span class="string">"MinerPenalty"</span>: LotusJson(apply_ret.penalty()),
-                <span class="string">"MinerTip"</span>: LotusJson(apply_ret.miner_tip()),
-                <span class="string">"Refund"</span>: LotusJson(apply_ret.refund()),
-                <span class="string">"TotalCost"</span>: LotusJson(chain_message.message().required_funds() - <span class="kw-2">&amp;</span>apply_ret.refund())
+                <span class="string">"BaseFeeBurn"</span>: apply_ret.base_fee_burn().into_lotus_json(),
+                <span class="string">"OverEstimationBurn"</span>: apply_ret.over_estimation_burn().into_lotus_json(),
+                <span class="string">"MinerPenalty"</span>: apply_ret.penalty().into_lotus_json(),
+                <span class="string">"MinerTip"</span>: apply_ret.miner_tip().into_lotus_json(),
+                <span class="string">"Refund"</span>: apply_ret.refund().into_lotus_json(),
+                <span class="string">"TotalCost"</span>: (chain_message.message().required_funds() - <span class="kw-2">&amp;</span>apply_ret.refund()).into_lotus_json(),
             },
-            <span class="string">"ExecutionTrace"</span>: LotusJson(structured::parse_events(apply_ret.exec_trace())<span class="question-mark">?</span>),
+            <span class="string">"ExecutionTrace"</span>: structured::parse_events(apply_ret.exec_trace())<span class="question-mark">?</span>.into_lotus_json(),
             <span class="string">"Duration"</span>: duration.as_nanos().clamp(<span class="number">0</span>, u64::MAX <span class="kw">as </span>u128) <span class="kw">as </span>u64,
         }))
     }

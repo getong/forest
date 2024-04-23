@@ -612,6 +612,10 @@
 <a href="#610" id="610">610</a>
 <a href="#611" id="611">611</a>
 <a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -761,6 +765,15 @@
     </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt;;
     <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson;
     <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self</span>;
+    <span class="kw">fn </span>into_lotus_json_value(<span class="self">self</span>) -&gt; serde_json::Result&lt;serde_json::Value&gt; {
+        serde_json::to_value(<span class="self">self</span>.into_lotus_json())
+    }
+    <span class="kw">fn </span>into_lotus_json_string(<span class="self">self</span>) -&gt; serde_json::Result&lt;String&gt; {
+        serde_json::to_string(<span class="kw-2">&amp;</span><span class="self">self</span>.into_lotus_json())
+    }
+    <span class="kw">fn </span>into_lotus_json_string_pretty(<span class="self">self</span>) -&gt; serde_json::Result&lt;String&gt; {
+        serde_json::to_string_pretty(<span class="kw-2">&amp;</span><span class="self">self</span>.into_lotus_json())
+    }
 }
 
 <span class="macro">macro_rules! </span>decl_and_test {
@@ -846,7 +859,7 @@
     </span>T: HasLotusJson + PartialEq + std::fmt::Debug + Clone,
 {
     <span class="comment">// T -&gt; T::LotusJson -&gt; lotus_json
-    </span><span class="kw">let </span>serialized = serde_json::to_value(val.clone().into_lotus_json()).unwrap();
+    </span><span class="kw">let </span>serialized = val.clone().into_lotus_json_value().unwrap();
     <span class="macro">assert_eq!</span>(
         serialized.to_string(),
         lotus_json.to_string(),
@@ -1041,11 +1054,15 @@
 }
 
 <span class="doccomment">/// A domain struct that is (de) serialized through its lotus JSON representation.
-</span><span class="attr">#[derive(
-    Debug, Serialize, Deserialize, From, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy,
-)]
-#[serde(bound = <span class="string">"T: HasLotusJson + Clone"</span>)]
+</span><span class="attr">#[derive(Debug, Deserialize, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[serde(bound = <span class="string">"T: HasLotusJson"</span>)]
 </span><span class="kw">pub struct </span>LotusJson&lt;T&gt;(<span class="attr">#[serde(with = <span class="string">"self"</span>)] </span><span class="kw">pub </span>T);
+
+<span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>LotusJson&lt;T&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.clone())
+    }
+}
 
 <span class="kw">impl</span>&lt;T&gt; JsonSchema <span class="kw">for </span>LotusJson&lt;T&gt;
 <span class="kw">where
@@ -1065,15 +1082,6 @@
     <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; T {
         <span class="self">self</span>.<span class="number">0
     </span>}
-}
-
-<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
-//                  This shouldn't be needed, we only want non-recursive definitions now
-</span><span class="kw">impl</span>&lt;T&gt; LotusJson&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
-    <span class="comment">// don't want to impl Deref&lt;T&gt; for LotusJson&lt;T&gt;
-    </span><span class="kw">pub fn </span>is_none(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.<span class="number">0</span>.is_none()
-    }
 }
 
 <span class="doccomment">/// A struct that is (de) serialized through its [`Display`] and [`FromStr`] implementations.

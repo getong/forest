@@ -580,6 +580,9 @@
 <a href="#578" id="578">578</a>
 <a href="#579" id="579">579</a>
 <a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -589,7 +592,6 @@
     str::{<span class="self">self</span>, FromStr},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>};
 <span class="kw">use crate</span>::{
     cli::humantoken,
     message::SignedMessage,
@@ -603,6 +605,10 @@
 <span class="kw">use crate</span>::{
     key_management::{Key, KeyInfo},
     rpc_client::ApiInfo,
+};
+<span class="kw">use crate</span>::{
+    lotus_json::HasLotusJson <span class="kw">as _</span>,
+    rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>},
 };
 <span class="kw">use crate</span>::{lotus_json::LotusJson, KeyStore};
 <span class="kw">use crate</span>::{
@@ -928,10 +934,8 @@
             } =&gt; {
                 <span class="kw">let </span>StrictAddress(address) = StrictAddress::from_str(<span class="kw-2">&amp;</span>address_string)
                     .with_context(|| <span class="macro">format!</span>(<span class="string">"Invalid address: {address_string}"</span>))<span class="question-mark">?</span>;
-
                 <span class="kw">let </span>key_info = backend.wallet_export(address).<span class="kw">await</span><span class="question-mark">?</span>;
-
-                <span class="kw">let </span>encoded_key = serde_json::to_string(<span class="kw-2">&amp;</span>LotusJson(key_info))<span class="question-mark">?</span>;
+                <span class="kw">let </span>encoded_key = key_info.into_lotus_json_string()<span class="question-mark">?</span>;
                 <span class="macro">println!</span>(<span class="string">"{}"</span>, hex::encode(encoded_key));
                 <span class="prelude-val">Ok</span>(())
             }
@@ -1080,9 +1084,11 @@
 
                 <span class="kw">let </span>signed_msg = <span class="kw">if let </span><span class="prelude-val">Some</span>(keystore) = <span class="kw-2">&amp;</span>backend.local {
                     <span class="kw">let </span>spec = <span class="prelude-val">None</span>;
-                    <span class="kw">let </span><span class="kw-2">mut </span>message = api
-                        .gas_estimate_message_gas(message, spec, ApiTipsetKey(<span class="prelude-val">None</span>))
-                        .<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>message = GasEstimateMessageGas::call(
+                        <span class="kw-2">&amp;</span>backend.remote,
+                        (message, spec, ApiTipsetKey(<span class="prelude-val">None</span>)),
+                    )
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                     <span class="kw">if </span>message.gas_premium &gt; message.gas_fee_cap {
                         <span class="macro">anyhow::bail!</span>(<span class="string">"After estimation, gas premium is greater than gas fee cap"</span>)

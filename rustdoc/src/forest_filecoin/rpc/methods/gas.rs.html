@@ -285,6 +285,7 @@
 <a href="#283" id="283">283</a>
 <a href="#284" id="284">284</a>
 <a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -312,12 +313,11 @@
 
 <span class="kw">pub const </span>GAS_ESTIMATE_FEE_CAP: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateFeeCap"</span>;
 <span class="kw">pub const </span>GAS_ESTIMATE_GAS_PREMIUM: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateGasPremium"</span>;
-<span class="kw">pub const </span>GAS_ESTIMATE_GAS_LIMIT: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateGasLimit"</span>;
-<span class="kw">pub const </span>GAS_ESTIMATE_MESSAGE_GAS: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateMessageGas"</span>;
 
 <span class="macro">macro_rules! </span>for_each_method {
     (<span class="macro-nonterminal">$callback</span>:ident) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateGasLimit</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateMessageGas</span>);
     };
 }
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
@@ -469,6 +469,24 @@
     </span>}
 }
 
+<span class="doccomment">/// Estimates the gas parameters for a given message
+</span><span class="kw">pub enum </span>GasEstimateMessageGas {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>GasEstimateMessageGas {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.GasEstimateMessageGas"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"msg"</span>, <span class="string">"spec"</span>, <span class="string">"tsk"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+
+    <span class="kw">type </span>Params = (Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Message;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (msg, spec, tsk): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        estimate_message_gas(<span class="kw-2">&amp;</span>ctx, msg, spec, tsk).<span class="kw">await
+    </span>}
+}
+
 <span class="kw">async fn </span>estimate_gas_limit&lt;DB&gt;(
     data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
     msg: Message,
@@ -527,22 +545,6 @@
         }
         <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(-<span class="number">1</span>),
     }
-}
-
-<span class="doccomment">/// Estimates the gas parameters for a given message
-</span><span class="kw">pub async fn </span>gas_estimate_message_gas&lt;DB&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LotusJson&lt;Message&gt;, ServerError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span>LotusJson((msg, spec, tsk)): LotusJson&lt;(Message, <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;, ApiTipsetKey)&gt; =
-        params.parse()<span class="question-mark">?</span>;
-
-    estimate_message_gas::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, msg, spec, tsk)
-        .<span class="kw">await
-        </span>.map(Into::into)
 }
 
 <span class="kw">pub async fn </span>estimate_message_gas&lt;DB&gt;(

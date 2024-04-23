@@ -794,6 +794,9 @@
 <a href="#792" id="792">792</a>
 <a href="#793" id="793">793</a>
 <a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1334,9 +1337,12 @@
     </span><span class="attr">#[derive(Serialize, Deserialize)]
     #[serde(rename_all = <span class="string">"PascalCase"</span>)]
     </span><span class="kw">struct </span>TipsetLotusJsonInner {
-        cids: LotusJson&lt;TipsetKey&gt;,
-        blocks: LotusJson&lt;NonEmpty&lt;CachingBlockHeader&gt;&gt;,
-        height: LotusJson&lt;i64&gt;,
+        <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+        </span>cids: TipsetKey,
+        <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+        </span>blocks: NonEmpty&lt;CachingBlockHeader&gt;,
+        <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+        </span>height: i64,
     }
 
     <span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>TipsetLotusJson {
@@ -1351,7 +1357,7 @@
             } = Deserialize::deserialize(deserializer)<span class="question-mark">?</span>;
 
             <span class="prelude-val">Ok</span>(<span class="self">Self</span>(Tipset {
-                headers: blocks.into_inner(),
+                headers: blocks,
                 key: Default::default(),
             }))
         }
@@ -1364,9 +1370,9 @@
         {
             <span class="kw">let </span><span class="self">Self</span>(tipset) = <span class="self">self</span>;
             TipsetLotusJsonInner {
-                cids: tipset.key().clone().into(),
-                blocks: tipset.clone().into_block_headers().into(),
-                height: tipset.epoch().into(),
+                cids: tipset.key().clone(),
+                blocks: tipset.clone().into_block_headers(),
+                height: tipset.epoch(),
             }
             .serialize(serializer)
         }
