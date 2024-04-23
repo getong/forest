@@ -233,6 +233,15 @@
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -246,12 +255,21 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, ApiVersion, ServerError};
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>jsonrpsee::core::traits::ToRpcParams;
+<span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>std::{env, fmt, marker::PhantomData, str::FromStr, time::Duration};
 <span class="kw">use </span>url::Url;
 
 <span class="kw">pub const </span>API_INFO_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"FULLNODE_API_INFO"</span>;
 <span class="kw">pub const </span>DEFAULT_PORT: u16 = <span class="number">2345</span>;
-<span class="kw">pub const </span>DEFAULT_TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
+
+<span class="doccomment">/// Default timeout for RPC requests. Doesn't apply to all requests, e.g., snapshot export which
+/// has no timeout.
+</span><span class="kw">pub static </span>DEFAULT_TIMEOUT: Lazy&lt;Duration&gt; = Lazy::new(|| {
+    std::env::var(<span class="string">"FOREST_RPC_DEFAULT_TIMEOUT"</span>)
+        .ok()
+        .and_then(|it| Duration::from_secs(it.parse().ok()<span class="question-mark">?</span>).into())
+        .unwrap_or(Duration::from_secs(<span class="number">60</span>))
+});
 
 <span class="doccomment">/// Token and URL for an [`rpc::Client`].
 </span><span class="attr">#[derive(Clone, Debug)]
@@ -371,7 +389,7 @@
             ),
             result_type: PhantomData,
             api_version: ApiVersion::V0,
-            timeout: DEFAULT_TIMEOUT,
+            timeout: <span class="kw-2">*</span>DEFAULT_TIMEOUT,
         }
     }
 
@@ -385,7 +403,7 @@
             ),
             result_type: PhantomData,
             api_version: ApiVersion::V1,
-            timeout: DEFAULT_TIMEOUT,
+            timeout: <span class="kw-2">*</span>DEFAULT_TIMEOUT,
         }
     }
 
