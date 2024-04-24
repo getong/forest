@@ -428,7 +428,7 @@
 
 <span class="kw">impl </span>UrlClient {
     <span class="kw">async fn </span>new(url: Url, token: <span class="kw">impl </span>Into&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ClientError&gt; {
-        <span class="kw">let </span>timeout = Duration::MAX; <span class="comment">// we handle timeouts ourselves.
+        <span class="kw">const </span>ONE_DAY: Duration = Duration::from_secs(<span class="number">24 </span>* <span class="number">3600</span>); <span class="comment">// we handle timeouts ourselves.
         </span><span class="kw">let </span>headers = <span class="kw">match </span>token.into() {
             <span class="prelude-val">Some</span>(token) =&gt; HeaderMap::from_iter([(
                 header::AUTHORIZATION,
@@ -447,9 +447,9 @@
             <span class="string">"ws" </span>| <span class="string">"wss" </span>=&gt; OneClientInner::Ws(
                 jsonrpsee::ws_client::WsClientBuilder::new()
                     .set_headers(headers)
-                    .request_timeout(timeout)
                     .max_request_size(MAX_REQUEST_BODY_SIZE)
                     .max_response_size(MAX_RESPONSE_BODY_SIZE)
+                    .request_timeout(ONE_DAY)
                     .build(<span class="kw-2">&amp;</span>url)
                     .<span class="kw">await</span><span class="question-mark">?</span>,
             ),
@@ -458,7 +458,7 @@
                     .set_headers(headers)
                     .max_request_size(MAX_REQUEST_BODY_SIZE)
                     .max_response_size(MAX_RESPONSE_BODY_SIZE)
-                    .request_timeout(timeout)
+                    .request_timeout(ONE_DAY)
                     .build(<span class="kw-2">&amp;</span>url)<span class="question-mark">?</span>,
             ),
             it =&gt; {
