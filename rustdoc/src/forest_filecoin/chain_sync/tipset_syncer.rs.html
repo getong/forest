@@ -1628,17 +1628,6 @@
 <a href="#1626" id="1626">1626</a>
 <a href="#1627" id="1627">1627</a>
 <a href="#1628" id="1628">1628</a>
-<a href="#1629" id="1629">1629</a>
-<a href="#1630" id="1630">1630</a>
-<a href="#1631" id="1631">1631</a>
-<a href="#1632" id="1632">1632</a>
-<a href="#1633" id="1633">1633</a>
-<a href="#1634" id="1634">1634</a>
-<a href="#1635" id="1635">1635</a>
-<a href="#1636" id="1636">1636</a>
-<a href="#1637" id="1637">1637</a>
-<a href="#1638" id="1638">1638</a>
-<a href="#1639" id="1639">1639</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2260,9 +2249,6 @@
             proposed_head.clone(),
             current_head.clone(),
             tracker,
-            <span class="comment">// Casting from i64 -&gt; u64 is safe because we ensured that
-            // the value is greater than 0
-            </span>tipset_range_length <span class="kw">as </span>u64,
             state_manager.clone(),
             chain_store.clone(),
             network.clone(),
@@ -2363,7 +2349,6 @@
     proposed_head: Arc&lt;Tipset&gt;,
     current_head: Arc&lt;Tipset&gt;,
     tracker: <span class="kw">crate</span>::chain_sync::chain_muxer::WorkerState,
-    tipset_range_length: u64,
     state_manager: Arc&lt;StateManager&lt;DB&gt;&gt;,
     chain_store: Arc&lt;ChainStore&lt;DB&gt;&gt;,
     network: SyncNetworkContext&lt;DB&gt;,
@@ -2376,7 +2361,6 @@
 
     <span class="kw">let </span>parent_tipsets = <span class="kw">match </span>sync_headers_in_reverse(
         tracker.clone(),
-        tipset_range_length,
         proposed_head.clone(),
         <span class="kw-2">&amp;</span>current_head,
         <span class="kw-2">&amp;</span>bad_block_cache,
@@ -2447,16 +2431,14 @@
 /// to a certain limit to try to find a common ancestor.
 </span><span class="kw">async fn </span>sync_headers_in_reverse&lt;DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>&gt;(
     tracker: <span class="kw">crate</span>::chain_sync::chain_muxer::WorkerState,
-    tipset_range_length: u64,
     proposed_head: Arc&lt;Tipset&gt;,
     current_head: <span class="kw-2">&amp;</span>Tipset,
     bad_block_cache: <span class="kw-2">&amp;</span>BadBlockCache,
     chain_store: <span class="kw-2">&amp;</span>ChainStore&lt;DB&gt;,
     network: SyncNetworkContext&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Arc&lt;Tipset&gt;&gt;, TipsetRangeSyncerError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;NonEmpty&lt;Arc&lt;Tipset&gt;&gt;, TipsetRangeSyncerError&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>parent_blocks: Vec&lt;Cid&gt; = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>parent_tipsets = Vec::with_capacity(tipset_range_length <span class="kw">as </span>usize + <span class="number">1</span>);
-    parent_tipsets.push(proposed_head.clone());
+    <span class="kw">let </span><span class="kw-2">mut </span>parent_tipsets = <span class="macro">nonempty!</span>[proposed_head.clone()];
     tracker.write().set_epoch(current_head.epoch());
 
     <span class="kw">let </span>total_size = proposed_head.epoch() - current_head.epoch();
@@ -2464,9 +2446,7 @@
     </span><span class="kw">let </span>wp = WithProgressRaw::new(<span class="string">"Downloading headers"</span>, total_size <span class="kw">as </span>u64);
 
     <span class="lifetime">'sync</span>: <span class="kw">loop </span>{
-        <span class="comment">// Unwrapping is safe here because the tipset vector always
-        // has at least one element
-        </span><span class="kw">let </span>oldest_parent = parent_tipsets.last().unwrap();
+        <span class="kw">let </span>oldest_parent = parent_tipsets.last();
         <span class="kw">let </span>work_to_be_done = oldest_parent.epoch() - current_head.epoch();
         wp.set((work_to_be_done - total_size).unsigned_abs());
         validate_tipset_against_cache(bad_block_cache, oldest_parent.parents(), <span class="kw-2">&amp;</span>parent_blocks)<span class="question-mark">?</span>;
@@ -2478,10 +2458,10 @@
             </span><span class="kw">break</span>;
         }
         <span class="comment">// Attempt to load the parent tipset from local store
-        </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(tipset) = chain_store
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(tipset) = chain_store
             .chain_index
-            .load_required_tipset(oldest_parent.parents())
-        {
+            .load_tipset(oldest_parent.parents())<span class="question-mark">?
+        </span>{
             parent_blocks.extend(tipset.cids());
             parent_tipsets.push(tipset);
             <span class="kw">continue</span>;
@@ -2507,9 +2487,7 @@
     }
     drop(wp);
 
-    <span class="comment">// Unwrapping is safe here because we assume that the tipset
-    // vector was initialized with a tipset that will not be removed
-    </span><span class="kw">let </span>oldest_tipset = parent_tipsets.last().unwrap().clone();
+    <span class="kw">let </span>oldest_tipset = parent_tipsets.last().clone();
     <span class="comment">// Determine if the local chain was a fork.
     // If it was, then sync the fork tipset range by iteratively walking back
     // from the oldest tipset synced until we find a common ancestor
@@ -2589,7 +2567,7 @@
         network,
         chain_store.clone(),
         <span class="kw-2">&amp;</span>bad_block_cache,
-        <span class="macro">vec!</span>[proposed_head.clone()],
+        <span class="macro">nonempty!</span>[proposed_head.clone()],
         <span class="kw-2">&amp;</span>genesis,
         InvalidBlockStrategy::Forgiving,
     )
@@ -2716,7 +2694,7 @@
     network: SyncNetworkContext&lt;DB&gt;,
     chainstore: Arc&lt;ChainStore&lt;DB&gt;&gt;,
     bad_block_cache: <span class="kw-2">&amp;</span>BadBlockCache,
-    tipsets: Vec&lt;Arc&lt;Tipset&gt;&gt;,
+    tipsets: NonEmpty&lt;Arc&lt;Tipset&gt;&gt;,
     genesis: <span class="kw-2">&amp;</span>Tipset,
     invalid_block_strategy: InvalidBlockStrategy,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
