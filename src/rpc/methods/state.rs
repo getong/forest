@@ -310,6 +310,7 @@ pub async fn state_miner_pre_commit_deposit_for_power<DB: Blockstore + Send + Sy
         .context("Market actor address could not be resolved")?;
     let market_state = market::State::load(bs, actor.code, actor.state)?;
     let (w, vw) = market_state.verify_deals_for_activation(
+        bs,
         maddr.into(),
         sector_pci.deal_ids,
         ts.epoch(),
@@ -330,7 +331,6 @@ pub async fn state_miner_pre_commit_deposit_for_power<DB: Blockstore + Send + Sy
         .get_actor(&Address::REWARD_ACTOR, state)?
         .context("Reward actor address could not be resolved")?;
     let reward_state = reward::State::load(bs, reward_actor.code, reward_actor.state)?;
-    let genesis_info = GenesisInfo::from_chain_config(data.state_manager.chain_config());
     let deposit = reward_state.pre_commit_deposit_for_power(power_smoothed, sector_weight)?;
     let initial_pledge_num = BigInt::from(110);
     let initial_pledge_den = BigInt::from(100);
@@ -338,7 +338,7 @@ pub async fn state_miner_pre_commit_deposit_for_power<DB: Blockstore + Send + Sy
         .atto()
         .mul(initial_pledge_num)
         .div_euclid(&initial_pledge_den);
-    Ok(LotusJson(result))
+    Ok(LotusJson(TokenAmount::from_atto(result)))
 }
 
 /// looks up the miner info of the given address.
