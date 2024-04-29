@@ -437,6 +437,27 @@
 <a href="#435" id="435">435</a>
 <a href="#436" id="436">436</a>
 <a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -511,8 +532,8 @@
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::ChainEpochDelta;
 
-<span class="kw">use </span><span class="kw">crate</span>::db::{truncated_hash, GarbageCollectable};
-<span class="kw">use </span><span class="kw">crate</span>::ipld::unordered_stream_graph;
+<span class="kw">use </span><span class="kw">crate</span>::db::{truncated_hash, GarbageCollectable, SettingsStore};
+<span class="kw">use </span><span class="kw">crate</span>::ipld::stream_graph;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span>ahash::{HashSet, HashSetExt};
 <span class="kw">use </span>futures::StreamExt;
@@ -522,6 +543,8 @@
 <span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tokio::time;
 <span class="kw">use </span>tracing::info;
+
+<span class="kw">const </span>SETTINGS_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"LAST_GC_RUN"</span>;
 
 <span class="doccomment">/// [`MarkAndSweep`] is a simple garbage collector implementation that traverses all the database
 /// keys writing them to a [`HashSet`], then filters out those that need to be kept and schedules
@@ -538,7 +561,7 @@
     block_time: Duration,
 }
 
-<span class="kw">impl</span>&lt;DB: Blockstore + GarbageCollectable + Sync + Send + <span class="lifetime">'static</span>&gt; MarkAndSweep&lt;DB&gt; {
+<span class="kw">impl</span>&lt;DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + <span class="lifetime">'static</span>&gt; MarkAndSweep&lt;DB&gt; {
     <span class="doccomment">/// Creates a new mark-and-sweep garbage collector.
     ///
     /// # Arguments
@@ -572,7 +595,7 @@
     // NOTE: One concern here is that this is going to consume a lot of CPU.
     </span><span class="kw">async fn </span>filter(<span class="kw-2">&amp;mut </span><span class="self">self</span>, tipset: Arc&lt;Tipset&gt;, depth: ChainEpochDelta) -&gt; anyhow::Result&lt;()&gt; {
         <span class="comment">// NOTE: We want to keep all the block headers from genesis to heaviest tipset epoch.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>stream = unordered_stream_graph(
+        </span><span class="kw">let </span><span class="kw-2">mut </span>stream = stream_graph(
             <span class="self">self</span>.db.clone(),
             (<span class="kw-2">*</span>tipset).clone().chain(<span class="self">self</span>.db.clone()),
             depth,
@@ -606,15 +629,32 @@
         </span>}
     }
 
+    <span class="kw">fn </span>update_last_gc_run(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: ChainEpoch) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="self">self</span>.db
+            .write_bin(SETTINGS_KEY, epoch.to_string().as_bytes())
+    }
+
+    <span class="comment">// Unfortunately there seems to be no good way of decoding a slice into i64 without array init
+    // and manipulation, therefore a string representation is used.
+    </span><span class="kw">fn </span>fetch_last_gc_run(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;ChainEpoch&gt; {
+        <span class="kw">let </span>bytes = <span class="self">self</span>.db.read_bin(SETTINGS_KEY)<span class="question-mark">?</span>;
+        <span class="kw">let </span>epoch = <span class="kw">match </span>bytes {
+            <span class="prelude-val">Some</span>(bytes) =&gt; ChainEpoch::from_str_radix(<span class="kw-2">&amp;</span>String::from_utf8(bytes)<span class="question-mark">?</span>, <span class="number">10</span>)<span class="question-mark">?</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="number">0</span>,
+        };
+        <span class="prelude-val">Ok</span>(epoch)
+    }
+
     <span class="comment">// This function yields to the main GC loop if the conditions are not met for execution of the
     // next step.
     </span><span class="kw">async fn </span>gc_workflow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, interval: Duration) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span>depth = <span class="self">self</span>.depth;
         <span class="kw">let </span>tipset = (<span class="self">self</span>.get_heaviest_tipset)();
         <span class="kw">let </span>current_epoch = tipset.epoch();
-        <span class="comment">// Don't run the GC if there aren't enough state-roots yet. Sleep and yield to the main loop
-        // in order to refresh the heaviest tipset value.
-        </span><span class="kw">if </span>depth &gt; current_epoch {
+        <span class="kw">let </span>last_gc_run = <span class="self">self</span>.fetch_last_gc_run()<span class="question-mark">?</span>;
+        <span class="comment">// Don't run the GC if there aren't enough state-roots yet or if we're too close to the last
+        // GC run. Sleep and yield to the main loop in order to refresh the heaviest tipset value.
+        </span><span class="kw">if </span>depth &gt; current_epoch - last_gc_run {
             time::sleep(interval).<span class="kw">await</span>;
             <span class="kw">return </span>anyhow::Ok(());
         }
@@ -642,6 +682,8 @@
 
         <span class="macro">info!</span>(<span class="string">"GC sweep"</span>);
         <span class="self">self</span>.sweep()<span class="question-mark">?</span>;
+
+        <span class="self">self</span>.update_last_gc_run(current_epoch)<span class="question-mark">?</span>;
 
         anyhow::Ok(())
     }

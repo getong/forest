@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MarkAndSweep"]};
+window.SIDEBAR_ITEMS = {"constant":["SETTINGS_KEY"],"struct":["MarkAndSweep"]};
