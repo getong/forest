@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_REQUEST_BODY_SIZE","MAX_RESPONSE_BODY_SIZE"],"enum":["ClientError"],"fn":["create_module","register_methods","start_rpc"],"mod":["auth_layer","channel","client","error","methods","prelude","reflect","types"],"struct":["PerConnection","RPCState"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_REQUEST_BODY_SIZE","MAX_RESPONSE_BODY_SIZE"],"enum":["ClientError"],"fn":["create_module","start_rpc"],"mod":["auth_layer","channel","client","error","methods","prelude","reflect","types"],"struct":["PerConnection","RPCState"]};

@@ -286,13 +286,16 @@
 <a href="#284" id="284">284</a>
 <a href="#285" id="285">285</a>
 <a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
 
-</span><span class="kw">use </span><span class="kw">crate</span>::blocks::TipsetKey;
-<span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET};
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
+</span><span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{error::ServerError, types::<span class="kw-2">*</span>, ApiVersion, Ctx, RpcMethod};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
@@ -301,36 +304,40 @@
     econ::{TokenAmount, BLOCK_GAS_LIMIT},
     message::Message,
 };
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>jsonrpsee::types::Params;
 <span class="kw">use </span>num::BigInt;
 <span class="kw">use </span>num_traits::{FromPrimitive, Zero};
 <span class="kw">use </span>rand_distr::{Distribution, Normal};
 
-<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
-
 <span class="kw">const </span>MIN_GAS_PREMIUM: f64 = <span class="number">100000.0</span>;
-
-<span class="kw">pub const </span>GAS_ESTIMATE_FEE_CAP: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateFeeCap"</span>;
-<span class="kw">pub const </span>GAS_ESTIMATE_GAS_PREMIUM: <span class="kw-2">&amp;</span>str = <span class="string">"Filecoin.GasEstimateGasPremium"</span>;
 
 <span class="macro">macro_rules! </span>for_each_method {
     (<span class="macro-nonterminal">$callback</span>:ident) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateGasLimit</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateMessageGas</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateFeeCap</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::gas::GasEstimateGasPremium</span>);
     };
 }
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
 
 <span class="doccomment">/// Estimate the fee cap
-</span><span class="kw">pub async fn </span>gas_estimate_fee_cap&lt;DB: Blockstore&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, ServerError&gt; {
-    <span class="kw">let </span>LotusJson((msg, max_queue_blks, tsk)): LotusJson&lt;(Message, i64, ApiTipsetKey)&gt; =
-        params.parse()<span class="question-mark">?</span>;
+</span><span class="kw">pub enum </span>GasEstimateFeeCap {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>GasEstimateFeeCap {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.GasEstimateFeeCap"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"message"</span>, <span class="string">"max_queue_blocks"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    estimate_fee_cap::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, msg, max_queue_blks, tsk).map(|n| TokenAmount::to_string(<span class="kw-2">&amp;</span>n))
+    <span class="kw">type </span>Params = (Message, i64, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= String;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (msg, max_queue_blks, tsk): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        estimate_fee_cap(<span class="kw-2">&amp;</span>ctx, msg, max_queue_blks, tsk).map(|n| TokenAmount::to_string(<span class="kw-2">&amp;</span>n))
+    }
 }
 
 <span class="kw">fn </span>estimate_fee_cap&lt;DB: Blockstore&gt;(
@@ -354,20 +361,23 @@
 }
 
 <span class="doccomment">/// Estimate the fee cap
-</span><span class="kw">pub async fn </span>gas_estimate_gas_premium&lt;DB: Blockstore&gt;(
-    params: Params&lt;<span class="lifetime">'_</span>&gt;,
-    data: Ctx&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;String, ServerError&gt; {
-    <span class="kw">let </span>LotusJson((nblocksincl, _sender, _gas_limit, <span class="kw">_</span>)): LotusJson&lt;(
-        u64,
-        Address,
-        i64,
-        TipsetKey,
-    )&gt; = params.parse()<span class="question-mark">?</span>;
+</span><span class="kw">pub enum </span>GasEstimateGasPremium {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">4</span>&gt; <span class="kw">for </span>GasEstimateGasPremium {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.GasEstimateGasPremium"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">4</span>] = [<span class="string">"nblocksincl"</span>, <span class="string">"sender"</span>, <span class="string">"gas_limit"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
 
-    estimate_gas_premium::&lt;DB&gt;(<span class="kw-2">&amp;</span>data, nblocksincl)
-        .<span class="kw">await
-        </span>.map(|n| TokenAmount::to_string(<span class="kw-2">&amp;</span>n))
+    <span class="kw">type </span>Params = (u64, Address, i64, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= String;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (nblocksincl, _sender, _gas_limit, _tsk): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        estimate_gas_premium(<span class="kw-2">&amp;</span>ctx, nblocksincl)
+            .<span class="kw">await
+            </span>.map(|n| TokenAmount::to_string(<span class="kw-2">&amp;</span>n))
+    }
 }
 
 <span class="kw">pub async fn </span>estimate_gas_premium&lt;DB: Blockstore&gt;(

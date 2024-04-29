@@ -1407,6 +1407,15 @@
 <a href="#1405" id="1405">1405</a>
 <a href="#1406" id="1406">1406</a>
 <a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1447,7 +1456,6 @@
 <span class="kw">use </span>fil_actors_shared::v10::runtime::DomainSeparationTag;
 <span class="kw">use </span>futures::{stream::FuturesUnordered, StreamExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_shared2::piece::PaddedPieceSize;
 <span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>jsonrpsee::types::ErrorCode;
 <span class="kw">use </span>serde::de::DeserializeOwned;
@@ -1772,11 +1780,6 @@
         <span class="self">Self</span>::validate(request, |forest, lotus| forest == lotus)
     }
 
-    <span class="kw">fn </span>with_timeout(<span class="kw-2">mut </span><span class="self">self</span>, timeout: Duration) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.request.set_timeout(timeout);
-        <span class="self">self
-    </span>}
-
     <span class="kw">fn </span>ignore(<span class="kw-2">mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.ignore = <span class="prelude-val">Some</span>(msg);
         <span class="self">self
@@ -2005,7 +2008,7 @@
             Address::new_id(<span class="number">0xdeadbeef</span>),
             tipset.key().into(),
         ))<span class="question-mark">?</span>),
-        RpcTest::identity(ApiInfo::state_network_version_req(tipset.key().into())),
+        RpcTest::identity(StateNetworkVersion::request((tipset.key().into(),))<span class="question-mark">?</span>),
         RpcTest::identity(StateListMiners::request((tipset.key().into(),))<span class="question-mark">?</span>),
         RpcTest::identity(MsigGetAvailableBalance::request((
             Address::new_id(<span class="number">18101</span>), <span class="comment">// msig address id
@@ -2027,11 +2030,11 @@
             Address::DATACAP_TOKEN_ACTOR,
             tipset.key().into(),
         ))<span class="question-mark">?</span>),
-        RpcTest::identity(ApiInfo::state_deal_provider_collateral_bounds_req(
-            PaddedPieceSize(<span class="number">1</span>),
+        RpcTest::identity(StateDealProviderCollateralBounds::request((
+            <span class="number">1</span>,
             <span class="bool-val">true</span>,
             tipset.key().into(),
-        )),
+        ))<span class="question-mark">?</span>),
         RpcTest::identity(StateCirculatingSupply::request((tipset.key().into(),))<span class="question-mark">?</span>),
         RpcTest::identity(StateVMCirculatingSupplyInternal::request((tipset
             .key()
@@ -2054,10 +2057,10 @@
 
     <span class="comment">// Take 5 deals from each tipset
     </span><span class="kw">for </span>deal <span class="kw">in </span>deals.into_iter().take(COLLECTION_SAMPLE_SIZE) {
-        tests.push(RpcTest::identity(ApiInfo::state_market_storage_deal_req(
+        tests.push(RpcTest::identity(StateMarketStorageDeal::request((
             deal,
             tipset.key().into(),
-        )));
+        ))<span class="question-mark">?</span>));
     }
 
     <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
@@ -2080,10 +2083,10 @@
                 <span class="number">0</span>,
                 tipset.key().into(),
             ))<span class="question-mark">?</span>),
-            RpcTest::identity(ApiInfo::state_market_balance_req(
+            RpcTest::identity(StateMarketBalance::request((
                 block.miner_address,
                 tipset.key().into(),
-            )),
+            ))<span class="question-mark">?</span>),
             RpcTest::identity(StateMinerInfo::request((
                 block.miner_address,
                 tipset.key().into(),
@@ -2158,10 +2161,11 @@
         <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(store, block)<span class="question-mark">?</span>;
         <span class="kw">for </span>msg_cid <span class="kw">in </span>sample_message_cids(bls_messages.iter(), secp_messages.iter()) {
             tests.extend([
-                validate_message_lookup(ApiInfo::state_wait_msg_req(msg_cid, <span class="number">0</span>))
-                    .with_timeout(Duration::from_secs(<span class="number">30</span>)),
-                validate_message_lookup(ApiInfo::state_search_msg_req(msg_cid)),
-                validate_message_lookup(ApiInfo::state_search_msg_limited_req(msg_cid, <span class="number">800</span>)),
+                validate_message_lookup(
+                    StateWaitMsg::request((msg_cid, <span class="number">0</span>))<span class="question-mark">?</span>.with_timeout(Duration::from_secs(<span class="number">30</span>)),
+                ),
+                validate_message_lookup(StateSearchMsg::request((msg_cid,))<span class="question-mark">?</span>),
+                validate_message_lookup(StateSearchMsgLimited::request((msg_cid, <span class="number">800</span>))<span class="question-mark">?</span>),
             ]);
         }
         <span class="kw">for </span>msg <span class="kw">in </span>sample_messages(bls_messages.iter(), secp_messages.iter()) {
@@ -2237,42 +2241,60 @@
 
 <span class="kw">fn </span>eth_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
-        RpcTest::identity(ApiInfo::eth_accounts_req()),
-        RpcTest::basic(ApiInfo::eth_block_number_req()),
-        RpcTest::identity(ApiInfo::eth_chain_id_req()),
+        RpcTest::identity(EthAccounts::request(()).unwrap()),
+        RpcTest::basic(EthBlockNumber::request(()).unwrap()),
+        RpcTest::identity(EthChainId::request(()).unwrap()),
         <span class="comment">// There is randomness in the result of this API
-        </span>RpcTest::basic(ApiInfo::eth_gas_price_req()),
+        </span>RpcTest::basic(EthGasPrice::request(()).unwrap()),
         RpcTest::basic(EthSyncing::request(()).unwrap()),
-        RpcTest::identity(ApiInfo::eth_get_balance_req(
-            EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
-            BlockNumberOrHash::from_predefined(Predefined::Latest),
-        )),
-        RpcTest::identity(ApiInfo::eth_get_balance_req(
-            EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
-            BlockNumberOrHash::from_predefined(Predefined::Pending),
-        )),
-        RpcTest::basic(ApiInfo::web3_client_version_req()),
+        RpcTest::identity(
+            EthGetBalance::request((
+                EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
+                BlockNumberOrHash::from_predefined(Predefined::Latest),
+            ))
+            .unwrap(),
+        ),
+        RpcTest::identity(
+            EthGetBalance::request((
+                EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
+                BlockNumberOrHash::from_predefined(Predefined::Pending),
+            ))
+            .unwrap(),
+        ),
+        RpcTest::basic(Web3ClientVersion::request(()).unwrap()),
     ]
 }
 
 <span class="kw">fn </span>eth_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[
-        RpcTest::identity(ApiInfo::eth_get_balance_req(
-            EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
-            BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
-        )),
-        RpcTest::identity(ApiInfo::eth_get_balance_req(
-            EthAddress::from_str(<span class="string">"0xff000000000000000000000000000000000003ec"</span>).unwrap(),
-            BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
-        )),
-        RpcTest::identity(ApiInfo::eth_get_block_by_number_req(
-            BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
-            <span class="bool-val">false</span>,
-        )),
-        RpcTest::identity(ApiInfo::eth_get_block_by_number_req(
-            BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
-            <span class="bool-val">true</span>,
-        )),
+        RpcTest::identity(
+            EthGetBalance::request((
+                EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
+                BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
+            ))
+            .unwrap(),
+        ),
+        RpcTest::identity(
+            EthGetBalance::request((
+                EthAddress::from_str(<span class="string">"0xff000000000000000000000000000000000003ec"</span>).unwrap(),
+                BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
+            ))
+            .unwrap(),
+        ),
+        RpcTest::identity(
+            EthGetBlockByNumber::request((
+                BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
+                <span class="bool-val">false</span>,
+            ))
+            .unwrap(),
+        ),
+        RpcTest::identity(
+            EthGetBlockByNumber::request((
+                BlockNumberOrHash::from_block_number(shared_tipset.epoch()),
+                <span class="bool-val">true</span>,
+            ))
+            .unwrap(),
+        ),
     ]
 }
 
@@ -2679,17 +2701,13 @@
     builder.build().with(Style::markdown()).to_string()
 }
 
-<span class="kw">fn </span>validate_message_lookup(req: RpcRequest&lt;<span class="prelude-ty">Option</span>&lt;MessageLookup&gt;&gt;) -&gt; RpcTest {
+<span class="kw">fn </span>validate_message_lookup(req: RpcRequest&lt;MessageLookup&gt;) -&gt; RpcTest {
     <span class="kw">use </span>libipld_core::ipld::Ipld;
 
     RpcTest::validate(req, |<span class="kw-2">mut </span>forest, <span class="kw-2">mut </span>lotus| {
         <span class="comment">// TODO(hanabi1224): https://github.com/ChainSafe/forest/issues/3784
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(json) = forest.as_mut() {
-            json.return_dec = Ipld::Null;
-        }
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(json) = lotus.as_mut() {
-            json.return_dec = Ipld::Null;
-        }
+        </span>forest.return_dec = Ipld::Null;
+        lotus.return_dec = Ipld::Null;
         forest == lotus
     })
 }
