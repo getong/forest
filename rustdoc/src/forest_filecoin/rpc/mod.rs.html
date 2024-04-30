@@ -338,6 +338,10 @@
 <a href="#336" id="336">336</a>
 <a href="#337" id="337">337</a>
 <a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -461,6 +465,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::channel::RpcModule <span class="kw">as </span>FilRpcModule;
 <span class="kw">pub use </span><span class="kw">crate</span>::rpc::channel::CANCEL_METHOD_NAME;
 
+<span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>hyper::server::conn::AddrStream;
 <span class="kw">use </span>hyper::service::{make_service_fn, service_fn};
@@ -488,6 +493,7 @@
     <span class="kw">pub </span>sync_state: Arc&lt;parking_lot::RwLock&lt;<span class="kw">crate</span>::chain_sync::SyncState&gt;&gt;,
     <span class="kw">pub </span>network_send: flume::Sender&lt;<span class="kw">crate</span>::libp2p::NetworkMessage&gt;,
     <span class="kw">pub </span>network_name: String,
+    <span class="kw">pub </span>tipset_send: flume::Sender&lt;Arc&lt;Tipset&gt;&gt;,
     <span class="kw">pub </span>start_time: chrono::DateTime&lt;chrono::Utc&gt;,
     <span class="kw">pub </span>beacon: Arc&lt;<span class="kw">crate</span>::beacon::BeaconSchedule&gt;,
     <span class="kw">pub </span>shutdown: mpsc::Sender&lt;()&gt;,
@@ -650,6 +656,7 @@
                     .get_beacon_schedule(genesis.timestamp),
             );
             <span class="kw">let </span>(network_send, <span class="kw">_</span>) = flume::bounded(<span class="number">0</span>);
+            <span class="kw">let </span>(tipset_send, <span class="kw">_</span>) = flume::bounded(<span class="number">1</span>);
             <span class="kw">let </span>network_name = get_network_name_from_genesis(genesis, <span class="kw-2">&amp;</span>state_manager).unwrap();
             <span class="kw">let </span>message_pool = MessagePool::new(
                 MpoolRpcProvider::new(chain_store.publisher().clone(), state_manager.clone()),
@@ -672,7 +679,8 @@
                 chain_store,
                 beacon,
                 shutdown: mpsc::channel(<span class="number">1</span>).<span class="number">0</span>, <span class="comment">// dummy for tests
-            </span>}
+                </span>tipset_send,
+            }
         }
     }
 }
