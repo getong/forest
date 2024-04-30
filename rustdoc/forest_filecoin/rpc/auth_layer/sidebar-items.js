@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Access"],"fn":["auth_verify","check_access","check_permissions"],"static":["ACCESS_MAP"],"struct":["AuthLayer","AuthMiddleware"]};
+window.SIDEBAR_ITEMS = {"fn":["auth_verify","check_permissions","is_allowed"],"static":["METHOD_NAME2REQUIRED_PERMISSION"],"struct":["Auth","AuthLayer"]};
