@@ -1077,38 +1077,6 @@
 <a href="#1075" id="1075">1075</a>
 <a href="#1076" id="1076">1076</a>
 <a href="#1077" id="1077">1077</a>
-<a href="#1078" id="1078">1078</a>
-<a href="#1079" id="1079">1079</a>
-<a href="#1080" id="1080">1080</a>
-<a href="#1081" id="1081">1081</a>
-<a href="#1082" id="1082">1082</a>
-<a href="#1083" id="1083">1083</a>
-<a href="#1084" id="1084">1084</a>
-<a href="#1085" id="1085">1085</a>
-<a href="#1086" id="1086">1086</a>
-<a href="#1087" id="1087">1087</a>
-<a href="#1088" id="1088">1088</a>
-<a href="#1089" id="1089">1089</a>
-<a href="#1090" id="1090">1090</a>
-<a href="#1091" id="1091">1091</a>
-<a href="#1092" id="1092">1092</a>
-<a href="#1093" id="1093">1093</a>
-<a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
-<a href="#1096" id="1096">1096</a>
-<a href="#1097" id="1097">1097</a>
-<a href="#1098" id="1098">1098</a>
-<a href="#1099" id="1099">1099</a>
-<a href="#1100" id="1100">1100</a>
-<a href="#1101" id="1101">1101</a>
-<a href="#1102" id="1102">1102</a>
-<a href="#1103" id="1103">1103</a>
-<a href="#1104" id="1104">1104</a>
-<a href="#1105" id="1105">1105</a>
-<a href="#1106" id="1106">1106</a>
-<a href="#1107" id="1107">1107</a>
-<a href="#1108" id="1108">1108</a>
-<a href="#1109" id="1109">1109</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1126,11 +1094,11 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiVersion, Ctx, Permission, RpcMethod, ServerError};
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span><span class="kw">crate</span>::shim::error::ExitCode;
+<span class="kw">use </span><span class="kw">crate</span>::shim::executor::Receipt;
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::utils::io::VoidAsyncWriter;
 <span class="kw">use </span>anyhow::{Context <span class="kw">as _</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>cid::Cid;
-<span class="kw">use </span>fil_actors_shared::fvm_ipld_amt::Amtv0 <span class="kw">as </span>Amt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::{CborStore, RawBytes};
 <span class="kw">use </span>hex::ToHex;
@@ -1243,40 +1211,10 @@
         <span class="kw">let </span>block_header: CachingBlockHeader = store
             .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>receipts = Vec::new();
         <span class="kw">if </span>block_header.epoch == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
         }
-
-        <span class="comment">// Try Receipt_v4 first. (Receipt_v4 and Receipt_v3 are identical, use v4 here)
-        </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(amt) =
-            Amt::&lt;fvm_shared4::receipt::Receipt, <span class="kw">_</span>&gt;::load(<span class="kw-2">&amp;</span>block_header.message_receipts, store)
-                .map_err(|<span class="kw">_</span>| {
-                    ErrorObjectOwned::owned::&lt;()&gt;(
-                        <span class="number">1</span>,
-                        <span class="macro">format!</span>(
-                            <span class="string">"failed to root: ipld: could not find {}"</span>,
-                            block_header.message_receipts
-                        ),
-                        <span class="prelude-val">None</span>,
-                    )
-                })
-        {
-            amt.for_each(|<span class="kw">_</span>, receipt| {
-                receipts.push(ApiReceipt {
-                    exit_code: receipt.exit_code.into(),
-                    return_data: receipt.return_data.clone(),
-                    gas_used: receipt.gas_used,
-                    events_root: receipt.events_root,
-                });
-                <span class="prelude-val">Ok</span>(())
-            })<span class="question-mark">?</span>;
-        } <span class="kw">else </span>{
-            <span class="comment">// Fallback to Receipt_v2.
-            </span><span class="kw">let </span>amt = Amt::&lt;fvm_shared2::receipt::Receipt, <span class="kw">_</span>&gt;::load(
-                <span class="kw-2">&amp;</span>block_header.message_receipts,
-                store,
-            )
+        <span class="kw">let </span>receipts = Receipt::get_receipts(store, block_header.message_receipts)
             .map_err(|<span class="kw">_</span>| {
                 ErrorObjectOwned::owned::&lt;()&gt;(
                     <span class="number">1</span>,
@@ -1286,17 +1224,15 @@
                     ),
                     <span class="prelude-val">None</span>,
                 )
-            })<span class="question-mark">?</span>;
-            amt.for_each(|<span class="kw">_</span>, receipt| {
-                receipts.push(ApiReceipt {
-                    exit_code: receipt.exit_code.into(),
-                    return_data: receipt.return_data.clone(),
-                    gas_used: receipt.gas_used <span class="kw">as _</span>,
-                    events_root: <span class="prelude-val">None</span>,
-                });
-                <span class="prelude-val">Ok</span>(())
-            })<span class="question-mark">?</span>;
-        }
+            })<span class="question-mark">?
+            </span>.iter()
+            .map(|r| ApiReceipt {
+                exit_code: r.exit_code().into(),
+                return_data: r.return_data(),
+                gas_used: r.gas_used(),
+                events_root: r.events_root(),
+            })
+            .collect();
 
         <span class="prelude-val">Ok</span>(receipts)
     }
