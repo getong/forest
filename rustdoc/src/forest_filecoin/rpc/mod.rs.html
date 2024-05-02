@@ -342,17 +342,32 @@
 <a href="#340" id="340">340</a>
 <a href="#341" id="341">341</a>
 <a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">mod </span>auth_layer;
 <span class="kw">mod </span>channel;
 <span class="kw">mod </span>client;
+<span class="kw">mod </span>request;
 
 <span class="kw">pub use </span>client::Client;
 <span class="kw">pub use </span>error::ServerError;
 <span class="kw">use </span>reflect::Ctx;
 <span class="kw">pub use </span>reflect::{ApiVersion, RpcMethod, RpcMethodExt};
+<span class="kw">pub use </span>request::Request;
 <span class="kw">mod </span>error;
 <span class="kw">mod </span>reflect;
 <span class="kw">pub mod </span>types;
@@ -360,7 +375,6 @@
 <span class="kw">use </span>reflect::Permission;
 
 <span class="doccomment">/// Protocol or transport-specific error
-</span><span class="attr">#[allow(unused)]
 </span><span class="kw">pub use </span>jsonrpsee::core::ClientError;
 
 <span class="attr">#[allow(unused)]
@@ -457,9 +471,6 @@
     <span class="kw">pub mod </span>wallet;
 }
 
-<span class="kw">use </span>std::net::SocketAddr;
-<span class="kw">use </span>std::sync::Arc;
-
 <span class="kw">use </span><span class="kw">crate</span>::key_management::KeyStore;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::auth_layer::AuthLayer;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::channel::RpcModule <span class="kw">as </span>FilRpcModule;
@@ -473,11 +484,26 @@
     server::{stop_channel, RpcModule, RpcServiceBuilder, Server, StopHandle, TowerServiceBuilder},
     Methods,
 };
+<span class="kw">use </span>once_cell::sync::Lazy;
+<span class="kw">use </span>std::env;
+<span class="kw">use </span>std::net::SocketAddr;
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tokio::sync::{mpsc, RwLock};
 <span class="kw">use </span>tower::Service;
 <span class="kw">use </span>tracing::info;
 
 <span class="kw">use </span><span class="self">self</span>::reflect::openrpc_types::ParamStructure;
+
+<span class="kw">pub const </span>DEFAULT_PORT: u16 = <span class="number">2345</span>;
+
+<span class="doccomment">/// Request timeout read from environment variables
+</span><span class="kw">static </span>DEFAULT_REQUEST_TIMEOUT: Lazy&lt;Duration&gt; = Lazy::new(|| {
+    env::var(<span class="string">"FOREST_RPC_DEFAULT_TIMEOUT"</span>)
+        .ok()
+        .and_then(|it| Duration::from_secs(it.parse().ok()<span class="question-mark">?</span>).into())
+        .unwrap_or(Duration::from_secs(<span class="number">60</span>))
+});
 
 <span class="kw">const </span>MAX_REQUEST_BODY_SIZE: u32 = <span class="number">64 </span>* <span class="number">1024 </span>* <span class="number">1024</span>;
 <span class="kw">const </span>MAX_RESPONSE_BODY_SIZE: u32 = MAX_REQUEST_BODY_SIZE;

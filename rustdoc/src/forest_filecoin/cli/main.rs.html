@@ -53,9 +53,6 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -64,11 +61,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::cli::subcommands::Cli;
 <span class="kw">use </span><span class="kw">crate</span>::cli_shared::logger;
 <span class="kw">use </span><span class="kw">crate</span>::daemon::get_actual_chain_name;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>};
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
-<span class="kw">use crate</span>::{
-    rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>},
-    rpc_client::ApiInfo,
-};
 <span class="kw">use </span>clap::Parser;
 
 <span class="kw">use </span><span class="kw">super</span>::subcommands::Subcommand;
@@ -80,7 +74,7 @@
     <span class="comment">// Capture Cli inputs
     </span><span class="kw">let </span>Cli { token, cmd } = Cli::parse_from(args);
 
-    <span class="kw">let </span>api = ApiInfo::from_env()<span class="question-mark">?</span>.set_token(token);
+    <span class="kw">let </span>client = rpc::Client::default_or_from_env(token.as_deref())<span class="question-mark">?</span>;
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -89,7 +83,7 @@
         .block_on(<span class="kw">async </span>{
             logger::setup_logger(<span class="kw-2">&amp;</span><span class="kw">crate</span>::cli_shared::cli::CliOpts::default());
 
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(name) = StateNetworkName::call(<span class="kw-2">&amp;</span>rpc::Client::from(api.clone()), ()).<span class="kw">await </span>{
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(name) = StateNetworkName::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await </span>{
                 <span class="kw">if </span>get_actual_chain_name(<span class="kw-2">&amp;</span>name) != <span class="string">"mainnet" </span>{
                     CurrentNetwork::set_global(Network::Testnet);
                 }
@@ -97,18 +91,18 @@
 
             <span class="comment">// Run command
             </span><span class="kw">match </span>cmd {
-                Subcommand::Chain(cmd) =&gt; cmd.run(rpc::Client::from(api)).<span class="kw">await</span>,
-                Subcommand::Auth(cmd) =&gt; cmd.run(api).<span class="kw">await</span>,
-                Subcommand::Net(cmd) =&gt; cmd.run(rpc::Client::from(api)).<span class="kw">await</span>,
-                Subcommand::Sync(cmd) =&gt; cmd.run(rpc::Client::from(api)).<span class="kw">await</span>,
-                Subcommand::Mpool(cmd) =&gt; cmd.run(api).<span class="kw">await</span>,
-                Subcommand::State(cmd) =&gt; cmd.run(api).<span class="kw">await</span>,
+                Subcommand::Chain(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Auth(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Net(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Sync(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Mpool(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::State(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
                 Subcommand::Config(cmd) =&gt; cmd.run(<span class="kw-2">&amp;mut </span>std::io::stdout()),
-                Subcommand::Send(cmd) =&gt; cmd.run(rpc::Client::from(api)).<span class="kw">await</span>,
-                Subcommand::Info(cmd) =&gt; cmd.run(api).<span class="kw">await</span>,
-                Subcommand::Snapshot(cmd) =&gt; cmd.run(api).<span class="kw">await</span>,
-                Subcommand::Attach(cmd) =&gt; cmd.run(api),
-                Subcommand::Shutdown(cmd) =&gt; cmd.run(rpc::Client::from(api)).<span class="kw">await</span>,
+                Subcommand::Send(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Info(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Snapshot(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
+                Subcommand::Attach(cmd) =&gt; cmd.run(client),
+                Subcommand::Shutdown(cmd) =&gt; cmd.run(client).<span class="kw">await</span>,
             }
         })
 }

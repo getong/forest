@@ -273,34 +273,58 @@
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
 <a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="doccomment">//! # Design Goals
 //! - use [`jsonrpsee`] clients and primitives.
-//! - Support different call formats
-//!   - [`crate::rpc_client::RpcRequest`]
-//!   - [`crate::rpc::RpcMethod`]
+//! - Support [`rpc::Request`](crate::rpc::Request).
 //! - Support different
 //!   - endpoint paths (`v0`, `v1`).
 //!   - communication protocols (`ws`, `http`).
 //! - Support per-request timeouts.
 
-</span><span class="kw">use </span>std::fmt::{<span class="self">self</span>, Debug};
+</span><span class="kw">use </span>std::env;
+<span class="kw">use </span>std::fmt::{<span class="self">self</span>, Debug};
 <span class="kw">use </span>std::time::Duration;
 
+<span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>http02::{header, HeaderMap, HeaderValue};
 <span class="kw">use </span>jsonrpsee::core::client::ClientT <span class="kw">as _</span>;
 <span class="kw">use </span>jsonrpsee::core::params::{ArrayParams, ObjectParams};
 <span class="kw">use </span>jsonrpsee::core::ClientError;
+<span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>tracing::{debug, Instrument, Level};
 <span class="kw">use </span>url::Url;
 
-<span class="kw">use super</span>::{ApiVersion, MAX_REQUEST_BODY_SIZE, MAX_RESPONSE_BODY_SIZE};
+<span class="kw">use super</span>::{ApiVersion, Request, MAX_REQUEST_BODY_SIZE, MAX_RESPONSE_BODY_SIZE};
 
-<span class="doccomment">/// A JSON-RPC client that can dispatch either a [`crate::rpc_client::RpcRequest`]
-/// or a [`crate::rpc::RpcMethod`] to a single URL.
+<span class="doccomment">/// A JSON-RPC client that can dispatch either a [`crate::rpc::Request`] to a single URL.
 </span><span class="kw">pub struct </span>Client {
     <span class="doccomment">/// SHOULD end in a slash, due to our use of [`Url::join`].
     </span>base_url: Url,
@@ -311,19 +335,43 @@
 }
 
 <span class="kw">impl </span>Client {
-    <span class="kw">pub fn </span>new(base_url: Url, token: <span class="kw">impl </span>Into&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;) -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Use either the URL in the environment or a default.
+    ///
+    /// If `token` is provided, use that over the token in either of the above.
+    </span><span class="kw">pub fn </span>default_or_from_env(token: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">static </span>DEFAULT: Lazy&lt;Url&gt; = Lazy::new(|| <span class="string">"http://127.0.0.1:2345/"</span>.parse().unwrap());
+
+        <span class="kw">let </span><span class="kw-2">mut </span>base_url = <span class="kw">match </span>env::var(<span class="string">"FULLNODE_API_INFO"</span>) {
+            <span class="prelude-val">Ok</span>(it) =&gt; {
+                <span class="kw">let </span><span class="kw">crate</span>::utils::UrlFromMultiAddr(url) = it.parse()<span class="question-mark">?</span>;
+                url
+            }
+            <span class="prelude-val">Err</span>(env::VarError::NotPresent) =&gt; DEFAULT.clone(),
+            <span class="prelude-val">Err</span>(e @ env::VarError::NotUnicode(<span class="kw">_</span>)) =&gt; <span class="macro">bail!</span>(e),
+        };
+        <span class="kw">if </span>token.is_some() &amp;&amp; base_url.set_password(token).is_err() {
+            <span class="macro">bail!</span>(<span class="string">"couldn't set override password"</span>)
+        }
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_url(base_url))
+    }
+    <span class="kw">pub fn </span>from_url(<span class="kw-2">mut </span>base_url: Url) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>token = base_url.password().map(Into::into);
+        <span class="kw">let </span>_defer = base_url.set_password(<span class="prelude-val">None</span>);
         <span class="self">Self </span>{
+            token,
             base_url,
-            token: token.into(),
             v0: Default::default(),
             v1: Default::default(),
         }
     }
+    <span class="kw">pub fn </span>base_url(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Url {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.base_url
+    }
     <span class="kw">pub async fn </span>call&lt;T: <span class="kw">crate</span>::lotus_json::HasLotusJson + std::fmt::Debug&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        req: <span class="kw">crate</span>::rpc_client::RpcRequest&lt;T&gt;,
+        req: Request&lt;T&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;T, ClientError&gt; {
-        <span class="kw">let </span><span class="kw">crate</span>::rpc_client::RpcRequest {
+        <span class="kw">let </span>Request {
             method_name,
             params,
             api_version,
@@ -415,7 +463,7 @@
 /// can be made using [`jsonrpsee`] primitives.
 </span><span class="kw">struct </span>UrlClient {
     url: Url,
-    inner: OneClientInner,
+    inner: UrlClientInner,
 }
 
 <span class="kw">impl </span>Debug <span class="kw">for </span>UrlClient {
@@ -444,7 +492,7 @@
             <span class="prelude-val">None </span>=&gt; HeaderMap::new(),
         };
         <span class="kw">let </span>inner = <span class="kw">match </span>url.scheme() {
-            <span class="string">"ws" </span>| <span class="string">"wss" </span>=&gt; OneClientInner::Ws(
+            <span class="string">"ws" </span>| <span class="string">"wss" </span>=&gt; UrlClientInner::Ws(
                 jsonrpsee::ws_client::WsClientBuilder::new()
                     .set_headers(headers)
                     .max_request_size(MAX_REQUEST_BODY_SIZE)
@@ -453,7 +501,7 @@
                     .build(<span class="kw-2">&amp;</span>url)
                     .<span class="kw">await</span><span class="question-mark">?</span>,
             ),
-            <span class="string">"http" </span>| <span class="string">"https" </span>=&gt; OneClientInner::Https(
+            <span class="string">"http" </span>| <span class="string">"https" </span>=&gt; UrlClientInner::Https(
                 jsonrpsee::http_client::HttpClientBuilder::new()
                     .set_headers(headers)
                     .max_request_size(MAX_REQUEST_BODY_SIZE)
@@ -472,7 +520,7 @@
     }
 }
 
-<span class="kw">enum </span>OneClientInner {
+<span class="kw">enum </span>UrlClientInner {
     Ws(jsonrpsee::ws_client::WsClient),
     Https(jsonrpsee::http_client::HttpClient),
 }
@@ -485,8 +533,8 @@
         params: P,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), jsonrpsee::core::ClientError&gt; {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.inner {
-            OneClientInner::Ws(it) =&gt; it.notification(method, params).<span class="kw">await</span>,
-            OneClientInner::Https(it) =&gt; it.notification(method, params).<span class="kw">await</span>,
+            UrlClientInner::Ws(it) =&gt; it.notification(method, params).<span class="kw">await</span>,
+            UrlClientInner::Https(it) =&gt; it.notification(method, params).<span class="kw">await</span>,
         }
     }
     <span class="kw">async fn </span>request&lt;R: DeserializeOwned, P: jsonrpsee::core::traits::ToRpcParams + Send&gt;(
@@ -495,8 +543,8 @@
         params: P,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;R, jsonrpsee::core::ClientError&gt; {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.inner {
-            OneClientInner::Ws(it) =&gt; it.request(method, params).<span class="kw">await</span>,
-            OneClientInner::Https(it) =&gt; it.request(method, params).<span class="kw">await</span>,
+            UrlClientInner::Ws(it) =&gt; it.request(method, params).<span class="kw">await</span>,
+            UrlClientInner::Https(it) =&gt; it.request(method, params).<span class="kw">await</span>,
         }
     }
     <span class="kw">async fn </span>batch_request&lt;<span class="lifetime">'a</span>, R: DeserializeOwned + <span class="lifetime">'a </span>+ std::fmt::Debug&gt;(
@@ -504,8 +552,8 @@
         batch: jsonrpsee::core::params::BatchRequestBuilder&lt;<span class="lifetime">'a</span>&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;jsonrpsee::core::client::BatchResponse&lt;<span class="lifetime">'a</span>, R&gt;, jsonrpsee::core::ClientError&gt; {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.inner {
-            OneClientInner::Ws(it) =&gt; it.batch_request(batch).<span class="kw">await</span>,
-            OneClientInner::Https(it) =&gt; it.batch_request(batch).<span class="kw">await</span>,
+            UrlClientInner::Ws(it) =&gt; it.batch_request(batch).<span class="kw">await</span>,
+            UrlClientInner::Https(it) =&gt; it.batch_request(batch).<span class="kw">await</span>,
         }
     }
 }
@@ -523,11 +571,11 @@
         Notif: DeserializeOwned,
     {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.inner {
-            OneClientInner::Ws(it) =&gt; {
+            UrlClientInner::Ws(it) =&gt; {
                 it.subscribe(subscribe_method, params, unsubscribe_method)
                     .<span class="kw">await
             </span>}
-            OneClientInner::Https(it) =&gt; {
+            UrlClientInner::Https(it) =&gt; {
                 it.subscribe(subscribe_method, params, unsubscribe_method)
                     .<span class="kw">await
             </span>}
@@ -541,8 +589,8 @@
         </span>Notif: DeserializeOwned,
     {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.inner {
-            OneClientInner::Ws(it) =&gt; it.subscribe_to_method(method).<span class="kw">await</span>,
-            OneClientInner::Https(it) =&gt; it.subscribe_to_method(method).<span class="kw">await</span>,
+            UrlClientInner::Ws(it) =&gt; it.subscribe_to_method(method).<span class="kw">await</span>,
+            UrlClientInner::Https(it) =&gt; it.subscribe_to_method(method).<span class="kw">await</span>,
         }
     }
 }

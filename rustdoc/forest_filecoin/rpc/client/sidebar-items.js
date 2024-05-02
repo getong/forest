@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["OneClientInner"],"fn":["trace_params"],"struct":["Client","UrlClient"]};
+window.SIDEBAR_ITEMS = {"enum":["UrlClientInner"],"fn":["trace_params"],"struct":["Client","UrlClient"]};

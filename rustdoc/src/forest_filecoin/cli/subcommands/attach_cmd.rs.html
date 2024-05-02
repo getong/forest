@@ -468,10 +468,11 @@
 <a href="#466" id="466">466</a>
 <a href="#467" id="467">467</a>
 <a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::rpc_client::ApiInfo;
+</span><span class="kw">use </span><span class="kw">crate</span>::rpc;
 <span class="kw">use </span>std::path::PathBuf;
 
 <span class="attr">#[derive(Debug, clap::Args)]
@@ -487,14 +488,14 @@
 
 <span class="kw">impl </span>AttachCommand {
     <span class="attr">#[cfg(not(feature = <span class="string">"attach"</span>))]
-    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, _api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, <span class="kw">_</span>: rpc::Client) -&gt; anyhow::Result&lt;()&gt; {
         <span class="macro">tracing::warn!</span>(<span class="string">"`attach` command is unavailable, forest binaries need to be recompiled with `attach` feature"</span>);
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attr">#[cfg(feature = <span class="string">"attach"</span>)]
-    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="self">self</span>.run_inner(api)
+    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, client: rpc::Client) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="self">self</span>.run_inner(client)
     }
 }
 
@@ -503,16 +504,14 @@
     <span class="kw">use </span>std::{
         fs::{canonicalize, read_to_string, OpenOptions},
         str::FromStr,
+        sync::Arc,
     };
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::chain::ChainEpochDelta;
     <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
-    <span class="kw">use </span><span class="kw">crate</span>::rpc_client::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::rpc::prelude::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, message::Message};
-    <span class="kw">use crate</span>::{
-        chain::ChainEpochDelta,
-        rpc::{<span class="self">self</span>, prelude::<span class="kw-2">*</span>},
-    };
     <span class="kw">use crate</span>::{cli::humantoken, message::SignedMessage};
     <span class="kw">use </span>boa_engine::{
         object::{builtins::JsArray, FunctionObjectBuilder},
@@ -682,9 +681,9 @@
 
     <span class="kw">fn </span>bind_async&lt;T: DeserializeOwned, R: Serialize, Fut&gt;(
         context: <span class="kw-2">&amp;mut </span>Context,
-        api: <span class="kw-2">&amp;</span>ApiInfo,
+        client: Arc&lt;rpc::Client&gt;,
         name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-        req: <span class="kw">impl </span>Fn(T, ApiInfo) -&gt; Fut + <span class="lifetime">'static</span>,
+        req: <span class="kw">impl </span>Fn(T, Arc&lt;rpc::Client&gt;) -&gt; Fut + <span class="lifetime">'static</span>,
     ) <span class="kw">where
         </span>Fut: Future&lt;Output = anyhow::Result&lt;R&gt;&gt;,
     {
@@ -693,7 +692,7 @@
         // not get traced. We're safe because we do not use any GC'ed variables.
         </span><span class="kw">let </span>js_func = FunctionObjectBuilder::new(context.realm(), <span class="kw">unsafe </span>{
             NativeFunction::from_closure({
-                <span class="kw">let </span>api = api.clone();
+                <span class="kw">let </span>client = client.clone();
                 <span class="kw">move </span>|_this, params, context| {
                     <span class="kw">let </span>handle = tokio::runtime::Handle::current();
 
@@ -708,7 +707,7 @@
                         <span class="kw">let </span>args = serde_json::from_value(
                             value.to_json(context).map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">"{e}"</span>))<span class="question-mark">?</span>,
                         )<span class="question-mark">?</span>;
-                        handle.block_on(req(args, api.clone()))
+                        handle.block_on(req(args, client.clone()))
                     });
                     check_result(context, result)
                 }
@@ -740,7 +739,7 @@
 
     <span class="kw">async fn </span>send_message(
         params: SendMessageParams,
-        api: ApiInfo,
+        client: Arc&lt;rpc::Client&gt;,
     ) -&gt; anyhow::Result&lt;SignedMessage&gt; {
         <span class="kw">let </span>(from, to, value) = params;
 
@@ -749,20 +748,22 @@
             Address::from_str(<span class="kw-2">&amp;</span>to)<span class="question-mark">?</span>,
             humantoken::parse(<span class="kw-2">&amp;</span>value)<span class="question-mark">?</span>, <span class="comment">// Convert forest_shim::TokenAmount to TokenAmount3
         </span>);
-        <span class="prelude-val">Ok</span>(MpoolPushMessage::call(<span class="kw-2">&amp;</span>rpc::Client::from(api), (message, <span class="prelude-val">None</span>)).<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="prelude-val">Ok</span>(MpoolPushMessage::call(<span class="kw-2">&amp;</span>client, (message, <span class="prelude-val">None</span>)).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
     <span class="kw">type </span>SleepParams = (u64,);
     <span class="kw">type </span>SleepResult = ();
 
-    <span class="kw">async fn </span>sleep(params: SleepParams, _api: ApiInfo) -&gt; anyhow::Result&lt;SleepResult&gt; {
+    <span class="kw">async fn </span>sleep(params: SleepParams, <span class="kw">_</span>: Arc&lt;rpc::Client&gt;) -&gt; anyhow::Result&lt;SleepResult&gt; {
         <span class="kw">let </span>secs = params.<span class="number">0</span>;
         time::sleep(time::Duration::from_secs(secs)).<span class="kw">await</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>sleep_tipsets(epochs: ChainEpochDelta, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span>client = rpc::Client::from(api);
+    <span class="kw">async fn </span>sleep_tipsets(
+        epochs: ChainEpochDelta,
+        client: Arc&lt;rpc::Client&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>epoch = <span class="prelude-val">None</span>;
         <span class="kw">loop </span>{
             <span class="kw">let </span>state = SyncState::call(<span class="kw-2">&amp;</span>client, ()).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -781,7 +782,8 @@
     }
 
     <span class="kw">impl </span>AttachCommand {
-        <span class="kw">fn </span>setup_context(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context, api: ApiInfo) {
+        <span class="kw">fn </span>setup_context(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context, client: rpc::Client) {
+            <span class="kw">let </span>client = Arc::new(client);
             <span class="kw">let </span>console = Console::init(context);
             context
                 .register_global_property(JsString::from(Console::NAME), console, Attribute::all())
@@ -814,9 +816,9 @@
             <span class="macro">bind_request!</span>(context, api,);
 
             <span class="comment">// Bind send_message, sleep, sleep_tipsets
-            </span>bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"send_message"</span>, send_message);
-            bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"seep"</span>, sleep);
-            bind_async(context, <span class="kw-2">&amp;</span>api, <span class="string">"sleep_tipsets"</span>, sleep_tipsets);
+            </span>bind_async(context, client.clone(), <span class="string">"send_message"</span>, send_message);
+            bind_async(context, client.clone(), <span class="string">"seep"</span>, sleep);
+            bind_async(context, client.clone(), <span class="string">"sleep_tipsets"</span>, sleep_tipsets);
         }
 
         <span class="kw">fn </span>import_prelude(<span class="kw-2">&amp;</span><span class="self">self</span>, context: <span class="kw-2">&amp;mut </span>Context) -&gt; anyhow::Result&lt;()&gt; {
@@ -838,7 +840,7 @@
             <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>run_inner(<span class="self">self</span>, api: ApiInfo) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>run_inner(<span class="self">self</span>, api: rpc::Client) -&gt; anyhow::Result&lt;()&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>context = Context::default();
             <span class="self">self</span>.setup_context(<span class="kw-2">&amp;mut </span>context, api);
 
