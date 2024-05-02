@@ -1628,6 +1628,9 @@
 <a href="#1626" id="1626">1626</a>
 <a href="#1627" id="1627">1627</a>
 <a href="#1628" id="1628">1628</a>
+<a href="#1629" id="1629">1629</a>
+<a href="#1630" id="1630">1630</a>
+<a href="#1631" id="1631">1631</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1665,7 +1668,7 @@
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::to_vec;
 <span class="kw">use </span>itertools::Itertools;
-<span class="kw">use </span>nonempty::{nonempty, NonEmpty};
+<span class="kw">use </span>nunny::{vec <span class="kw">as </span>nonempty, Vec <span class="kw">as </span>NonEmpty};
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tokio::task::JoinSet;
 <span class="kw">use </span>tracing::{debug, error, info, trace, warn};
@@ -1808,7 +1811,7 @@
     </span>}
 
     <span class="kw">fn </span>heaviest_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;Tipset&gt; {
-        <span class="kw">let </span>max = <span class="self">self</span>.tipsets.maximum_by_key(|ts| ts.weight()).weight();
+        <span class="kw">let </span>max = <span class="self">self</span>.tipsets.iter_ne().map(|it| it.weight()).max();
 
         <span class="kw">let </span>ties = <span class="self">self</span>.tipsets.iter().filter(|ts| ts.weight() == max);
 
@@ -2975,9 +2978,12 @@
                 // But there's no reason `validate_block` couldn't return a list of all
                 // errors instead of a single one that has all the error messages,
                 // removing the caller's ability to distinguish between them.
-                </span><span class="kw">let </span>errs = errs.map(TipsetRangeSyncerError::ConsensusError);
 
-                TipsetRangeSyncerError::concat(errs)
+                </span>TipsetRangeSyncerError::concat(
+                    errs.into_iter_ne()
+                        .map(TipsetRangeSyncerError::ConsensusError)
+                        .collect_vec(),
+                )
             })
             .<span class="kw">await
     </span>}));

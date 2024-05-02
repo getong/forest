@@ -256,19 +256,17 @@
 <a href="#254" id="254">254</a>
 <a href="#255" id="255">255</a>
 <a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::path::{Path, PathBuf};
 
-<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>clap::Subcommand;
 <span class="kw">use </span>futures::{StreamExt, TryStreamExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>indicatif::{ProgressBar, ProgressStyle};
 <span class="kw">use </span>itertools::Itertools;
-<span class="kw">use </span>nonempty::NonEmpty;
+<span class="kw">use </span>nunny::Vec <span class="kw">as </span>NonEmpty;
 <span class="kw">use </span>tokio::{
     fs::File,
     io::{AsyncWriteExt, BufReader},
@@ -316,7 +314,7 @@
                     .try_collect()
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span>all_roots = NonEmpty::from_vec(
+                <span class="kw">let </span>all_roots = NonEmpty::new(
                     car_streams
                         .iter()
                         .flat_map(|it| it.header.roots.iter())
@@ -324,7 +322,7 @@
                         .cloned()
                         .collect_vec(),
                 )
-                .context(<span class="string">"car roots cannot be empty"</span>)<span class="question-mark">?</span>;
+                .map_err(|<span class="kw">_</span>| anyhow::Error::msg(<span class="string">"car roots cannot be empty"</span>))<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>frames = <span class="kw">crate</span>::db::car::forest::Encoder::compress_stream_default(
                     dedup_block_stream(merge_car_streams(car_streams)).map_err(anyhow::Error::from),
@@ -391,7 +389,7 @@
     <span class="kw">use </span>cid::multihash::{Code, MultihashDigest};
     <span class="kw">use </span>cid::Cid;
     <span class="kw">use </span>futures::{stream::iter, StreamExt, TryStreamExt};
-    <span class="kw">use </span>nonempty::{nonempty, NonEmpty};
+    <span class="kw">use </span>nunny::{vec <span class="kw">as </span>nonempty, Vec <span class="kw">as </span>NonEmpty};
     <span class="kw">use </span>std::io::Write;
     <span class="kw">use </span>tempfile::{Builder, TempPath};
     <span class="kw">use </span>tokio::io::AsyncWriteExt;

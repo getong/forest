@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["array","slice","vec"],"struct":["Error","NonEmpty","TryFromSliceError"],"type":["Array","Slice","Vec"]};

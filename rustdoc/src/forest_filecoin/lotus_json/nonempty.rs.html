@@ -43,17 +43,20 @@
 <a href="#41" id="41">41</a>
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use super</span>::<span class="kw-2">*</span>;
-<span class="kw">use </span>::nonempty::NonEmpty;
 
-<span class="kw">impl</span>&lt;T&gt; HasLotusJson <span class="kw">for </span>NonEmpty&lt;T&gt;
+<span class="kw">impl</span>&lt;T&gt; HasLotusJson <span class="kw">for </span>nunny::Vec&lt;T&gt;
 <span class="kw">where
     </span>T: HasLotusJson,
 {
-    <span class="kw">type </span>LotusJson = NonEmpty&lt;&lt;T <span class="kw">as </span>HasLotusJson&gt;::LotusJson&gt;;
+    <span class="kw">type </span>LotusJson = nunny::Vec&lt;&lt;T <span class="kw">as </span>HasLotusJson&gt;::LotusJson&gt;;
 
     <span class="attr">#[cfg(test)]
     </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
@@ -61,11 +64,16 @@
     }
 
     <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        <span class="self">self</span>.map(HasLotusJson::into_lotus_json)
+        <span class="self">self</span>.into_iter_ne()
+            .map(HasLotusJson::into_lotus_json)
+            .collect_vec()
     }
 
     <span class="kw">fn </span>from_lotus_json(lotus_json: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        lotus_json.map(HasLotusJson::from_lotus_json)
+        lotus_json
+            .into_iter_ne()
+            .map(HasLotusJson::from_lotus_json)
+            .collect_vec()
     }
 }
 
@@ -73,7 +81,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>::cid::Cid;
-    <span class="kw">use </span>::nonempty::nonempty;
+    <span class="kw">use </span>nunny::vec <span class="kw">as </span>nonempty;
     <span class="kw">use </span>quickcheck_macros::quickcheck;
 
     <span class="attr">#[test]
@@ -82,8 +90,8 @@
     }
 
     <span class="attr">#[quickcheck]
-    </span><span class="kw">fn </span>assert_unchanged(head: Cid, tail: Vec&lt;Cid&gt;) {
-        assert_unchanged_via_json(NonEmpty::from((head, tail)))
+    </span><span class="kw">fn </span>assert_unchanged(it: nunny::Vec&lt;Cid&gt;) {
+        assert_unchanged_via_json(it)
     }
 }
 </code></pre></div></section></main></body></html>

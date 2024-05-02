@@ -531,10 +531,6 @@
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
 <a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -596,7 +592,7 @@
 <span class="kw">use </span>futures::{Stream, TryStream, TryStreamExt <span class="kw">as _</span>};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::to_vec;
-<span class="kw">use </span>nonempty::NonEmpty;
+<span class="kw">use </span>nunny::Vec <span class="kw">as </span>NonEmpty;
 <span class="kw">use </span>parking_lot::{Mutex, RwLock};
 <span class="kw">use </span>positioned_io::{Cursor, ReadAt, SizeCursor};
 <span class="kw">use </span>std::io::{Seek, SeekFrom};
@@ -958,7 +954,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::block_on;
-    <span class="kw">use </span>nonempty::nonempty;
+    <span class="kw">use </span>nunny::vec <span class="kw">as </span>nonempty;
     <span class="kw">use </span>quickcheck_macros::quickcheck;
 
     <span class="kw">fn </span>mk_encoded_car(
@@ -982,9 +978,8 @@
     }
 
     <span class="attr">#[quickcheck]
-    </span><span class="kw">fn </span>forest_car_create_basic(head: CarBlock, tail: Vec&lt;CarBlock&gt;) {
-        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>(head.cid);
-        <span class="kw">let </span>blocks = NonEmpty { head, tail };
+    </span><span class="kw">fn </span>forest_car_create_basic(blocks: nunny::Vec&lt;CarBlock&gt;) {
+        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>(blocks.first().cid);
         <span class="kw">let </span>forest_car =
             ForestCar::new(mk_encoded_car(<span class="number">1024 </span>* <span class="number">4</span>, <span class="number">3</span>, roots.clone(), blocks.clone())).unwrap();
         <span class="macro">assert_eq!</span>(forest_car.roots(), <span class="kw-2">&amp;</span>roots);
@@ -995,15 +990,12 @@
 
     <span class="attr">#[quickcheck]
     </span><span class="kw">fn </span>forest_car_create_options(
-        head: CarBlock,
-        tail: Vec&lt;CarBlock&gt;,
+        blocks: nunny::Vec&lt;CarBlock&gt;,
         frame_size: usize,
         <span class="kw-2">mut </span>compression_level: u16,
     ) {
         compression_level %= <span class="number">15</span>;
-
-        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>(head.cid);
-        <span class="kw">let </span>blocks = NonEmpty { head, tail };
+        <span class="kw">let </span>roots = <span class="macro">nonempty!</span>(blocks.first().cid);
 
         <span class="kw">let </span>forest_car = ForestCar::new(mk_encoded_car(
             frame_size,
