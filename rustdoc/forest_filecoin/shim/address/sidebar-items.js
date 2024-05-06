@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ADDRESS_ENCODER","LOCAL_NETWORK","PAYLOAD_HASH_LEN"],"enum":["Error","Network","Payload","Protocol"],"static":["GLOBAL_NETWORK","ZERO_ADDRESS"],"struct":["Address","CurrentNetwork","NetworkGuard","StrictAddress"]};
+window.SIDEBAR_ITEMS = {"constant":["ADDRESS_ENCODER","LOCAL_NETWORK","PAYLOAD_HASH_LEN"],"enum":["Error","Network","Payload","Protocol"],"static":["GLOBAL_NETWORK","ZERO_ADDRESS"],"struct":["Address","CurrentNetwork","StrictAddress"]};

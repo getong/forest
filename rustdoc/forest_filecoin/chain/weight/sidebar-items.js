@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["Scale"],"type":["Weight"]};
+window.SIDEBAR_ITEMS = {"type":["Weight"]};

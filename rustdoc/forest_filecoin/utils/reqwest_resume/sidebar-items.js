@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get"],"struct":["Client","Decoder","RequestBuilder","Response"],"trait":["ClientExt"]};
+window.SIDEBAR_ITEMS = {"fn":["get"],"struct":["Client","Decoder","RequestBuilder","Response"]};
