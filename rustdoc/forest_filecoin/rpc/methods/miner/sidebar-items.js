@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MinerCreateBlock"],"fn":["aggregate_from_bls_signatures","sign_block_header"],"macro":["for_each_method"],"struct":["BlockMessage","BlockTemplate","MessageMeta"]};

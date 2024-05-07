@@ -584,6 +584,13 @@
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -960,14 +967,21 @@
                 <span class="kw">let </span>key = <span class="kw">match </span>path {
                     <span class="prelude-val">Some</span>(path) =&gt; std::fs::read_to_string(path)<span class="question-mark">?</span>,
                     <span class="kw">_ </span>=&gt; {
-                        tokio::task::spawn_blocking(|| {
-                            Password::with_theme(<span class="kw-2">&amp;</span>ColorfulTheme::default())
-                                .allow_empty_password(<span class="bool-val">true</span>)
-                                .with_prompt(<span class="string">"Enter the private key"</span>)
-                                .interact()
-                        })
-                        .<span class="kw">await</span><span class="question-mark">??
-                    </span>}
+                        <span class="kw">let </span>term = Term::stderr();
+                        <span class="kw">if </span>term.is_term() {
+                            tokio::task::spawn_blocking(|| {
+                                Password::with_theme(<span class="kw-2">&amp;</span>ColorfulTheme::default())
+                                    .allow_empty_password(<span class="bool-val">true</span>)
+                                    .with_prompt(<span class="string">"Enter the private key"</span>)
+                                    .interact()
+                            })
+                            .<span class="kw">await</span><span class="question-mark">??
+                        </span>} <span class="kw">else </span>{
+                            <span class="kw">let </span><span class="kw-2">mut </span>buffer = String::new();
+                            std::io::stdin().read_line(<span class="kw-2">&amp;mut </span>buffer)<span class="question-mark">?</span>;
+                            buffer
+                        }
+                    }
                 };
 
                 <span class="kw">let </span>key = key.trim();
