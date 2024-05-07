@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.13.1/src/connection.rs`."><title>connection.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yamux-0.13.2/src/connection.rs`."><title>connection.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="yamux" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../yamux/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -872,6 +872,11 @@
 <a href="#870" id="870">870</a>
 <a href="#871" id="871">871</a>
 <a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2018-2019 Parity Technologies (UK) Ltd.
 //
 // Licensed under the Apache License, Version 2.0 or MIT license, at your option.
@@ -1160,7 +1165,8 @@
     stream_receivers: SelectAll&lt;TaggedStream&lt;StreamId, mpsc::Receiver&lt;StreamCommand&gt;&gt;&gt;,
     no_streams_waker: <span class="prelude-ty">Option</span>&lt;Waker&gt;,
 
-    pending_frames: VecDeque&lt;Frame&lt;()&gt;&gt;,
+    pending_read_frame: <span class="prelude-ty">Option</span>&lt;Frame&lt;()&gt;&gt;,
+    pending_write_frame: <span class="prelude-ty">Option</span>&lt;Frame&lt;()&gt;&gt;,
     new_outbound_stream_waker: <span class="prelude-ty">Option</span>&lt;Waker&gt;,
 
     rtt: rtt::Rtt,
@@ -1234,7 +1240,8 @@
                 Mode::Client =&gt; <span class="number">1</span>,
                 Mode::Server =&gt; <span class="number">2</span>,
             },
-            pending_frames: VecDeque::default(),
+            pending_read_frame: <span class="prelude-val">None</span>,
+            pending_write_frame: <span class="prelude-val">None</span>,
             new_outbound_stream_waker: <span class="prelude-val">None</span>,
             rtt: rtt::Rtt::new(),
             accumulated_max_stream_windows: Default::default(),
@@ -1243,7 +1250,12 @@
 
     <span class="doccomment">/// Gracefully close the connection to the remote.
     </span><span class="kw">fn </span>close(<span class="self">self</span>) -&gt; Closing&lt;T&gt; {
-        Closing::new(<span class="self">self</span>.stream_receivers, <span class="self">self</span>.pending_frames, <span class="self">self</span>.socket)
+        <span class="kw">let </span>pending_frames = <span class="self">self
+            </span>.pending_read_frame
+            .into_iter()
+            .chain(<span class="self">self</span>.pending_write_frame)
+            .collect::&lt;VecDeque&lt;Frame&lt;()&gt;&gt;&gt;();
+        Closing::new(<span class="self">self</span>.stream_receivers, pending_frames, <span class="self">self</span>.socket)
     }
 
     <span class="doccomment">/// Cleanup all our resources.
@@ -1266,7 +1278,13 @@
                     <span class="kw">continue</span>;
                 }
 
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = <span class="self">self</span>.pending_frames.pop_front() {
+                <span class="comment">// Privilege pending `Pong` and `GoAway` `Frame`s
+                // over `Frame`s from the receivers.
+                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = <span class="self">self
+                    </span>.pending_read_frame
+                    .take()
+                    .or_else(|| <span class="self">self</span>.pending_write_frame.take())
+                {
                     <span class="self">self</span>.socket.start_send_unpin(frame)<span class="question-mark">?</span>;
                     <span class="kw">continue</span>;
                 }
@@ -1277,36 +1295,63 @@
                 Poll::Pending =&gt; {}
             }
 
-            <span class="kw">match </span><span class="self">self</span>.stream_receivers.poll_next_unpin(cx) {
-                Poll::Ready(<span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="prelude-val">Some</span>(StreamCommand::SendFrame(frame))))) =&gt; {
-                    <span class="self">self</span>.on_send_frame(frame);
-                    <span class="kw">continue</span>;
+            <span class="kw">if </span><span class="self">self</span>.pending_write_frame.is_none() {
+                <span class="kw">match </span><span class="self">self</span>.stream_receivers.poll_next_unpin(cx) {
+                    Poll::Ready(<span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="prelude-val">Some</span>(StreamCommand::SendFrame(frame))))) =&gt; {
+                        <span class="macro">log::trace!</span>(
+                            <span class="string">"{}/{}: sending: {}"</span>,
+                            <span class="self">self</span>.id,
+                            frame.header().stream_id(),
+                            frame.header()
+                        );
+                        <span class="self">self</span>.pending_write_frame.replace(frame.into());
+                        <span class="kw">continue</span>;
+                    }
+                    Poll::Ready(<span class="prelude-val">Some</span>((id, <span class="prelude-val">Some</span>(StreamCommand::CloseStream { ack })))) =&gt; {
+                        <span class="macro">log::trace!</span>(<span class="string">"{}/{}: sending close"</span>, <span class="self">self</span>.id, id);
+                        <span class="self">self</span>.pending_write_frame
+                            .replace(Frame::close_stream(id, ack).into());
+                        <span class="kw">continue</span>;
+                    }
+                    Poll::Ready(<span class="prelude-val">Some</span>((id, <span class="prelude-val">None</span>))) =&gt; {
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = <span class="self">self</span>.on_drop_stream(id) {
+                            <span class="macro">log::trace!</span>(<span class="string">"{}/{}: sending: {}"</span>, <span class="self">self</span>.id, id, frame.header());
+                            <span class="self">self</span>.pending_write_frame.replace(frame);
+                        };
+                        <span class="kw">continue</span>;
+                    }
+                    Poll::Ready(<span class="prelude-val">None</span>) =&gt; {
+                        <span class="self">self</span>.no_streams_waker = <span class="prelude-val">Some</span>(cx.waker().clone());
+                    }
+                    Poll::Pending =&gt; {}
                 }
-                Poll::Ready(<span class="prelude-val">Some</span>((id, <span class="prelude-val">Some</span>(StreamCommand::CloseStream { ack })))) =&gt; {
-                    <span class="self">self</span>.on_close_stream(id, ack);
-                    <span class="kw">continue</span>;
-                }
-                Poll::Ready(<span class="prelude-val">Some</span>((id, <span class="prelude-val">None</span>))) =&gt; {
-                    <span class="self">self</span>.on_drop_stream(id);
-                    <span class="kw">continue</span>;
-                }
-                Poll::Ready(<span class="prelude-val">None</span>) =&gt; {
-                    <span class="self">self</span>.no_streams_waker = <span class="prelude-val">Some</span>(cx.waker().clone());
-                }
-                Poll::Pending =&gt; {}
             }
 
-            <span class="kw">match </span><span class="self">self</span>.socket.poll_next_unpin(cx) {
-                Poll::Ready(<span class="prelude-val">Some</span>(frame)) =&gt; {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(stream) = <span class="self">self</span>.on_frame(frame<span class="question-mark">?</span>)<span class="question-mark">? </span>{
-                        <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(stream));
+            <span class="kw">if </span><span class="self">self</span>.pending_read_frame.is_none() {
+                <span class="kw">match </span><span class="self">self</span>.socket.poll_next_unpin(cx) {
+                    Poll::Ready(<span class="prelude-val">Some</span>(frame)) =&gt; {
+                        <span class="kw">match </span><span class="self">self</span>.on_frame(frame<span class="question-mark">?</span>)<span class="question-mark">? </span>{
+                            Action::None =&gt; {}
+                            Action::New(stream) =&gt; {
+                                <span class="macro">log::trace!</span>(<span class="string">"{}: new inbound {} of {}"</span>, <span class="self">self</span>.id, stream, <span class="self">self</span>);
+                                <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(stream));
+                            }
+                            Action::Ping(f) =&gt; {
+                                <span class="macro">log::trace!</span>(<span class="string">"{}/{}: pong"</span>, <span class="self">self</span>.id, f.header().stream_id());
+                                <span class="self">self</span>.pending_read_frame.replace(f.into());
+                            }
+                            Action::Terminate(f) =&gt; {
+                                <span class="macro">log::trace!</span>(<span class="string">"{}: sending term"</span>, <span class="self">self</span>.id);
+                                <span class="self">self</span>.pending_read_frame.replace(f.into());
+                            }
+                        }
+                        <span class="kw">continue</span>;
                     }
-                    <span class="kw">continue</span>;
+                    Poll::Ready(<span class="prelude-val">None</span>) =&gt; {
+                        <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(ConnectionError::Closed));
+                    }
+                    Poll::Pending =&gt; {}
                 }
-                Poll::Ready(<span class="prelude-val">None</span>) =&gt; {
-                    <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(ConnectionError::Closed));
-                }
-                Poll::Pending =&gt; {}
             }
 
             <span class="comment">// If we make it this far, at least one of the above must have registered a waker.
@@ -1337,23 +1382,7 @@
         Poll::Ready(<span class="prelude-val">Ok</span>(stream))
     }
 
-    <span class="kw">fn </span>on_send_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame: Frame&lt;Either&lt;Data, WindowUpdate&gt;&gt;) {
-        <span class="macro">log::trace!</span>(
-            <span class="string">"{}/{}: sending: {}"</span>,
-            <span class="self">self</span>.id,
-            frame.header().stream_id(),
-            frame.header()
-        );
-        <span class="self">self</span>.pending_frames.push_back(frame.into());
-    }
-
-    <span class="kw">fn </span>on_close_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: StreamId, ack: bool) {
-        <span class="macro">log::trace!</span>(<span class="string">"{}/{}: sending close"</span>, <span class="self">self</span>.id, id);
-        <span class="self">self</span>.pending_frames
-            .push_back(Frame::close_stream(id, ack).into());
-    }
-
-    <span class="kw">fn </span>on_drop_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stream_id: StreamId) {
+    <span class="kw">fn </span>on_drop_stream(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stream_id: StreamId) -&gt; <span class="prelude-ty">Option</span>&lt;Frame&lt;()&gt;&gt; {
         <span class="kw">let </span>s = <span class="self">self</span>.streams.remove(<span class="kw-2">&amp;</span>stream_id).expect(<span class="string">"stream not found"</span>);
 
         <span class="macro">log::trace!</span>(<span class="string">"{}: removing dropped stream {}"</span>, <span class="self">self</span>.id, stream_id);
@@ -1399,10 +1428,7 @@
             }
             frame
         };
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(f) = frame {
-            <span class="macro">log::trace!</span>(<span class="string">"{}/{}: sending: {}"</span>, <span class="self">self</span>.id, stream_id, f.header());
-            <span class="self">self</span>.pending_frames.push_back(f.into());
-        }
+        frame.map(Into::into)
     }
 
     <span class="doccomment">/// Process the result of reading from the socket.
@@ -1411,7 +1437,7 @@
     /// and return a corresponding error, which terminates the connection.
     /// Otherwise we process the frame and potentially return a new `Stream`
     /// if one was opened by the remote.
-    </span><span class="kw">fn </span>on_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame: Frame&lt;()&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Stream&gt;&gt; {
+    </span><span class="kw">fn </span>on_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame: Frame&lt;()&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Action&gt; {
         <span class="macro">log::trace!</span>(<span class="string">"{}: received: {}"</span>, <span class="self">self</span>.id, frame.header());
 
         <span class="kw">if </span>frame.header().flags().contains(header::ACK)
@@ -1434,23 +1460,7 @@
             Tag::Ping =&gt; <span class="self">self</span>.on_ping(<span class="kw-2">&amp;</span>frame.into_ping()),
             Tag::GoAway =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ConnectionError::Closed),
         };
-        <span class="kw">match </span>action {
-            Action::None =&gt; {}
-            Action::New(stream) =&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">"{}: new inbound {} of {}"</span>, <span class="self">self</span>.id, stream, <span class="self">self</span>);
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(stream));
-            }
-            Action::Ping(f) =&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">"{}/{}: pong"</span>, <span class="self">self</span>.id, f.header().stream_id());
-                <span class="self">self</span>.pending_frames.push_back(f.into());
-            }
-            Action::Terminate(f) =&gt; {
-                <span class="macro">log::trace!</span>(<span class="string">"{}: sending term"</span>, <span class="self">self</span>.id);
-                <span class="self">self</span>.pending_frames.push_back(f.into());
-            }
-        }
-
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+        <span class="prelude-val">Ok</span>(action)
     }
 
     <span class="kw">fn </span>on_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame: Frame&lt;Data&gt;) -&gt; Action {
