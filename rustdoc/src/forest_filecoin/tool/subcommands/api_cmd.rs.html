@@ -1543,6 +1543,23 @@
 <a href="#1541" id="1541">1541</a>
 <a href="#1542" id="1542">1542</a>
 <a href="#1543" id="1543">1543</a>
+<a href="#1544" id="1544">1544</a>
+<a href="#1545" id="1545">1545</a>
+<a href="#1546" id="1546">1546</a>
+<a href="#1547" id="1547">1547</a>
+<a href="#1548" id="1548">1548</a>
+<a href="#1549" id="1549">1549</a>
+<a href="#1550" id="1550">1550</a>
+<a href="#1551" id="1551">1551</a>
+<a href="#1552" id="1552">1552</a>
+<a href="#1553" id="1553">1553</a>
+<a href="#1554" id="1554">1554</a>
+<a href="#1555" id="1555">1555</a>
+<a href="#1556" id="1556">1556</a>
+<a href="#1557" id="1557">1557</a>
+<a href="#1558" id="1558">1558</a>
+<a href="#1559" id="1559">1559</a>
+<a href="#1560" id="1560">1560</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1665,6 +1682,9 @@
         <span class="doccomment">/// Miner address to use for miner tests. Miner worker key must be in the key-store.
         </span><span class="attr">#[arg(long)]
         </span>miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+        <span class="doccomment">/// Worker address to use where key is applicable. Worker key must be in the key-store.
+        </span><span class="attr">#[arg(long)]
+        </span>worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
     },
 }
 
@@ -1678,6 +1698,7 @@
     run_ignored: RunIgnored,
     max_concurrent_requests: usize,
     miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
 }
 
 <span class="kw">impl </span>ApiCommands {
@@ -1704,6 +1725,7 @@
                 run_ignored,
                 max_concurrent_requests,
                 miner_address,
+                worker_address,
             } =&gt; {
                 <span class="kw">let </span>config = ApiTestFlags {
                     filter,
@@ -1713,6 +1735,7 @@
                     run_ignored,
                     max_concurrent_requests,
                     miner_address,
+                    worker_address,
                 };
 
                 compare_apis(
@@ -2467,7 +2490,7 @@
     <span class="prelude-val">Ok</span>(tests)
 }
 
-<span class="kw">fn </span>wallet_tests() -&gt; Vec&lt;RpcTest&gt; {
+<span class="kw">fn </span>wallet_tests(config: <span class="kw-2">&amp;</span>ApiTestFlags) -&gt; Vec&lt;RpcTest&gt; {
     <span class="comment">// This address has been funded by the calibnet faucet and the private keys
     // has been discarded. It should always have a non-zero balance.
     </span><span class="kw">let </span>known_wallet = Address::from_str(<span class="string">"t1c4dkec3qhrnrsa4mccy7qntkyq2hhsma4sq7lui"</span>).unwrap();
@@ -2481,15 +2504,26 @@
         <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Invalid signature (must be bls or secp256k1)"</span>),
     };
 
-    <span class="macro">vec!</span>[
+    <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[
         RpcTest::identity(WalletBalance::request((known_wallet,)).unwrap()),
         RpcTest::identity(WalletValidateAddress::request((known_wallet.to_string(),)).unwrap()),
         RpcTest::identity(WalletVerify::request((known_wallet, text, signature)).unwrap()),
-        <span class="comment">// These methods require write access in Lotus. Not sure why.
-        // RpcTest::basic(ApiInfo::wallet_default_address_req()),
-        // RpcTest::basic(ApiInfo::wallet_list_req()),
-        // RpcTest::basic(ApiInfo::wallet_has_req(known_wallet.to_string())),
-    </span>]
+    ];
+
+    <span class="comment">// If a worker address is provided, we can test wallet methods requiring
+    // a shared key.
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(worker_address) = config.worker_address {
+        <span class="kw">use </span>base64::{prelude::BASE64_STANDARD, Engine};
+        <span class="kw">let </span>msg =
+            BASE64_STANDARD.encode(<span class="string">"Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn"</span>.as_bytes());
+        tests.push(RpcTest::identity(
+            WalletSign::request((worker_address, msg.into())).unwrap(),
+        ));
+        tests.push(RpcTest::identity(
+            WalletSign::request((worker_address, Vec::new())).unwrap(),
+        ));
+    }
+    tests
 }
 
 <span class="kw">fn </span>eth_tests() -&gt; Vec&lt;RpcTest&gt; {
@@ -2666,7 +2700,7 @@
     tests.extend(mpool_tests());
     tests.extend(net_tests());
     tests.extend(node_tests());
-    tests.extend(wallet_tests());
+    tests.extend(wallet_tests(<span class="kw-2">&amp;</span>config));
     tests.extend(eth_tests());
     tests.extend(state_tests());
 
