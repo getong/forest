@@ -785,25 +785,6 @@
 <a href="#783" id="783">783</a>
 <a href="#784" id="784">784</a>
 <a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a>
-<a href="#787" id="787">787</a>
-<a href="#788" id="788">788</a>
-<a href="#789" id="789">789</a>
-<a href="#790" id="790">790</a>
-<a href="#791" id="791">791</a>
-<a href="#792" id="792">792</a>
-<a href="#793" id="793">793</a>
-<a href="#794" id="794">794</a>
-<a href="#795" id="795">795</a>
-<a href="#796" id="796">796</a>
-<a href="#797" id="797">797</a>
-<a href="#798" id="798">798</a>
-<a href="#799" id="799">799</a>
-<a href="#800" id="800">800</a>
-<a href="#801" id="801">801</a>
-<a href="#802" id="802">802</a>
-<a href="#803" id="803">803</a>
-<a href="#804" id="804">804</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1321,42 +1302,26 @@
     </span><span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
     <span class="kw">use </span><span class="kw">crate</span>::lotus_json::<span class="kw-2">*</span>;
     <span class="kw">use </span>nunny::Vec <span class="kw">as </span>NonEmpty;
-    <span class="kw">use </span>schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
-    <span class="kw">use </span>serde::{Deserialize, Deserializer, Serialize, Serializer};
+    <span class="kw">use </span>schemars::JsonSchema;
+    <span class="kw">use </span>serde::{de::Error <span class="kw">as _</span>, Deserialize, Deserializer, Serialize, Serializer};
 
     <span class="kw">use </span><span class="kw">super</span>::TipsetKey;
 
-    <span class="attr">#[derive(Clone)]
-    </span><span class="kw">pub struct </span>TipsetLotusJson(Tipset);
+    <span class="attr">#[derive(Clone, JsonSchema)]
+    #[schemars(rename = <span class="string">"Tipset"</span>)]
+    </span><span class="kw">pub struct </span>TipsetLotusJson(<span class="attr">#[schemars(with = <span class="string">"TipsetLotusJsonInner"</span>)] </span>Tipset);
 
-    <span class="kw">impl </span>JsonSchema <span class="kw">for </span>TipsetLotusJson {
-        <span class="kw">fn </span>schema_name() -&gt; String {
-            String::from(<span class="string">"TipsetLotusJson"</span>)
-        }
-        <span class="kw">fn </span>json_schema(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; Schema {
-            <span class="comment">// can't impl JsonSchema for NonEmpty...
-            </span><span class="attr">#[derive(JsonSchema)]
-            #[serde(rename_all = <span class="string">"PascalCase"</span>)]
-            #[allow(unused)]
-            </span><span class="kw">struct </span>Helper {
-                cids: LotusJson&lt;TipsetKey&gt;,
-                blocks: LotusJson&lt;Vec&lt;CachingBlockHeader&gt;&gt;,
-                height: LotusJson&lt;i64&gt;,
-            }
-            Helper::json_schema(gen)
-        }
-    }
-
-    <span class="comment">// NOTE: keep this in sync with JsonSchema implementation above
-    </span><span class="attr">#[derive(Serialize, Deserialize)]
+    <span class="attr">#[derive(Serialize, Deserialize, JsonSchema)]
+    #[schemars(rename = <span class="string">"Tipset"</span>)]
     #[serde(rename_all = <span class="string">"PascalCase"</span>)]
     </span><span class="kw">struct </span>TipsetLotusJsonInner {
         <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+        #[schemars(with = <span class="string">"LotusJson&lt;TipsetKey&gt;"</span>)]
         </span>cids: TipsetKey,
         <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
+        #[schemars(with = <span class="string">"LotusJson&lt;NonEmpty&lt;CachingBlockHeader&gt;&gt;"</span>)]
         </span>blocks: NonEmpty&lt;CachingBlockHeader&gt;,
-        <span class="attr">#[serde(with = <span class="string">"crate::lotus_json"</span>)]
-        </span>height: i64,
+        height: i64,
     }
 
     <span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>TipsetLotusJson {
@@ -1370,10 +1335,7 @@
                 height: _ignored1,
             } = Deserialize::deserialize(deserializer)<span class="question-mark">?</span>;
 
-            <span class="prelude-val">Ok</span>(<span class="self">Self</span>(Tipset {
-                headers: blocks,
-                key: Default::default(),
-            }))
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>(Tipset::new(blocks).map_err(D::Error::custom)<span class="question-mark">?</span>))
         }
     }
 
