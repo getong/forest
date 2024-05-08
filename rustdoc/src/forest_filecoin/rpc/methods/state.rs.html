@@ -1870,10 +1870,6 @@
 <a href="#1868" id="1868">1868</a>
 <a href="#1869" id="1869">1869</a>
 <a href="#1870" id="1870">1870</a>
-<a href="#1871" id="1871">1871</a>
-<a href="#1872" id="1872">1872</a>
-<a href="#1873" id="1873">1873</a>
-<a href="#1874" id="1874">1874</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1894,7 +1890,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::circulating_supply::GenesisInfo;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::MarketBalance;
-<span class="kw">use </span><span class="kw">crate</span>::utils::db::car_stream::{CarBlock, CarWriter};
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::{
+    car_stream::{CarBlock, CarWriter},
+    BlockstoreExt <span class="kw">as _</span>,
+};
 <span class="kw">use crate</span>::{
     beacon::BeaconEntry,
     rpc::{types::<span class="kw-2">*</span>, ApiVersion, Ctx, Permission, RpcMethod, ServerError},
@@ -2605,8 +2604,7 @@
 
         <span class="kw">let </span>actor = ctx
             .state_manager
-            .get_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR, state)<span class="question-mark">?
-            </span>.context(<span class="string">"Market actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+            .get_required_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR, state)<span class="question-mark">?</span>;
         <span class="kw">let </span>market_state = market::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>(w, vw) = market_state.verify_deals_for_activation(
             ctx.store(),
@@ -2620,16 +2618,14 @@
 
         <span class="kw">let </span>actor = ctx
             .state_manager
-            .get_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR, state)<span class="question-mark">?
-            </span>.context(<span class="string">"Power actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+            .get_required_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR, state)<span class="question-mark">?</span>;
         <span class="kw">let </span>power_state = power::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>power_smoothed = power_state.total_power_smoothed();
         <span class="kw">let </span>pledge_collateral = power_state.total_locked();
 
         <span class="kw">let </span>actor = ctx
             .state_manager
-            .get_actor(<span class="kw-2">&amp;</span>Address::REWARD_ACTOR, state)<span class="question-mark">?
-            </span>.context(<span class="string">"Reward actor address could not be resolved"</span>)<span class="question-mark">?</span>;
+            .get_required_actor(<span class="kw-2">&amp;</span>Address::REWARD_ACTOR, state)<span class="question-mark">?</span>;
         <span class="kw">let </span>reward_state = reward::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.state_manager.chain_config());
         <span class="kw">let </span>circ_supply = genesis_info.get_vm_circulating_supply_detailed(
@@ -3116,11 +3112,7 @@
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>blk = ctx
-            .state_manager
-            .blockstore()
-            .get(<span class="kw-2">&amp;</span>actor.state)<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to get block from blockstore"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>blk = ctx.state_manager.blockstore().get_required(<span class="kw-2">&amp;</span>actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = <span class="kw-2">*</span>fvm_ipld_encoding::from_slice::&lt;NonEmpty&lt;Cid&gt;&gt;(<span class="kw-2">&amp;</span>blk)<span class="question-mark">?</span>.first();
         <span class="prelude-val">Ok</span>(ApiActorState {
             balance: actor.balance.clone().into(),

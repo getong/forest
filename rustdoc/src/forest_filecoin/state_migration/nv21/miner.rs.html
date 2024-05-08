@@ -503,15 +503,6 @@
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
 <a href="#503" id="503">503</a>
-<a href="#504" id="504">504</a>
-<a href="#505" id="505">505</a>
-<a href="#506" id="506">506</a>
-<a href="#507" id="507">507</a>
-<a href="#508" id="508">508</a>
-<a href="#509" id="509">509</a>
-<a href="#510" id="510">510</a>
-<a href="#511" id="511">511</a>
-<a href="#512" id="512">512</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -521,6 +512,9 @@
 </span><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="kw">crate</span>::shim::econ::TokenAmount;
+<span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{
+    ActorMigration, ActorMigrationInput, ActorMigrationOutput, TypeMigration, TypeMigrator,
+};
 <span class="kw">use crate</span>::{
     shim::address::Address, state_migration::common::MigrationCache, utils::db::CborStoreExt,
 };
@@ -534,11 +528,6 @@
 <span class="kw">use </span>fil_actors_shared::v11::{runtime::Policy <span class="kw">as </span>PolicyOld, Array <span class="kw">as </span>ArrayOld};
 <span class="kw">use </span>fil_actors_shared::v12::{runtime::Policy <span class="kw">as </span>PolicyNew, Array <span class="kw">as </span>ArrayNew};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore;
-
-<span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{
-    ActorMigration, ActorMigrationInput, ActorMigrationOutput, TypeMigration, TypeMigrator,
-};
 
 <span class="kw">pub struct </span>MinerMigrator {
     empty_deadline_v11: Cid,
@@ -583,9 +572,7 @@
         store: <span class="kw-2">&amp;</span>BS,
         input: ActorMigrationInput,
     ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;ActorMigrationOutput&gt;&gt; {
-        <span class="kw">let </span>in_state: MinerStateOld = store
-            .get_cbor(<span class="kw-2">&amp;</span>input.head)<span class="question-mark">?
-            </span>.context(<span class="string">"Miner actor: could not read v11 state"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>in_state: MinerStateOld = store.get_cbor_required(<span class="kw-2">&amp;</span>input.head)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>new_sectors = <span class="self">self</span>.migrate_sectors_with_cache(
             store,
@@ -718,9 +705,7 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.empty_deadlines_v12);
         }
 
-        <span class="kw">let </span>in_deadlines = store
-            .get_cbor::&lt;DeadlinesOld&gt;(deadlines)<span class="question-mark">?
-            </span>.context(<span class="string">"failed to get in_deadlines"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>in_deadlines = store.get_cbor_required::&lt;DeadlinesOld&gt;(deadlines)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>out_deadlines = DeadlinesNew::new(<span class="kw-2">&amp;</span><span class="self">self</span>.policy_new, <span class="self">self</span>.empty_deadline_v12);
 
         <span class="kw">for </span>(i, deadline) <span class="kw">in </span>in_deadlines.due.iter().enumerate() {
@@ -731,9 +716,7 @@
                     out_deadlines.due.push(<span class="self">self</span>.empty_deadline_v12);
                 }
             } <span class="kw">else </span>{
-                <span class="kw">let </span>in_deadline = store
-                    .get_cbor::&lt;DeadlineOld&gt;(deadline)<span class="question-mark">?
-                    </span>.context(<span class="string">"failed to get in_deadline"</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span>in_deadline = store.get_cbor_required::&lt;DeadlineOld&gt;(deadline)<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>out_sectors_snapshot_cid_cache_key =
                     sectors_amt_key(<span class="kw-2">&amp;</span>in_deadline.sectors_snapshot)<span class="question-mark">?</span>;
@@ -823,11 +806,10 @@
         <span class="kw">let </span>store = Arc::new(<span class="kw">crate</span>::db::MemoryDB::default());
         <span class="kw">let </span>(<span class="kw-2">mut </span>state_tree_old, manifest_old) = make_input_tree(<span class="kw-2">&amp;</span>store);
         <span class="kw">let </span>system_actor_old = state_tree_old
-            .get_actor(<span class="kw-2">&amp;</span>fil_actor_interface::system::ADDRESS.into())
-            .unwrap()
+            .get_required_actor(<span class="kw-2">&amp;</span>fil_actor_interface::system::ADDRESS.into())
             .unwrap();
         <span class="kw">let </span>system_state_old: fil_actor_system_state::v11::State =
-            store.get_cbor(<span class="kw-2">&amp;</span>system_actor_old.state).unwrap().unwrap();
+            store.get_cbor_required(<span class="kw-2">&amp;</span>system_actor_old.state).unwrap();
         <span class="kw">let </span>manifest_data_cid_old = system_state_old.builtin_actors;
         <span class="macro">assert_eq!</span>(manifest_data_cid_old, manifest_old.source_cid());
 
@@ -890,11 +872,11 @@
         <span class="macro">assert_eq!</span>(new_state_cid, new_state_cid2);
 
         <span class="kw">let </span>new_state_tree = StateTree::new_from_root(store.clone(), <span class="kw-2">&amp;</span>new_state_cid).unwrap();
-        <span class="kw">let </span>new_miner_state_cid = new_state_tree.get_actor(<span class="kw-2">&amp;</span>addr).unwrap().unwrap().state;
+        <span class="kw">let </span>new_miner_state_cid = new_state_tree.get_required_actor(<span class="kw-2">&amp;</span>addr).unwrap().state;
         <span class="kw">let </span>new_miner_state: fil_actor_miner_state::v12::State =
-            store.get_cbor(<span class="kw-2">&amp;</span>new_miner_state_cid).unwrap().unwrap();
+            store.get_cbor_required(<span class="kw-2">&amp;</span>new_miner_state_cid).unwrap();
         <span class="kw">let </span>deadlines: fil_actor_miner_state::v12::Deadlines =
-            store.get_cbor(<span class="kw-2">&amp;</span>new_miner_state.deadlines).unwrap().unwrap();
+            store.get_cbor_required(<span class="kw-2">&amp;</span>new_miner_state.deadlines).unwrap();
         deadlines
             .for_each(<span class="kw-2">&amp;</span>store, |<span class="kw">_</span>, deadline| {
                 <span class="kw">let </span>sectors_snapshots =

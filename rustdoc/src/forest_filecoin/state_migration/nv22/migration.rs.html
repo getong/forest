@@ -115,11 +115,6 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 //
@@ -136,11 +131,11 @@
     machine::{BuiltinActor, BuiltinActorManifest},
     state_tree::{StateTree, StateTreeVersion},
 };
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>cid::Cid;
 
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore;
 
 <span class="kw">use super</span>::{market, miner, system, verifier::Verifier, SystemStateOld};
 <span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{migrators::nil_migrator, StateMigration};
@@ -160,13 +155,8 @@
             </span>.epoch;
 
         <span class="kw">let </span>state_tree = StateTree::new_from_root(store.clone(), state)<span class="question-mark">?</span>;
-        <span class="kw">let </span>system_actor = state_tree
-            .get_actor(<span class="kw-2">&amp;</span>Address::new_id(<span class="number">0</span>))<span class="question-mark">?
-            </span>.context(<span class="string">"failed to get system actor"</span>)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>system_actor_state = store
-            .get_cbor::&lt;SystemStateOld&gt;(<span class="kw-2">&amp;</span>system_actor.state)<span class="question-mark">?
-            </span>.context(<span class="string">"system actor state not found"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>system_actor = state_tree.get_required_actor(<span class="kw-2">&amp;</span>Address::new_id(<span class="number">0</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>system_actor_state = store.get_cbor_required::&lt;SystemStateOld&gt;(<span class="kw-2">&amp;</span>system_actor.state)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>current_manifest_data = system_actor_state.builtin_actors;
 

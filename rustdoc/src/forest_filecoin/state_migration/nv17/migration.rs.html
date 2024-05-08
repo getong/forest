@@ -170,13 +170,6 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -189,7 +182,8 @@
     machine::{BuiltinActor, BuiltinActorManifest},
     state_tree::{StateTree, StateTreeVersion},
 };
-<span class="kw">use </span>anyhow::{anyhow, Context <span class="kw">as _</span>};
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
+<span class="kw">use </span>anyhow::anyhow;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore <span class="kw">as _</span>;
@@ -225,24 +219,19 @@
             BuiltinActorManifest::load_v1_actor_list(store, <span class="kw-2">&amp;</span>current_manifest_data)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>verifreg_actor_v8 = actors_in
-            .get_actor(<span class="kw-2">&amp;</span>fil_actors_shared::v8::VERIFIED_REGISTRY_ACTOR_ADDR.into())<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to load verifreg actor v8"</span>)<span class="question-mark">?</span>;
+            .get_required_actor(<span class="kw-2">&amp;</span>fil_actors_shared::v8::VERIFIED_REGISTRY_ACTOR_ADDR.into())<span class="question-mark">?</span>;
 
         <span class="kw">let </span>market_actor_v8 = actors_in
-            .get_actor(<span class="kw-2">&amp;</span>fil_actors_shared::v8::STORAGE_MARKET_ACTOR_ADDR.into())<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to load market actor v8"</span>)<span class="question-mark">?</span>;
+            .get_required_actor(<span class="kw-2">&amp;</span>fil_actors_shared::v8::STORAGE_MARKET_ACTOR_ADDR.into())<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>market_state_v8: fil_actor_market_state::v8::State = store
-            .get_cbor(<span class="kw-2">&amp;</span>market_actor_v8.state)<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to load market state v8"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>market_state_v8: fil_actor_market_state::v8::State =
+            store.get_cbor_required(<span class="kw-2">&amp;</span>market_actor_v8.state)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>init_actor_v8 = actors_in
-            .get_actor(<span class="kw-2">&amp;</span>fil_actors_shared::v8::INIT_ACTOR_ADDR.into())<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to load init actor v8"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>init_actor_v8 =
+            actors_in.get_required_actor(<span class="kw-2">&amp;</span>fil_actors_shared::v8::INIT_ACTOR_ADDR.into())<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>init_state_v8: fil_actor_init_state::v8::State = store
-            .get_cbor(<span class="kw-2">&amp;</span>init_actor_v8.state)<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to load init state v8"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>init_state_v8: fil_actor_init_state::v8::State =
+            store.get_cbor_required(<span class="kw-2">&amp;</span>init_actor_v8.state)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(pending_verified_deals, pending_verified_deal_size) =
             get_pending_verified_deals_and_total_size(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>market_state_v8)<span class="question-mark">?</span>;
@@ -274,9 +263,8 @@
         );
 
         <span class="kw">let </span>verifreg_state_v8_cid = verifreg_actor_v8.state;
-        <span class="kw">let </span>verifreg_state_v8: fil_actor_verifreg_state::v8::State = store
-            .get_cbor(<span class="kw-2">&amp;</span>verifreg_state_v8_cid)<span class="question-mark">?
-            </span>.context(<span class="string">"Failed to load verifreg state v8"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>verifreg_state_v8: fil_actor_verifreg_state::v8::State =
+            store.get_cbor_required(<span class="kw-2">&amp;</span>verifreg_state_v8_cid)<span class="question-mark">?</span>;
         <span class="kw">let </span>verifreg_code = new_manifest.get(BuiltinActor::VerifiedRegistry)<span class="question-mark">?</span>;
         <span class="kw">let </span>market_code = new_manifest.get(BuiltinActor::Market)<span class="question-mark">?</span>;
 
@@ -297,9 +285,7 @@
         // while forest uses a post migrator to simplify the logic.
         </span><span class="self">self</span>.add_post_migrator(Arc::new(datacap::DataCapPostMigrator {
             new_code_cid: new_manifest.get(BuiltinActor::DataCap)<span class="question-mark">?</span>,
-            verifreg_state: store
-                .get_cbor(<span class="kw-2">&amp;</span>verifreg_state_v8_cid)<span class="question-mark">?
-                </span>.context(<span class="string">"Failed to load verifreg state v8"</span>)<span class="question-mark">?</span>,
+            verifreg_state: store.get_cbor_required(<span class="kw-2">&amp;</span>verifreg_state_v8_cid)<span class="question-mark">?</span>,
             pending_verified_deal_size,
         }));
 

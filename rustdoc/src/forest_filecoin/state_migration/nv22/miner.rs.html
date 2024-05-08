@@ -97,9 +97,6 @@
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -114,13 +111,12 @@
 //! &gt; requires reading all sector metadata from the miner actor.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{ActorMigration, ActorMigrationInput, ActorMigrationOutput};
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>ahash::HashMap;
-<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actor_miner_state::v12::State <span class="kw">as </span>MinerStateOld;
 <span class="kw">use </span>fil_actors_shared::v12::Array <span class="kw">as </span>ArrayOld;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore;
 <span class="kw">use </span>fvm_shared4::clock::ChainEpoch;
 <span class="kw">use </span>fvm_shared4::deal::DealID;
 <span class="kw">use </span>fvm_shared4::sector::{SectorID, SectorNumber};
@@ -159,9 +155,7 @@
         input: ActorMigrationInput,
     ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;ActorMigrationOutput&gt;&gt; {
         <span class="kw">let </span>miner_id = input.address.id()<span class="question-mark">?</span>;
-        <span class="kw">let </span>in_state: MinerStateOld = store
-            .get_cbor(<span class="kw-2">&amp;</span>input.head)<span class="question-mark">?
-            </span>.context(<span class="string">"Miner actor: could not read v12 state"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>in_state: MinerStateOld = store.get_cbor_required(<span class="kw-2">&amp;</span>input.head)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>in_sectors = ArrayOld::&lt;fil_actor_miner_state::v12::SectorOnChainInfo, BS&gt;::load(
             <span class="kw-2">&amp;</span>in_state.sectors,

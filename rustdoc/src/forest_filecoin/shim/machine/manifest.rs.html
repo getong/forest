@@ -157,10 +157,6 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 // Copyright 2021-2023 Protocol Labs
@@ -168,10 +164,10 @@
 
 </span><span class="kw">use </span>std::collections::BTreeMap;
 
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>anyhow::{ensure, Context <span class="kw">as _</span>};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore <span class="kw">as _</span>;
 <span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 
 <span class="doccomment">/// This should be the latest enumeration of all builtin actors
@@ -192,9 +188,7 @@
 <span class="kw">impl </span>BuiltinActorManifest {
     <span class="kw">const </span>MANDATORY_BUILTINS: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[BuiltinActor] = <span class="kw-2">&amp;</span>[BuiltinActor::Init, BuiltinActor::System];
     <span class="kw">pub fn </span>load_manifest(b: <span class="kw">impl </span>Blockstore, manifest_cid: <span class="kw-2">&amp;</span>Cid) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>(manifest_version, actor_list_cid) = b
-            .get_cbor::&lt;(u32, Cid)&gt;(manifest_cid)<span class="question-mark">?
-            </span>.context(<span class="string">"failed to load manifest"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(manifest_version, actor_list_cid) = b.get_cbor_required::&lt;(u32, Cid)&gt;(manifest_cid)<span class="question-mark">?</span>;
         <span class="macro">ensure!</span>(
             manifest_version == <span class="number">1</span>,
             <span class="string">"unsupported manifest version {}"</span>,
@@ -203,9 +197,7 @@
         <span class="self">Self</span>::load_v1_actor_list(b, <span class="kw-2">&amp;</span>actor_list_cid)
     }
     <span class="kw">pub fn </span>load_v1_actor_list(b: <span class="kw">impl </span>Blockstore, actor_list_cid: <span class="kw-2">&amp;</span>Cid) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>actor_list = b
-            .get_cbor::&lt;Vec&lt;(String, Cid)&gt;&gt;(actor_list_cid)<span class="question-mark">?
-            </span>.context(<span class="string">"failed to load actor list"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>actor_list = b.get_cbor_required::&lt;Vec&lt;(String, Cid)&gt;&gt;(actor_list_cid)<span class="question-mark">?</span>;
         actor_list.sort();
         <span class="macro">ensure!</span>(
             actor_list.iter().map(|(name, _cid)| name).all_unique(),

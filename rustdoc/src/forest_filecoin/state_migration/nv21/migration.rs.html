@@ -130,17 +130,12 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::sync::Arc;
 
+<span class="kw">use super</span>::{miner, system, verifier::Verifier, SystemStateOld};
 <span class="kw">use </span><span class="kw">crate</span>::make_butterfly_policy;
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, Height, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
@@ -150,14 +145,12 @@
     sector::{RegisteredPoStProofV3, RegisteredSealProofV3},
     state_tree::{StateTree, StateTreeVersion},
 };
+<span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{migrators::nil_migrator, StateMigration};
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actors_shared::v11::runtime::ProofSet;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore;
-
-<span class="kw">use super</span>::{miner, system, verifier::Verifier, SystemStateOld};
-<span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{migrators::nil_migrator, StateMigration};
 
 <span class="kw">impl</span>&lt;BS: Blockstore&gt; StateMigration&lt;BS&gt; {
     <span class="kw">pub fn </span>add_nv21_migrations(
@@ -168,13 +161,8 @@
         chain_config: <span class="kw-2">&amp;</span>ChainConfig,
     ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span>state_tree = StateTree::new_from_root(store.clone(), state)<span class="question-mark">?</span>;
-        <span class="kw">let </span>system_actor = state_tree
-            .get_actor(<span class="kw-2">&amp;</span>Address::new_id(<span class="number">0</span>))<span class="question-mark">?
-            </span>.context(<span class="string">"failed to get system actor"</span>)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>system_actor_state = store
-            .get_cbor::&lt;SystemStateOld&gt;(<span class="kw-2">&amp;</span>system_actor.state)<span class="question-mark">?
-            </span>.context(<span class="string">"system actor state not found"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>system_actor = state_tree.get_required_actor(<span class="kw-2">&amp;</span>Address::new_id(<span class="number">0</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>system_actor_state = store.get_cbor_required::&lt;SystemStateOld&gt;(<span class="kw-2">&amp;</span>system_actor.state)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>current_manifest_data = system_actor_state.builtin_actors;
 

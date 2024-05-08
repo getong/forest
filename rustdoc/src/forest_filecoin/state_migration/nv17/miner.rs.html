@@ -956,10 +956,6 @@
 <a href="#954" id="954">954</a>
 <a href="#955" id="955">955</a>
 <a href="#956" id="956">956</a>
-<a href="#957" id="957">957</a>
-<a href="#958" id="958">958</a>
-<a href="#959" id="959">959</a>
-<a href="#960" id="960">960</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -981,7 +977,6 @@
 <span class="kw">use </span>fil_actors_shared::abi::commp::compute_unsealed_sector_cid_v2;
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_amt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore;
 
 <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::common::{
     ActorMigration, ActorMigrationInput, ActorMigrationOutput, TypeMigration, TypeMigrator,
@@ -1055,9 +1050,7 @@
     ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;ActorMigrationOutput&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>cache: HashMap&lt;String, Cid&gt; = Default::default();
 
-        <span class="kw">let </span>in_state: MinerStateOld = store
-            .get_cbor(<span class="kw-2">&amp;</span>input.head)<span class="question-mark">?
-            </span>.context(<span class="string">"Init actor: could not read v9 state"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>in_state: MinerStateOld = store.get_cbor_required(<span class="kw-2">&amp;</span>input.head)<span class="question-mark">?</span>;
         <span class="kw">let </span>new_pre_committed_sectors =
             <span class="self">self</span>.migrate_pre_committed_sectors(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>in_state.pre_committed_sectors)<span class="question-mark">?</span>;
         <span class="kw">let </span>new_sectors =
@@ -1214,9 +1207,8 @@
         <span class="kw">if </span>deadlines == <span class="kw-2">&amp;</span><span class="self">self</span>.empty_deadlines_v8_cid {
             <span class="prelude-val">Ok</span>(<span class="self">self</span>.empty_deadlines_v9_cid)
         } <span class="kw">else </span>{
-            <span class="kw">let </span>in_deadlines: fil_actor_miner_state::v8::Deadlines = store
-                .get_cbor(deadlines)<span class="question-mark">?
-                </span>.context(<span class="string">"Failed to get in_deadlines"</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>in_deadlines: fil_actor_miner_state::v8::Deadlines =
+                store.get_cbor_required(deadlines)<span class="question-mark">?</span>;
 
             <span class="kw">let </span>policy = <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.chain {
                 NetworkChain::Mainnet =&gt; fil_actors_shared::v9::runtime::Policy::mainnet(),
@@ -1235,7 +1227,7 @@
                     }
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>in_deadline: fil_actor_miner_state::v8::Deadline =
-                        store.get_cbor(c)<span class="question-mark">?</span>.context(<span class="string">"Failed to get in_deadline"</span>)<span class="question-mark">?</span>;
+                        store.get_cbor_required(c)<span class="question-mark">?</span>;
 
                     <span class="kw">let </span>out_sectors_snapshot_cid_cache_key =
                         sectors_amt_key(<span class="kw-2">&amp;</span>in_deadline.sectors_snapshot)<span class="question-mark">?</span>;
@@ -1356,7 +1348,7 @@
             .unwrap()
             .unwrap();
         <span class="kw">let </span>system_state_old: fil_actor_system_state::v9::State =
-            store.get_cbor(<span class="kw-2">&amp;</span>system_actor_old.state).unwrap().unwrap();
+            store.get_cbor_required(<span class="kw-2">&amp;</span>system_actor_old.state).unwrap();
         <span class="kw">let </span>manifest_data_cid_old = system_state_old.builtin_actors;
         <span class="macro">assert_eq!</span>(manifest_data_cid_old, manifest_old.source_cid());
         <span class="macro">assert_eq!</span>(
@@ -1374,7 +1366,7 @@
             .unwrap()
             .unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>market_state_old: fil_actor_market_state::v8::State =
-            store.get_cbor(<span class="kw-2">&amp;</span>market_actor_old.state).unwrap().unwrap();
+            store.get_cbor_required(<span class="kw-2">&amp;</span>market_actor_old.state).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>proposals = fil_actors_shared::v8::Array::&lt;
             fil_actor_market_state::v8::DealProposal,
             <span class="kw">_</span>,
@@ -1583,7 +1575,7 @@
         }
         <span class="kw">let </span>new_state_cid =
             <span class="kw">super</span>::<span class="kw">super</span>::run_migration(<span class="kw-2">&amp;</span>chain_config, <span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tree_root, <span class="number">200</span>).unwrap();
-        <span class="kw">let </span>actors_out_state_root: StateRoot = store.get_cbor(<span class="kw-2">&amp;</span>new_state_cid).unwrap().unwrap();
+        <span class="kw">let </span>actors_out_state_root: StateRoot = store.get_cbor_required(<span class="kw-2">&amp;</span>new_state_cid).unwrap();
         <span class="macro">assert_eq!</span>(
             actors_out_state_root.actors.to_string(),
             <span class="string">"bafy2bzacedgtk3lnnyfxnzc32etqaj3zvi7ar7nxq2jtxd2qr36ftbsjoycqu"
@@ -1616,7 +1608,7 @@
         }
         <span class="kw">let </span>new_state_cid =
             <span class="kw">super</span>::<span class="kw">super</span>::run_migration(<span class="kw-2">&amp;</span>chain_config, <span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>state_tree_old_root, <span class="number">200</span>).unwrap();
-        <span class="kw">let </span>actors_out_state_root: StateRoot = store.get_cbor(<span class="kw-2">&amp;</span>new_state_cid).unwrap().unwrap();
+        <span class="kw">let </span>actors_out_state_root: StateRoot = store.get_cbor_required(<span class="kw-2">&amp;</span>new_state_cid).unwrap();
         <span class="macro">assert_eq!</span>(
             actors_out_state_root.actors.to_string(),
             <span class="string">"bafy2bzacebdpnjjyspbyj7al7d6234kdhkmdygkfdkp6zyao5o3egsfmribty"

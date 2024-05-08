@@ -30,11 +30,6 @@
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
-<a href="#31" id="31">31</a>
-<a href="#32" id="32">32</a>
-<a href="#33" id="33">33</a>
-<a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -43,9 +38,8 @@
     machine::{BuiltinActor, BuiltinActorManifest},
     state_tree::{ActorState, StateTree},
 };
-<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>fvm_ipld_encoding::CborStore;
 
 <span class="kw">use </span><span class="kw">crate</span>::state_migration::common::PostMigrator;
 
@@ -56,12 +50,8 @@
 <span class="kw">impl</span>&lt;BS: Blockstore&gt; PostMigrator&lt;BS&gt; <span class="kw">for </span>EamPostMigrator {
     <span class="doccomment">/// Creates the Ethereum Account Manager actor in the state tree.
     </span><span class="kw">fn </span>post_migrate_state(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>BS, actors_out: <span class="kw-2">&amp;mut </span>StateTree&lt;BS&gt;) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span>sys_actor = actors_out
-            .get_actor(<span class="kw-2">&amp;</span>Address::SYSTEM_ACTOR)<span class="question-mark">?
-            </span>.context(<span class="string">"Couldn't get sys actor state"</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>sys_state: SystemStateNew = store
-            .get_cbor(<span class="kw-2">&amp;</span>sys_actor.state)<span class="question-mark">?
-            </span>.context(<span class="string">"Couldn't get statev10"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>sys_actor = actors_out.get_required_actor(<span class="kw-2">&amp;</span>Address::SYSTEM_ACTOR)<span class="question-mark">?</span>;
+        <span class="kw">let </span>sys_state: SystemStateNew = store.get_cbor_required(<span class="kw-2">&amp;</span>sys_actor.state)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>manifest = BuiltinActorManifest::load_v1_actor_list(store, <span class="kw-2">&amp;</span>sys_state.builtin_actors)<span class="question-mark">?</span>;
 

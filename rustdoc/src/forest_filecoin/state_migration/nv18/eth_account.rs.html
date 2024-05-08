@@ -53,39 +53,29 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::shim::{
+</span><span class="kw">use </span><span class="kw">super</span>::SystemStateNew;
+<span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address,
     machine::{BuiltinActor, BuiltinActorManifest},
     state_tree::{ActorState, StateTree},
 };
+<span class="kw">use </span><span class="kw">crate</span>::state_migration::common::PostMigrator;
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>anyhow::anyhow;
-<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
-
-<span class="kw">use </span><span class="kw">crate</span>::state_migration::common::PostMigrator;
-
-<span class="kw">use </span><span class="kw">super</span>::SystemStateNew;
 
 <span class="kw">pub struct </span>EthAccountPostMigrator;
 
 <span class="kw">impl</span>&lt;BS: Blockstore&gt; PostMigrator&lt;BS&gt; <span class="kw">for </span>EthAccountPostMigrator {
     <span class="doccomment">/// Creates the Ethereum Account actor in the state tree.
     </span><span class="kw">fn </span>post_migrate_state(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>BS, actors_out: <span class="kw-2">&amp;mut </span>StateTree&lt;BS&gt;) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span>init_actor = actors_out
-            .get_actor(<span class="kw-2">&amp;</span>Address::INIT_ACTOR)<span class="question-mark">?
-            </span>.context(<span class="string">"Couldn't get init actor state"</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>init_state: fil_actor_init_state::v10::State = store
-            .get_cbor(<span class="kw-2">&amp;</span>init_actor.state)<span class="question-mark">?
-            </span>.context(<span class="string">"Couldn't get statev10"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>init_actor = actors_out.get_required_actor(<span class="kw-2">&amp;</span>Address::INIT_ACTOR)<span class="question-mark">?</span>;
+        <span class="kw">let </span>init_state: fil_actor_init_state::v10::State =
+            store.get_cbor_required(<span class="kw-2">&amp;</span>init_actor.state)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>eth_zero_addr =
             Address::new_delegated(Address::ETHEREUM_ACCOUNT_MANAGER_ACTOR.id()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>[<span class="number">0</span>; <span class="number">20</span>])<span class="question-mark">?</span>;
