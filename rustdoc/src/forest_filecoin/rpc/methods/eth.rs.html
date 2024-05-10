@@ -1955,9 +1955,9 @@
 }
 
 <span class="kw">impl </span>Block {
-    <span class="kw">pub fn </span>new(has_transactions: bool) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(has_transactions: bool, tipset_len: usize) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            gas_limit: Uint64(BLOCK_GAS_LIMIT),
+            gas_limit: Uint64(BLOCK_GAS_LIMIT.saturating_mul(tipset_len <span class="kw">as _</span>)),
             logs_bloom: Bloom(ethereum_types::Bloom(FULL_BLOOM)),
             sha3_uncles: Hash::empty_uncles(),
             transactions_root: <span class="kw">if </span>has_transactions {
@@ -2806,7 +2806,7 @@
         } <span class="kw">else </span>{
             Transactions::Hash(hash_transactions)
         },
-        ..Block::new(!msgs_and_receipts.is_empty())
+        ..Block::new(!msgs_and_receipts.is_empty(), tipset.len())
     })
 }
 
@@ -3052,10 +3052,10 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_block_constructor() {
-        <span class="kw">let </span>block = Block::new(<span class="bool-val">false</span>);
+        <span class="kw">let </span>block = Block::new(<span class="bool-val">false</span>, <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(block.transactions_root, Hash::empty_root());
 
-        <span class="kw">let </span>block = Block::new(<span class="bool-val">true</span>);
+        <span class="kw">let </span>block = Block::new(<span class="bool-val">true</span>, <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(block.transactions_root, Hash::default());
     }
 

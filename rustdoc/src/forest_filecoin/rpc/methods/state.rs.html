@@ -1872,14 +1872,6 @@
 <a href="#1870" id="1870">1870</a>
 <a href="#1871" id="1871">1871</a>
 <a href="#1872" id="1872">1872</a>
-<a href="#1873" id="1873">1873</a>
-<a href="#1874" id="1874">1874</a>
-<a href="#1875" id="1875">1875</a>
-<a href="#1876" id="1876">1876</a>
-<a href="#1877" id="1877">1877</a>
-<a href="#1878" id="1878">1878</a>
-<a href="#1879" id="1879">1879</a>
-<a href="#1880" id="1880">1880</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="attr">#![allow(clippy::unused_async)]
@@ -1890,7 +1882,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::market::BalanceTableExt <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::shim::actors::{market::BalanceTableExt <span class="kw">as _</span>, miner::MinerStateExt <span class="kw">as _</span>};
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::shim::piece::PaddedPieceSize;
 <span class="kw">use </span><span class="kw">crate</span>::shim::state_tree::StateTree;
@@ -2270,11 +2262,8 @@
                 <span class="prelude-val">Ok</span>(())
             })
         })<span class="question-mark">?</span>;
-        <span class="kw">let </span>sectors = miner_state
-            .load_sectors(ctx.store(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>BitField::union(<span class="kw-2">&amp;</span>active_sectors)))<span class="question-mark">?
-            </span>.into_iter()
-            .map(SectorOnChainInfo::from)
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>sectors =
+            miner_state.load_sectors_ext(ctx.store(), <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>BitField::union(<span class="kw-2">&amp;</span>active_sectors)))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(sectors)
     }
 }
@@ -2337,11 +2326,7 @@
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>miner_state = miner::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
-        <span class="kw">let </span>sectors_info = miner_state
-            .load_sectors(ctx.store(), sectors.as_ref())<span class="question-mark">?
-            </span>.into_iter()
-            .map(SectorOnChainInfo::from)
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>sectors_info = miner_state.load_sectors_ext(ctx.store(), sectors.as_ref())<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(sectors_info)
     }
 }
@@ -3673,7 +3658,6 @@
             .get_all_sectors(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?
             </span>.into_iter()
             .find(|info| info.sector_number == sector_number)
-            .map(SectorOnChainInfo::from)
             .context(<span class="macro">format!</span>(<span class="string">"Info for sector number {sector_number} not found"</span>))<span class="question-mark">?</span>)
     }
 }
