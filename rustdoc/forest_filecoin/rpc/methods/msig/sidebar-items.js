@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MsigGetAvailableBalance","MsigGetPending","MsigGetVested","MsigGetVestingSchedule"],"macro":["for_each_method"]};
