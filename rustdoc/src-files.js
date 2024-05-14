@@ -419,7 +419,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["pem",["",[],["errors.rs","lib.rs","parser.rs"]]],\
 ["pem_rfc7468",["",[],["decoder.rs","encoder.rs","error.rs","grammar.rs","lib.rs"]]],\
 ["percent_encoding",["",[],["lib.rs"]]],\
-["petgraph",["",[["algo",[],["astar.rs","bellman_ford.rs","dijkstra.rs","dominators.rs","feedback_arc_set.rs","floyd_warshall.rs","isomorphism.rs","k_shortest_path.rs","matching.rs","mod.rs","simple_paths.rs","tred.rs"]],["graph_impl",[["stable_graph",[],["mod.rs"]]],["frozen.rs","mod.rs"]],["visit",[],["dfsvisit.rs","filter.rs","macros.rs","mod.rs","reversed.rs","traversal.rs"]]],["adj.rs","csr.rs","data.rs","dot.rs","graphmap.rs","iter_format.rs","iter_utils.rs","lib.rs","macros.rs","matrix_graph.rs","operator.rs","prelude.rs","scored.rs","traits_graph.rs","unionfind.rs","util.rs"]]],\
+["petgraph",["",[["algo",[],["astar.rs","bellman_ford.rs","dijkstra.rs","dominators.rs","feedback_arc_set.rs","floyd_warshall.rs","ford_fulkerson.rs","isomorphism.rs","k_shortest_path.rs","matching.rs","min_spanning_tree.rs","mod.rs","page_rank.rs","simple_paths.rs","tred.rs"]],["graph_impl",[["stable_graph",[],["mod.rs"]]],["frozen.rs","mod.rs"]],["visit",[],["dfsvisit.rs","filter.rs","macros.rs","mod.rs","reversed.rs","traversal.rs"]]],["adj.rs","csr.rs","data.rs","dot.rs","graphmap.rs","iter_format.rs","iter_utils.rs","lib.rs","macros.rs","matrix_graph.rs","operator.rs","prelude.rs","scored.rs","traits_graph.rs","unionfind.rs","util.rs"]]],\
 ["phf",["",[],["lib.rs","map.rs","ordered_map.rs","ordered_set.rs","set.rs"]]],\
 ["phf_generator",["",[],["lib.rs"]]],\
 ["phf_macros",["",[],["lib.rs"]]],\
