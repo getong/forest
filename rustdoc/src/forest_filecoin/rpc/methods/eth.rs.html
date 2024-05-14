@@ -1571,38 +1571,13 @@
 <a href="#1569" id="1569">1569</a>
 <a href="#1570" id="1570">1570</a>
 <a href="#1571" id="1571">1571</a>
-<a href="#1572" id="1572">1572</a>
-<a href="#1573" id="1573">1573</a>
-<a href="#1574" id="1574">1574</a>
-<a href="#1575" id="1575">1575</a>
-<a href="#1576" id="1576">1576</a>
-<a href="#1577" id="1577">1577</a>
-<a href="#1578" id="1578">1578</a>
-<a href="#1579" id="1579">1579</a>
-<a href="#1580" id="1580">1580</a>
-<a href="#1581" id="1581">1581</a>
-<a href="#1582" id="1582">1582</a>
-<a href="#1583" id="1583">1583</a>
-<a href="#1584" id="1584">1584</a>
-<a href="#1585" id="1585">1585</a>
-<a href="#1586" id="1586">1586</a>
-<a href="#1587" id="1587">1587</a>
-<a href="#1588" id="1588">1588</a>
-<a href="#1589" id="1589">1589</a>
-<a href="#1590" id="1590">1590</a>
-<a href="#1591" id="1591">1591</a>
-<a href="#1592" id="1592">1592</a>
-<a href="#1593" id="1593">1593</a>
-<a href="#1594" id="1594">1594</a>
-<a href="#1595" id="1595">1595</a>
-<a href="#1596" id="1596">1596</a>
-<a href="#1597" id="1597">1597</a>
-<a href="#1598" id="1598">1598</a>
-<a href="#1599" id="1599">1599</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">super</span>::gas;
+</span><span class="kw">pub mod </span>types;
+
+<span class="kw">use </span><span class="self">self</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">super</span>::gas;
 <span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{index::ResolveNullTipset, ChainStore};
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
@@ -1620,7 +1595,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::shim::fvm_shared_latest::MethodNum;
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{clock::ChainEpoch, state_tree::StateTree};
-
+<span class="kw">use </span><span class="kw">crate</span>::utils::db::BlockstoreExt <span class="kw">as _</span>;
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>bytes::{Buf, BytesMut};
 <span class="kw">use </span>cbor4ii::core::{dec::Decode, utils::SliceReader, Value};
@@ -1648,6 +1623,7 @@
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthAccounts</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthBlockNumber</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthChainId</span>);
+        <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthGetCode</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthGasPrice</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthGetBalance</span>);
         <span class="macro-nonterminal">$</span><span class="macro">callback!</span>(<span class="macro-nonterminal">crate::rpc::eth::EthGetBlockByNumber</span>);
@@ -1765,100 +1741,6 @@
 );
 
 <span class="macro">lotus_json_with_self!</span>(Bytes);
-
-<span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
-</span><span class="kw">pub struct </span>Address(
-    <span class="attr">#[schemars(with = <span class="string">"String"</span>)]
-    #[serde(with = <span class="string">"crate::lotus_json::hexify_bytes"</span>)]
-    </span><span class="kw">pub </span>ethereum_types::Address,
-);
-
-<span class="macro">lotus_json_with_self!</span>(Address);
-
-<span class="kw">impl </span>Address {
-    <span class="kw">pub fn </span>to_filecoin_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;FilecoinAddress, anyhow::Error&gt; {
-        <span class="kw">if </span><span class="self">self</span>.is_masked_id() {
-            <span class="kw">const </span>PREFIX_LEN: usize = MASKED_ID_PREFIX.len();
-            <span class="comment">// This is a masked ID address.
-            </span><span class="kw">let </span>arr = <span class="self">self</span>.<span class="number">0</span>.as_fixed_bytes();
-            <span class="kw">let </span><span class="kw-2">mut </span>bytes = [<span class="number">0</span>; <span class="number">8</span>];
-            bytes.copy_from_slice(<span class="kw-2">&amp;</span>arr[PREFIX_LEN..]);
-            <span class="prelude-val">Ok</span>(FilecoinAddress::new_id(u64::from_be_bytes(bytes)))
-        } <span class="kw">else </span>{
-            <span class="comment">// Otherwise, translate the address into an address controlled by the
-            // Ethereum Address Manager.
-            </span><span class="prelude-val">Ok</span>(FilecoinAddress::new_delegated(
-                FilecoinAddress::ETHEREUM_ACCOUNT_MANAGER_ACTOR.id()<span class="question-mark">?</span>,
-                <span class="self">self</span>.<span class="number">0</span>.as_bytes(),
-            )<span class="question-mark">?</span>)
-        }
-    }
-
-    <span class="comment">// See https://github.com/filecoin-project/lotus/blob/v1.26.2/chain/types/ethtypes/eth_types.go#L347-L375 for reference implementation
-    </span><span class="kw">pub fn </span>from_filecoin_address(addr: <span class="kw-2">&amp;</span>FilecoinAddress) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">match </span>addr.protocol() {
-            Protocol::ID =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_actor_id(addr.id()<span class="question-mark">?</span>)),
-            Protocol::Delegated =&gt; {
-                <span class="kw">let </span>payload = addr.payload();
-                <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;DelegatedAddress, <span class="kw">_</span>&gt; = payload.try_into();
-                <span class="kw">if let </span><span class="prelude-val">Ok</span>(f4_addr) = result {
-                    <span class="kw">let </span>namespace = f4_addr.namespace();
-                    <span class="kw">if </span>namespace != FilecoinAddress::ETHEREUM_ACCOUNT_MANAGER_ACTOR.id()<span class="question-mark">? </span>{
-                        <span class="macro">bail!</span>(<span class="string">"invalid address {addr}"</span>);
-                    }
-                    <span class="kw">let </span>eth_addr = cast_eth_addr(f4_addr.subaddress())<span class="question-mark">?</span>;
-                    <span class="kw">if </span>eth_addr.is_masked_id() {
-                        <span class="macro">bail!</span>(
-                            <span class="string">"f410f addresses cannot embed masked-ID payloads: {}"</span>,
-                            eth_addr.<span class="number">0
-                        </span>);
-                    }
-                    <span class="prelude-val">Ok</span>(eth_addr)
-                } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(<span class="string">"invalid delegated address namespace in: {addr}"</span>)
-                }
-            }
-            <span class="kw">_ </span>=&gt; {
-                <span class="macro">bail!</span>(<span class="string">"invalid address {addr}"</span>);
-            }
-        }
-    }
-
-    <span class="kw">fn </span>is_masked_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.<span class="number">0</span>.as_bytes().starts_with(<span class="kw-2">&amp;</span>MASKED_ID_PREFIX)
-    }
-
-    <span class="kw">fn </span>from_actor_id(id: u64) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>pfx = MASKED_ID_PREFIX;
-        <span class="kw">let </span>arr = id.to_be_bytes();
-        <span class="kw">let </span>payload = [
-            pfx[<span class="number">0</span>], pfx[<span class="number">1</span>], pfx[<span class="number">2</span>], pfx[<span class="number">3</span>], pfx[<span class="number">4</span>], pfx[<span class="number">5</span>], pfx[<span class="number">6</span>], pfx[<span class="number">7</span>], <span class="comment">//
-            </span>pfx[<span class="number">8</span>], pfx[<span class="number">9</span>], pfx[<span class="number">10</span>], pfx[<span class="number">11</span>], <span class="comment">//
-            </span>arr[<span class="number">0</span>], arr[<span class="number">1</span>], arr[<span class="number">2</span>], arr[<span class="number">3</span>], arr[<span class="number">4</span>], arr[<span class="number">5</span>], arr[<span class="number">6</span>], arr[<span class="number">7</span>],
-        ];
-
-        <span class="self">Self</span>(ethereum_types::H160(payload))
-    }
-}
-
-<span class="kw">impl </span>FromStr <span class="kw">for </span>Address {
-    <span class="kw">type </span><span class="prelude-val">Err </span>= anyhow::Error;
-
-    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
-        <span class="prelude-val">Ok</span>(Address(
-            ethereum_types::Address::from_str(s).map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">"{e}"</span>))<span class="question-mark">?</span>,
-        ))
-    }
-}
-
-<span class="kw">fn </span>cast_eth_addr(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Address&gt; {
-    <span class="kw">if </span>bytes.len() != ADDRESS_LENGTH {
-        <span class="macro">bail!</span>(<span class="string">"cannot parse bytes into an Ethereum address: incorrect input length"</span>)
-    }
-    <span class="kw">let </span><span class="kw-2">mut </span>payload = ethereum_types::H160::default();
-    payload.as_bytes_mut().copy_from_slice(bytes);
-    <span class="prelude-val">Ok</span>(Address(payload))
-}
 
 <span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
 </span><span class="kw">pub struct </span>Hash(<span class="attr">#[schemars(with = <span class="string">"String"</span>)] </span><span class="kw">pub </span>ethereum_types::H256);
@@ -1996,7 +1878,7 @@
     <span class="kw">pub </span>hash: Hash,
     <span class="kw">pub </span>parent_hash: Hash,
     <span class="kw">pub </span>sha3_uncles: Hash,
-    <span class="kw">pub </span>miner: Address,
+    <span class="kw">pub </span>miner: EthAddress,
     <span class="kw">pub </span>state_root: Hash,
     <span class="kw">pub </span>transactions_root: Hash,
     <span class="kw">pub </span>receipts_root: Hash,
@@ -2044,14 +1926,14 @@
     <span class="kw">pub </span>block_hash: Hash,
     <span class="kw">pub </span>block_number: Uint64,
     <span class="kw">pub </span>transaction_index: Uint64,
-    <span class="kw">pub </span>from: Address,
-    <span class="attr">#[schemars(with = <span class="string">"Option&lt;Address&gt;"</span>)]
+    <span class="kw">pub </span>from: EthAddress,
+    <span class="attr">#[schemars(with = <span class="string">"Option&lt;EthAddress&gt;"</span>)]
     #[serde(
         with = <span class="string">"crate::lotus_json"</span>,
         skip_serializing_if = <span class="string">"Option::is_none"</span>,
         default
     )]
-    </span><span class="kw">pub </span>to: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    </span><span class="kw">pub </span>to: <span class="prelude-ty">Option</span>&lt;EthAddress&gt;,
     <span class="kw">pub </span>value: BigInt,
     <span class="kw">pub </span>r#type: Uint64,
     <span class="kw">pub </span>input: Bytes,
@@ -2077,7 +1959,7 @@
 </span><span class="kw">struct </span>TxArgs {
     <span class="kw">pub </span>chain_id: u64,
     <span class="kw">pub </span>nonce: u64,
-    <span class="kw">pub </span>to: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    <span class="kw">pub </span>to: <span class="prelude-ty">Option</span>&lt;EthAddress&gt;,
     <span class="kw">pub </span>value: BigInt,
     <span class="kw">pub </span>max_fee_per_gas: BigInt,
     <span class="kw">pub </span>max_priority_fee_per_gas: BigInt,
@@ -2132,7 +2014,7 @@
     })
 }
 
-<span class="kw">fn </span>format_address(value: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Address&gt;) -&gt; BytesMut {
+<span class="kw">fn </span>format_address(value: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;EthAddress&gt;) -&gt; BytesMut {
     <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = value {
         addr.<span class="number">0</span>.as_bytes().into()
     } <span class="kw">else </span>{
@@ -2382,7 +2264,7 @@
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V1;
     <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
 
-    <span class="kw">type </span>Params = (Address, BlockNumberOrHash);
+    <span class="kw">type </span>Params = (EthAddress, BlockNumberOrHash);
     <span class="kw">type </span><span class="prelude-val">Ok </span>= BigInt;
 
     <span class="kw">async fn </span>handle(
@@ -2498,7 +2380,7 @@
             <span class="macro">bail!</span>(<span class="string">"unsupported EAM method"</span>);
         }
     } <span class="kw">else if </span>msg.method_num() == EVMMethod::InvokeContract <span class="kw">as </span>u64 {
-        <span class="kw">let </span>addr = Address::from_filecoin_address(<span class="kw-2">&amp;</span>msg.to)<span class="question-mark">?</span>;
+        <span class="kw">let </span>addr = EthAddress::from_filecoin_address(<span class="kw-2">&amp;</span>msg.to)<span class="question-mark">?</span>;
         to = <span class="prelude-val">Some</span>(addr);
     } <span class="kw">else </span>{
         <span class="macro">bail!</span>(
@@ -2572,7 +2454,7 @@
 
     <span class="comment">// This should be impossible to fail as we've already asserted that we have an
     // Ethereum Address sender...
-    </span><span class="kw">let </span>from = Address::from_filecoin_address(<span class="kw-2">&amp;</span>from)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>from = EthAddress::from_filecoin_address(<span class="kw-2">&amp;</span>from)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(Tx {
         nonce: Uint64(tx_args.nonce),
@@ -2596,9 +2478,9 @@
 <span class="kw">fn </span>lookup_eth_address&lt;DB: Blockstore&gt;(
     addr: <span class="kw-2">&amp;</span>FilecoinAddress,
     state: <span class="kw-2">&amp;</span>StateTree&lt;DB&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Address&gt;&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;EthAddress&gt;&gt; {
     <span class="comment">// Attempt to convert directly, if it's an f4 address.
-    </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_addr) = Address::from_filecoin_address(addr) {
+    </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_addr) = EthAddress::from_filecoin_address(addr) {
         <span class="kw">if </span>!eth_addr.is_masked_id() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(eth_addr));
         }
@@ -2614,7 +2496,7 @@
     </span><span class="kw">let </span>result = state.get_actor(addr);
     <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(actor_state)) = result {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = actor_state.delegated_address {
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_addr) = Address::from_filecoin_address(<span class="kw-2">&amp;</span>addr.into()) {
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_addr) = EthAddress::from_filecoin_address(<span class="kw-2">&amp;</span>addr.into()) {
                 <span class="kw">if </span>!eth_addr.is_masked_id() {
                     <span class="comment">// Conversable into an eth address, use it.
                     </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(eth_addr));
@@ -2631,7 +2513,7 @@
     }
 
     <span class="comment">// Otherwise, use the masked address.
-    </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Address::from_actor_id(id_addr)))
+    </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EthAddress::from_actor_id(id_addr)))
 }
 
 <span class="doccomment">/// See &lt;https://docs.soliditylang.org/en/latest/abi-spec.html#function-selector-and-argument-encoding&gt;
@@ -2734,7 +2616,7 @@
     // known sentinel address.
     </span><span class="kw">let </span><span class="kw-2">mut </span>to = <span class="kw">match </span>lookup_eth_address(<span class="kw-2">&amp;</span>msg.to(), state) {
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(addr)) =&gt; <span class="prelude-val">Some</span>(addr),
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="prelude-val">Some</span>(Address(
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="prelude-val">Some</span>(EthAddress(
             ethereum_types::H160::from_str(REVERTED_ETH_ADDRESS).unwrap(),
         )),
         <span class="prelude-val">Err</span>(err) =&gt; {
@@ -2974,6 +2856,68 @@
     }
 }
 
+<span class="kw">pub enum </span>EthGetCode {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">2</span>&gt; <span class="kw">for </span>EthGetCode {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.EthGetCode"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"eth_address"</span>, <span class="string">"block_number_or_hash"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V1;
+    <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
+
+    <span class="kw">type </span>Params = (EthAddress, BlockNumberOrHash);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= Bytes;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (eth_address, block_number_or_hash): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_number_or_hash)<span class="question-mark">?</span>;
+        <span class="kw">let </span>to_address = FilecoinAddress::try_from(<span class="kw-2">&amp;</span>eth_address)<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = ctx
+            .state_manager
+            .get_required_actor(<span class="kw-2">&amp;</span>to_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
+        <span class="comment">// Not a contract. We could try to distinguish between accounts and "native" contracts here,
+        // but it's not worth it.
+        </span><span class="kw">if </span>!fil_actor_interface::is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(Default::default());
+        }
+
+        <span class="kw">let </span>message = Message {
+            from: FilecoinAddress::SYSTEM_ACTOR,
+            to: to_address,
+            method_num: METHOD_GET_BYTE_CODE,
+            gas_limit: BLOCK_GAS_LIMIT,
+            ..Default::default()
+        };
+        <span class="kw">let </span><span class="kw-2">mut </span>api_invoc_result = <span class="prelude-val">None</span>;
+        <span class="kw">for </span>ts <span class="kw">in </span>ts.chain_arc(ctx.store()) {
+            <span class="kw">match </span>ctx.state_manager.call(<span class="kw-2">&amp;</span>message, <span class="prelude-val">Some</span>(ts)) {
+                <span class="prelude-val">Ok</span>(res) =&gt; {
+                    api_invoc_result = <span class="prelude-val">Some</span>(res);
+                    <span class="kw">break</span>;
+                }
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">tracing::warn!</span>(%e),
+            }
+        }
+        <span class="kw">let </span><span class="prelude-val">Some</span>(api_invoc_result) = api_invoc_result <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"no message receipt"</span>).into());
+        };
+        <span class="kw">let </span><span class="prelude-val">Some</span>(msg_rct) = api_invoc_result.msg_rct <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"no message receipt"</span>).into());
+        };
+        <span class="kw">if </span>!api_invoc_result.error.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"GetBytecode failed: {}"</span>, api_invoc_result.error).into());
+        }
+
+        <span class="kw">let </span>get_bytecode_return: GetBytecodeReturn =
+            fvm_ipld_encoding::from_slice(msg_rct.return_data().as_slice())<span class="question-mark">?</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(cid) = get_bytecode_return.<span class="number">0 </span>{
+            <span class="prelude-val">Ok</span>(Bytes(ctx.store().get_required(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(Default::default())
+        }
+    }
+}
+
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -3036,7 +2980,7 @@
         <span class="kw">let </span>eth_tx_args = TxArgs {
             chain_id: <span class="number">314159</span>,
             nonce: <span class="number">486</span>,
-            to: <span class="prelude-val">Some</span>(Address(
+            to: <span class="prelude-val">Some</span>(EthAddress(
                 ethereum_types::H160::from_str(<span class="string">"0xeb4a9cdb9f42d3a503d580a39b6e3736eb21fffd"</span>)
                     .unwrap(),
             )),
@@ -3120,7 +3064,7 @@
             <span class="kw">let </span>addr = FilecoinAddress::new_id(id);
 
             <span class="comment">// roundtrip
-            </span><span class="kw">let </span>eth_addr = Address::from_filecoin_address(<span class="kw-2">&amp;</span>addr).unwrap();
+            </span><span class="kw">let </span>eth_addr = EthAddress::from_filecoin_address(<span class="kw-2">&amp;</span>addr).unwrap();
             <span class="kw">let </span>fil_addr = eth_addr.to_filecoin_address().unwrap();
             <span class="macro">assert_eq!</span>(addr, fil_addr)
         }
@@ -3135,19 +3079,19 @@
         ];
 
         <span class="kw">for </span>addr <span class="kw">in </span>test_cases {
-            <span class="kw">let </span>eth_addr: Address = serde_json::from_str(addr).unwrap();
+            <span class="kw">let </span>eth_addr: EthAddress = serde_json::from_str(addr).unwrap();
 
             <span class="kw">let </span>encoded = serde_json::to_string(<span class="kw-2">&amp;</span>eth_addr).unwrap();
             <span class="macro">assert_eq!</span>(encoded, addr.to_lowercase());
 
-            <span class="kw">let </span>decoded: Address = serde_json::from_str(<span class="kw-2">&amp;</span>encoded).unwrap();
+            <span class="kw">let </span>decoded: EthAddress = serde_json::from_str(<span class="kw-2">&amp;</span>encoded).unwrap();
             <span class="macro">assert_eq!</span>(eth_addr, decoded);
         }
     }
 
     <span class="attr">#[quickcheck]
     </span><span class="kw">fn </span>test_fil_address_roundtrip(addr: FilecoinAddress) {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_addr) = Address::from_filecoin_address(<span class="kw-2">&amp;</span>addr) {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_addr) = EthAddress::from_filecoin_address(<span class="kw-2">&amp;</span>addr) {
             <span class="kw">let </span>fil_addr = eth_addr.to_filecoin_address().unwrap();
 
             <span class="kw">let </span>protocol = addr.protocol();
@@ -3194,7 +3138,7 @@
                 .unwrap()
                 .to
                 .unwrap(),
-            Address(H160::from_str(<span class="string">"0xa251031ed6b4779e2a0b913683e71043d88002a3"</span>).unwrap())
+            EthAddress(H160::from_str(<span class="string">"0xa251031ed6b4779e2a0b913683e71043d88002a3"</span>).unwrap())
         );
     }
 }
