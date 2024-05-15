@@ -103,40 +103,12 @@
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use super</span>::{miner, system, verifier::Verifier, SystemStateOld};
-<span class="kw">use </span><span class="kw">crate</span>::make_butterfly_policy;
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, Height, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address,
@@ -147,9 +119,9 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::state_migration::common::{migrators::nil_migrator, StateMigration};
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::CborStoreExt <span class="kw">as _</span>;
+<span class="kw">use crate</span>::{make_butterfly_policy, make_calibnet_policy, make_devnet_policy, make_mainnet_policy};
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>cid::Cid;
-<span class="kw">use </span>fil_actors_shared::v11::runtime::ProofSet;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 
 <span class="kw">impl</span>&lt;BS: Blockstore&gt; StateMigration&lt;BS&gt; {
@@ -175,38 +147,12 @@
         }
 
         <span class="kw">let </span>(policy_old, policy_new) = <span class="kw">match </span><span class="kw-2">&amp;</span>chain_config.network {
-            NetworkChain::Mainnet =&gt; (
-                fil_actors_shared::v11::runtime::Policy::mainnet(),
-                fil_actors_shared::v12::runtime::Policy::mainnet(),
-            ),
-            NetworkChain::Calibnet =&gt; (
-                fil_actors_shared::v11::runtime::Policy::calibnet(),
-                fil_actors_shared::v12::runtime::Policy::calibnet(),
-            ),
+            NetworkChain::Mainnet =&gt; (<span class="macro">make_mainnet_policy!</span>(v11), <span class="macro">make_mainnet_policy!</span>(v12)),
+            NetworkChain::Calibnet =&gt; (<span class="macro">make_calibnet_policy!</span>(v11), <span class="macro">make_calibnet_policy!</span>(v12)),
             NetworkChain::Butterflynet =&gt; {
                 (<span class="macro">make_butterfly_policy!</span>(v11), <span class="macro">make_butterfly_policy!</span>(v12))
             }
-            NetworkChain::Devnet(<span class="kw">_</span>) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>policy_old = fil_actors_shared::v11::runtime::Policy::mainnet();
-                policy_old.minimum_consensus_power = <span class="number">2048</span>.into();
-                policy_old.minimum_verified_allocation_size = <span class="number">256</span>.into();
-                policy_old.pre_commit_challenge_delay = <span class="number">10</span>;
-
-                <span class="kw">let </span><span class="kw-2">mut </span>proofs = ProofSet::default_seal_proofs();
-                proofs.insert(RegisteredSealProofV3::StackedDRG2KiBV1);
-                proofs.insert(RegisteredSealProofV3::StackedDRG8MiBV1);
-                policy_old.valid_pre_commit_proof_type = proofs;
-
-                <span class="kw">let </span><span class="kw-2">mut </span>proofs = ProofSet::default_post_proofs();
-                proofs.insert(RegisteredPoStProofV3::StackedDRGWindow2KiBV1);
-                proofs.insert(RegisteredPoStProofV3::StackedDRGWindow8MiBV1);
-                policy_old.valid_post_proof_type = proofs;
-
-                (
-                    policy_old,
-                    fil_actors_shared::v12::runtime::Policy::devnet(),
-                )
-            }
+            NetworkChain::Devnet(<span class="kw">_</span>) =&gt; (<span class="macro">make_devnet_policy!</span>(v11), <span class="macro">make_devnet_policy!</span>(v12)),
         };
         <span class="kw">let </span>miner_old_code = current_manifest.get(BuiltinActor::Miner)<span class="question-mark">?</span>;
         <span class="kw">let </span>miner_new_code = new_manifest.get(BuiltinActor::Miner)<span class="question-mark">?</span>;

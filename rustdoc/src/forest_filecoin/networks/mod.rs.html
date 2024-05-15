@@ -561,31 +561,6 @@
 <a href="#559" id="559">559</a>
 <a href="#560" id="560">560</a>
 <a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
-<a href="#573" id="573">573</a>
-<a href="#574" id="574">574</a>
-<a href="#575" id="575">575</a>
-<a href="#576" id="576">576</a>
-<a href="#577" id="577">577</a>
-<a href="#578" id="578">578</a>
-<a href="#579" id="579">579</a>
-<a href="#580" id="580">580</a>
-<a href="#581" id="581">581</a>
-<a href="#582" id="582">582</a>
-<a href="#583" id="583">583</a>
-<a href="#584" id="584">584</a>
-<a href="#585" id="585">585</a>
-<a href="#586" id="586">586</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -593,7 +568,7 @@
 
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>cid::Cid;
-<span class="kw">use </span>fil_actors_shared::v10::runtime::Policy;
+<span class="kw">use </span>fil_actors_shared::v13::runtime::Policy;
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>libp2p::Multiaddr;
 <span class="kw">use </span>once_cell::sync::Lazy;
@@ -603,10 +578,10 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::beacon::{BeaconPoint, BeaconSchedule, DrandBeacon, DrandConfig};
 <span class="kw">use </span><span class="kw">crate</span>::db::SettingsStore;
-<span class="kw">use </span><span class="kw">crate</span>::make_butterfly_policy;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::{ChainEpoch, EPOCH_DURATION_SECONDS};
 <span class="kw">use </span><span class="kw">crate</span>::shim::sector::{RegisteredPoStProofV3, RegisteredSealProofV3};
 <span class="kw">use </span><span class="kw">crate</span>::shim::version::NetworkVersion;
+<span class="kw">use crate</span>::{make_butterfly_policy, make_calibnet_policy, make_devnet_policy, make_mainnet_policy};
 
 <span class="kw">mod </span>actors_bundle;
 <span class="kw">pub use </span>actors_bundle::{generate_actor_bundle, ActorBundleInfo, ACTOR_BUNDLES};
@@ -799,8 +774,7 @@
     <span class="kw">pub </span>propagation_delay_secs: u32,
     <span class="kw">pub </span>genesis_network: NetworkVersion,
     <span class="kw">pub </span>height_infos: HashMap&lt;Height, HeightInfo&gt;,
-    <span class="attr">#[cfg_attr(test, arbitrary(gen(|_g| Policy::mainnet())))]
-    #[serde(default = <span class="string">"default_policy"</span>)]
+    <span class="attr">#[cfg_attr(test, arbitrary(gen(|_g| Policy::default())))]
     </span><span class="kw">pub </span>policy: Policy,
     <span class="kw">pub </span>eth_chain_id: u32,
     <span class="kw">pub </span>breeze_gas_tamping_duration: i64,
@@ -817,7 +791,7 @@
             propagation_delay_secs: <span class="number">10</span>,
             genesis_network: GENESIS_NETWORK_VERSION,
             height_infos: HEIGHT_INFOS.clone(),
-            policy: Policy::mainnet(),
+            policy: <span class="macro">make_mainnet_policy!</span>(v13),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
             breeze_gas_tamping_duration: BREEZE_GAS_TAMPING_DURATION,
         }
@@ -833,7 +807,7 @@
             propagation_delay_secs: <span class="number">10</span>,
             genesis_network: GENESIS_NETWORK_VERSION,
             height_infos: HEIGHT_INFOS.clone(),
-            policy: Policy::calibnet(),
+            policy: <span class="macro">make_calibnet_policy!</span>(v13),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
             breeze_gas_tamping_duration: BREEZE_GAS_TAMPING_DURATION,
         }
@@ -841,24 +815,6 @@
 
     <span class="kw">pub fn </span>devnet() -&gt; <span class="self">Self </span>{
         <span class="kw">use </span>devnet::<span class="kw-2">*</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>policy = Policy::mainnet();
-        policy.minimum_consensus_power = <span class="number">2048</span>.into();
-        policy.minimum_verified_allocation_size = <span class="number">256</span>.into();
-        policy.pre_commit_challenge_delay = <span class="number">10</span>;
-
-        <span class="attr">#[allow(clippy::disallowed_types)]
-        </span><span class="kw">let </span>allowed_proof_types = std::collections::HashSet::from_iter(<span class="macro">vec!</span>[
-            RegisteredSealProofV3::StackedDRG2KiBV1,
-            RegisteredSealProofV3::StackedDRG8MiBV1,
-        ]);
-        policy.valid_pre_commit_proof_type = allowed_proof_types;
-        <span class="attr">#[allow(clippy::disallowed_types)]
-        </span><span class="kw">let </span>allowed_proof_types = std::collections::HashSet::from_iter(<span class="macro">vec!</span>[
-            RegisteredPoStProofV3::StackedDRGWindow2KiBV1,
-            RegisteredPoStProofV3::StackedDRGWindow8MiBV1,
-        ]);
-        policy.valid_post_proof_type = allowed_proof_types;
-
         <span class="self">Self </span>{
             network: NetworkChain::Devnet(<span class="string">"devnet"</span>.to_string()),
             genesis_cid: <span class="prelude-val">None</span>,
@@ -867,7 +823,7 @@
             propagation_delay_secs: <span class="number">1</span>,
             genesis_network: <span class="kw-2">*</span>GENESIS_NETWORK_VERSION,
             height_infos: HEIGHT_INFOS.clone(),
-            policy,
+            policy: <span class="macro">make_devnet_policy!</span>(v13),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
             breeze_gas_tamping_duration: BREEZE_GAS_TAMPING_DURATION,
         }
@@ -884,7 +840,7 @@
             propagation_delay_secs: <span class="number">6</span>,
             genesis_network: GENESIS_NETWORK_VERSION,
             height_infos: HEIGHT_INFOS.clone(),
-            policy: <span class="macro">make_butterfly_policy!</span>(v10),
+            policy: <span class="macro">make_butterfly_policy!</span>(v13),
             eth_chain_id: ETH_CHAIN_ID <span class="kw">as </span>u32,
             breeze_gas_tamping_duration: BREEZE_GAS_TAMPING_DURATION,
         }
@@ -978,12 +934,6 @@
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         ChainConfig::mainnet()
     }
-}
-
-<span class="doccomment">/// Dummy default. Will be overwritten later.
-</span><span class="comment">// Wish we could get rid of this
-</span><span class="kw">fn </span>default_policy() -&gt; Policy {
-    Policy::mainnet()
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_bootstrap_peers(bootstrap_peer_list: <span class="kw-2">&amp;</span>str) -&gt; Vec&lt;Multiaddr&gt; {
