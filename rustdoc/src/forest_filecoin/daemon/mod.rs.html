@@ -731,6 +731,13 @@
 <a href="#729" id="729">729</a>
 <a href="#730" id="730">730</a>
 <a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -758,7 +765,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{Libp2pConfig, Libp2pService, PeerManager};
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolConfig, MpoolRpcProvider};
-<span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, NetworkChain};
+<span class="kw">use </span><span class="kw">crate</span>::networks::{<span class="self">self</span>, ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::start_rpc;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::RPCState;
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
@@ -929,6 +936,16 @@
         });
     }
 
+    <span class="comment">// Read Genesis file
+    // * When snapshot command implemented, this genesis does not need to be
+    //   initialized
+    </span><span class="kw">let </span>genesis_header = read_genesis_header(
+        config.client.genesis_file.as_ref(),
+        chain_config.genesis_bytes(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>.as_deref(),
+        <span class="kw-2">&amp;</span>db,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="kw">if </span>config.client.enable_metrics_endpoint {
         <span class="comment">// Start Prometheus server port
         </span><span class="kw">let </span>prometheus_listener = TcpListener::bind(config.client.metrics_address)
@@ -945,17 +962,14 @@
                 .<span class="kw">await
                 </span>.context(<span class="string">"Failed to initiate prometheus server"</span>)
         });
-    }
 
-    <span class="comment">// Read Genesis file
-    // * When snapshot command implemented, this genesis does not need to be
-    //   initialized
-    </span><span class="kw">let </span>genesis_header = read_genesis_header(
-        config.client.genesis_file.as_ref(),
-        chain_config.genesis_bytes(<span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>.as_deref(),
-        <span class="kw-2">&amp;</span>db,
-    )
-    .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">crate</span>::metrics::default_registry().register_collector(Box::new(
+            networks::metrics::NetworkHeightCollector::new(
+                chain_config.block_delay_secs,
+                genesis_header.timestamp,
+            ),
+        ));
+    }
 
     <span class="comment">// Initialize ChainStore
     </span><span class="kw">let </span>chain_store = Arc::new(ChainStore::new(

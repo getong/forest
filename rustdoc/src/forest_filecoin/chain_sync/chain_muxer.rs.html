@@ -1028,13 +1028,6 @@
 <a href="#1026" id="1026">1026</a>
 <a href="#1027" id="1027">1027</a>
 <a href="#1028" id="1028">1028</a>
-<a href="#1029" id="1029">1029</a>
-<a href="#1030" id="1030">1030</a>
-<a href="#1031" id="1031">1031</a>
-<a href="#1032" id="1032">1032</a>
-<a href="#1033" id="1033">1033</a>
-<a href="#1034" id="1034">1034</a>
-<a href="#1035" id="1035">1035</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1045,7 +1038,6 @@
     time::SystemTime,
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{Block, CreateTipsetError, FullTipset, GossipBlock, Tipset, TipsetKey};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{ChainStore, Error <span class="kw">as </span>ChainStoreError};
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{
     hello::HelloRequest, NetworkEvent, NetworkMessage, PeerId, PeerManager, PubsubMessage,
@@ -1054,6 +1046,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, Provider};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{clock::SECONDS_IN_DAY, message::Message};
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
+<span class="kw">use crate</span>::{
+    blocks::{Block, CreateTipsetError, FullTipset, GossipBlock, Tipset, TipsetKey},
+    networks::calculate_expected_epoch,
+};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>futures::{
     future::{try_join_all, Future},
@@ -1399,7 +1395,7 @@
         mem_pool: Arc&lt;MessagePool&lt;M&gt;&gt;,
         genesis: Arc&lt;Tipset&gt;,
         message_processing_strategy: PubsubMessageProcessingStrategy,
-        block_delay: u64,
+        block_delay: u32,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(FullTipset, PeerId)&gt;, ChainMuxerError&gt; {
         <span class="kw">let </span>(tipset, source) = <span class="kw">match </span>event {
             NetworkEvent::HelloRequestInbound { source, request } =&gt; {
@@ -1564,7 +1560,7 @@
         <span class="kw">let </span>genesis = <span class="self">self</span>.genesis.clone();
         <span class="kw">let </span>bad_block_cache = <span class="self">self</span>.bad_blocks.clone();
         <span class="kw">let </span>mem_pool = <span class="self">self</span>.mpool.clone();
-        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs <span class="kw">as </span>u64;
+        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs;
 
         <span class="kw">let </span>future = <span class="kw">async move </span>{
             <span class="kw">loop </span>{
@@ -1604,11 +1600,11 @@
         <span class="kw">let </span>chain_store = <span class="self">self</span>.state_manager.chain_store().clone();
         <span class="kw">let </span>network = <span class="self">self</span>.network.clone();
         <span class="kw">let </span>genesis = <span class="self">self</span>.genesis.clone();
-        <span class="kw">let </span>genesis_timestamp = <span class="self">self</span>.genesis.block_headers().first().timestamp <span class="kw">as </span>i64;
+        <span class="kw">let </span>genesis_timestamp = <span class="self">self</span>.genesis.block_headers().first().timestamp;
         <span class="kw">let </span>bad_block_cache = <span class="self">self</span>.bad_blocks.clone();
         <span class="kw">let </span>mem_pool = <span class="self">self</span>.mpool.clone();
         <span class="kw">let </span>tipset_sample_size = <span class="self">self</span>.state_manager.sync_config().tipset_sample_size;
-        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs <span class="kw">as </span>u64;
+        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs;
 
         <span class="kw">let </span>evaluator = <span class="kw">async move </span>{
             <span class="comment">// If `local_epoch &gt;= now_epoch`, return `NetworkHeadEvaluation::InSync`
@@ -1616,11 +1612,11 @@
             // Otherwise in some conditions, `forest-cli sync wait` takes very long to exit (only when the node enters FOLLOW mode)
             </span><span class="kw">match </span>(
                 chain_store.heaviest_tipset().epoch(),
-                get_now_epoch(
-                    chrono::Utc::now().timestamp(),
+                calculate_expected_epoch(
+                    chrono::Utc::now().timestamp() <span class="kw">as </span>u64,
                     genesis_timestamp,
-                    block_delay <span class="kw">as </span>i64,
-                ),
+                    block_delay,
+                ) <span class="kw">as </span>i64,
             ) {
                 (local_epoch, now_epoch) <span class="kw">if </span>local_epoch &gt;= now_epoch =&gt; {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(NetworkHeadEvaluation::InSync)
@@ -1660,11 +1656,11 @@
                     }
                 };
 
-                <span class="kw">let </span>now_epoch = get_now_epoch(
-                    chrono::Utc::now().timestamp(),
+                <span class="kw">let </span>now_epoch = calculate_expected_epoch(
+                    chrono::Utc::now().timestamp() <span class="kw">as </span>u64,
                     genesis_timestamp,
-                    block_delay <span class="kw">as </span>i64,
-                );
+                    block_delay,
+                ) <span class="kw">as </span>i64;
                 <span class="kw">let </span>is_block_valid = |block: <span class="kw-2">&amp;</span>Block| -&gt; bool {
                     <span class="kw">let </span>header = <span class="kw-2">&amp;</span>block.header;
                     <span class="kw">if </span>!header.is_within_clock_drift() {
@@ -1766,7 +1762,7 @@
         <span class="kw">let </span>genesis = <span class="self">self</span>.genesis.clone();
         <span class="kw">let </span>bad_block_cache = <span class="self">self</span>.bad_blocks.clone();
         <span class="kw">let </span>mem_pool = <span class="self">self</span>.mpool.clone();
-        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs <span class="kw">as </span>u64;
+        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs;
         <span class="kw">let </span>stream_processor: ChainMuxerFuture&lt;(), ChainMuxerError&gt; = Box::pin(<span class="kw">async move </span>{
             <span class="kw">loop </span>{
                 <span class="kw">let </span>event = <span class="kw">match </span>p2p_messages.recv_async().<span class="kw">await </span>{
@@ -1857,7 +1853,7 @@
         <span class="kw">let </span>bad_block_cache = <span class="self">self</span>.bad_blocks.clone();
         <span class="kw">let </span>mem_pool = <span class="self">self</span>.mpool.clone();
         <span class="kw">let </span>tipset_sender = <span class="self">self</span>.tipset_sender.clone();
-        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs <span class="kw">as </span>u64;
+        <span class="kw">let </span>block_delay = <span class="self">self</span>.state_manager.chain_config().block_delay_secs;
         <span class="kw">let </span>stream_processor: ChainMuxerFuture&lt;UnexpectedReturnKind, ChainMuxerError&gt; = Box::pin(
             <span class="kw">async move </span>{
                 <span class="comment">// If a tipset has been provided, pass it to the tipset processor
@@ -2059,15 +2055,5 @@
             }
         }
     }
-}
-
-<span class="comment">// The formula matches lotus
-// ```go
-// sinceGenesis := build.Clock.Now().Sub(genesisTime)
-// expectedHeight := int64(sinceGenesis.Seconds()) / int64(build.BlockDelaySecs)
-// ```
-// See &lt;https://github.com/filecoin-project/lotus/blob/b27c861485695d3f5bb92bcb281abc95f4d90fb6/chain/sync.go#L180&gt;
-</span><span class="kw">fn </span>get_now_epoch(now_timestamp: i64, genesis_timestamp: i64, block_delay: i64) -&gt; i64 {
-    now_timestamp.saturating_sub(genesis_timestamp) / block_delay
 }
 </code></pre></div></section></main></body></html>

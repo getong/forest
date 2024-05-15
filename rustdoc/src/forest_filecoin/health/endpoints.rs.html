@@ -226,6 +226,7 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="kw">use </span>std::sync::Arc;
@@ -233,7 +234,7 @@
 <span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>axum::extract::{<span class="self">self</span>, Query};
 
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
+<span class="kw">use crate</span>::{chain_sync::SyncStage, networks::calculate_expected_epoch};
 
 <span class="kw">use super</span>::{AppError, ForestState};
 
@@ -337,11 +338,12 @@
 /// in case of forking.
 </span><span class="kw">fn </span>check_epoch_up_to_date(state: <span class="kw-2">&amp;</span>Arc&lt;ForestState&gt;, acc: <span class="kw-2">&amp;mut </span>MessageAccumulator) -&gt; bool {
     <span class="kw">const </span>MAX_EPOCH_DIFF: i64 = <span class="number">5</span>;
-    <span class="kw">let </span>now_epoch = chrono::Utc::now()
-        .timestamp()
-        .saturating_add(state.chain_config.block_delay_secs <span class="kw">as </span>i64)
-        .saturating_sub(state.genesis_timestamp <span class="kw">as </span>i64)
-        / state.chain_config.block_delay_secs <span class="kw">as </span>i64;
+
+    <span class="kw">let </span>now_epoch = calculate_expected_epoch(
+        chrono::Utc::now().timestamp() <span class="kw">as </span>u64,
+        state.genesis_timestamp,
+        state.chain_config.block_delay_secs,
+    ) <span class="kw">as </span>i64;
 
     <span class="comment">// The current epoch of the node must be not too far behind the network
     </span><span class="kw">if </span>state.sync_state.read().epoch() &gt;= now_epoch - MAX_EPOCH_DIFF {
