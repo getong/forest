@@ -276,6 +276,11 @@
 <a href="#274" id="274">274</a>
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -283,7 +288,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{IdentTopic, NetworkMessage, PUBSUB_BLOCK_STR};
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, LotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiVersion, Ctx, Permission, RpcMethod, ServerError};
-<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
+<span class="kw">use </span>anyhow::{anyhow, Context <span class="kw">as _</span>};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::to_vec;
@@ -303,7 +308,7 @@
 }
 
 <span class="kw">use </span><span class="kw">crate</span>::chain;
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::TipsetValidator;
+<span class="kw">use </span><span class="kw">crate</span>::chain_sync::{SyncStage, TipsetValidator};
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>for_each_method;
 
 <span class="kw">pub enum </span>SyncCheckBad {}
@@ -376,6 +381,9 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (block_msg,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">if </span>!<span class="macro">matches!</span>(ctx.sync_state.read().stage(), SyncStage::Complete) {
+            <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"the node isn't in 'follow' mode"</span>))<span class="question-mark">?
+        </span>}
         <span class="kw">let </span>encoded_message = to_vec(<span class="kw-2">&amp;</span>block_msg)<span class="question-mark">?</span>;
         <span class="kw">let </span>pubsub_block_str = <span class="macro">format!</span>(<span class="string">"{}/{}"</span>, PUBSUB_BLOCK_STR, ctx.network_name);
         <span class="kw">let </span>(bls_messages, secp_messages) =
@@ -397,7 +405,9 @@
             )
             .context(<span class="string">"failed to validate the tipset"</span>)<span class="question-mark">?</span>;
 
-        ctx.tipset_send.send(Arc::new(ts.into_tipset()))<span class="question-mark">?</span>;
+        ctx.tipset_send
+            .try_send(Arc::new(ts.into_tipset()))
+            .context(<span class="string">"tipset queue is full"</span>)<span class="question-mark">?</span>;
 
         ctx.network_send.send(NetworkMessage::PubsubMessage {
             topic: IdentTopic::new(pubsub_block_str),
