@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ADDRESS"],"enum":["State"],"fn":["is_v10_verifreg_cid","is_v11_verifreg_cid","is_v12_verifreg_cid","is_v13_verifreg_cid","is_v8_verifreg_cid","is_v9_verifreg_cid"]};
+window.SIDEBAR_ITEMS = {"constant":["ADDRESS"],"enum":["State"],"fn":["is_v10_verifreg_cid","is_v11_verifreg_cid","is_v12_verifreg_cid","is_v13_verifreg_cid","is_v8_verifreg_cid","is_v9_verifreg_cid"],"struct":["Allocation","Claim"],"type":["AllocationID"]};
