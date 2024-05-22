@@ -377,6 +377,10 @@
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -385,6 +389,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, Height};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::CirculatingSupply;
+<span class="kw">use </span><span class="kw">crate</span>::shim::version::NetworkVersion;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address,
     clock::{ChainEpoch, EPOCHS_IN_DAY},
@@ -427,23 +432,15 @@
     </span>genesis_pledge: TokenAmount,
     genesis_market_funds: TokenAmount,
 
-    <span class="doccomment">/// Heights epoch
-    </span>ignition_height: ChainEpoch,
-    actors_v2_height: ChainEpoch,
-    calico_height: ChainEpoch,
+    chain_config: Arc&lt;ChainConfig&gt;,
 }
 
 <span class="kw">impl </span>GenesisInfo {
-    <span class="kw">pub fn </span>from_chain_config(chain_config: <span class="kw-2">&amp;</span>ChainConfig) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>ignition_height = chain_config.epoch(Height::Ignition);
-        <span class="kw">let </span>actors_v2_height = chain_config.epoch(Height::Assembly);
+    <span class="kw">pub fn </span>from_chain_config(chain_config: Arc&lt;ChainConfig&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>liftoff_height = chain_config.epoch(Height::Liftoff);
-        <span class="kw">let </span>calico_height = chain_config.epoch(Height::Calico);
         <span class="self">Self </span>{
-            ignition_height,
-            actors_v2_height,
-            calico_height,
             vesting: GenesisInfoVesting::new(liftoff_height),
+            chain_config,
             ..GenesisInfo::default()
         }
     }
@@ -477,8 +474,10 @@
         <span class="kw">let </span>fil_vested = get_fil_vested(<span class="self">self</span>, height);
         <span class="kw">let </span>fil_mined = get_fil_mined(<span class="kw-2">&amp;</span>state_tree)<span class="question-mark">?</span>;
         <span class="kw">let </span>fil_burnt = get_fil_burnt(<span class="kw-2">&amp;</span>state_tree)<span class="question-mark">?</span>;
-        <span class="kw">let </span>fil_locked = get_fil_locked(<span class="kw-2">&amp;</span>state_tree)<span class="question-mark">?</span>;
-        <span class="kw">let </span>fil_reserve_disbursed = <span class="kw">if </span>height &gt; <span class="self">self</span>.actors_v2_height {
+
+        <span class="kw">let </span>network_version = <span class="self">self</span>.chain_config.network_version(height);
+        <span class="kw">let </span>fil_locked = get_fil_locked(<span class="kw-2">&amp;</span>state_tree, network_version)<span class="question-mark">?</span>;
+        <span class="kw">let </span>fil_reserve_disbursed = <span class="kw">if </span>height &gt; <span class="self">self</span>.chain_config.epoch(Height::Assembly) {
             get_fil_reserve_disbursed(<span class="kw-2">&amp;</span>state_tree)<span class="question-mark">?
         </span>} <span class="kw">else </span>{
             TokenAmount::default()
@@ -531,11 +530,15 @@
                         un_circ += actor_balance;
                     }
                     Address::MARKET_ACTOR =&gt; {
-                        <span class="kw">let </span>ms = market::State::load(<span class="kw-2">&amp;</span>db, actor.code, actor.state)<span class="question-mark">?</span>;
-
-                        <span class="kw">let </span>locked_balance: TokenAmount = ms.total_locked().into();
-                        circ += actor_balance - <span class="kw-2">&amp;</span>locked_balance;
-                        un_circ += locked_balance;
+                        <span class="kw">let </span>network_version = <span class="self">self</span>.chain_config.network_version(height);
+                        <span class="kw">if </span>network_version &gt;= NetworkVersion::V23 {
+                            circ += actor_balance;
+                        } <span class="kw">else </span>{
+                            <span class="kw">let </span>ms = market::State::load(<span class="kw-2">&amp;</span>db, actor.code, actor.state)<span class="question-mark">?</span>;
+                            <span class="kw">let </span>locked_balance: TokenAmount = ms.total_locked().into();
+                            circ += actor_balance - <span class="kw-2">&amp;</span>locked_balance;
+                            un_circ += locked_balance;
+                        }
                     }
                     <span class="kw">_ if </span>is_account_actor(<span class="kw-2">&amp;</span>actor.code)
                     || is_paych_actor(<span class="kw-2">&amp;</span>actor.code)
@@ -621,12 +624,12 @@
     <span class="kw">let </span>post_ignition = <span class="kw-2">&amp;</span>genesis_info.vesting.ignition;
     <span class="kw">let </span>calico_vesting = <span class="kw-2">&amp;</span>genesis_info.vesting.calico;
 
-    <span class="kw">if </span>height &lt;= genesis_info.ignition_height {
+    <span class="kw">if </span>height &lt;= genesis_info.chain_config.epoch(Height::Ignition) {
         <span class="kw">for </span>(unlock_duration, initial_balance) <span class="kw">in </span>pre_ignition {
             return_value +=
                 initial_balance - v0_amount_locked(<span class="kw-2">*</span>unlock_duration, initial_balance, height);
         }
-    } <span class="kw">else if </span>height &lt;= genesis_info.calico_height {
+    } <span class="kw">else if </span>height &lt;= genesis_info.chain_config.epoch(Height::Calico) {
         <span class="kw">for </span>(start_epoch, unlock_duration, initial_balance) <span class="kw">in </span>post_ignition {
             return_value += initial_balance
                 - v0_amount_locked(<span class="kw-2">*</span>unlock_duration, initial_balance, height - start_epoch);
@@ -638,7 +641,7 @@
         }
     }
 
-    <span class="kw">if </span>height &lt;= genesis_info.actors_v2_height {
+    <span class="kw">if </span>height &lt;= genesis_info.chain_config.epoch(Height::Assembly) {
         return_value += <span class="kw-2">&amp;</span>genesis_info.genesis_pledge + <span class="kw-2">&amp;</span>genesis_info.genesis_market_funds;
     }
 
@@ -686,10 +689,15 @@
 
 <span class="kw">fn </span>get_fil_locked&lt;DB: Blockstore&gt;(
     state_tree: <span class="kw-2">&amp;</span>StateTree&lt;DB&gt;,
+    network_version: NetworkVersion,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;TokenAmount, anyhow::Error&gt; {
-    <span class="kw">let </span>market_locked = get_fil_market_locked(state_tree)<span class="question-mark">?</span>;
-    <span class="kw">let </span>power_locked = get_fil_power_locked(state_tree)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(power_locked + market_locked)
+    <span class="kw">let </span>total = <span class="kw">if </span>network_version &gt;= NetworkVersion::V23 {
+        get_fil_power_locked(state_tree)<span class="question-mark">?
+    </span>} <span class="kw">else </span>{
+        get_fil_market_locked(state_tree)<span class="question-mark">? </span>+ get_fil_power_locked(state_tree)<span class="question-mark">?
+    </span>};
+
+    <span class="prelude-val">Ok</span>(total)
 }
 
 <span class="kw">fn </span>get_fil_burnt&lt;DB: Blockstore&gt;(state_tree: <span class="kw-2">&amp;</span>StateTree&lt;DB&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;TokenAmount, anyhow::Error&gt; {
