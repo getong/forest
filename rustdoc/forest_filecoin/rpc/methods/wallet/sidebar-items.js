@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["WalletBalance","WalletDefaultAddress","WalletDelete","WalletExport","WalletHas","WalletImport","WalletList","WalletNew","WalletSetDefault","WalletSign","WalletValidateAddress","WalletVerify"],"macro":["for_each_method"]};
+window.SIDEBAR_ITEMS = {"enum":["WalletBalance","WalletDefaultAddress","WalletDelete","WalletExport","WalletHas","WalletImport","WalletList","WalletNew","WalletSetDefault","WalletSign","WalletValidateAddress","WalletVerify"]};

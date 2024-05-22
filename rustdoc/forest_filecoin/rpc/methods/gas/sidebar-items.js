@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MIN_GAS_PREMIUM"],"enum":["GasEstimateFeeCap","GasEstimateGasLimit","GasEstimateGasPremium","GasEstimateMessageGas"],"fn":["estimate_fee_cap","estimate_gas_limit","estimate_gas_premium","estimate_message_gas"],"macro":["for_each_method"]};
+window.SIDEBAR_ITEMS = {"constant":["MIN_GAS_PREMIUM"],"enum":["GasEstimateFeeCap","GasEstimateGasLimit","GasEstimateGasPremium","GasEstimateMessageGas"],"fn":["estimate_fee_cap","estimate_gas_limit","estimate_gas_premium","estimate_message_gas"]};

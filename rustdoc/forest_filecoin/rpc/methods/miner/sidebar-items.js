@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["MinerCreateBlock","MinerGetBaseInfo"],"fn":["aggregate_from_bls_signatures","sign_block_header"],"macro":["for_each_method"],"struct":["BlockMessage","BlockTemplate","MessageMeta"]};
+window.SIDEBAR_ITEMS = {"enum":["MinerCreateBlock","MinerGetBaseInfo"],"fn":["aggregate_from_bls_signatures","sign_block_header"],"struct":["BlockMessage","BlockTemplate","MessageMeta"]};

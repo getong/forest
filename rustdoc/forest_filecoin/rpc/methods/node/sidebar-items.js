@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NodeStatus"],"macro":["for_each_method"],"struct":["NodeChainStatus","NodePeerStatus","NodeStatusResult","NodeSyncStatus"]};
+window.SIDEBAR_ITEMS = {"enum":["NodeStatus"],"struct":["NodeChainStatus","NodePeerStatus","NodeStatusResult","NodeSyncStatus"]};
