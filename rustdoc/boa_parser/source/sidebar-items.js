@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["Source","UTF16Input","UTF8Input"],"trait":["ReadChar"]};

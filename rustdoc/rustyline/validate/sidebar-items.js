@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ValidationResult"],"struct":["MatchingBracketValidator","ValidationContext"],"trait":["Validator"]};

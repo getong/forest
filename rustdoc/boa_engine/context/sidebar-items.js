@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["intrinsics"],"struct":["Context","ContextBuilder","DefaultHooks"],"trait":["HostHooks"]};

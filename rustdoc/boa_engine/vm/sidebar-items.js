@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["GeneratorResumeKind"],"struct":["CallFrame","CodeBlock","RuntimeLimits","Vm"]};

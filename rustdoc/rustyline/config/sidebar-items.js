@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Behavior","BellStyle","ColorMode","CompletionType","EditMode","HistoryDuplicates"],"struct":["Builder","Config"],"trait":["Configurer"]};
