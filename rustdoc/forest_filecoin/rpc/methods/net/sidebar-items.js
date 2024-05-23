@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NetAddrsListen","NetAgentVersion","NetAutoNatStatus","NetConnect","NetDisconnect","NetInfo","NetListening","NetPeers","NetVersion"],"struct":["AddrInfo","NatStatusResult","NetInfoResult"]};
+window.SIDEBAR_ITEMS = {"enum":["NetAddrsListen","NetAgentVersion","NetAutoNatStatus","NetConnect","NetDisconnect","NetInfo","NetListening","NetPeers","NetProtectAdd","NetVersion"],"struct":["AddrInfo","NatStatusResult","NetInfoResult"]};
