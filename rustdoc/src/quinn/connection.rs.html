@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quinn-0.10.2/src/connection.rs`."><title>connection.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="quinn" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quinn-0.11.1/src/connection.rs`."><title>connection.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="quinn" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../quinn/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -1152,10 +1152,114 @@
 <a href="#1150" id="1150">1150</a>
 <a href="#1151" id="1151">1151</a>
 <a href="#1152" id="1152">1152</a>
+<a href="#1153" id="1153">1153</a>
+<a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
+<a href="#1157" id="1157">1157</a>
+<a href="#1158" id="1158">1158</a>
+<a href="#1159" id="1159">1159</a>
+<a href="#1160" id="1160">1160</a>
+<a href="#1161" id="1161">1161</a>
+<a href="#1162" id="1162">1162</a>
+<a href="#1163" id="1163">1163</a>
+<a href="#1164" id="1164">1164</a>
+<a href="#1165" id="1165">1165</a>
+<a href="#1166" id="1166">1166</a>
+<a href="#1167" id="1167">1167</a>
+<a href="#1168" id="1168">1168</a>
+<a href="#1169" id="1169">1169</a>
+<a href="#1170" id="1170">1170</a>
+<a href="#1171" id="1171">1171</a>
+<a href="#1172" id="1172">1172</a>
+<a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a>
+<a href="#1239" id="1239">1239</a>
+<a href="#1240" id="1240">1240</a>
+<a href="#1241" id="1241">1241</a>
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+<a href="#1247" id="1247">1247</a>
+<a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     any::Any,
     fmt,
     future::Future,
+    io,
     net::{IpAddr, SocketAddr},
     pin::Pin,
     sync::Arc,
@@ -1163,23 +1267,24 @@
     time::{Duration, Instant},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::runtime::{AsyncTimer, Runtime};
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>pin_project_lite::pin_project;
-<span class="kw">use </span>proto::{ConnectionError, ConnectionHandle, ConnectionStats, Dir, StreamEvent, StreamId};
 <span class="kw">use </span>rustc_hash::FxHashMap;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tokio::sync::{futures::Notified, mpsc, oneshot, Notify};
-<span class="kw">use </span>tracing::debug_span;
-<span class="kw">use </span>udp::UdpState;
+<span class="kw">use </span>tracing::{debug_span, Instrument, Span};
 
 <span class="kw">use crate</span>::{
     mutex::Mutex,
     recv_stream::RecvStream,
-    send_stream::{SendStream, WriteError},
-    ConnectionEvent, EndpointEvent, VarInt,
+    runtime::{AsyncTimer, AsyncUdpSocket, Runtime, UdpPoller},
+    send_stream::SendStream,
+    udp_transmit, ConnectionEvent, VarInt,
 };
-<span class="kw">use </span>proto::congestion::Controller;
+<span class="kw">use </span>proto::{
+    congestion::Controller, ConnectionError, ConnectionHandle, ConnectionStats, Dir, EndpointEvent,
+    StreamEvent, StreamId,
+};
 
 <span class="doccomment">/// In-progress connection attempt future
 </span><span class="attr">#[derive(Debug)]
@@ -1196,7 +1301,7 @@
         conn: proto::Connection,
         endpoint_events: mpsc::UnboundedSender&lt;(ConnectionHandle, EndpointEvent)&gt;,
         conn_events: mpsc::UnboundedReceiver&lt;ConnectionEvent&gt;,
-        udp_state: Arc&lt;UdpState&gt;,
+        socket: Arc&lt;<span class="kw">dyn </span>AsyncUdpSocket&gt;,
         runtime: Arc&lt;<span class="kw">dyn </span>Runtime&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>(on_handshake_data_send, on_handshake_data_recv) = oneshot::channel();
@@ -1208,11 +1313,19 @@
             conn_events,
             on_handshake_data_send,
             on_connected_send,
-            udp_state,
+            socket,
             runtime.clone(),
         );
 
-        runtime.spawn(Box::pin(ConnectionDriver(conn.clone())));
+        <span class="kw">let </span>driver = ConnectionDriver(conn.clone());
+        runtime.spawn(Box::pin(
+            <span class="kw">async </span>{
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = driver.<span class="kw">await </span>{
+                    <span class="macro">tracing::error!</span>(<span class="string">"I/O error: {e}"</span>);
+                }
+            }
+            .instrument(Span::current()),
+        ));
 
         <span class="self">Self </span>{
             conn: <span class="prelude-val">Some</span>(conn),
@@ -1295,16 +1408,9 @@
     /// This can be different from the address the endpoint is bound to, in case
     /// the endpoint is bound to a wildcard address like `0.0.0.0` or `::`.
     ///
-    /// This will return `None` for clients.
-    ///
-    /// Retrieving the local IP address is currently supported on the following
-    /// platforms:
-    /// - Linux
-    /// - FreeBSD
-    /// - macOS
-    ///
-    /// On all non-supported platforms the local IP address will not be available,
-    /// and the method will return `None`.
+    /// This will return `None` for clients, or when the platform does not expose this
+    /// information. See [`quinn_udp::RecvMeta::dst_ip`](udp::RecvMeta::dst_ip) for a list of
+    /// supported platforms when using [`quinn_udp`](udp) for I/O, which is the default.
     </span><span class="kw">pub fn </span>local_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;IpAddr&gt; {
         <span class="kw">let </span>conn = <span class="self">self</span>.conn.as_ref().unwrap();
         <span class="kw">let </span>inner = conn.state.lock(<span class="string">"local_ip"</span>);
@@ -1369,7 +1475,7 @@
 </span><span class="kw">struct </span>ConnectionDriver(ConnectionRef);
 
 <span class="kw">impl </span>Future <span class="kw">for </span>ConnectionDriver {
-    <span class="kw">type </span>Output = ();
+    <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;(), io::Error&gt;;
 
     <span class="attr">#[allow(unused_mut)] </span><span class="comment">// MSRV
     </span><span class="kw">fn </span>poll(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
@@ -1380,9 +1486,9 @@
 
         <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = conn.process_conn_events(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.shared, cx) {
             conn.terminate(e, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.shared);
-            <span class="kw">return </span>Poll::Ready(());
+            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(()));
         }
-        <span class="kw">let </span><span class="kw-2">mut </span>keep_going = conn.drive_transmit();
+        <span class="kw">let </span><span class="kw-2">mut </span>keep_going = conn.drive_transmit(cx)<span class="question-mark">?</span>;
         <span class="comment">// If a timer expires, there might be more to transmit. When we transmit something, we
         // might need to reset a timer. Hence, we must loop until neither happens.
         </span>keep_going |= conn.drive_timer(cx);
@@ -1401,7 +1507,7 @@
         <span class="kw">if </span>conn.error.is_none() {
             <span class="macro">unreachable!</span>(<span class="string">"drained connections always have an error"</span>);
         }
-        Poll::Ready(())
+        Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 }
 
@@ -1435,7 +1541,12 @@
     ///
     /// Streams are cheap and instantaneous to open unless blocked by flow control. As a
     /// consequence, the peer won't be notified that a stream has been opened until the stream is
-    /// actually used.
+    /// actually used. Calling [`open_bi()`] then waiting on the [`RecvStream`] without writing
+    /// anything to [`SendStream`] will never succeed.
+    ///
+    /// [`open_bi()`]: crate::Connection::open_bi
+    /// [`SendStream`]: crate::SendStream
+    /// [`RecvStream`]: crate::RecvStream
     </span><span class="kw">pub fn </span>open_bi(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; OpenBi&lt;<span class="lifetime">'_</span>&gt; {
         OpenBi {
             conn: <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>,
@@ -1452,6 +1563,15 @@
     }
 
     <span class="doccomment">/// Accept the next incoming bidirectional stream
+    ///
+    /// **Important Note**: The `Connection` that calls [`open_bi()`] must write to its [`SendStream`]
+    /// before the other `Connection` is able to `accept_bi()`. Calling [`open_bi()`] then
+    /// waiting on the [`RecvStream`] without writing anything to [`SendStream`] will never succeed.
+    ///
+    /// [`accept_bi()`]: crate::Connection::accept_bi
+    /// [`open_bi()`]: crate::Connection::open_bi
+    /// [`SendStream`]: crate::SendStream
+    /// [`RecvStream`]: crate::RecvStream
     </span><span class="kw">pub fn </span>accept_bi(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AcceptBi&lt;<span class="lifetime">'_</span>&gt; {
         AcceptBi {
             conn: <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>,
@@ -1463,7 +1583,7 @@
     </span><span class="kw">pub fn </span>read_datagram(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ReadDatagram&lt;<span class="lifetime">'_</span>&gt; {
         ReadDatagram {
             conn: <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>,
-            notify: <span class="self">self</span>.<span class="number">0</span>.shared.datagrams.notified(),
+            notify: <span class="self">self</span>.<span class="number">0</span>.shared.datagram_received.notified(),
         }
     }
 
@@ -1531,16 +1651,33 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(SendDatagramError::ConnectionLost(x.clone()));
         }
         <span class="kw">use </span>proto::SendDatagramError::<span class="kw-2">*</span>;
-        <span class="kw">match </span>conn.inner.datagrams().send(data) {
+        <span class="kw">match </span>conn.inner.datagrams().send(data, <span class="bool-val">true</span>) {
             <span class="prelude-val">Ok</span>(()) =&gt; {
                 conn.wake();
                 <span class="prelude-val">Ok</span>(())
             }
             <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="kw">match </span>e {
+                Blocked(..) =&gt; <span class="macro">unreachable!</span>(),
                 UnsupportedByPeer =&gt; SendDatagramError::UnsupportedByPeer,
                 Disabled =&gt; SendDatagramError::Disabled,
                 TooLarge =&gt; SendDatagramError::TooLarge,
             }),
+        }
+    }
+
+    <span class="doccomment">/// Transmit `data` as an unreliable, unordered application datagram
+    ///
+    /// Unlike [`send_datagram()`], this method will wait for buffer space during congestion
+    /// conditions, which effectively prioritizes old datagrams over new datagrams.
+    ///
+    /// See [`send_datagram()`] for details.
+    ///
+    /// [`send_datagram()`]: Connection::send_datagram
+    </span><span class="kw">pub fn </span>send_datagram_wait(<span class="kw-2">&amp;</span><span class="self">self</span>, data: Bytes) -&gt; SendDatagram&lt;<span class="lifetime">'_</span>&gt; {
+        SendDatagram {
+            conn: <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>,
+            data: <span class="prelude-val">Some</span>(data),
+            notify: <span class="self">self</span>.<span class="number">0</span>.shared.datagrams_unblocked.notified(),
         }
     }
 
@@ -1591,14 +1728,9 @@
     /// This can be different from the address the endpoint is bound to, in case
     /// the endpoint is bound to a wildcard address like `0.0.0.0` or `::`.
     ///
-    /// This will return `None` for clients.
-    ///
-    /// Retrieving the local IP address is currently supported on the following
-    /// platforms:
-    /// - Linux
-    ///
-    /// On all non-supported platforms the local IP address will not be available,
-    /// and the method will return `None`.
+    /// This will return `None` for clients, or when the platform does not expose this
+    /// information. See [`quinn_udp::RecvMeta::dst_ip`](udp::RecvMeta::dst_ip) for a list of
+    /// supported platforms when using [`quinn_udp`](udp) for I/O, which is the default.
     </span><span class="kw">pub fn </span>local_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;IpAddr&gt; {
         <span class="self">self</span>.<span class="number">0</span>.state.lock(<span class="string">"local_ip"</span>).inner.local_ip()
     }
@@ -1643,7 +1775,7 @@
     ///
     /// The dynamic type returned is determined by the configured
     /// [`Session`](proto::crypto::Session). For the default `rustls` session, the return value can
-    /// be [`downcast`](Box::downcast) to a &lt;code&gt;Vec&lt;[rustls::Certificate](rustls::Certificate)&gt;&lt;/code&gt;
+    /// be [`downcast`](Box::downcast) to a &lt;code&gt;Vec&lt;[rustls::pki_types::CertificateDer]&gt;&lt;/code&gt;
     </span><span class="kw">pub fn </span>peer_identity(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Any&gt;&gt; {
         <span class="self">self</span>.<span class="number">0
             </span>.state
@@ -1883,8 +2015,59 @@
                 <span class="comment">// `state` lock ensures we didn't race with readiness
                 </span>Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
                 <span class="comment">// Spurious wakeup, get a new future
-                </span>Poll::Ready(()) =&gt; this.notify.set(this.conn.shared.datagrams.notified()),
+                </span>Poll::Ready(()) =&gt; this
+                    .notify
+                    .set(this.conn.shared.datagram_received.notified()),
             }
+        }
+    }
+}
+
+<span class="macro">pin_project!</span> {
+    <span class="doccomment">/// Future produced by [`Connection::send_datagram_wait`]
+    </span><span class="kw">pub struct </span>SendDatagram&lt;<span class="lifetime">'a</span>&gt; {
+        conn: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ConnectionRef,
+        data: <span class="prelude-ty">Option</span>&lt;Bytes&gt;,
+        <span class="attr">#[pin]
+        </span>notify: Notified&lt;<span class="lifetime">'a</span>&gt;,
+    }
+}
+
+<span class="kw">impl </span>Future <span class="kw">for </span>SendDatagram&lt;<span class="lifetime">'_</span>&gt; {
+    <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;(), SendDatagramError&gt;;
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>this = <span class="self">self</span>.project();
+        <span class="kw">let </span><span class="kw-2">mut </span>state = this.conn.state.lock(<span class="string">"SendDatagram::poll"</span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>e) = state.error {
+            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(SendDatagramError::ConnectionLost(e.clone())));
+        }
+        <span class="kw">use </span>proto::SendDatagramError::<span class="kw-2">*</span>;
+        <span class="kw">match </span>state
+            .inner
+            .datagrams()
+            .send(this.data.take().unwrap(), <span class="bool-val">false</span>)
+        {
+            <span class="prelude-val">Ok</span>(()) =&gt; {
+                state.wake();
+                Poll::Ready(<span class="prelude-val">Ok</span>(()))
+            }
+            <span class="prelude-val">Err</span>(e) =&gt; Poll::Ready(<span class="prelude-val">Err</span>(<span class="kw">match </span>e {
+                Blocked(data) =&gt; {
+                    this.data.replace(data);
+                    <span class="kw">loop </span>{
+                        <span class="kw">match </span>this.notify.as_mut().poll(ctx) {
+                            Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
+                            <span class="comment">// Spurious wakeup, get a new future
+                            </span>Poll::Ready(()) =&gt; this
+                                .notify
+                                .set(this.conn.shared.datagrams_unblocked.notified()),
+                        }
+                    }
+                }
+                UnsupportedByPeer =&gt; SendDatagramError::UnsupportedByPeer,
+                Disabled =&gt; SendDatagramError::Disabled,
+                TooLarge =&gt; SendDatagramError::TooLarge,
+            })),
         }
     }
 }
@@ -1901,7 +2084,7 @@
         conn_events: mpsc::UnboundedReceiver&lt;ConnectionEvent&gt;,
         on_handshake_data: oneshot::Sender&lt;()&gt;,
         on_connected: oneshot::Sender&lt;bool&gt;,
-        udp_state: Arc&lt;UdpState&gt;,
+        socket: Arc&lt;<span class="kw">dyn </span>AsyncUdpSocket&gt;,
         runtime: Arc&lt;<span class="kw">dyn </span>Runtime&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(Arc::new(ConnectionInner {
@@ -1918,12 +2101,14 @@
                 endpoint_events,
                 blocked_writers: FxHashMap::default(),
                 blocked_readers: FxHashMap::default(),
-                finishing: FxHashMap::default(),
                 stopped: FxHashMap::default(),
                 error: <span class="prelude-val">None</span>,
                 ref_count: <span class="number">0</span>,
-                udp_state,
+                io_poller: socket.clone().create_io_poller(),
+                socket,
                 runtime,
+                send_buffer: Vec::new(),
+                buffered_transmit: <span class="prelude-val">None</span>,
             }),
             shared: Shared::default(),
         }))
@@ -1977,7 +2162,8 @@
     </span>stream_budget_available: [Notify; <span class="number">2</span>],
     <span class="doccomment">/// Notified when the peer has initiated a new stream
     </span>stream_incoming: [Notify; <span class="number">2</span>],
-    datagrams: Notify,
+    datagram_received: Notify,
+    datagrams_unblocked: Notify,
     closed: Notify,
 }
 
@@ -1994,51 +2180,89 @@
     endpoint_events: mpsc::UnboundedSender&lt;(ConnectionHandle, EndpointEvent)&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) blocked_writers: FxHashMap&lt;StreamId, Waker&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) blocked_readers: FxHashMap&lt;StreamId, Waker&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) finishing: FxHashMap&lt;StreamId, oneshot::Sender&lt;<span class="prelude-ty">Option</span>&lt;WriteError&gt;&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) stopped: FxHashMap&lt;StreamId, Waker&gt;,
     <span class="doccomment">/// Always set to Some before the connection becomes drained
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) error: <span class="prelude-ty">Option</span>&lt;ConnectionError&gt;,
     <span class="doccomment">/// Number of live handles that can be used to initiate or handle I/O; excludes the driver
     </span>ref_count: usize,
-    udp_state: Arc&lt;UdpState&gt;,
+    socket: Arc&lt;<span class="kw">dyn </span>AsyncUdpSocket&gt;,
+    io_poller: Pin&lt;Box&lt;<span class="kw">dyn </span>UdpPoller&gt;&gt;,
     runtime: Arc&lt;<span class="kw">dyn </span>Runtime&gt;,
+    send_buffer: Vec&lt;u8&gt;,
+    <span class="doccomment">/// We buffer a transmit when the underlying I/O would block
+    </span>buffered_transmit: <span class="prelude-ty">Option</span>&lt;proto::Transmit&gt;,
 }
 
 <span class="kw">impl </span>State {
-    <span class="kw">fn </span>drive_transmit(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
-        <span class="kw">let </span>now = Instant::now();
+    <span class="kw">fn </span>drive_transmit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context) -&gt; io::Result&lt;bool&gt; {
+        <span class="kw">let </span>now = <span class="self">self</span>.runtime.now();
         <span class="kw">let </span><span class="kw-2">mut </span>transmits = <span class="number">0</span>;
 
-        <span class="kw">let </span>max_datagrams = <span class="self">self</span>.udp_state.max_gso_segments();
+        <span class="kw">let </span>max_datagrams = <span class="self">self</span>.socket.max_transmit_segments();
 
-        <span class="kw">while let </span><span class="prelude-val">Some</span>(t) = <span class="self">self</span>.inner.poll_transmit(now, max_datagrams) {
-            transmits += <span class="kw">match </span>t.segment_size {
-                <span class="prelude-val">None </span>=&gt; <span class="number">1</span>,
-                <span class="prelude-val">Some</span>(s) =&gt; (t.contents.len() + s - <span class="number">1</span>) / s, <span class="comment">// round up
-            </span>};
-            <span class="comment">// If the endpoint driver is gone, noop.
-            </span><span class="kw">let _ </span>= <span class="self">self
-                </span>.endpoint_events
-                .send((<span class="self">self</span>.handle, EndpointEvent::Transmit(t)));
+        <span class="kw">loop </span>{
+            <span class="comment">// Retry the last transmit, or get a new one.
+            </span><span class="kw">let </span>t = <span class="kw">match </span><span class="self">self</span>.buffered_transmit.take() {
+                <span class="prelude-val">Some</span>(t) =&gt; t,
+                <span class="prelude-val">None </span>=&gt; {
+                    <span class="self">self</span>.send_buffer.clear();
+                    <span class="self">self</span>.send_buffer.reserve(<span class="self">self</span>.inner.current_mtu() <span class="kw">as </span>usize);
+                    <span class="kw">match </span><span class="self">self
+                        </span>.inner
+                        .poll_transmit(now, max_datagrams, <span class="kw-2">&amp;mut </span><span class="self">self</span>.send_buffer)
+                    {
+                        <span class="prelude-val">Some</span>(t) =&gt; {
+                            transmits += <span class="kw">match </span>t.segment_size {
+                                <span class="prelude-val">None </span>=&gt; <span class="number">1</span>,
+                                <span class="prelude-val">Some</span>(s) =&gt; (t.size + s - <span class="number">1</span>) / s, <span class="comment">// round up
+                            </span>};
+                            t
+                        }
+                        <span class="prelude-val">None </span>=&gt; <span class="kw">break</span>,
+                    }
+                }
+            };
+
+            <span class="kw">if </span><span class="self">self</span>.io_poller.as_mut().poll_writable(cx)<span class="question-mark">?</span>.is_pending() {
+                <span class="comment">// Retry after a future wakeup
+                </span><span class="self">self</span>.buffered_transmit = <span class="prelude-val">Some</span>(t);
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
+            }
+
+            <span class="kw">let </span>len = t.size;
+            <span class="kw">let </span>retry = <span class="kw">match </span><span class="self">self
+                </span>.socket
+                .try_send(<span class="kw-2">&amp;</span>udp_transmit(<span class="kw-2">&amp;</span>t, <span class="kw-2">&amp;</span><span class="self">self</span>.send_buffer[..len]))
+            {
+                <span class="prelude-val">Ok</span>(()) =&gt; <span class="bool-val">false</span>,
+                <span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; <span class="bool-val">true</span>,
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(e),
+            };
+            <span class="kw">if </span>retry {
+                <span class="comment">// We thought the socket was writable, but it wasn't. Retry so that either another
+                // `poll_writable` call determines that the socket is indeed not writable and
+                // registers us for a wakeup, or the send succeeds if this really was just a
+                // transient failure.
+                </span><span class="self">self</span>.buffered_transmit = <span class="prelude-val">Some</span>(t);
+                <span class="kw">continue</span>;
+            }
 
             <span class="kw">if </span>transmits &gt;= MAX_TRANSMIT_DATAGRAMS {
                 <span class="comment">// TODO: What isn't ideal here yet is that if we don't poll all
                 // datagrams that could be sent we don't go into the `app_limited`
                 // state and CWND continues to grow until we get here the next time.
                 // See https://github.com/quinn-rs/quinn/issues/1126
-                </span><span class="kw">return </span><span class="bool-val">true</span>;
+                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
             }
         }
 
-        <span class="bool-val">false
-    </span>}
+        <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
+    }
 
     <span class="kw">fn </span>forward_endpoint_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">while let </span><span class="prelude-val">Some</span>(event) = <span class="self">self</span>.inner.poll_endpoint_events() {
             <span class="comment">// If the endpoint driver is gone, noop.
-            </span><span class="kw">let _ </span>= <span class="self">self
-                </span>.endpoint_events
-                .send((<span class="self">self</span>.handle, EndpointEvent::Proto(event)));
+            </span><span class="kw">let _ </span>= <span class="self">self</span>.endpoint_events.send((<span class="self">self</span>.handle, event));
         }
     }
 
@@ -2050,8 +2274,10 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ConnectionError&gt; {
         <span class="kw">loop </span>{
             <span class="kw">match </span><span class="self">self</span>.conn_events.poll_recv(cx) {
-                Poll::Ready(<span class="prelude-val">Some</span>(ConnectionEvent::Ping)) =&gt; {
-                    <span class="self">self</span>.inner.ping();
+                Poll::Ready(<span class="prelude-val">Some</span>(ConnectionEvent::Rebind(socket))) =&gt; {
+                    <span class="self">self</span>.socket = socket;
+                    <span class="self">self</span>.io_poller = <span class="self">self</span>.socket.clone().create_io_poller();
+                    <span class="self">self</span>.inner.local_address_changed();
                 }
                 Poll::Ready(<span class="prelude-val">Some</span>(ConnectionEvent::Proto(event))) =&gt; {
                     <span class="self">self</span>.inner.handle_event(event);
@@ -2104,7 +2330,10 @@
                     shared.stream_incoming[Dir::Bi <span class="kw">as </span>usize].notify_waiters();
                 }
                 DatagramReceived =&gt; {
-                    shared.datagrams.notify_waiters();
+                    shared.datagram_received.notify_waiters();
+                }
+                DatagramsUnblocked =&gt; {
+                    shared.datagrams_unblocked.notify_waiters();
                 }
                 Stream(StreamEvent::Readable { id }) =&gt; {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(reader) = <span class="self">self</span>.blocked_readers.remove(<span class="kw-2">&amp;</span>id) {
@@ -2116,20 +2345,13 @@
                     </span>shared.stream_budget_available[dir <span class="kw">as </span>usize].notify_waiters();
                 }
                 Stream(StreamEvent::Finished { id }) =&gt; {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(finishing) = <span class="self">self</span>.finishing.remove(<span class="kw-2">&amp;</span>id) {
-                        <span class="comment">// If the finishing stream was already dropped, there's nothing more to do.
-                        </span><span class="kw">let _ </span>= finishing.send(<span class="prelude-val">None</span>);
-                    }
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(stopped) = <span class="self">self</span>.stopped.remove(<span class="kw-2">&amp;</span>id) {
                         stopped.wake();
                     }
                 }
-                Stream(StreamEvent::Stopped { id, error_code }) =&gt; {
+                Stream(StreamEvent::Stopped { id, .. }) =&gt; {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(stopped) = <span class="self">self</span>.stopped.remove(<span class="kw-2">&amp;</span>id) {
                         stopped.wake();
-                    }
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(finishing) = <span class="self">self</span>.finishing.remove(<span class="kw-2">&amp;</span>id) {
-                        <span class="kw">let _ </span>= finishing.send(<span class="prelude-val">Some</span>(WriteError::Stopped(error_code)));
                     }
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(writer) = <span class="self">self</span>.blocked_writers.remove(<span class="kw-2">&amp;</span>id) {
                         writer.wake();
@@ -2184,7 +2406,7 @@
 
         <span class="comment">// A timer expired, so the caller needs to check for
         // new transmits, which might cause new timers to be set.
-        </span><span class="self">self</span>.inner.handle_timeout(Instant::now());
+        </span><span class="self">self</span>.inner.handle_timeout(<span class="self">self</span>.runtime.now());
         <span class="self">self</span>.timer_deadline = <span class="prelude-val">None</span>;
         <span class="bool-val">true
     </span>}
@@ -2212,10 +2434,8 @@
         shared.stream_budget_available[Dir::Bi <span class="kw">as </span>usize].notify_waiters();
         shared.stream_incoming[Dir::Uni <span class="kw">as </span>usize].notify_waiters();
         shared.stream_incoming[Dir::Bi <span class="kw">as </span>usize].notify_waiters();
-        shared.datagrams.notify_waiters();
-        <span class="kw">for </span>(<span class="kw">_</span>, x) <span class="kw">in </span><span class="self">self</span>.finishing.drain() {
-            <span class="kw">let _ </span>= x.send(<span class="prelude-val">Some</span>(WriteError::ConnectionLost(reason.clone())));
-        }
+        shared.datagram_received.notify_waiters();
+        shared.datagrams_unblocked.notify_waiters();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(x) = <span class="self">self</span>.on_connected.take() {
             <span class="kw">let _ </span>= x.send(<span class="bool-val">false</span>);
         }
@@ -2226,7 +2446,7 @@
     }
 
     <span class="kw">fn </span>close(<span class="kw-2">&amp;mut </span><span class="self">self</span>, error_code: VarInt, reason: Bytes, shared: <span class="kw-2">&amp;</span>Shared) {
-        <span class="self">self</span>.inner.close(Instant::now(), error_code, reason);
+        <span class="self">self</span>.inner.close(<span class="self">self</span>.runtime.now(), error_code, reason);
         <span class="self">self</span>.terminate(ConnectionError::LocallyClosed, shared);
         <span class="self">self</span>.wake();
     }
@@ -2252,10 +2472,9 @@
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if </span>!<span class="self">self</span>.inner.is_drained() {
             <span class="comment">// Ensure the endpoint can tidy up
-            </span><span class="kw">let _ </span>= <span class="self">self</span>.endpoint_events.send((
-                <span class="self">self</span>.handle,
-                EndpointEvent::Proto(proto::EndpointEvent::drained()),
-            ));
+            </span><span class="kw">let _ </span>= <span class="self">self
+                </span>.endpoint_events
+                .send((<span class="self">self</span>.handle, proto::EndpointEvent::drained()));
         }
     }
 }
@@ -2291,17 +2510,4 @@
 /// This limits the amount of CPU resources consumed by datagram generation,
 /// and allows other tasks (like receiving ACKs) to run in between.
 </span><span class="kw">const </span>MAX_TRANSMIT_DATAGRAMS: usize = <span class="number">20</span>;
-
-<span class="doccomment">/// Error indicating that a stream has already been finished or reset
-</span><span class="attr">#[derive(Debug, Error, Clone, PartialEq, Eq)]
-#[error(<span class="string">"unknown stream"</span>)]
-</span><span class="kw">pub struct </span>UnknownStream {
-    _private: (),
-}
-
-<span class="kw">impl </span>From&lt;proto::UnknownStream&gt; <span class="kw">for </span>UnknownStream {
-    <span class="kw">fn </span>from(<span class="kw">_</span>: proto::UnknownStream) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ _private: () }
-    }
-}
 </code></pre></div></section></main></body></html>

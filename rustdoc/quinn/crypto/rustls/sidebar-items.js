@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["HandshakeData","TlsSession"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["HandshakeData","NoInitialCipherSuite","QuicClientConfig","QuicServerConfig","TlsSession"]};

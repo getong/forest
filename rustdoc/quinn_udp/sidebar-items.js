@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["BATCH_SIZE"],"enum":["EcnCodepoint"],"fn":["may_fragment"],"struct":["RecvMeta","Transmit","UdpSockRef","UdpSocketState","UdpState"]};
+window.SIDEBAR_ITEMS = {"constant":["BATCH_SIZE"],"enum":["EcnCodepoint"],"struct":["RecvMeta","Transmit","UdpSockRef","UdpSocketState"]};
