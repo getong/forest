@@ -913,6 +913,8 @@
 <a href="#911" id="911">911</a>
 <a href="#912" id="912">912</a>
 <a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -996,9 +998,7 @@
 
 <span class="kw">pub const </span>BITSWAP_TIMEOUT: Duration = Duration::from_secs(<span class="number">30</span>);
 
-<span class="kw">const </span>BAN_PEER_DURATION: Duration = Duration::from_secs(<span class="number">60 </span>* <span class="number">60</span>); <span class="comment">//1h
-
-</span><span class="doccomment">/// Events emitted by this Service.
+<span class="doccomment">/// Events emitted by this Service.
 </span><span class="attr">#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 </span><span class="kw">pub enum </span>NetworkEvent {
@@ -1324,16 +1324,16 @@
 ) {
     <span class="kw">use </span>PeerOperation::<span class="kw-2">*</span>;
     <span class="kw">match </span>peer_ops {
-        Ban(peer_id, reason) =&gt; {
+        Ban(peer, reason) =&gt; {
             <span class="comment">// Do not ban bootstrap nodes
-            </span><span class="kw">if </span>!bootstrap_peers.contains_key(<span class="kw-2">&amp;</span>peer_id) {
-                <span class="macro">warn!</span>(<span class="string">"Banning {peer_id}, reason: {reason}"</span>);
-                swarm.behaviour_mut().blocked_peers.block_peer(peer_id);
+            </span><span class="kw">if </span>!bootstrap_peers.contains_key(<span class="kw-2">&amp;</span>peer) {
+                <span class="macro">warn!</span>(%peer, %reason, <span class="string">"Banning peer"</span>);
+                swarm.behaviour_mut().blocked_peers.block_peer(peer);
             }
         }
-        Unban(peer_id) =&gt; {
-            <span class="macro">info!</span>(<span class="string">"Unbanning {peer_id}"</span>);
-            swarm.behaviour_mut().blocked_peers.unblock_peer(peer_id);
+        Unban(peer) =&gt; {
+            <span class="macro">info!</span>(%peer, <span class="string">"Unbanning peer"</span>);
+            swarm.behaviour_mut().blocked_peers.unblock_peer(peer);
         }
     }
 }
@@ -1594,13 +1594,12 @@
                 <span class="macro">trace!</span>(<span class="string">"Received hello request: {:?}"</span>, request);
                 <span class="kw">if </span><span class="kw-2">&amp;</span>request.genesis_cid != genesis_cid {
                     peer_manager
-                        .ban_peer(
+                        .ban_peer_with_default_duration(
                             peer,
                             <span class="macro">format!</span>(
                                 <span class="string">"Genesis hash mismatch: {} received, {genesis_cid} expected"</span>,
                                 request.genesis_cid
                             ),
-                            <span class="prelude-val">Some</span>(BAN_PEER_DURATION),
                         )
                         .<span class="kw">await</span>;
                 } <span class="kw">else </span>{
@@ -1642,10 +1641,19 @@
         request_response::Event::OutboundFailure {
             request_id,
             peer,
-            error: <span class="kw">_</span>,
+            error,
         } =&gt; {
             hello.on_outbound_failure(<span class="kw-2">&amp;</span>request_id);
-            peer_manager.mark_peer_bad(peer);
+            <span class="kw">match </span>error {
+                request_response::OutboundFailure::UnsupportedProtocols =&gt; {
+                    peer_manager
+                        .ban_peer_with_default_duration(peer, <span class="string">"Hello protocol unsupported"</span>)
+                        .<span class="kw">await</span>;
+                }
+                <span class="kw">_ </span>=&gt; {
+                    peer_manager.mark_peer_bad(peer, <span class="macro">format!</span>(<span class="string">"Hello outbound failure {error}"</span>));
+                }
+            }
         }
         request_response::Event::InboundFailure { .. } =&gt; {}
         request_response::Event::ResponseSent { .. } =&gt; (),
@@ -1663,11 +1671,7 @@
         }
         <span class="prelude-val">Err</span>(ping::Failure::Unsupported) =&gt; {
             peer_manager
-                .ban_peer(
-                    ping_event.peer,
-                    <span class="macro">format!</span>(<span class="string">"Ping protocol unsupported: {}"</span>, ping_event.peer),
-                    <span class="prelude-val">Some</span>(BAN_PEER_DURATION),
-                )
+                .ban_peer_with_default_duration(ping_event.peer, <span class="string">"Ping protocol unsupported"</span>)
                 .<span class="kw">await</span>;
         }
         <span class="prelude-val">Err</span>(ping::Failure::Timeout) =&gt; {

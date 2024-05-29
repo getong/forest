@@ -329,6 +329,13 @@
 <a href="#327" id="327">327</a>
 <a href="#328" id="328">328</a>
 <a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -543,7 +550,7 @@
 
     <span class="doccomment">/// Removes a peer from the set and returns true if the value was present
     /// previously
-    </span><span class="kw">pub fn </span>mark_peer_bad(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId) -&gt; bool {
+    </span><span class="kw">pub fn </span>mark_peer_bad(<span class="kw-2">&amp;</span><span class="self">self</span>, peer_id: PeerId, reason: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>peers = <span class="self">self</span>.peers.write();
         <span class="kw">let </span>removed = remove_peer(<span class="kw-2">&amp;mut </span>peers, <span class="kw-2">&amp;</span>peer_id);
         <span class="kw">if </span>removed {
@@ -551,7 +558,8 @@
         }
 
         <span class="comment">// Add peer to bad peer set
-        </span><span class="macro">debug!</span>(<span class="string">"marked peer {} bad"</span>, peer_id);
+        </span><span class="kw">let </span>reason = reason.into();
+        <span class="macro">tracing::warn!</span>(%peer_id, %reason, <span class="string">"marked peer bad"</span>);
         <span class="kw">if </span>peers.bad_peers.insert(peer_id) {
             metrics::BAD_PEERS.inc();
         }
@@ -592,6 +600,12 @@
             <span class="macro">warn!</span>(<span class="string">"ban_peer err: {e}"</span>);
         }
     }
+
+    <span class="doccomment">/// Bans a peer with the default duration(`1h`)
+    </span><span class="kw">pub async fn </span>ban_peer_with_default_duration(<span class="kw-2">&amp;</span><span class="self">self</span>, peer: PeerId, reason: <span class="kw">impl </span>Into&lt;String&gt;) {
+        <span class="kw">const </span>BAN_PEER_DURATION: Duration = Duration::from_secs(<span class="number">60 </span>* <span class="number">60</span>); <span class="comment">//1h
+        </span><span class="self">self</span>.ban_peer(peer, reason, <span class="prelude-val">Some</span>(BAN_PEER_DURATION)).<span class="kw">await
+    </span>}
 
     <span class="kw">pub async fn </span>peer_operation_event_loop_task(<span class="self">self</span>: Arc&lt;<span class="self">Self</span>&gt;) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>unban_list = <span class="macro">vec!</span>[];

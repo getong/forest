@@ -560,6 +560,12 @@
 <a href="#558" id="558">558</a>
 <a href="#559" id="559">559</a>
 <a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -964,10 +970,16 @@
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(e))) =&gt; {
                 <span class="comment">// Internal libp2p error, score failure for peer and potentially disconnect
                 </span><span class="kw">match </span>e {
-                    RequestResponseError::ConnectionClosed
-                    | RequestResponseError::DialFailure
-                    | RequestResponseError::UnsupportedProtocols =&gt; {
-                        peer_manager.mark_peer_bad(peer_id);
+                    RequestResponseError::UnsupportedProtocols =&gt; {
+                        peer_manager
+                            .ban_peer_with_default_duration(
+                                peer_id,
+                                <span class="string">"ChainExchange protocol unsupported"</span>,
+                            )
+                            .<span class="kw">await</span>;
+                    }
+                    RequestResponseError::ConnectionClosed | RequestResponseError::DialFailure =&gt; {
+                        peer_manager.mark_peer_bad(peer_id, <span class="macro">format!</span>(<span class="string">"chain exchange error {e:?}"</span>));
                     }
                     <span class="comment">// Ignore dropping peer on timeout for now. Can't be confident yet that the
                     // specified timeout is adequate time.
