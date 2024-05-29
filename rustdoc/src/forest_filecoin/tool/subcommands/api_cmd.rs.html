@@ -1626,6 +1626,29 @@
 <a href="#1624" id="1624">1624</a>
 <a href="#1625" id="1625">1625</a>
 <a href="#1626" id="1626">1626</a>
+<a href="#1627" id="1627">1627</a>
+<a href="#1628" id="1628">1628</a>
+<a href="#1629" id="1629">1629</a>
+<a href="#1630" id="1630">1630</a>
+<a href="#1631" id="1631">1631</a>
+<a href="#1632" id="1632">1632</a>
+<a href="#1633" id="1633">1633</a>
+<a href="#1634" id="1634">1634</a>
+<a href="#1635" id="1635">1635</a>
+<a href="#1636" id="1636">1636</a>
+<a href="#1637" id="1637">1637</a>
+<a href="#1638" id="1638">1638</a>
+<a href="#1639" id="1639">1639</a>
+<a href="#1640" id="1640">1640</a>
+<a href="#1641" id="1641">1641</a>
+<a href="#1642" id="1642">1642</a>
+<a href="#1643" id="1643">1643</a>
+<a href="#1644" id="1644">1644</a>
+<a href="#1645" id="1645">1645</a>
+<a href="#1646" id="1646">1646</a>
+<a href="#1647" id="1647">1647</a>
+<a href="#1648" id="1648">1648</a>
+<a href="#1649" id="1649">1649</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1826,12 +1849,12 @@
 }
 
 <span class="doccomment">/// Brief description of a single method call against a single host
-</span><span class="attr">#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
+</span><span class="attr">#[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 </span><span class="kw">enum </span>TestSummary {
     <span class="doccomment">/// Server spoke JSON-RPC: no such method
     </span>MissingMethod,
     <span class="doccomment">/// Server spoke JSON-RPC: bad request (or other error)
-    </span>Rejected,
+    </span>Rejected(String),
     <span class="doccomment">/// Server doesn't seem to be speaking JSON-RPC
     </span>NotJsonRPC,
     <span class="doccomment">/// Transport or ask task management errors
@@ -1849,7 +1872,7 @@
         <span class="kw">match </span>err {
             rpc::ClientError::Call(it) =&gt; <span class="kw">match </span>it.code().into() {
                 ErrorCode::MethodNotFound =&gt; <span class="self">Self</span>::MissingMethod,
-                <span class="kw">_ </span>=&gt; <span class="self">Self</span>::Rejected,
+                <span class="kw">_ </span>=&gt; <span class="self">Self</span>::Rejected(it.message().to_string()),
             },
             rpc::ClientError::ParseError(<span class="kw">_</span>) =&gt; <span class="self">Self</span>::NotJsonRPC,
             rpc::ClientError::RequestTimeout =&gt; <span class="self">Self</span>::Timeout,
@@ -1941,6 +1964,7 @@
     check_syntax: Arc&lt;<span class="kw">dyn </span>Fn(serde_json::Value) -&gt; bool + Send + Sync&gt;,
     check_semantics: Arc&lt;<span class="kw">dyn </span>Fn(serde_json::Value, serde_json::Value) -&gt; bool + Send + Sync&gt;,
     ignore: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;,
+    pass_on_rejected: bool,
 }
 
 <span class="doccomment">/// Duplication between `&lt;method&gt;` and `&lt;method&gt;_raw` is a temporary measure, and
@@ -1968,6 +1992,7 @@
             }),
             check_semantics: Arc::new(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="bool-val">true</span>),
             ignore: <span class="prelude-val">None</span>,
+            pass_on_rejected: <span class="bool-val">false</span>,
         }
     }
     <span class="doccomment">/// Check that an endpoint exists, has the same JSON schema, and do custom
@@ -2012,6 +2037,7 @@
                 }
             }),
             ignore: <span class="prelude-val">None</span>,
+            pass_on_rejected: <span class="bool-val">false</span>,
         }
     }
     <span class="doccomment">/// Check that an endpoint exists and that Forest returns exactly the same
@@ -2022,6 +2048,11 @@
 
     <span class="kw">fn </span>ignore(<span class="kw-2">mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.ignore = <span class="prelude-val">Some</span>(msg);
+        <span class="self">self
+    </span>}
+
+    <span class="kw">fn </span>pass_on_rejected(<span class="kw-2">mut </span><span class="self">self</span>, flag: bool) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.pass_on_rejected = flag;
         <span class="self">self
     </span>}
 
@@ -2487,6 +2518,12 @@
                     },
                     tipset.key().into(),
                 ))<span class="question-mark">?</span>),
+                RpcTest::identity(StateSectorExpiration::request((
+                    block.miner_address,
+                    sector,
+                    tipset.key().into(),
+                ))<span class="question-mark">?</span>)
+                .pass_on_rejected(<span class="bool-val">true</span>),
             ]);
         }
         <span class="kw">for </span>sector <span class="kw">in </span>StateSectorPreCommitInfo::get_sectors(store, <span class="kw-2">&amp;</span>block.miner_address, tipset)<span class="question-mark">?
@@ -3013,7 +3050,7 @@
         <span class="kw">let </span>future = tokio::spawn(<span class="kw">async move </span>{
             <span class="kw">let </span>test_result = test.run(<span class="kw-2">&amp;</span>forest, <span class="kw-2">&amp;</span>lotus).<span class="kw">await</span>;
             drop(permit); <span class="comment">// Release the permit after test execution
-            </span>(test.request.method_name, test_result)
+            </span>(test, test_result)
         });
 
         futures.push(future);
@@ -3022,13 +3059,22 @@
     <span class="kw">let </span><span class="kw-2">mut </span>success_results = HashMap::default();
     <span class="kw">let </span><span class="kw-2">mut </span>failed_results = HashMap::default();
     <span class="kw">let </span><span class="kw-2">mut </span>fail_details = Vec::new();
-    <span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>((method_name, test_result))) = futures.next().<span class="kw">await </span>{
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>((test, test_result))) = futures.next().<span class="kw">await </span>{
+        <span class="kw">let </span>method_name = test.request.method_name;
         <span class="kw">let </span>forest_status = test_result.forest_status;
         <span class="kw">let </span>lotus_status = test_result.lotus_status;
+        <span class="kw">let </span>success = <span class="kw">match </span>(<span class="kw-2">&amp;</span>forest_status, <span class="kw-2">&amp;</span>lotus_status) {
+            (TestSummary::Valid, TestSummary::Valid)
+            | (TestSummary::Timeout, TestSummary::Timeout) =&gt; <span class="bool-val">true</span>,
+            (TestSummary::Rejected(<span class="kw-2">ref </span>reason_forest), TestSummary::Rejected(<span class="kw-2">ref </span>reason_lotus))
+                <span class="kw">if </span>test.pass_on_rejected &amp;&amp; reason_forest == reason_lotus =&gt;
+            {
+                <span class="bool-val">true
+            </span>}
+            <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
+        };
         <span class="kw">let </span>result_entry = (method_name, forest_status, lotus_status);
-        <span class="kw">if </span>(forest_status == TestSummary::Valid &amp;&amp; lotus_status == TestSummary::Valid)
-            || (forest_status == TestSummary::Timeout &amp;&amp; lotus_status == TestSummary::Timeout)
-        {
+        <span class="kw">if </span>success {
             success_results
                 .entry(result_entry)
                 .and_modify(|v| <span class="kw-2">*</span>v += <span class="number">1</span>)
@@ -3069,8 +3115,8 @@
 ) {
     <span class="comment">// Combine all results
     </span><span class="kw">let </span><span class="kw-2">mut </span>combined_results = success_results.clone();
-    <span class="kw">for </span>(key, value) <span class="kw">in </span>failed_results {
-        combined_results.insert(<span class="kw-2">*</span>key, <span class="kw-2">*</span>value);
+    <span class="kw">for </span>(key, <span class="kw-2">&amp;</span>value) <span class="kw">in </span>failed_results {
+        combined_results.insert(key.clone(), value);
     }
 
     <span class="comment">// Collect and display results in Markdown format

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["state"],"trait":["MinerStateExt"]};
+window.SIDEBAR_ITEMS = {"mod":["partition","state"],"trait":["MinerStateExt","PartitionExt"]};
