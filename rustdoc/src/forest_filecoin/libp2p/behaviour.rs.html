@@ -180,10 +180,41 @@
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::libp2p_bitswap::BitswapBehaviour;
+</span><span class="kw">use </span>std::num::NonZeroUsize;
+
+<span class="kw">use </span><span class="kw">super</span>::discovery::{DerivedDiscoveryBehaviourEvent, DiscoveryEvent, PeerInfo};
+<span class="kw">use </span><span class="kw">crate</span>::libp2p::{
+    chain_exchange::ChainExchangeBehaviour,
+    config::Libp2pConfig,
+    discovery::{DiscoveryBehaviour, DiscoveryConfig},
+    gossip_params::{build_peer_score_params, build_peer_score_threshold},
+    hello::HelloBehaviour,
+};
+<span class="kw">use </span><span class="kw">crate</span>::libp2p_bitswap::BitswapBehaviour;
 <span class="kw">use </span><span class="kw">crate</span>::utils::{encoding::blake2b_256, version::FOREST_VERSION_STRING};
 <span class="kw">use </span>ahash::{HashMap, HashSet};
 <span class="kw">use </span>libp2p::{
@@ -195,21 +226,12 @@
     identity::{Keypair, PeerId},
     kad::QueryId,
     metrics::{Metrics, Recorder},
-    ping,
+    ping, request_response,
     swarm::NetworkBehaviour,
     Multiaddr,
 };
+<span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>tracing::info;
-
-<span class="kw">use </span><span class="kw">crate</span>::libp2p::{
-    chain_exchange::ChainExchangeBehaviour,
-    config::Libp2pConfig,
-    discovery::{DiscoveryBehaviour, DiscoveryConfig},
-    gossip_params::{build_peer_score_params, build_peer_score_threshold},
-    hello::HelloBehaviour,
-};
-
-<span class="kw">use </span><span class="kw">super</span>::discovery::{DerivedDiscoveryBehaviourEvent, DiscoveryEvent, PeerInfo};
 
 <span class="doccomment">/// Libp2p behavior for the Forest node. This handles all sub protocols needed
 /// for a Filecoin node.
@@ -248,6 +270,20 @@
         config: <span class="kw-2">&amp;</span>Libp2pConfig,
         network_name: <span class="kw-2">&amp;</span>str,
     ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">const </span>MAX_ESTABLISHED_PER_PEER: u32 = <span class="number">4</span>;
+        <span class="kw">static </span>MAX_CONCURRENT_REQUEST_RESPONSE_STREAMS_PER_PEER: Lazy&lt;usize&gt; = Lazy::new(|| {
+            std::env::var(<span class="string">"FOREST_MAX_CONCURRENT_REQUEST_RESPONSE_STREAMS_PER_PEER"</span>)
+                .ok()
+                .map(|it|
+                    it.parse::&lt;NonZeroUsize&gt;()
+                        .expect(<span class="string">"Failed to parse the `FOREST_MAX_CONCURRENT_REQUEST_RESPONSE_STREAMS_PER_PEER` environment variable value, a positive integer is expected."</span>)
+                        .get())
+                .unwrap_or(<span class="number">10</span>)
+        });
+
+        <span class="kw">let </span>max_concurrent_request_response_streams = (config.target_peer_count <span class="kw">as </span>usize)
+            .saturating_mul(<span class="kw-2">*</span>MAX_CONCURRENT_REQUEST_RESPONSE_STREAMS_PER_PEER);
+
         <span class="kw">let </span><span class="kw-2">mut </span>gs_config_builder = gossipsub::ConfigBuilder::default();
         gs_config_builder.max_transmit_size(<span class="number">1 </span>&lt;&lt; <span class="number">20</span>);
         gs_config_builder.validation_mode(ValidationMode::Strict);
@@ -277,7 +313,8 @@
                 <span class="string">"/chain/ipfs/bitswap/1.0.0"</span>,
                 <span class="string">"/chain/ipfs/bitswap"</span>,
             ],
-            Default::default(),
+            request_response::Config::default()
+                .with_max_concurrent_streams(max_concurrent_request_response_streams),
         );
         <span class="kw">crate</span>::libp2p_bitswap::register_metrics(<span class="kw-2">&amp;mut </span><span class="kw">crate</span>::metrics::default_registry());
 
@@ -288,7 +325,6 @@
             </span>.target_peer_count(config.target_peer_count <span class="kw">as </span>u64)
             .finish()<span class="question-mark">?</span>;
 
-        <span class="kw">const </span>MAX_ESTABLISHED_PER_PEER: u32 = <span class="number">4</span>;
         <span class="kw">let </span>connection_limits = connection_limits::Behaviour::new(
             connection_limits::ConnectionLimits::default()
                 .with_max_pending_incoming(<span class="prelude-val">Some</span>(
@@ -322,8 +358,14 @@
             connection_limits,
             blocked_peers: Default::default(),
             bitswap,
-            hello: HelloBehaviour::default(),
-            chain_exchange: ChainExchangeBehaviour::default(),
+            hello: HelloBehaviour::new(
+                request_response::Config::default()
+                    .with_max_concurrent_streams(max_concurrent_request_response_streams),
+            ),
+            chain_exchange: ChainExchangeBehaviour::new(
+                request_response::Config::default()
+                    .with_max_concurrent_streams(max_concurrent_request_response_streams),
+            ),
         })
     }
 
