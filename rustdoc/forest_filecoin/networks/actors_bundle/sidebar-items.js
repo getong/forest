@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["generate_actor_bundle"],"macro":["actor_bundle_info"],"static":["ACTOR_BUNDLES"],"struct":["ActorBundleInfo"]};
+window.SIDEBAR_ITEMS = {"fn":["generate_actor_bundle","get_actor_bundles_metadata"],"macro":["actor_bundle_info"],"static":["ACTOR_BUNDLES","ACTOR_BUNDLES_METADATA"],"struct":["ActorBundleInfo","ActorBundleMetadata"],"type":["ActorBundleMetadataMap"]};

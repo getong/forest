@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ALL_BUILTINS"],"enum":["BuiltinActor"],"macro":["exhaustive","static_assert_contains_matching"],"struct":["BuiltinActorManifest"]};
+window.SIDEBAR_ITEMS = {"constant":["ALL_BUILTINS"],"enum":["BuiltinActor"],"macro":["exhaustive","static_assert_contains_matching"],"struct":["BuiltinActorManifest","BuiltinActorManifestVisitor"]};

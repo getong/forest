@@ -114,6 +114,10 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -129,6 +133,7 @@
 };
 <span class="kw">use </span>ahash::HashSet;
 <span class="kw">use </span>anyhow::ensure;
+<span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>futures::{stream::FuturesUnordered, TryStreamExt};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>std::mem::discriminant;
@@ -146,10 +151,12 @@
         <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     } {
         <span class="macro">info!</span>(<span class="string">"Loading actor bundle from {bundle_path} set by FOREST_ACTOR_BUNDLE_PATH environment variable"</span>);
-        load_actor_bundles_from_path(db, network, <span class="kw-2">&amp;</span>bundle_path).<span class="kw">await
-    </span>} <span class="kw">else </span>{
-        load_actor_bundles_from_server(db, network).<span class="kw">await
-    </span>}
+        load_actor_bundles_from_path(db, network, <span class="kw-2">&amp;</span>bundle_path).<span class="kw">await</span><span class="question-mark">?</span>;
+    } <span class="kw">else </span>{
+        load_actor_bundles_from_server(db, network, <span class="kw-2">&amp;</span>ACTOR_BUNDLES).<span class="kw">await</span><span class="question-mark">?</span>;
+    }
+
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">pub async fn </span>load_actor_bundles_from_path(
@@ -189,12 +196,14 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub async fn </span>load_actor_bundles_from_server(
+<span class="doccomment">/// Loads the missing actor bundle, returns the CIDs of the loaded bundles.
+</span><span class="kw">pub async fn </span>load_actor_bundles_from_server(
     db: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore,
     network: <span class="kw-2">&amp;</span>NetworkChain,
-) -&gt; anyhow::Result&lt;()&gt; {
+    bundles: <span class="kw-2">&amp;</span>[ActorBundleInfo],
+) -&gt; anyhow::Result&lt;Vec&lt;Cid&gt;&gt; {
     FuturesUnordered::from_iter(
-        ACTOR_BUNDLES
+        bundles
             .iter()
             .filter(|bundle| {
                 !db.has(<span class="kw-2">&amp;</span>bundle.manifest).unwrap_or(<span class="bool-val">false</span>) &amp;&amp;
@@ -208,6 +217,7 @@
                      url,
                      alt_url,
                      network: <span class="kw">_</span>,
+                     version: <span class="kw">_</span>,
                  }| <span class="kw">async move </span>{
                     <span class="kw">let </span>response = <span class="kw">if let </span><span class="prelude-val">Ok</span>(response) = http_get(url).<span class="kw">await </span>{
                         response
@@ -219,13 +229,11 @@
                     <span class="kw">let </span>header = load_car(db, Cursor::new(bytes)).<span class="kw">await</span><span class="question-mark">?</span>;
                     <span class="macro">ensure!</span>(header.roots.len() == <span class="number">1</span>);
                     <span class="macro">ensure!</span>(header.roots.first() == root);
-                    <span class="prelude-val">Ok</span>(())
+                    <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>header.roots.first())
                 },
             ),
     )
     .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-    .<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-}
+    .<span class="kw">await
+</span>}
 </code></pre></div></section></main></body></html>
