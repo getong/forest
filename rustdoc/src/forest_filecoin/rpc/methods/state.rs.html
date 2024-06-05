@@ -2058,6 +2058,44 @@
 <a href="#2056" id="2056">2056</a>
 <a href="#2057" id="2057">2057</a>
 <a href="#2058" id="2058">2058</a>
+<a href="#2059" id="2059">2059</a>
+<a href="#2060" id="2060">2060</a>
+<a href="#2061" id="2061">2061</a>
+<a href="#2062" id="2062">2062</a>
+<a href="#2063" id="2063">2063</a>
+<a href="#2064" id="2064">2064</a>
+<a href="#2065" id="2065">2065</a>
+<a href="#2066" id="2066">2066</a>
+<a href="#2067" id="2067">2067</a>
+<a href="#2068" id="2068">2068</a>
+<a href="#2069" id="2069">2069</a>
+<a href="#2070" id="2070">2070</a>
+<a href="#2071" id="2071">2071</a>
+<a href="#2072" id="2072">2072</a>
+<a href="#2073" id="2073">2073</a>
+<a href="#2074" id="2074">2074</a>
+<a href="#2075" id="2075">2075</a>
+<a href="#2076" id="2076">2076</a>
+<a href="#2077" id="2077">2077</a>
+<a href="#2078" id="2078">2078</a>
+<a href="#2079" id="2079">2079</a>
+<a href="#2080" id="2080">2080</a>
+<a href="#2081" id="2081">2081</a>
+<a href="#2082" id="2082">2082</a>
+<a href="#2083" id="2083">2083</a>
+<a href="#2084" id="2084">2084</a>
+<a href="#2085" id="2085">2085</a>
+<a href="#2086" id="2086">2086</a>
+<a href="#2087" id="2087">2087</a>
+<a href="#2088" id="2088">2088</a>
+<a href="#2089" id="2089">2089</a>
+<a href="#2090" id="2090">2090</a>
+<a href="#2091" id="2091">2091</a>
+<a href="#2092" id="2092">2092</a>
+<a href="#2093" id="2093">2093</a>
+<a href="#2094" id="2094">2094</a>
+<a href="#2095" id="2095">2095</a>
+<a href="#2096" id="2096">2096</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2073,8 +2111,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::NetworkMessage;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::lotus_json_with_self;
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, NetworkChain};
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::miner::PartitionExt <span class="kw">as _</span>;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::{market::BalanceTableExt <span class="kw">as _</span>, miner::MinerStateExt <span class="kw">as _</span>};
+<span class="kw">use </span><span class="kw">crate</span>::shim::actors::{
+    market::BalanceTableExt <span class="kw">as _</span>,
+    miner::{MinerStateExt <span class="kw">as _</span>, PartitionExt <span class="kw">as _</span>},
+};
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::shim::piece::PaddedPieceSize;
 <span class="kw">use </span><span class="kw">crate</span>::shim::state_tree::StateTree;
@@ -3850,6 +3890,42 @@
         } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(SectorExpiration { early, on_time })
         }
+    }
+}
+
+<span class="kw">pub enum </span>StateSectorPartition {}
+
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateSectorPartition {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateSectorPartition"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"miner_address"</span>, <span class="string">"sector_number"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+    <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
+
+    <span class="kw">type </span>Params = (Address, u64, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= SectorLocation;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>store = ctx.store();
+        <span class="kw">let </span>ts = ctx
+            .state_manager
+            .chain_store()
+            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = ctx
+            .state_manager
+            .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(deadline, partition) = state.find_sector(
+            store,
+            sector_number,
+            <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy,
+        )<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(SectorLocation {
+            deadline,
+            partition,
+        })
     }
 }
 
