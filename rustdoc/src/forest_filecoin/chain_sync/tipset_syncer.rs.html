@@ -1631,6 +1631,13 @@
 <a href="#1629" id="1629">1629</a>
 <a href="#1630" id="1630">1630</a>
 <a href="#1631" id="1631">1631</a>
+<a href="#1632" id="1632">1632</a>
+<a href="#1633" id="1633">1633</a>
+<a href="#1634" id="1634">1634</a>
+<a href="#1635" id="1635">1635</a>
+<a href="#1636" id="1636">1636</a>
+<a href="#1637" id="1637">1637</a>
+<a href="#1638" id="1638">1638</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2358,6 +2365,10 @@
     bad_block_cache: Arc&lt;BadBlockCache&gt;,
     genesis: Arc&lt;Tipset&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt; {
+    <span class="kw">if </span>proposed_head == current_head {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+    }
+
     tracker
         .write()
         .init(current_head.clone(), proposed_head.clone());
@@ -2432,6 +2443,8 @@
 <span class="doccomment">/// Download headers between the proposed head and the current one available
 /// locally. If they turn out to be on different forks, download more headers up
 /// to a certain limit to try to find a common ancestor.
+///
+/// Also checkout corresponding lotus code at &lt;https://github.com/filecoin-project/lotus/blob/v1.27.0/chain/sync.go#L684&gt;
 </span><span class="kw">async fn </span>sync_headers_in_reverse&lt;DB: Blockstore + Sync + Send + <span class="lifetime">'static</span>&gt;(
     tracker: <span class="kw">crate</span>::chain_sync::chain_muxer::WorkerState,
     proposed_head: Arc&lt;Tipset&gt;,
@@ -2440,111 +2453,112 @@
     chain_store: <span class="kw-2">&amp;</span>ChainStore&lt;DB&gt;,
     network: SyncNetworkContext&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;NonEmpty&lt;Arc&lt;Tipset&gt;&gt;, TipsetRangeSyncerError&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>parent_blocks: Vec&lt;Cid&gt; = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>parent_tipsets = <span class="macro">nonempty!</span>[proposed_head.clone()];
+    <span class="kw">let </span>until_epoch = current_head.epoch() + <span class="number">1</span>;
+    <span class="kw">let </span>total_size = proposed_head.epoch() - until_epoch + <span class="number">1</span>;
+
+    <span class="kw">let </span><span class="kw-2">mut </span>accepted_blocks: Vec&lt;Cid&gt; = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>pending_tipsets = <span class="macro">nonempty!</span>[proposed_head];
     tracker.write().set_epoch(current_head.epoch());
 
-    <span class="kw">let </span>total_size = proposed_head.epoch() - current_head.epoch();
     <span class="attr">#[allow(deprecated)] </span><span class="comment">// Tracking issue: https://github.com/ChainSafe/forest/issues/3157
     </span><span class="kw">let </span>wp = WithProgressRaw::new(<span class="string">"Downloading headers"</span>, total_size <span class="kw">as </span>u64);
-
-    <span class="lifetime">'sync</span>: <span class="kw">loop </span>{
-        <span class="kw">let </span>oldest_parent = parent_tipsets.last();
-        <span class="kw">let </span>work_to_be_done = oldest_parent.epoch() - current_head.epoch();
+    <span class="kw">while </span>pending_tipsets.last().epoch() &gt; until_epoch {
+        <span class="kw">let </span>oldest_pending_tipset = pending_tipsets.last();
+        <span class="kw">let </span>work_to_be_done = oldest_pending_tipset.epoch() - until_epoch + <span class="number">1</span>;
         wp.set((work_to_be_done - total_size).unsigned_abs());
-        validate_tipset_against_cache(bad_block_cache, oldest_parent.parents(), <span class="kw-2">&amp;</span>parent_blocks)<span class="question-mark">?</span>;
+        validate_tipset_against_cache(
+            bad_block_cache,
+            oldest_pending_tipset.parents(),
+            <span class="kw-2">&amp;</span>accepted_blocks,
+        )<span class="question-mark">?</span>;
 
-        <span class="comment">// Check if we are at the end of the range
-        </span><span class="kw">if </span>oldest_parent.epoch() &lt;= current_head.epoch() {
-            <span class="comment">// Current tipset epoch is less than or equal to the epoch of
-            // Tipset we a synchronizing toward, stop.
-            </span><span class="kw">break</span>;
-        }
         <span class="comment">// Attempt to load the parent tipset from local store
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(tipset) = chain_store
             .chain_index
-            .load_tipset(oldest_parent.parents())<span class="question-mark">?
+            .load_tipset(oldest_pending_tipset.parents())<span class="question-mark">?
         </span>{
-            parent_blocks.extend(tipset.cids());
-            parent_tipsets.push(tipset);
+            accepted_blocks.extend(tipset.cids());
+            pending_tipsets.push(tipset);
             <span class="kw">continue</span>;
         }
 
-        <span class="kw">let </span>epoch_diff = oldest_parent.epoch() - current_head.epoch();
+        <span class="kw">let </span>epoch_diff = oldest_pending_tipset.epoch() - current_head.epoch();
         <span class="kw">let </span>window = min(epoch_diff, MAX_TIPSETS_TO_REQUEST <span class="kw">as </span>i64);
         <span class="kw">let </span>network_tipsets = network
-            .chain_exchange_headers(<span class="prelude-val">None</span>, oldest_parent.parents(), window <span class="kw">as </span>u64)
+            .chain_exchange_headers(<span class="prelude-val">None</span>, oldest_pending_tipset.parents(), window <span class="kw">as </span>u64)
             .<span class="kw">await
             </span>.map_err(TipsetRangeSyncerError::NetworkTipsetQueryFailed)<span class="question-mark">?</span>;
 
-        <span class="kw">for </span>tipset <span class="kw">in </span>network_tipsets {
-            <span class="comment">// Break if have already traversed the entire tipset range
-            </span><span class="kw">if </span>tipset.epoch() &lt; current_head.epoch() {
-                <span class="kw">break </span><span class="lifetime">'sync</span>;
-            }
-            validate_tipset_against_cache(bad_block_cache, tipset.key(), <span class="kw-2">&amp;</span>parent_blocks)<span class="question-mark">?</span>;
-            parent_blocks.extend(tipset.cids());
+        <span class="kw">for </span>tipset <span class="kw">in </span>network_tipsets
+            .into_iter()
+            .take_while(|ts| ts.epoch() &gt;= until_epoch)
+        {
+            validate_tipset_against_cache(bad_block_cache, tipset.key(), <span class="kw-2">&amp;</span>accepted_blocks)<span class="question-mark">?</span>;
+            accepted_blocks.extend(tipset.cids());
             tracker.write().set_epoch(tipset.epoch());
-            parent_tipsets.push(tipset);
+            pending_tipsets.push(tipset);
         }
     }
     drop(wp);
 
-    <span class="kw">let </span>oldest_tipset = parent_tipsets.last().clone();
-    <span class="comment">// Determine if the local chain was a fork.
-    // If it was, then sync the fork tipset range by iteratively walking back
-    // from the oldest tipset synced until we find a common ancestor
-    </span><span class="kw">if </span>oldest_tipset.parents() != current_head.parents() {
-        <span class="macro">info!</span>(<span class="string">"Fork detected, searching for a common ancestor between the local chain and the network chain"</span>);
-        <span class="kw">const </span>FORK_LENGTH_THRESHOLD: u64 = <span class="number">500</span>;
-        <span class="kw">let </span>fork_tipsets = network
-            .chain_exchange_headers(<span class="prelude-val">None</span>, oldest_tipset.parents(), FORK_LENGTH_THRESHOLD)
-            .<span class="kw">await
-            </span>.map_err(TipsetRangeSyncerError::NetworkTipsetQueryFailed)<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>potential_common_ancestor = chain_store
-            .chain_index
-            .load_required_tipset(current_head.parents())<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>fork_length = <span class="number">1</span>;
-        <span class="kw">while let </span><span class="prelude-val">Some</span>(fork_tipset) = fork_tipsets.get(i) {
-            <span class="kw">if </span>fork_tipset.epoch() == <span class="number">0 </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ForkAtGenesisBlock(<span class="macro">format!</span>(
-                    <span class="string">"{:?}"</span>,
-                    oldest_tipset.cids()
-                )));
-            }
-            <span class="kw">if </span><span class="kw-2">&amp;</span>potential_common_ancestor == fork_tipset {
-                <span class="comment">// Remove elements from the vector since the Drain
-                // iterator is immediately dropped
-                </span><span class="kw">let </span><span class="kw-2">mut </span>fork_tipsets = fork_tipsets;
-                fork_tipsets.drain((i + <span class="number">1</span>)..);
-                parent_tipsets.extend(fork_tipsets);
-                <span class="kw">break</span>;
-            }
+    <span class="kw">let </span>oldest_pending_tipset = pending_tipsets.last();
+    <span class="comment">// common case: receiving a block that's potentially part of the same tipset as our best block
+    </span><span class="kw">if </span>oldest_pending_tipset.as_ref() == current_head
+        || oldest_pending_tipset.is_child_of(current_head)
+    {
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(pending_tipsets);
+    }
 
-            <span class="comment">// If the potential common ancestor has an epoch which
-            // is lower than the current fork tipset under evaluation
-            // move to the next iteration without updated the potential common ancestor
-            </span><span class="kw">if </span>potential_common_ancestor.epoch() &lt; fork_tipset.epoch() {
-                i += <span class="number">1</span>;
-            } <span class="kw">else </span>{
-                fork_length += <span class="number">1</span>;
-                <span class="comment">// Increment the fork length and enforce the fork length check
-                </span><span class="kw">if </span>fork_length &gt; FORK_LENGTH_THRESHOLD {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ChainForkLengthExceedsMaximum);
-                }
-                <span class="comment">// If we have not found a common ancestor by the last iteration, then return an
-                // error
-                </span><span class="kw">if </span>i == (fork_tipsets.len() - <span class="number">1</span>) {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ChainForkLengthExceedsFinalityThreshold);
-                }
-                potential_common_ancestor = chain_store
-                    .chain_index
-                    .load_required_tipset(potential_common_ancestor.parents())<span class="question-mark">?</span>;
+    <span class="macro">info!</span>(<span class="string">"Fork detected, searching for a common ancestor between the local chain and the network chain"</span>);
+    <span class="kw">const </span>FORK_LENGTH_THRESHOLD: u64 = <span class="number">500</span>;
+    <span class="kw">let </span>fork_tipsets = network
+        .chain_exchange_headers(<span class="prelude-val">None</span>, oldest_pending_tipset.parents(), FORK_LENGTH_THRESHOLD)
+        .<span class="kw">await
+        </span>.map_err(TipsetRangeSyncerError::NetworkTipsetQueryFailed)<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>potential_common_ancestor = chain_store
+        .chain_index
+        .load_required_tipset(current_head.parents())<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>fork_length = <span class="number">1</span>;
+    <span class="kw">while let </span><span class="prelude-val">Some</span>(fork_tipset) = fork_tipsets.get(i) {
+        <span class="kw">if </span>fork_tipset.epoch() == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ForkAtGenesisBlock(<span class="macro">format!</span>(
+                <span class="string">"{:?}"</span>,
+                oldest_pending_tipset.cids()
+            )));
+        }
+        <span class="kw">if </span><span class="kw-2">&amp;</span>potential_common_ancestor == fork_tipset {
+            <span class="comment">// Remove elements from the vector since the Drain
+            // iterator is immediately dropped
+            </span><span class="kw">let </span><span class="kw-2">mut </span>fork_tipsets = fork_tipsets;
+            fork_tipsets.drain((i + <span class="number">1</span>)..);
+            pending_tipsets.extend(fork_tipsets);
+            <span class="kw">break</span>;
+        }
+
+        <span class="comment">// If the potential common ancestor has an epoch which
+        // is lower than the current fork tipset under evaluation
+        // move to the next iteration without updated the potential common ancestor
+        </span><span class="kw">if </span>potential_common_ancestor.epoch() &lt; fork_tipset.epoch() {
+            i += <span class="number">1</span>;
+        } <span class="kw">else </span>{
+            fork_length += <span class="number">1</span>;
+            <span class="comment">// Increment the fork length and enforce the fork length check
+            </span><span class="kw">if </span>fork_length &gt; FORK_LENGTH_THRESHOLD {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ChainForkLengthExceedsMaximum);
             }
+            <span class="comment">// If we have not found a common ancestor by the last iteration, then return an
+            // error
+            </span><span class="kw">if </span>i == (fork_tipsets.len() - <span class="number">1</span>) {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(TipsetRangeSyncerError::ChainForkLengthExceedsFinalityThreshold);
+            }
+            potential_common_ancestor = chain_store
+                .chain_index
+                .load_required_tipset(potential_common_ancestor.parents())<span class="question-mark">?</span>;
         }
     }
-    <span class="prelude-val">Ok</span>(parent_tipsets)
+
+    <span class="prelude-val">Ok</span>(pending_tipsets)
 }
 
 <span class="attr">#[allow(clippy::too_many_arguments)]
