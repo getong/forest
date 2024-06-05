@@ -429,6 +429,15 @@
 <a href="#427" id="427">427</a>
 <a href="#428" id="428">428</a>
 <a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 </span><span class="doccomment">//! Subscription related types and traits for server implementations.
@@ -498,7 +507,7 @@
         ResponsePayload,
     },
     types::{error::ErrorCode, ErrorObjectOwned, Id, Params},
-    MethodResponse, MethodSink,
+    ConnectionId, MethodResponse, MethodSink,
 };
 <span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>std::sync::atomic::{AtomicU64, Ordering};
@@ -515,7 +524,7 @@
 
 <span class="doccomment">/// Type-alias for subscribers.
 </span><span class="kw">pub type </span>Subscribers =
-    Arc&lt;Mutex&lt;HashMap&lt;Id&lt;<span class="lifetime">'static</span>&gt;, (MethodSink, mpsc::Receiver&lt;()&gt;, ChannelId)&gt;&gt;&gt;;
+    Arc&lt;Mutex&lt;HashMap&lt;(ConnectionId, Id&lt;<span class="lifetime">'static</span>&gt;), (MethodSink, mpsc::Receiver&lt;()&gt;, ChannelId)&gt;&gt;&gt;;
 
 <span class="doccomment">/// Represents a single subscription that is waiting to be accepted or rejected.
 ///
@@ -539,6 +548,8 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) subscribe: oneshot::Sender&lt;MethodResponse&gt;,
     <span class="doccomment">/// Channel identifier.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) channel_id: ChannelId,
+    <span class="doccomment">/// Connection identifier.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) connection_id: ConnectionId,
 }
 
 <span class="kw">impl </span>PendingSubscriptionSink {
@@ -571,9 +582,15 @@
 
         <span class="kw">if </span>success {
             <span class="kw">let </span>(tx, rx) = mpsc::channel(<span class="number">1</span>);
-            <span class="self">self</span>.subscribers
-                .lock()
-                .insert(id, (<span class="self">self</span>.inner.clone(), rx, <span class="self">self</span>.channel_id));
+            <span class="self">self</span>.subscribers.lock().insert(
+                (<span class="self">self</span>.connection_id, id),
+                (<span class="self">self</span>.inner.clone(), rx, <span class="self">self</span>.channel_id),
+            );
+            <span class="macro">tracing::debug!</span>(
+                <span class="string">"Accepting subscription (conn_id={}, chann_id={})"</span>,
+                <span class="self">self</span>.connection_id,
+                <span class="self">self</span>.channel_id
+            );
             <span class="prelude-val">Ok</span>(SubscriptionSink {
                 inner: <span class="self">self</span>.inner,
                 method: <span class="self">self</span>.method,
@@ -712,16 +729,16 @@
         methods
             .verify_and_insert(
                 CANCEL_METHOD_NAME,
-                MethodCallback::Sync(Arc::new({
+                MethodCallback::Unsubscription(Arc::new({
                     <span class="kw">let </span>channels = channels.clone();
-                    <span class="kw">move </span>|id, params: Params, _max_response| {
+                    <span class="kw">move </span>|id, params: Params, connection_id: ConnectionId, _max_response| {
                         <span class="kw">let </span>cb = || {
                             <span class="kw">let </span>arr: [Id&lt;<span class="lifetime">'_</span>&gt;; <span class="number">1</span>] = params.parse()<span class="question-mark">?</span>;
                             <span class="kw">let </span>sub_id = arr[<span class="number">0</span>].clone().into_owned();
 
-                            <span class="macro">tracing::debug!</span>(<span class="string">"Got cancel request: id={sub_id}"</span>);
+                            <span class="macro">tracing::debug!</span>(<span class="string">"Got cancel request (id={sub_id})"</span>);
 
-                            <span class="kw">let </span>opt = channels.lock().remove(<span class="kw-2">&amp;</span>sub_id);
+                            <span class="kw">let </span>opt = channels.lock().remove(<span class="kw-2">&amp;</span>(connection_id, sub_id));
                             <span class="kw">match </span>opt {
                                 <span class="prelude-val">Some</span>((<span class="kw">_</span>, <span class="kw">_</span>, channel_id)) =&gt; {
                                     <span class="prelude-val">Ok</span>::&lt;ChannelId, ServerError&gt;(channel_id)
@@ -805,7 +822,7 @@
                         }
                     }
 
-                    <span class="macro">tracing::debug!</span>(<span class="string">"Send notification task ended"</span>);
+                    <span class="macro">tracing::debug!</span>(<span class="string">"Send notification task ended (chann_id={})"</span>, sink.channel_id);
                 });
             }
         })
@@ -828,7 +845,7 @@
             subscribe_method_name,
             MethodCallback::Subscription(Arc::new({
                 <span class="kw">let </span>id_provider = <span class="self">self</span>.id_provider.clone();
-                <span class="kw">move </span>|id, params, method_sink, _conn| {
+                <span class="kw">move </span>|id, params, method_sink, conn| {
                     <span class="kw">let </span>channel_id = id_provider.fetch_add(<span class="number">1</span>, Ordering::Relaxed);
 
                     <span class="comment">// response to the subscription call.
@@ -841,6 +858,7 @@
                         id: id.clone().into_owned(),
                         subscribe: tx,
                         channel_id,
+                        connection_id: conn.conn_id,
                     };
 
                     callback(params, sink);
