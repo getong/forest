@@ -155,15 +155,93 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
 <span class="kw">pub const </span>METHOD_GET_BYTE_CODE: u64 = <span class="number">3</span>;
+<span class="kw">pub const </span>METHOD_GET_STORAGE_AT: u64 = <span class="number">5</span>;
+
+<span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
+</span><span class="kw">pub struct </span>EthBytes(
+    <span class="attr">#[schemars(with = <span class="string">"String"</span>)]
+    #[serde(with = <span class="string">"crate::lotus_json::hexify_vec_bytes"</span>)]
+    </span><span class="kw">pub </span>Vec&lt;u8&gt;,
+);
+<span class="macro">lotus_json_with_self!</span>(EthBytes);
 
 <span class="attr">#[derive(Debug, Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>GetBytecodeReturn(<span class="kw">pub </span><span class="prelude-ty">Option</span>&lt;Cid&gt;);
+
+<span class="kw">const </span>GET_STORAGE_AT_PARAMS_ARRAY_LENGTH: usize = <span class="number">32</span>;
+
+<span class="attr">#[derive(Debug, Clone)]
+</span><span class="kw">pub struct </span>GetStorageAtParams(<span class="kw">pub </span>[u8; GET_STORAGE_AT_PARAMS_ARRAY_LENGTH]);
+
+<span class="kw">impl </span>GetStorageAtParams {
+    <span class="kw">pub fn </span>new(position: Vec&lt;u8&gt;) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">if </span>position.len() &gt; GET_STORAGE_AT_PARAMS_ARRAY_LENGTH {
+            <span class="macro">anyhow::bail!</span>(<span class="string">"supplied storage key is too long"</span>);
+        }
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = [<span class="number">0</span>; GET_STORAGE_AT_PARAMS_ARRAY_LENGTH];
+        bytes
+            .get_mut(GET_STORAGE_AT_PARAMS_ARRAY_LENGTH.saturating_sub(position.len())..)
+            .expect(<span class="string">"Infallible"</span>)
+            .copy_from_slice(<span class="kw-2">&amp;</span>position);
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(bytes))
+    }
+
+    <span class="kw">pub fn </span>serialize_params(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">const </span>LENGTH_BUF_GET_STORAGE_AT_PARAMS: u8 = <span class="number">129</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>encoded = fvm_ipld_encoding::to_vec(<span class="kw-2">&amp;</span>RawBytes::new(<span class="self">self</span>.<span class="number">0</span>.to_vec()))<span class="question-mark">?</span>;
+        encoded.insert(<span class="number">0</span>, LENGTH_BUF_GET_STORAGE_AT_PARAMS);
+        <span class="prelude-val">Ok</span>(encoded)
+    }
+}
 
 <span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
 </span><span class="kw">pub struct </span>EthAddress(
@@ -171,7 +249,6 @@
     #[serde(with = <span class="string">"crate::lotus_json::hexify_bytes"</span>)]
     </span><span class="kw">pub </span>ethereum_types::Address,
 );
-
 <span class="macro">lotus_json_with_self!</span>(EthAddress);
 
 <span class="kw">impl </span>EthAddress {
@@ -308,6 +385,15 @@
         </span>);
         <span class="kw">let </span>ser = fvm_ipld_encoding::to_vec(<span class="kw-2">&amp;</span>des).unwrap();
         <span class="macro">assert_eq!</span>(ser, bytes);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>get_storage_at_params() {
+        <span class="kw">let </span>param = GetStorageAtParams::new(<span class="macro">vec!</span>[<span class="number">0xa</span>]).unwrap();
+        <span class="macro">assert_eq!</span>(
+            <span class="kw-2">&amp;</span>hex::encode(param.serialize_params().unwrap()),
+            <span class="string">"815820000000000000000000000000000000000000000000000000000000000000000a"
+        </span>);
     }
 }
 </code></pre></div></section></main></body></html>
