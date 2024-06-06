@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["market","miner","multisig"]};
+window.SIDEBAR_ITEMS = {"mod":["market","miner","multisig","verifreg"]};
