@@ -299,6 +299,82 @@
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -318,7 +394,6 @@
 //! - [`RpcMethod`] defining arity and actually dispatching the function calls.
 
 </span><span class="kw">pub mod </span>jsonrpc_types;
-<span class="kw">pub mod </span>openrpc_types;
 
 <span class="kw">mod </span>parser;
 <span class="kw">mod </span>util;
@@ -329,7 +404,7 @@
 <span class="kw">use </span><span class="kw">super</span>::error::ServerError <span class="kw">as </span>Error;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>jsonrpsee::RpcModule;
-<span class="kw">use </span>openrpc_types::{ContentDescriptor, Method, ParamListError, ParamStructure};
+<span class="kw">use </span>openrpc_types::{ContentDescriptor, Method, ParamStructure, ReferenceOr};
 <span class="kw">use </span>parser::Parser;
 <span class="kw">use </span>schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 <span class="kw">use </span>serde::Serialize;
@@ -337,7 +412,22 @@
     de::{Error <span class="kw">as _</span>, Unexpected},
     Deserialize,
 };
+<span class="kw">use </span>std::iter;
 <span class="kw">use </span>std::{future::Future, sync::Arc};
+
+<span class="doccomment">/// Narrow list of categories emitted by our OpenRPC machinery.
+/// Destined to become a [`openrpc_types::Tag`]
+</span><span class="attr">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, strum::EnumIter)]
+</span><span class="kw">pub enum </span>Tag {
+    ClientInteroperability,
+}
+<span class="kw">impl </span>AsTag <span class="kw">for </span>Tag {
+    <span class="kw">fn </span>slug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">match </span><span class="self">self </span>{
+            Tag::ClientInteroperability =&gt; <span class="string">"client_interoperability"</span>.into(),
+        }
+    }
+}
 
 <span class="doccomment">/// Type to be used by [`RpcMethod::handle`].
 </span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;;
@@ -362,6 +452,12 @@
     </span><span class="kw">const </span>API_VERSION: ApiVersion;
     <span class="doccomment">/// See [`Permission`]
     </span><span class="kw">const </span>PERMISSION: Permission;
+    <span class="doccomment">/// See [`Tag`].
+    </span><span class="kw">const </span>TAGS: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[Tag] = <span class="kw-2">&amp;</span>[];
+    <span class="doccomment">/// Becomes [`openrpc_types::Method::summary`].
+    </span><span class="kw">const </span>SUMMARY: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; = <span class="prelude-val">None</span>;
+    <span class="doccomment">/// Becomes [`openrpc_types::Method::description`].
+    </span><span class="kw">const </span>DESCRIPTION: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; = <span class="prelude-val">None</span>;
     <span class="doccomment">/// Types of each argument. [`Option`]-al arguments MUST follow mandatory ones.
     </span><span class="kw">type </span>Params: Params&lt;ARITY&gt;;
     <span class="doccomment">/// Return value of this method.
@@ -388,10 +484,31 @@
 /// RPC calls are made, e.g `rpc/v0` or `rpc/v1`.
 ///
 /// This information is important when using [`crate::rpc::client`].
-</span><span class="attr">#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+</span><span class="attr">#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Hash,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Serialize,
+    Deserialize,
+    strum::EnumIter,
+)]
 </span><span class="kw">pub enum </span>ApiVersion {
     V0,
     V1,
+}
+
+<span class="kw">impl </span>AsTag <span class="kw">for </span>ApiVersion {
+    <span class="kw">fn </span>slug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">match </span><span class="self">self </span>{
+            ApiVersion::V0 =&gt; <span class="string">"v0"</span>.into(),
+            ApiVersion::V1 =&gt; <span class="string">"v1"</span>.into(),
+        }
+    }
 }
 
 <span class="doccomment">/// Utility methods, defined as an extension trait to avoid having to specify
@@ -415,31 +532,39 @@
         }
     }
     <span class="doccomment">/// Generate a full `OpenRPC` method definition for this endpoint.
-    </span><span class="kw">fn </span>openrpc&lt;<span class="lifetime">'de</span>&gt;(
-        gen: <span class="kw-2">&amp;mut </span>SchemaGenerator,
-        calling_convention: ParamStructure,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Method, ParamListError&gt;
+    </span><span class="kw">fn </span>openrpc&lt;<span class="lifetime">'de</span>&gt;(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator, calling_convention: ParamStructure) -&gt; Method
     <span class="kw">where
         </span>&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson: JsonSchema + Deserialize&lt;<span class="lifetime">'de</span>&gt;,
     {
-        <span class="prelude-val">Ok</span>(Method {
+        Method {
             name: String::from(<span class="self">Self</span>::NAME),
-            params: openrpc_types::Params::new(
-                itertools::zip_eq(<span class="self">Self</span>::PARAM_NAMES, <span class="self">Self</span>::Params::schemas(gen)).map(
-                    |(name, (schema, optional))| ContentDescriptor {
+            params: itertools::zip_eq(<span class="self">Self</span>::PARAM_NAMES, <span class="self">Self</span>::Params::schemas(gen))
+                .map(|(name, (schema, optional))| {
+                    ReferenceOr::Item(ContentDescriptor {
                         name: String::from(name),
                         schema,
-                        required: !optional,
-                    },
-                ),
-            )<span class="question-mark">?</span>,
-            param_structure: calling_convention,
-            result: <span class="prelude-val">Some</span>(ContentDescriptor {
+                        required: <span class="prelude-val">Some</span>(!optional),
+                        ..Default::default()
+                    })
+                })
+                .collect(),
+            param_structure: <span class="prelude-val">Some</span>(calling_convention),
+            result: <span class="prelude-val">Some</span>(ReferenceOr::Item(ContentDescriptor {
                 name: <span class="macro">format!</span>(<span class="string">"{}::Result"</span>, <span class="self">Self</span>::NAME),
                 schema: gen.subschema_for::&lt;&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson&gt;(),
-                required: !&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson::optional(),
-            }),
-        })
+                required: <span class="prelude-val">Some</span>(!&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson::optional()),
+                ..Default::default()
+            })),
+            tags: <span class="prelude-val">Some</span>(
+                iter::once(<span class="kw-2">&amp;</span><span class="self">Self</span>::API_VERSION <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>AsTag)
+                    .chain(<span class="self">Self</span>::TAGS.iter().map(|it| it <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>AsTag))
+                    .map(AsTagExt::reference)
+                    .collect(),
+            ),
+            summary: <span class="self">Self</span>::SUMMARY.map(Into::into),
+            description: <span class="self">Self</span>::DESCRIPTION.map(Into::into),
+            ..Default::default()
+        }
     }
     <span class="doccomment">/// Register this method with an [`RpcModule`].
     </span><span class="kw">fn </span>register(
@@ -598,4 +723,31 @@
     <span class="attr">#[allow(unused)] </span><span class="comment">// included for completeness
     </span>ByName,
 }
+
+<span class="doccomment">/// A type that can be represented as an [`openrpc_types::Tag`].
+</span><span class="kw">pub trait </span>AsTag {
+    <span class="kw">fn </span>slug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
+    <span class="kw">fn </span>summary(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
+        <span class="prelude-val">None
+    </span>}
+    <span class="kw">fn </span>description(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
+        <span class="prelude-val">None
+    </span>}
+}
+
+<span class="kw">pub trait </span>AsTagExt: AsTag {
+    <span class="kw">fn </span>as_tag(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; openrpc_types::Tag {
+        openrpc_types::Tag {
+            name: <span class="self">self</span>.slug(),
+            summary: <span class="self">self</span>.summary(),
+            description: <span class="self">self</span>.description(),
+            external_docs: <span class="prelude-val">None</span>,
+            extensions: Default::default(),
+        }
+    }
+    <span class="kw">fn </span>reference(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ReferenceOr&lt;openrpc_types::Tag&gt; {
+        ReferenceOr::Reference(<span class="macro">format!</span>(<span class="string">"#/components/tags/{}"</span>, <span class="self">self</span>.slug()))
+    }
+}
+<span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; AsTagExt <span class="kw">for </span>T <span class="kw">where </span>T: AsTag {}
 </code></pre></div></section></main></body></html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["OPEN_RPC_SPECIFICATION_VERSION"],"enum":["ParamStructure","ReferenceOr"],"struct":["Components","Contact","ContentDescriptor","Error","Example","ExamplePairing","ExternalDocumentation","Info","License","Method","OpenRPC","Server","ServerVariable","SpecificationExtensions","Tag"]};
