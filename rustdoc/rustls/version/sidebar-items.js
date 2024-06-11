@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":["TLS13"]};
+window.SIDEBAR_ITEMS = {"static":["TLS12","TLS13"]};

@@ -219,6 +219,10 @@
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
 <a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -228,8 +232,10 @@
 <span class="kw">use </span>ahash::{HashMap, HashMapExt <span class="kw">as _</span>};
 <span class="kw">use </span>futures::future::BoxFuture;
 <span class="kw">use </span>futures::FutureExt;
-<span class="kw">use </span>hyper::header::{HeaderValue, AUTHORIZATION};
-<span class="kw">use </span>hyper::HeaderMap;
+<span class="kw">use </span>http::{
+    header::{HeaderValue, AUTHORIZATION},
+    HeaderMap,
+};
 <span class="kw">use </span>jsonrpsee::server::middleware::rpc::RpcServiceT;
 <span class="kw">use </span>jsonrpsee::types::{error::ErrorCode, ErrorObject};
 <span class="kw">use </span>jsonrpsee::MethodResponse;
@@ -306,7 +312,15 @@
             <span class="kw">let </span>res = check_permissions(keystore, auth_header, req.method_name()).<span class="kw">await</span>;
 
             <span class="kw">match </span>res {
-                <span class="prelude-val">Ok</span>(()) =&gt; service.call(req).<span class="kw">await</span>,
+                <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>) =&gt; service.call(req).<span class="kw">await</span>,
+                <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>) =&gt; MethodResponse::error(
+                    req.id(),
+                    ErrorObject::borrowed(
+                        http::StatusCode::UNAUTHORIZED.as_u16() <span class="kw">as _</span>,
+                        <span class="string">"Unauthorized"</span>,
+                        <span class="prelude-val">None</span>,
+                    ),
+                ),
                 <span class="prelude-val">Err</span>(code) =&gt; MethodResponse::error(req.id(), ErrorObject::from(code)),
             }
         }
@@ -326,7 +340,7 @@
     keystore: Arc&lt;RwLock&lt;KeyStore&gt;&gt;,
     auth_header: <span class="prelude-ty">Option</span>&lt;HeaderValue&gt;,
     method: <span class="kw-2">&amp;</span>str,
-) -&gt; anyhow::Result&lt;(), ErrorCode&gt; {
+) -&gt; anyhow::Result&lt;bool, ErrorCode&gt; {
     <span class="kw">let </span>claims = <span class="kw">match </span>auth_header {
         <span class="prelude-val">Some</span>(token) =&gt; {
             <span class="kw">let </span>token = token
@@ -346,13 +360,7 @@
     <span class="macro">debug!</span>(<span class="string">"Decoded JWT Claims: {}"</span>, claims.join(<span class="string">","</span>));
 
     <span class="kw">match </span>METHOD_NAME2REQUIRED_PERMISSION.get(<span class="kw-2">&amp;</span>method) {
-        <span class="prelude-val">Some</span>(required_by_method) =&gt; {
-            <span class="kw">if </span>is_allowed(<span class="kw-2">*</span>required_by_method, <span class="kw-2">&amp;</span>claims) {
-                <span class="prelude-val">Ok</span>(())
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Err</span>(ErrorCode::InvalidRequest)
-            }
-        }
+        <span class="prelude-val">Some</span>(required_by_method) =&gt; <span class="prelude-val">Ok</span>(is_allowed(<span class="kw-2">*</span>required_by_method, <span class="kw-2">&amp;</span>claims)),
         <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(ErrorCode::MethodNotFound),
     }
 }
@@ -371,13 +379,13 @@
         ));
 
         <span class="kw">let </span>res = check_permissions(keystore.clone(), <span class="prelude-val">None</span>, ChainHead::NAME).<span class="kw">await</span>;
-        <span class="macro">assert!</span>(res.is_ok());
+        <span class="macro">assert_eq!</span>(res, <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>));
 
         <span class="kw">let </span>res = check_permissions(keystore.clone(), <span class="prelude-val">None</span>, <span class="string">"Cthulhu.InvokeElderGods"</span>).<span class="kw">await</span>;
         <span class="macro">assert_eq!</span>(res.unwrap_err(), ErrorCode::MethodNotFound);
 
         <span class="kw">let </span>res = check_permissions(keystore.clone(), <span class="prelude-val">None</span>, wallet::WalletNew::NAME).<span class="kw">await</span>;
-        <span class="macro">assert_eq!</span>(res.unwrap_err(), ErrorCode::InvalidRequest);
+        <span class="macro">assert_eq!</span>(res, <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>));
     }
 
     <span class="attr">#[tokio::test]
@@ -421,7 +429,7 @@
         </span><span class="kw">let </span>auth_header = HeaderValue::from_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"Bearer {token}"</span>)).unwrap();
         <span class="kw">let </span>res =
             check_permissions(keystore.clone(), <span class="prelude-val">Some</span>(auth_header.clone()), ChainHead::NAME).<span class="kw">await</span>;
-        <span class="macro">assert!</span>(res.is_ok());
+        <span class="macro">assert_eq!</span>(res, <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>));
 
         <span class="kw">let </span>res = check_permissions(
             keystore.clone(),
@@ -429,13 +437,13 @@
             wallet::WalletNew::NAME,
         )
         .<span class="kw">await</span>;
-        <span class="macro">assert!</span>(res.is_ok());
+        <span class="macro">assert_eq!</span>(res, <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>));
 
         <span class="comment">// Should work without the `Bearer` prefix
         </span><span class="kw">let </span>auth_header = HeaderValue::from_str(<span class="kw-2">&amp;</span>token).unwrap();
         <span class="kw">let </span>res =
             check_permissions(keystore.clone(), <span class="prelude-val">Some</span>(auth_header), wallet::WalletNew::NAME).<span class="kw">await</span>;
-        <span class="macro">assert!</span>(res.is_ok());
+        <span class="macro">assert_eq!</span>(res, <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>));
     }
 }
 </code></pre></div></section></main></body></html>
