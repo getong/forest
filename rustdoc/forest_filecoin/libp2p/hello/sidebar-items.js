@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["behaviour","codec","message"]};
+window.SIDEBAR_ITEMS = {"constant":["HELLO_PROTOCOL_NAME"],"mod":["behaviour","codec","message"]};
