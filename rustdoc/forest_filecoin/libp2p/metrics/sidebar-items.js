@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":["BAD_PEERS","FULL_PEERS","PEER_FAILURE_TOTAL"]};
+window.SIDEBAR_ITEMS = {"static":["BAD_PEERS","FULL_PEERS","PEER_FAILURE_TOTAL","PEER_TIPSET_EPOCH"],"struct":["PeerLabel"]};

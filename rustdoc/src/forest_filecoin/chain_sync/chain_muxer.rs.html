@@ -1032,14 +1032,6 @@
 <a href="#1030" id="1030">1030</a>
 <a href="#1031" id="1031">1031</a>
 <a href="#1032" id="1032">1032</a>
-<a href="#1033" id="1033">1033</a>
-<a href="#1034" id="1034">1034</a>
-<a href="#1035" id="1035">1035</a>
-<a href="#1036" id="1036">1036</a>
-<a href="#1037" id="1037">1037</a>
-<a href="#1038" id="1038">1038</a>
-<a href="#1039" id="1039">1039</a>
-<a href="#1040" id="1040">1040</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1051,6 +1043,16 @@
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::chain::{ChainStore, Error <span class="kw">as </span>ChainStoreError};
+<span class="kw">use </span><span class="kw">crate</span>::chain_sync::{
+    bad_block_cache::BadBlockCache,
+    metrics,
+    network_context::SyncNetworkContext,
+    sync_state::SyncState,
+    tipset_syncer::{
+        TipsetProcessor, TipsetProcessorError, TipsetRangeSyncer, TipsetRangeSyncerError,
+    },
+    validation::{TipsetValidationError, TipsetValidator},
+};
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{
     hello::HelloRequest, NetworkEvent, NetworkMessage, PeerId, PeerManager, PubsubMessage,
 };
@@ -1074,17 +1076,6 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tracing::{debug, error, info, trace, warn};
-
-<span class="kw">use </span><span class="kw">crate</span>::chain_sync::{
-    bad_block_cache::BadBlockCache,
-    metrics,
-    network_context::SyncNetworkContext,
-    sync_state::SyncState,
-    tipset_syncer::{
-        TipsetProcessor, TipsetProcessorError, TipsetRangeSyncer, TipsetRangeSyncerError,
-    },
-    validation::{TipsetValidationError, TipsetValidator},
-};
 
 <span class="comment">// Sync the messages for one or many tipsets @ a time
 // Lotus uses a window size of 8: https://github.com/filecoin-project/lotus/blob/c1d22d8b3298fdce573107413729be608e72187d/chain/sync.go#L56
@@ -1330,10 +1321,10 @@
             <span class="comment">// Update the peer metadata based on the response
             </span><span class="kw">match </span>response {
                 <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; {
-                    network.peer_manager().log_success(peer_id, dur);
+                    network.peer_manager().log_success(<span class="kw-2">&amp;</span>peer_id, dur);
                 }
                 <span class="prelude-val">None </span>=&gt; {
-                    network.peer_manager().log_failure(peer_id, dur);
+                    network.peer_manager().log_failure(<span class="kw-2">&amp;</span>peer_id, dur);
                 }
             }
         }
@@ -1341,6 +1332,7 @@
 
     <span class="kw">async fn </span>handle_peer_disconnected_event(network: SyncNetworkContext&lt;DB&gt;, peer_id: PeerId) {
         network.peer_manager().remove_peer(<span class="kw-2">&amp;</span>peer_id);
+        network.peer_manager().unmark_peer_bad(<span class="kw-2">&amp;</span>peer_id);
     }
 
     <span class="kw">async fn </span>gossipsub_block_to_full_tipset(
@@ -1411,13 +1403,10 @@
         stateless_mode: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(FullTipset, PeerId)&gt;, ChainMuxerError&gt; {
         <span class="kw">let </span>(tipset, source) = <span class="kw">match </span>event {
-            NetworkEvent::HelloRequestInbound { source, request } =&gt; {
+            NetworkEvent::HelloRequestInbound { .. } =&gt; {
                 metrics::LIBP2P_MESSAGE_TOTAL
                     .get_or_create(<span class="kw-2">&amp;</span>metrics::values::HELLO_REQUEST_INBOUND)
                     .inc();
-                metrics::PEER_TIPSET_EPOCH
-                    .get_or_create(<span class="kw-2">&amp;</span>metrics::PeerLabel::new(source))
-                    .set(request.heaviest_tipset_height);
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
             NetworkEvent::HelloResponseOutbound { request, source } =&gt; {
@@ -1470,8 +1459,6 @@
                 metrics::LIBP2P_MESSAGE_TOTAL
                     .get_or_create(<span class="kw-2">&amp;</span>metrics::values::PEER_DISCONNECTED)
                     .inc();
-                <span class="comment">// Remove peer id labels for disconnected peers
-                </span>metrics::PEER_TIPSET_EPOCH.remove(<span class="kw-2">&amp;</span>metrics::PeerLabel::new(peer_id));
                 <span class="comment">// Spawn and immediately move on to the next event
                 </span>tokio::task::spawn(<span class="self">Self</span>::handle_peer_disconnected_event(
                     network.clone(),
@@ -1562,9 +1549,6 @@
         </span>network
             .peer_manager()
             .update_peer_head(source, Arc::new(tipset.clone().into_tipset()));
-        metrics::PEER_TIPSET_EPOCH
-            .get_or_create(<span class="kw-2">&amp;</span>metrics::PeerLabel::new(source))
-            .set(tipset.epoch());
 
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, source)))
     }
