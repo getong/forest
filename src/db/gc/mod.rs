@@ -222,8 +222,10 @@ impl<DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + 'static
 
         info!("GC sweep");
         self.sweep()?;
+        info!("finished GC sweep");
 
         self.update_last_gc_run(current_epoch)?;
+        info!("updated last GC run");
 
         anyhow::Ok(())
     }
