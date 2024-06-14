@@ -2275,6 +2275,34 @@
 <a href="#2275" id="2275">2275</a>
 <a href="#2276" id="2276">2276</a>
 <a href="#2277" id="2277">2277</a>
+<a href="#2278" id="2278">2278</a>
+<a href="#2279" id="2279">2279</a>
+<a href="#2280" id="2280">2280</a>
+<a href="#2281" id="2281">2281</a>
+<a href="#2282" id="2282">2282</a>
+<a href="#2283" id="2283">2283</a>
+<a href="#2284" id="2284">2284</a>
+<a href="#2285" id="2285">2285</a>
+<a href="#2286" id="2286">2286</a>
+<a href="#2287" id="2287">2287</a>
+<a href="#2288" id="2288">2288</a>
+<a href="#2289" id="2289">2289</a>
+<a href="#2290" id="2290">2290</a>
+<a href="#2291" id="2291">2291</a>
+<a href="#2292" id="2292">2292</a>
+<a href="#2293" id="2293">2293</a>
+<a href="#2294" id="2294">2294</a>
+<a href="#2295" id="2295">2295</a>
+<a href="#2296" id="2296">2296</a>
+<a href="#2297" id="2297">2297</a>
+<a href="#2298" id="2298">2298</a>
+<a href="#2299" id="2299">2299</a>
+<a href="#2300" id="2300">2300</a>
+<a href="#2301" id="2301">2301</a>
+<a href="#2302" id="2302">2302</a>
+<a href="#2303" id="2303">2303</a>
+<a href="#2304" id="2304">2304</a>
+<a href="#2305" id="2305">2305</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2298,6 +2326,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
 <span class="kw">use </span><span class="kw">crate</span>::shim::piece::PaddedPieceSize;
+<span class="kw">use </span><span class="kw">crate</span>::shim::sector::SectorNumber;
 <span class="kw">use </span><span class="kw">crate</span>::shim::state_tree::StateTree;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, clock::ChainEpoch, deal::DealID, econ::TokenAmount, executor::Receipt,
@@ -2763,6 +2792,33 @@
             })
         })<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(MinerSectors::new(live_count, active_count, faulty_count))
+    }
+}
+
+<span class="doccomment">/// Checks if a sector is allocated
+</span><span class="kw">pub enum </span>StateMinerSectorAllocated {}
+
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateMinerSectorAllocated {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateMinerSectorAllocated"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"miner_address"</span>, <span class="string">"sector_number"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
+    <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
+
+    <span class="kw">type </span>Params = (Address, SectorNumber, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= bool;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = ctx
+            .state_manager
+            .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>miner_state = miner::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
+        <span class="kw">let </span>allocated_sector_numbers: BitField =
+            miner_state.load_allocated_sector_numbers(ctx.store())<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(allocated_sector_numbers.get(sector_number))
     }
 }
 
