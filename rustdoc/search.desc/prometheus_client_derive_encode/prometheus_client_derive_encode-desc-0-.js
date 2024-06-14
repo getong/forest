@@ -1,0 +1,1 @@
+searchState.loadedDescShard("prometheus_client_derive_encode", 0, "Derive crate for <code>prometheus_client</code>.\nDerive <code>prometheus_client::encoding::EncodeLabelSet</code>.\nDerive <code>prometheus_client::encoding::EncodeLabelValue</code>.")

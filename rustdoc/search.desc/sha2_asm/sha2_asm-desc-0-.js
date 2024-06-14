@@ -1,0 +1,1 @@
+searchState.loadedDescShard("sha2_asm", 0, "Assembly implementation of the SHA-2 compression functions.\nSafe wrapper around assembly implementation of SHA256 …\nSafe wrapper around assembly implementation of SHA512 …")

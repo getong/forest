@@ -1,0 +1,1 @@
+searchState.loadedDescShard("forest_hash_utils", 0, "Key type to be used to serialize as byte string instead of …\nCustom trait to avoid issues like …\nReturns the argument unchanged.\nCalls <code>U::from(self)</code>.")

@@ -1,0 +1,1 @@
+searchState.loadedDescShard("serde_tuple", 0, "Derive macros to serialize and deserialize struct with …")

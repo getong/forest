@@ -1,0 +1,1 @@
+searchState.loadedDescShard("wasmtime_jit_debug", 0, "The GDB’s JIT compilation interface. The low level …\nRegisteration for JIT image\nJIT image used in registration\nReturns the argument unchanged.\nCalls <code>U::from(self)</code>.\nRegisters JIT image using __jit_debug_register_code")

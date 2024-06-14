@@ -1,0 +1,1 @@
+searchState.loadedDescShard("human_bytes", 0, "A Rust crate &amp; cli to convert bytes into human-readable …\nConverts bytes to human-readable values")

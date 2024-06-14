@@ -1,0 +1,1 @@
+searchState.loadedDescShard("smart_default", 0, "Smart Default")

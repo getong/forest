@@ -1,0 +1,1 @@
+searchState.loadedDescShard("kubert_prometheus_process", 0, "Process metrics for Prometheus.\nRegisters process metrics with the given registry. Note …")

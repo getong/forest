@@ -1,0 +1,1 @@
+searchState.loadedDescShard("deprecate_until", 0, "deprecate-until\nSimilar to Rust <code>deprecated</code> attribute, with the addition of …")

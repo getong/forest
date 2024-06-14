@@ -1,0 +1,1 @@
+searchState.loadedDescShard("cfg_vis", 0, "cfg-vis\ncfg visibility on items\ncfg visibility on fields")

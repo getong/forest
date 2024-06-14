@@ -1,0 +1,1 @@
+searchState.loadedDescShard("wasmtime_cranelift", 0, "Support for compiling with Cranelift.")

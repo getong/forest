@@ -1,0 +1,1 @@
+searchState.loadedDescShard("execute_command_macro", 0, "Execute Command Macro\nGenerate the statements at compile time to create a <code>Command</code>…\nCreate a <code>Command</code> instance by inputting args separately.")
