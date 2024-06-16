@@ -24,7 +24,7 @@ use fvm_ipld_encoding::DAG_CBOR;
 use parity_db::{CompressionType, Db, Operation, Options};
 use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
 
-use tracing::warn;
+use tracing::{info, warn};
 
 /// This is specific to Forest's `ParityDb` usage.
 /// It is used to determine which column to use for a given entry type.
@@ -310,6 +310,7 @@ impl GarbageCollectable for ParityDb {
     }
 
     fn remove_keys(&self, keys: HashSet<u32>) -> anyhow::Result<()> {
+        info!("Removing keys from GraphFull column");
         let mut iter = self.db.iter(DbColumn::GraphFull as u8)?;
         while let Some((key, _)) = iter.next()? {
             let cid = Cid::try_from(key)?;
@@ -320,10 +321,12 @@ impl GarbageCollectable for ParityDb {
                     .context("error remove")?
             }
         }
+        info!("Removed keys from GraphFull column");
 
         // An unfortunate consequence of having to use `iter_column_while`.
         let mut result = Ok(());
 
+        info!("Removing keys from GraphDagCborBlake2b256 column");
         self.db
             .iter_column_while(DbColumn::GraphDagCborBlake2b256 as u8, |val| {
                 let hash = Blake2b256.digest(&val.value);
@@ -341,6 +344,7 @@ impl GarbageCollectable for ParityDb {
                 }
                 true
             })?;
+        info!("Removed keys from GraphDagCborBlake2b256 column");
 
         result
     }
