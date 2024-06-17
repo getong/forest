@@ -199,26 +199,26 @@ impl<DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + 'static
             return anyhow::Ok(());
         }
 
-        // This signifies a new run.
-        if self.marked.is_empty() {
-            // Make sure we don't run the GC too often.
-            time::sleep(interval).await;
-
-            info!("populate keys for GC");
-            self.populate()?;
-            self.epoch_marked = current_epoch;
-        }
-
-        let epochs_since_marked = current_epoch - self.epoch_marked;
-        // Don't proceed with next steps until we advance at least `depth` epochs. Sleep and yield
-        // to the main loop in order to refresh the heaviest tipset value.
-        if epochs_since_marked < depth {
-            time::sleep(self.block_time * (depth - epochs_since_marked) as u32).await;
-            return anyhow::Ok(());
-        }
-
-        info!("filter keys for GC");
-        self.filter(tipset, depth).await?;
+        // // This signifies a new run.
+        // if self.marked.is_empty() {
+        //     // Make sure we don't run the GC too often.
+        //     time::sleep(interval).await;
+        //
+        //     info!("populate keys for GC");
+        //     self.populate()?;
+        //     self.epoch_marked = current_epoch;
+        // }
+        //
+        // let epochs_since_marked = current_epoch - self.epoch_marked;
+        // // Don't proceed with next steps until we advance at least `depth` epochs. Sleep and yield
+        // // to the main loop in order to refresh the heaviest tipset value.
+        // if epochs_since_marked < depth {
+        //     time::sleep(self.block_time * (depth - epochs_since_marked) as u32).await;
+        //     return anyhow::Ok(());
+        // }
+        //
+        // info!("filter keys for GC");
+        // self.filter(tipset, depth).await?;
 
         info!("GC sweep");
         self.sweep()?;
