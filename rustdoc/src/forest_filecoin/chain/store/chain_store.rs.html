@@ -571,6 +571,38 @@
 <a href="#571" id="571">571</a>
 <a href="#572" id="572">572</a>
 <a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -583,6 +615,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::libp2p_bitswap::{BitswapStoreRead, BitswapStoreReadWrite};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
+<span class="kw">use </span><span class="kw">crate</span>::rpc::eth;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address, econ::TokenAmount, executor::Receipt, message::Message,
@@ -607,7 +640,7 @@
     Error,
 };
 <span class="kw">use </span><span class="kw">crate</span>::db::setting_keys::HEAD_KEY;
-<span class="kw">use </span><span class="kw">crate</span>::db::{SettingsStore, SettingsStoreExt};
+<span class="kw">use </span><span class="kw">crate</span>::db::{EthMappingsStore, EthMappingsStoreExt, SettingsStore, SettingsStoreExt};
 
 <span class="comment">// A cap on the size of the future_sink
 </span><span class="kw">const </span>SINK_CAP: usize = <span class="number">200</span>;
@@ -646,6 +679,9 @@
 
     <span class="doccomment">/// validated blocks
     </span>validated_blocks: Mutex&lt;HashSet&lt;Cid&gt;&gt;,
+
+    <span class="doccomment">/// Ethereum mappings store
+    </span>eth_mappings: Arc&lt;<span class="kw">dyn </span>EthMappingsStore + Sync + Send&gt;,
 }
 
 <span class="kw">impl</span>&lt;DB&gt; BitswapStoreRead <span class="kw">for </span>ChainStore&lt;DB&gt;
@@ -679,6 +715,7 @@
     <span class="kw">pub fn </span>new(
         db: Arc&lt;DB&gt;,
         settings: Arc&lt;<span class="kw">dyn </span>SettingsStore + Sync + Send&gt;,
+        eth_mappings: Arc&lt;<span class="kw">dyn </span>EthMappingsStore + Sync + Send&gt;,
         chain_config: Arc&lt;ChainConfig&gt;,
         genesis_block_header: CachingBlockHeader,
     ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
@@ -703,6 +740,7 @@
             settings,
             genesis_block_header,
             validated_blocks,
+            eth_mappings,
         };
 
         <span class="prelude-val">Ok</span>(cs)
@@ -728,9 +766,34 @@
     </span><span class="kw">pub fn </span>put_tipset(<span class="kw-2">&amp;</span><span class="self">self</span>, ts: <span class="kw-2">&amp;</span>Tipset) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         persist_objects(<span class="self">self</span>.blockstore(), ts.block_headers().iter())<span class="question-mark">?</span>;
 
+        <span class="self">self</span>.put_tipset_key(ts.key())<span class="question-mark">?</span>;
+
         <span class="comment">// Expand tipset to include other compatible blocks at the epoch.
         </span><span class="kw">let </span>expanded = <span class="self">self</span>.expand_tipset(ts.min_ticket_block().clone())<span class="question-mark">?</span>;
         <span class="self">self</span>.update_heaviest(Arc::new(expanded))<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Writes the `TipsetKey` to the blockstore for `EthAPI` queries.
+    </span><span class="kw">pub fn </span>put_tipset_key(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+        <span class="kw">let </span>hash = tsk.cid()<span class="question-mark">?</span>.into();
+        <span class="self">self</span>.eth_mappings.write_obj(<span class="kw-2">&amp;</span>hash, tsk)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Reads the `TipsetKey` from the blockstore for `EthAPI` queries.
+    </span><span class="kw">pub fn </span>get_tipset_key(<span class="kw-2">&amp;</span><span class="self">self</span>, hash: <span class="kw-2">&amp;</span>eth::Hash) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;TipsetKey&gt;, Error&gt; {
+        <span class="kw">let </span>tsk = <span class="self">self</span>.eth_mappings.read_obj(hash)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(tsk)
+    }
+
+    <span class="doccomment">/// Writes with timestamp the `Hash` to `Cid` mapping to the blockstore for `EthAPI` queries.
+    </span><span class="kw">pub fn </span>put_mapping(<span class="kw-2">&amp;</span><span class="self">self</span>, k: eth::Hash, v: Cid) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+        <span class="kw">let </span>timestamp = chrono::Utc::now().timestamp() <span class="kw">as </span>u64;
+        <span class="self">self</span>.eth_mappings.write_obj(<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>(v, timestamp))<span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -1121,7 +1184,8 @@
             message_receipts: Cid::new_v1(DAG_CBOR, Identity.digest(<span class="kw-2">&amp;</span>[])),
             ..Default::default()
         });
-        <span class="kw">let </span>cs = ChainStore::new(db.clone(), db, chain_config, gen_block.clone()).unwrap();
+        <span class="kw">let </span>cs =
+            ChainStore::new(db.clone(), db.clone(), db, chain_config, gen_block.clone()).unwrap();
 
         <span class="macro">assert_eq!</span>(cs.genesis_block_header(), <span class="kw-2">&amp;</span>gen_block);
     }
@@ -1135,7 +1199,7 @@
             ..Default::default()
         });
 
-        <span class="kw">let </span>cs = ChainStore::new(db.clone(), db, chain_config, gen_block).unwrap();
+        <span class="kw">let </span>cs = ChainStore::new(db.clone(), db.clone(), db, chain_config, gen_block).unwrap();
 
         <span class="kw">let </span>cid = Cid::new_v1(DAG_CBOR, Blake2b256.digest(<span class="kw-2">&amp;</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]));
         <span class="macro">assert!</span>(!cs.is_block_validated(<span class="kw-2">&amp;</span>cid));

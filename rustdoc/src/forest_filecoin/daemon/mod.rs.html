@@ -738,6 +738,11 @@
 <a href="#738" id="738">738</a>
 <a href="#739" id="739">739</a>
 <a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -755,7 +760,9 @@
     cli::{CliOpts, Config},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::daemon::db_util::{import_chain_as_forest_car, load_all_forest_cars};
+<span class="kw">use </span><span class="kw">crate</span>::daemon::db_util::{
+    import_chain_as_forest_car, load_all_forest_cars, populate_eth_mappings,
+};
 <span class="kw">use </span><span class="kw">crate</span>::db::car::ManyCar;
 <span class="kw">use </span><span class="kw">crate</span>::db::db_engine::{db_root, open_db};
 <span class="kw">use </span><span class="kw">crate</span>::db::MarkAndSweep;
@@ -911,7 +918,7 @@
 
     <span class="comment">// Try to migrate the database if needed. In case the migration fails, we fallback to creating a new database
     // to avoid breaking the node.
-    </span><span class="kw">let </span>db_migration = <span class="kw">crate</span>::db::migration::DbMigration::new(chain_data_path.clone());
+    </span><span class="kw">let </span>db_migration = <span class="kw">crate</span>::db::migration::DbMigration::new(<span class="kw-2">&amp;</span>config);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = db_migration.migrate() {
         <span class="macro">warn!</span>(<span class="string">"Failed to migrate database: {e}"</span>);
     }
@@ -974,6 +981,7 @@
     <span class="comment">// Initialize ChainStore
     </span><span class="kw">let </span>chain_store = Arc::new(ChainStore::new(
         Arc::clone(<span class="kw-2">&amp;</span>db),
+        db.writer().clone(),
         db.writer().clone(),
         chain_config.clone(),
         genesis_header.clone(),
@@ -1174,7 +1182,9 @@
             <span class="macro">debug!</span>(<span class="string">"Loaded car DB at {}"</span>, car_db_path.display());
             state_manager
                 .chain_store()
-                .set_heaviest_tipset(Arc::new(ts))<span class="question-mark">?</span>;
+                .set_heaviest_tipset(Arc::new(ts.clone()))<span class="question-mark">?</span>;
+
+            populate_eth_mappings(<span class="kw-2">&amp;</span>state_manager, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
         }
     }
 

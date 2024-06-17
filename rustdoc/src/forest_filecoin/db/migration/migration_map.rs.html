@@ -527,6 +527,17 @@
 <a href="#527" id="527">527</a>
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -537,13 +548,15 @@
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::db::migration::v0_16_0::Migration0_15_2_0_16_0;
+<span class="kw">use </span><span class="kw">crate</span>::db::migration::v0_19_0::Migration0_18_0_0_19_0;
+<span class="kw">use </span><span class="kw">crate</span>::Config;
 <span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>multimap::MultiMap;
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>semver::Version;
-<span class="kw">use </span>tracing::info;
+<span class="kw">use </span>tracing::{debug, info};
 
 <span class="kw">use </span><span class="kw">super</span>::v0_12_1::Migration0_12_1_0_13_0;
 <span class="kw">use </span><span class="kw">super</span>::void_migration::MigrationVoid;
@@ -562,7 +575,7 @@
     /// Ideally, the migration should use as little of the Forest codebase as possible to avoid
     /// potential issues with the migration code itself and having to update it in the future.
     /// Returns the path to the migrated database (which is not yet validated)
-    </span><span class="kw">fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;PathBuf&gt;;
+    </span><span class="kw">fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path, config: <span class="kw-2">&amp;</span>Config) -&gt; anyhow::Result&lt;PathBuf&gt;;
     <span class="doccomment">/// Performs post-migration checks. This is the place to check if the migration database is
     /// ready to be used by Forest and renamed into a versioned database.
     </span><span class="kw">fn </span>post_checks(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;()&gt;;
@@ -606,6 +619,7 @@
 <span class="macro">create_migrations!</span>(
     <span class="string">"0.12.1" </span>-&gt; <span class="string">"0.13.0" </span>@ Migration0_12_1_0_13_0,
     <span class="string">"0.15.2" </span>-&gt; <span class="string">"0.16.0" </span>@ Migration0_15_2_0_16_0,
+    <span class="string">"0.18.0" </span>-&gt; <span class="string">"0.19.0" </span>@ Migration0_18_0_0_19_0,
 );
 
 <span class="kw">pub struct </span>Migration {
@@ -615,20 +629,26 @@
 }
 
 <span class="kw">impl </span>Migration {
-    <span class="kw">pub fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">pub fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path, config: <span class="kw-2">&amp;</span>Config) -&gt; anyhow::Result&lt;()&gt; {
         <span class="macro">info!</span>(
             <span class="string">"Migrating database from version {} to {}"</span>,
             <span class="self">self</span>.from, <span class="self">self</span>.to
         );
 
         <span class="self">self</span>.pre_checks(chain_data_path)<span class="question-mark">?</span>;
-        <span class="kw">let </span>migrated_db = <span class="self">self</span>.migrator.migrate(chain_data_path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>migrated_db = <span class="self">self</span>.migrator.migrate(chain_data_path, config)<span class="question-mark">?</span>;
         <span class="self">self</span>.post_checks(chain_data_path)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>new_db = chain_data_path.join(<span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="self">self</span>.to));
+        <span class="macro">debug!</span>(
+            <span class="string">"Renaming database {} to {}"</span>,
+            migrated_db.display(),
+            new_db.display()
+        );
         std::fs::rename(migrated_db, new_db)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>old_db = chain_data_path.join(<span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="self">self</span>.from));
+        <span class="macro">debug!</span>(<span class="string">"Deleting database {}"</span>, old_db.display());
         std::fs::remove_dir_all(old_db)<span class="question-mark">?</span>;
 
         <span class="macro">info!</span>(<span class="string">"Database migration complete"</span>);
@@ -815,7 +835,7 @@
             <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="kw">fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, _chain_data_path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;PathBuf&gt; {
+        <span class="kw">fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, _chain_data_path: <span class="kw-2">&amp;</span>Path, _config: <span class="kw-2">&amp;</span>Config) -&gt; anyhow::Result&lt;PathBuf&gt; {
             <span class="prelude-val">Ok</span>(<span class="string">""</span>.into())
         }
 
@@ -1010,7 +1030,7 @@
             <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="kw">fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;PathBuf&gt; {
+        <span class="kw">fn </span>migrate(<span class="kw-2">&amp;</span><span class="self">self</span>, chain_data_path: <span class="kw-2">&amp;</span>Path, _config: <span class="kw-2">&amp;</span>Config) -&gt; anyhow::Result&lt;PathBuf&gt; {
             <span class="kw">let </span>temp_db_path = chain_data_path.join(temporary_db_name(<span class="kw-2">&amp;</span><span class="self">self</span>.from, <span class="kw-2">&amp;</span><span class="self">self</span>.to));
             fs::create_dir(<span class="kw-2">&amp;</span>temp_db_path).unwrap();
             <span class="prelude-val">Ok</span>(temp_db_path)
@@ -1048,7 +1068,9 @@
         fs::create_dir(temp_dir.path().join(<span class="string">"0.1.0"</span>)).unwrap();
         <span class="macro">assert!</span>(migration.pre_checks(temp_dir.path()).is_ok());
 
-        migration.migrate(temp_dir.path()).unwrap();
+        migration
+            .migrate(temp_dir.path(), <span class="kw-2">&amp;</span>Config::default())
+            .unwrap();
         <span class="macro">assert!</span>(temp_dir.path().join(<span class="string">"0.2.0"</span>).exists());
 
         <span class="macro">assert!</span>(migration.post_checks(temp_dir.path()).is_err());

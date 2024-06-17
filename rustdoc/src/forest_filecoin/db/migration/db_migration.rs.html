@@ -131,6 +131,22 @@
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -139,36 +155,44 @@
 <span class="kw">use </span>tracing::info;
 
 <span class="kw">use crate</span>::{
+    cli_shared::chain_path,
     db::{
         db_mode::{get_latest_versioned_database, DbMode},
         migration::migration_map::create_migration_chain,
     },
     utils::version::FOREST_VERSION,
+    Config,
 };
 
 <span class="doccomment">/// Governs the database migration process. This is the entry point for the migration process.
 </span><span class="kw">pub struct </span>DbMigration {
-    <span class="doccomment">/// Root of the chain data directory. This is where all the databases are stored.
-    </span>chain_data_path: PathBuf,
+    <span class="doccomment">/// Forest configuration used.
+    </span>config: Config,
 }
 
 <span class="kw">impl </span>DbMigration {
-    <span class="kw">pub fn </span>new(chain_data_path: PathBuf) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ chain_data_path }
+    <span class="kw">pub fn </span>new(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            config: config.clone(),
+        }
+    }
+
+    <span class="kw">pub fn </span>chain_data_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
+        chain_path(<span class="kw-2">&amp;</span><span class="self">self</span>.config)
     }
 
     <span class="doccomment">/// Verifies if a migration is needed for the current Forest process.
     /// Note that migration can possibly happen only if the DB is in `current` mode.
     </span><span class="kw">pub fn </span>is_migration_required(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;bool&gt; {
         <span class="comment">// No chain data means that this is a fresh instance. No migration required.
-        </span><span class="kw">if </span>!<span class="self">self</span>.chain_data_path.exists() {
+        </span><span class="kw">if </span>!<span class="self">self</span>.chain_data_path().exists() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
         }
 
         <span class="comment">// migration is required only if the DB is in `current` mode and the current db version is
         // smaller than the current binary version
         </span><span class="kw">if let </span>DbMode::Current = DbMode::read() {
-            <span class="kw">let </span>current_db = get_latest_versioned_database(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_data_path)<span class="question-mark">?
+            <span class="kw">let </span>current_db = get_latest_versioned_database(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_data_path())<span class="question-mark">?
                 </span>.unwrap_or_else(|| FOREST_VERSION.clone());
             <span class="prelude-val">Ok</span>(current_db &lt; <span class="kw-2">*</span>FOREST_VERSION)
         } <span class="kw">else </span>{
@@ -187,7 +211,7 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>latest_db_version = get_latest_versioned_database(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_data_path)<span class="question-mark">?
+        <span class="kw">let </span>latest_db_version = get_latest_versioned_database(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_data_path())<span class="question-mark">?
             </span>.unwrap_or_else(|| FOREST_VERSION.clone());
 
         <span class="macro">info!</span>(
@@ -200,7 +224,7 @@
         <span class="kw">let </span>migrations = create_migration_chain(<span class="kw-2">&amp;</span>latest_db_version, target_db_version)<span class="question-mark">?</span>;
 
         <span class="kw">for </span>migration <span class="kw">in </span>migrations {
-            migration.migrate(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_data_path)<span class="question-mark">?</span>;
+            migration.migrate(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_data_path(), <span class="kw-2">&amp;</span><span class="self">self</span>.config)<span class="question-mark">?</span>;
         }
 
         <span class="macro">info!</span>(
@@ -221,30 +245,36 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_migration_not_required_no_chain_path() {
         <span class="kw">let </span>temp_dir = tempfile::tempdir().unwrap();
-        <span class="kw">let </span>db_migration = DbMigration::new(temp_dir.path().join(<span class="string">"azathoth"</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>config = Config::default();
+        config.client.data_dir = temp_dir.path().join(<span class="string">"azathoth"</span>);
+        <span class="kw">let </span>db_migration = DbMigration::new(<span class="kw-2">&amp;</span>config);
         <span class="macro">assert!</span>(!db_migration.is_migration_required().unwrap());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_migration_not_required_no_databases() {
         <span class="kw">let </span>temp_dir = tempfile::tempdir().unwrap();
-        <span class="kw">let </span>db_migration = DbMigration::new(temp_dir.path().to_owned());
+        <span class="kw">let </span><span class="kw-2">mut </span>config = Config::default();
+        temp_dir.path().clone_into(<span class="kw-2">&amp;mut </span>config.client.data_dir);
+        <span class="kw">let </span>db_migration = DbMigration::new(<span class="kw-2">&amp;</span>config);
         <span class="macro">assert!</span>(!db_migration.is_migration_required().unwrap());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_migration_not_required_under_non_current_mode() {
         <span class="kw">let </span>temp_dir = tempfile::tempdir().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>config = Config::default();
+        temp_dir.path().clone_into(<span class="kw-2">&amp;mut </span>config.client.data_dir);
 
-        <span class="kw">let </span>db_dir = temp_dir.path().join(<span class="string">"0.1.0"</span>);
-        std::fs::create_dir(<span class="kw-2">&amp;</span>db_dir).unwrap();
-        <span class="kw">let </span>db_migration = DbMigration::new(temp_dir.path().to_owned());
+        <span class="kw">let </span>db_dir = temp_dir.path().join(<span class="string">"mainnet/0.1.0"</span>);
+        std::fs::create_dir_all(<span class="kw-2">&amp;</span>db_dir).unwrap();
+        <span class="kw">let </span>db_migration = DbMigration::new(<span class="kw-2">&amp;</span>config);
 
         std::env::set_var(FOREST_DB_DEV_MODE, <span class="string">"latest"</span>);
         <span class="macro">assert!</span>(!db_migration.is_migration_required().unwrap());
 
         std::fs::remove_dir(db_dir).unwrap();
-        std::fs::create_dir(temp_dir.path().join(<span class="string">"cthulhu"</span>)).unwrap();
+        std::fs::create_dir_all(temp_dir.path().join(<span class="string">"mainnet/cthulhu"</span>)).unwrap();
 
         std::env::set_var(FOREST_DB_DEV_MODE, <span class="string">"cthulhu"</span>);
         <span class="macro">assert!</span>(!db_migration.is_migration_required().unwrap());
@@ -253,10 +283,12 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_migration_required_current_mode() {
         <span class="kw">let </span>temp_dir = tempfile::tempdir().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>config = Config::default();
+        temp_dir.path().clone_into(<span class="kw-2">&amp;mut </span>config.client.data_dir);
 
-        <span class="kw">let </span>db_dir = temp_dir.path().join(<span class="string">"0.1.0"</span>);
-        std::fs::create_dir(db_dir).unwrap();
-        <span class="kw">let </span>db_migration = DbMigration::new(temp_dir.path().to_owned());
+        <span class="kw">let </span>db_dir = temp_dir.path().join(<span class="string">"mainnet/0.1.0"</span>);
+        std::fs::create_dir_all(db_dir).unwrap();
+        <span class="kw">let </span>db_migration = DbMigration::new(<span class="kw-2">&amp;</span>config);
 
         std::env::set_var(FOREST_DB_DEV_MODE, <span class="string">"current"</span>);
         <span class="macro">assert!</span>(db_migration.is_migration_required().unwrap());
