@@ -193,10 +193,29 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, LotusJson};
+<span class="kw">use </span><span class="kw">crate</span>::message::Message <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::shim::executor::ApplyRet;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address,
     clock::ChainEpoch,
@@ -273,6 +292,21 @@
 }
 
 <span class="macro">lotus_json_with_self!</span>(MessageGasCost);
+
+<span class="kw">impl </span>MessageGasCost {
+    <span class="kw">pub fn </span>new(message: <span class="kw-2">&amp;</span>Message, apply_ret: <span class="kw-2">&amp;</span>ApplyRet) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            message: <span class="prelude-val">Some</span>(message.cid()<span class="question-mark">?</span>),
+            gas_used: TokenAmount::from_atto(apply_ret.msg_receipt().gas_used()),
+            base_fee_burn: apply_ret.base_fee_burn(),
+            over_estimation_burn: apply_ret.over_estimation_burn(),
+            miner_penalty: apply_ret.penalty(),
+            miner_tip: apply_ret.miner_tip(),
+            refund: apply_ret.refund(),
+            total_cost: message.required_funds() - <span class="kw-2">&amp;</span>apply_ret.refund(),
+        })
+    }
+}
 
 <span class="attr">#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = <span class="string">"PascalCase"</span>)]

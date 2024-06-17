@@ -1636,6 +1636,8 @@
 <a href="#1636" id="1636">1636</a>
 <a href="#1637" id="1637">1637</a>
 <a href="#1638" id="1638">1638</a>
+<a href="#1639" id="1639">1639</a>
+<a href="#1640" id="1640">1640</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1670,7 +1672,7 @@
     address::{Address, Payload, Protocol},
     clock::ChainEpoch,
     econ::TokenAmount,
-    executor::{ApplyRet, Receipt},
+    executor::Receipt,
     message::Message,
     randomness::Randomness,
     state_tree::{ActorState, StateTree},
@@ -2203,20 +2205,27 @@
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
         ts: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
         mcid: Cid,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Message, ApplyRet), Error&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, Error&gt; {
         <span class="kw">const </span>ERROR_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"replay_halt"</span>;
 
         <span class="comment">// This isn't ideal to have, since the execution is synchronous, but this needs
         // to be the case because the state transition has to be in blocking
         // thread to avoid starving executor
-        </span><span class="kw">let </span>(m_tx, m_rx) = std::sync::mpsc::channel();
-        <span class="kw">let </span>(r_tx, r_rx) = std::sync::mpsc::channel();
+        </span><span class="kw">let </span>(tx, rx) = flume::bounded(<span class="number">1</span>);
         <span class="kw">let </span>callback = <span class="kw">move </span>|ctx: <span class="kw-2">&amp;</span>MessageCallbackCtx| {
             <span class="kw">match </span>ctx.at {
                 CalledAt::Applied | CalledAt::Reward =&gt; {
                     <span class="kw">if </span>ctx.cid == mcid {
-                        m_tx.send(ctx.message.message().clone())<span class="question-mark">?</span>;
-                        r_tx.send(ctx.apply_ret.clone())<span class="question-mark">?</span>;
+                        tx.send(ApiInvocResult {
+                            msg_cid: ctx.message.cid()<span class="question-mark">?</span>,
+                            msg: ctx.message.message().clone(),
+                            msg_rct: <span class="prelude-val">Some</span>(ctx.apply_ret.msg_receipt()),
+                            error: ctx.apply_ret.failure_info().unwrap_or_default(),
+                            duration: ctx.duration.as_nanos().clamp(<span class="number">0</span>, u64::MAX <span class="kw">as </span>u128) <span class="kw">as </span>u64,
+                            gas_cost: MessageGasCost::new(ctx.message.message(), ctx.apply_ret)<span class="question-mark">?</span>,
+                            execution_trace: structured::parse_events(ctx.apply_ret.exec_trace())
+                                .unwrap_or_default(),
+                        })<span class="question-mark">?</span>;
                         <span class="macro">anyhow::bail!</span>(ERROR_MSG);
                     }
                     <span class="prelude-val">Ok</span>(())
@@ -2225,7 +2234,7 @@
             </span>}
         };
         <span class="kw">let </span>result = <span class="self">self
-            </span>.compute_tipset_state(Arc::clone(ts), <span class="prelude-val">Some</span>(callback), VMTrace::NotTraced)
+            </span>.compute_tipset_state(Arc::clone(ts), <span class="prelude-val">Some</span>(callback), VMTrace::Traced)
             .<span class="kw">await</span>;
 
         <span class="kw">if let </span><span class="prelude-val">Err</span>(error_message) = result {
@@ -2237,13 +2246,8 @@
         }
 
         <span class="comment">// Use try_recv here assuming callback execution is synchronous
-        </span><span class="kw">let </span>out_mes = m_rx
-            .try_recv()
-            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"given message not found in tipset: {err}"</span>)))<span class="question-mark">?</span>;
-        <span class="kw">let </span>out_ret = r_rx
-            .try_recv()
-            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"message did not have a return: {err}"</span>)))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((out_mes, out_ret))
+        </span>rx.try_recv()
+            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"failed to replay: {err}"</span>)))
     }
 
     <span class="doccomment">/// Checks the eligibility of the miner. This is used in the validation that
