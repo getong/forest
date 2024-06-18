@@ -602,6 +602,9 @@
 <a href="#602" id="602">602</a>
 <a href="#603" id="603">603</a>
 <a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -622,6 +625,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::{BlockstoreExt, CborStoreExt};
 <span class="kw">use </span>ahash::{HashMap, HashMapExt, HashSet};
+<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fil_actors_shared::fvm_ipld_amt::Amtv0 <span class="kw">as </span>Amt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -777,13 +781,15 @@
     </span><span class="kw">pub fn </span>put_tipset_key(<span class="kw-2">&amp;</span><span class="self">self</span>, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">let </span>hash = tsk.cid()<span class="question-mark">?</span>.into();
         <span class="self">self</span>.eth_mappings.write_obj(<span class="kw-2">&amp;</span>hash, tsk)<span class="question-mark">?</span>;
-
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Reads the `TipsetKey` from the blockstore for `EthAPI` queries.
-    </span><span class="kw">pub fn </span>get_tipset_key(<span class="kw-2">&amp;</span><span class="self">self</span>, hash: <span class="kw-2">&amp;</span>eth::Hash) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;TipsetKey&gt;, Error&gt; {
-        <span class="kw">let </span>tsk = <span class="self">self</span>.eth_mappings.read_obj(hash)<span class="question-mark">?</span>;
+    </span><span class="kw">pub fn </span>get_required_tipset_key(<span class="kw-2">&amp;</span><span class="self">self</span>, hash: <span class="kw-2">&amp;</span>eth::Hash) -&gt; <span class="prelude-ty">Result</span>&lt;TipsetKey, Error&gt; {
+        <span class="kw">let </span>tsk = <span class="self">self
+            </span>.eth_mappings
+            .read_obj::&lt;TipsetKey&gt;(hash)<span class="question-mark">?
+            </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"cannot find tipset with hash {}"</span>, hash))<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(tsk)
     }

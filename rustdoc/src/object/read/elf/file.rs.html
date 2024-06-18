@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/object-0.35.0/src/read/elf/file.rs`."><title>file.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="object" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../object/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/object-0.36.0/src/read/elf/file.rs`."><title>file.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="object" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../object/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -909,6 +909,44 @@
 <a href="#909" id="909">909</a>
 <a href="#910" id="910">910</a>
 <a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::convert::TryInto;
 <span class="kw">use </span>core::fmt::Debug;
@@ -1001,13 +1039,53 @@
     }
 
     <span class="doccomment">/// Returns the raw ELF file header.
+    </span><span class="attr">#[deprecated(note = <span class="string">"Use `elf_header` instead"</span>)]
     </span><span class="kw">pub fn </span>raw_header(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Elf {
         <span class="self">self</span>.header
     }
 
     <span class="doccomment">/// Returns the raw ELF segments.
+    </span><span class="attr">#[deprecated(note = <span class="string">"Use `elf_program_headers` instead"</span>)]
     </span><span class="kw">pub fn </span>raw_segments(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'data </span>[Elf::ProgramHeader] {
         <span class="self">self</span>.segments
+    }
+
+    <span class="doccomment">/// Get the raw ELF file header.
+    </span><span class="kw">pub fn </span>elf_header(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Elf {
+        <span class="self">self</span>.header
+    }
+
+    <span class="doccomment">/// Get the raw ELF program headers.
+    ///
+    /// Returns an empty slice if the file has no program headers.
+    </span><span class="kw">pub fn </span>elf_program_headers(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'data </span>[Elf::ProgramHeader] {
+        <span class="self">self</span>.segments
+    }
+
+    <span class="doccomment">/// Get the ELF section table.
+    ///
+    /// Returns an empty section table if the file has no section headers.
+    </span><span class="kw">pub fn </span>elf_section_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SectionTable&lt;<span class="lifetime">'data</span>, Elf, R&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.sections
+    }
+
+    <span class="doccomment">/// Get the ELF symbol table.
+    ///
+    /// Returns an empty symbol table if the file has no symbol table.
+    </span><span class="kw">pub fn </span>elf_symbol_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SymbolTable&lt;<span class="lifetime">'data</span>, Elf, R&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.symbols
+    }
+
+    <span class="doccomment">/// Get the ELF dynamic symbol table.
+    ///
+    /// Returns an empty symbol table if the file has no dynamic symbol table.
+    </span><span class="kw">pub fn </span>elf_dynamic_symbol_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SymbolTable&lt;<span class="lifetime">'data</span>, Elf, R&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.dynamic_symbols
+    }
+
+    <span class="doccomment">/// Get a mapping for linked relocation sections.
+    </span><span class="kw">pub fn </span>elf_relocation_sections(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RelocationSections {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.relocations
     }
 
     <span class="kw">fn </span>raw_section_by_name&lt;<span class="lifetime">'file</span>&gt;(
@@ -1018,7 +1096,7 @@
             .section_by_name(<span class="self">self</span>.endian, section_name)
             .map(|(index, section)| ElfSection {
                 file: <span class="self">self</span>,
-                index: SectionIndex(index),
+                index,
                 section,
             })
     }
@@ -1149,21 +1227,15 @@
     }
 
     <span class="kw">fn </span>sections(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElfSectionIterator&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt; {
-        ElfSectionIterator {
-            file: <span class="self">self</span>,
-            iter: <span class="self">self</span>.sections.iter().enumerate(),
-        }
+        ElfSectionIterator::new(<span class="self">self</span>)
     }
 
     <span class="kw">fn </span>comdats(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElfComdatIterator&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt; {
-        ElfComdatIterator {
-            file: <span class="self">self</span>,
-            iter: <span class="self">self</span>.sections.iter().enumerate(),
-        }
+        ElfComdatIterator::new(<span class="self">self</span>)
     }
 
     <span class="kw">fn </span>symbol_by_index(<span class="kw-2">&amp;</span><span class="self">self</span>, index: SymbolIndex) -&gt; read::Result&lt;ElfSymbol&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt;&gt; {
-        <span class="kw">let </span>symbol = <span class="self">self</span>.symbols.symbol(index.<span class="number">0</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>symbol = <span class="self">self</span>.symbols.symbol(index)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ElfSymbol {
             endian: <span class="self">self</span>.endian,
             symbols: <span class="kw-2">&amp;</span><span class="self">self</span>.symbols,
@@ -1173,11 +1245,7 @@
     }
 
     <span class="kw">fn </span>symbols(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElfSymbolIterator&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt; {
-        ElfSymbolIterator {
-            endian: <span class="self">self</span>.endian,
-            symbols: <span class="kw-2">&amp;</span><span class="self">self</span>.symbols,
-            index: <span class="number">0</span>,
-        }
+        ElfSymbolIterator::new(<span class="self">self</span>.endian, <span class="kw-2">&amp;</span><span class="self">self</span>.symbols)
     }
 
     <span class="kw">fn </span>symbol_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ElfSymbolTable&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt;&gt; {
@@ -1191,11 +1259,7 @@
     }
 
     <span class="kw">fn </span>dynamic_symbols(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ElfSymbolIterator&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt; {
-        ElfSymbolIterator {
-            endian: <span class="self">self</span>.endian,
-            symbols: <span class="kw-2">&amp;</span><span class="self">self</span>.dynamic_symbols,
-            index: <span class="number">0</span>,
-        }
+        ElfSymbolIterator::new(<span class="self">self</span>.endian, <span class="kw-2">&amp;</span><span class="self">self</span>.dynamic_symbols)
     }
 
     <span class="kw">fn </span>dynamic_symbol_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ElfSymbolTable&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Elf, R&gt;&gt; {
@@ -1587,6 +1651,18 @@
             .read_error(<span class="string">"Invalid ELF section header offset/size/alignment"</span>)
     }
 
+    <span class="doccomment">/// Get the section index of the section header string table.
+    ///
+    /// Returns `Err` for invalid values (including if the index is 0).
+    </span><span class="kw">fn </span>section_strings_index&lt;<span class="lifetime">'data</span>, R: ReadRef&lt;<span class="lifetime">'data</span>&gt;&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        endian: <span class="self">Self</span>::Endian,
+        data: R,
+    ) -&gt; read::Result&lt;SectionIndex&gt; {
+        <span class="self">self</span>.shstrndx(endian, data)
+            .map(|index| SectionIndex(index <span class="kw">as </span>usize))
+    }
+
     <span class="doccomment">/// Return the string table for the section headers.
     </span><span class="kw">fn </span>section_strings&lt;<span class="lifetime">'data</span>, R: ReadRef&lt;<span class="lifetime">'data</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -1597,8 +1673,8 @@
         <span class="kw">if </span>sections.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(StringTable::default());
         }
-        <span class="kw">let </span>index = <span class="self">self</span>.shstrndx(endian, data)<span class="question-mark">? </span><span class="kw">as </span>usize;
-        <span class="kw">let </span>shstrtab = sections.get(index).read_error(<span class="string">"Invalid ELF e_shstrndx"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>index = <span class="self">self</span>.section_strings_index(endian, data)<span class="question-mark">?</span>;
+        <span class="kw">let </span>shstrtab = sections.get(index.<span class="number">0</span>).read_error(<span class="string">"Invalid ELF e_shstrndx"</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>strings = <span class="kw">if let </span><span class="prelude-val">Some</span>((shstrtab_offset, shstrtab_size)) = shstrtab.file_range(endian) {
             <span class="kw">let </span>shstrtab_end = shstrtab_offset
                 .checked_add(shstrtab_size)

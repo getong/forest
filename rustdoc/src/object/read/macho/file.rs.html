@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/object-0.35.0/src/read/macho/file.rs`."><title>file.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="object" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../object/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/object-0.36.0/src/read/macho/file.rs`."><title>file.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="object" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../object/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -774,6 +774,9 @@
 <a href="#774" id="774">774</a>
 <a href="#775" id="775">775</a>
 <a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::fmt::Debug;
 <span class="kw">use </span>core::{mem, str};
@@ -820,7 +823,7 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) header_offset: u64,
     <span class="kw">pub</span>(<span class="kw">super</span>) header: <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Mach,
     <span class="kw">pub</span>(<span class="kw">super</span>) segments: Vec&lt;MachOSegmentInternal&lt;<span class="lifetime">'data</span>, Mach, R&gt;&gt;,
-    <span class="kw">pub</span>(<span class="kw">super</span>) sections: Vec&lt;MachOSectionInternal&lt;<span class="lifetime">'data</span>, Mach&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) sections: Vec&lt;MachOSectionInternal&lt;<span class="lifetime">'data</span>, Mach, R&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) symbols: SymbolTable&lt;<span class="lifetime">'data</span>, Mach, R&gt;,
 }
 
@@ -841,11 +844,10 @@
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>commands) = header.load_commands(endian, data, <span class="number">0</span>) {
             <span class="kw">while let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(command)) = commands.next() {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>((segment, section_data)) = Mach::Segment::from_command(command)<span class="question-mark">? </span>{
-                    <span class="kw">let </span>segment_index = segments.len();
                     segments.push(MachOSegmentInternal { segment, data });
                     <span class="kw">for </span>section <span class="kw">in </span>segment.sections(endian, section_data)<span class="question-mark">? </span>{
                         <span class="kw">let </span>index = SectionIndex(sections.len() + <span class="number">1</span>);
-                        sections.push(MachOSectionInternal::parse(index, segment_index, section));
+                        sections.push(MachOSectionInternal::parse(index, section, data));
                     }
                 } <span class="kw">else if let </span><span class="prelude-val">Some</span>(symtab) = command.symtab()<span class="question-mark">? </span>{
                     symbols = symtab.symbols(endian, data)<span class="question-mark">?</span>;
@@ -886,6 +888,7 @@
                 <span class="kw">if let </span><span class="prelude-val">Some</span>((segment, section_data)) = Mach::Segment::from_command(command)<span class="question-mark">? </span>{
                     <span class="comment">// Each segment can be stored in a different subcache. Get the segment's
                     // address and look it up in the cache mappings, to find the correct cache data.
+                    // This was observed for the arm64e __LINKEDIT segment in macOS 12.0.1.
                     </span><span class="kw">let </span>addr = segment.vmaddr(endian).into();
                     <span class="kw">let </span>(data, _offset) = image
                         .cache
@@ -894,12 +897,11 @@
                     <span class="kw">if </span>segment.name() == macho::SEG_LINKEDIT.as_bytes() {
                         linkedit_data = <span class="prelude-val">Some</span>(data);
                     }
-                    <span class="kw">let </span>segment_index = segments.len();
                     segments.push(MachOSegmentInternal { segment, data });
 
                     <span class="kw">for </span>section <span class="kw">in </span>segment.sections(endian, section_data)<span class="question-mark">? </span>{
                         <span class="kw">let </span>index = SectionIndex(sections.len() + <span class="number">1</span>);
-                        sections.push(MachOSectionInternal::parse(index, segment_index, section));
+                        sections.push(MachOSectionInternal::parse(index, section, data));
                     }
                 } <span class="kw">else if let </span><span class="prelude-val">Some</span>(st) = command.symtab()<span class="question-mark">? </span>{
                     symtab = <span class="prelude-val">Some</span>(st);
@@ -930,21 +932,12 @@
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>section_internal(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         index: SectionIndex,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>MachOSectionInternal&lt;<span class="lifetime">'data</span>, Mach&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>MachOSectionInternal&lt;<span class="lifetime">'data</span>, Mach, R&gt;&gt; {
         index
             .<span class="number">0
             </span>.checked_sub(<span class="number">1</span>)
             .and_then(|index| <span class="self">self</span>.sections.get(index))
             .read_error(<span class="string">"Invalid Mach-O section index"</span>)
-    }
-
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>segment_internal(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        index: usize,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>MachOSegmentInternal&lt;<span class="lifetime">'data</span>, Mach, R&gt;&gt; {
-        <span class="self">self</span>.segments
-            .get(index)
-            .read_error(<span class="string">"Invalid Mach-O segment index"</span>)
     }
 
     <span class="doccomment">/// Returns the endianness.
@@ -958,8 +951,27 @@
     }
 
     <span class="doccomment">/// Returns the raw Mach-O file header.
+    </span><span class="attr">#[deprecated(note = <span class="string">"Use `macho_header` instead"</span>)]
     </span><span class="kw">pub fn </span>raw_header(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Mach {
         <span class="self">self</span>.header
+    }
+
+    <span class="doccomment">/// Get the raw Mach-O file header.
+    </span><span class="kw">pub fn </span>macho_header(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'data </span>Mach {
+        <span class="self">self</span>.header
+    }
+
+    <span class="doccomment">/// Get the Mach-O load commands.
+    </span><span class="kw">pub fn </span>macho_load_commands(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LoadCommandIterator&lt;<span class="lifetime">'data</span>, Mach::Endian&gt;&gt; {
+        <span class="self">self</span>.header
+            .load_commands(<span class="self">self</span>.endian, <span class="self">self</span>.data, <span class="self">self</span>.header_offset)
+    }
+
+    <span class="doccomment">/// Get the Mach-O symbol table.
+    ///
+    /// Returns an empty symbol table if the file has no symbol table.
+    </span><span class="kw">pub fn </span>macho_symbol_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SymbolTable&lt;<span class="lifetime">'data</span>, Mach, R&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.symbols
     }
 
     <span class="doccomment">/// Return the `LC_BUILD_VERSION` load command if present.
@@ -1102,15 +1114,12 @@
     }
 
     <span class="kw">fn </span>symbol_by_index(<span class="kw-2">&amp;</span><span class="self">self</span>, index: SymbolIndex) -&gt; <span class="prelude-ty">Result</span>&lt;MachOSymbol&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Mach, R&gt;&gt; {
-        <span class="kw">let </span>nlist = <span class="self">self</span>.symbols.symbol(index.<span class="number">0</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>nlist = <span class="self">self</span>.symbols.symbol(index)<span class="question-mark">?</span>;
         MachOSymbol::new(<span class="self">self</span>, index, nlist).read_error(<span class="string">"Unsupported Mach-O symbol index"</span>)
     }
 
     <span class="kw">fn </span>symbols(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MachOSymbolIterator&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Mach, R&gt; {
-        MachOSymbolIterator {
-            file: <span class="self">self</span>,
-            index: <span class="number">0</span>,
-        }
+        MachOSymbolIterator::new(<span class="self">self</span>)
     }
 
     <span class="attr">#[inline]
@@ -1119,10 +1128,7 @@
     }
 
     <span class="kw">fn </span>dynamic_symbols(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MachOSymbolIterator&lt;<span class="lifetime">'data</span>, <span class="lifetime">'_</span>, Mach, R&gt; {
-        MachOSymbolIterator {
-            file: <span class="self">self</span>,
-            index: <span class="self">self</span>.symbols.len(),
-        }
+        MachOSymbolIterator::empty(<span class="self">self</span>)
     }
 
     <span class="attr">#[inline]
@@ -1160,7 +1166,7 @@
             <span class="kw">let </span>index = dysymtab.iundefsym.get(<span class="self">self</span>.endian) <span class="kw">as </span>usize;
             <span class="kw">let </span>number = dysymtab.nundefsym.get(<span class="self">self</span>.endian) <span class="kw">as </span>usize;
             <span class="kw">for </span>i <span class="kw">in </span>index..(index.wrapping_add(number)) {
-                <span class="kw">let </span>symbol = <span class="self">self</span>.symbols.symbol(i)<span class="question-mark">?</span>;
+                <span class="kw">let </span>symbol = <span class="self">self</span>.symbols.symbol(SymbolIndex(i))<span class="question-mark">?</span>;
                 <span class="kw">let </span>name = symbol.name(<span class="self">self</span>.endian, <span class="self">self</span>.symbols.strings())<span class="question-mark">?</span>;
                 <span class="kw">let </span>library = <span class="kw">if </span>twolevel {
                     libraries
@@ -1196,7 +1202,7 @@
             <span class="kw">let </span>index = dysymtab.iextdefsym.get(<span class="self">self</span>.endian) <span class="kw">as </span>usize;
             <span class="kw">let </span>number = dysymtab.nextdefsym.get(<span class="self">self</span>.endian) <span class="kw">as </span>usize;
             <span class="kw">for </span>i <span class="kw">in </span>index..(index.wrapping_add(number)) {
-                <span class="kw">let </span>symbol = <span class="self">self</span>.symbols.symbol(i)<span class="question-mark">?</span>;
+                <span class="kw">let </span>symbol = <span class="self">self</span>.symbols.symbol(SymbolIndex(i))<span class="question-mark">?</span>;
                 <span class="kw">let </span>name = symbol.name(<span class="self">self</span>.endian, <span class="self">self</span>.symbols.strings())<span class="question-mark">?</span>;
                 <span class="kw">let </span>address = symbol.n_value(<span class="self">self</span>.endian).into();
                 exports.push(Export {
