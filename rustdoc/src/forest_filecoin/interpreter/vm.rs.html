@@ -590,8 +590,6 @@
 <a href="#590" id="590">590</a>
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
-<a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -903,7 +901,7 @@
     <span class="kw">pub fn </span>run_cron(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         epoch: ChainEpoch,
-        callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>MessageCallbackCtx) -&gt; anyhow::Result&lt;()&gt;&gt;,
+        callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(MessageCallbackCtx&lt;<span class="lifetime">'_</span>&gt;) -&gt; anyhow::Result&lt;()&gt;&gt;,
     ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span>cron_msg: Message = Message_v3 {
             from: Address::SYSTEM_ACTOR.into(),
@@ -927,7 +925,7 @@
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>callback) = callback {
-            callback(<span class="kw-2">&amp;</span>MessageCallbackCtx {
+            callback(MessageCallbackCtx {
                 cid: cron_msg.cid()<span class="question-mark">?</span>,
                 message: <span class="kw-2">&amp;</span>ChainMessage::Unsigned(cron_msg),
                 apply_ret: <span class="kw-2">&amp;</span>ret,
@@ -944,9 +942,7 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         messages: <span class="kw-2">&amp;</span>[BlockMessages],
         epoch: ChainEpoch,
-        <span class="comment">// note: we take &amp;MessageCallbackCtx rather than MessageCallbackCtx&lt;'_&gt;
-        //       because I'm not smart enough to make the second one work
-        </span><span class="kw-2">mut </span>callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>MessageCallbackCtx) -&gt; anyhow::Result&lt;()&gt;&gt;,
+        <span class="kw-2">mut </span>callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(MessageCallbackCtx&lt;<span class="lifetime">'_</span>&gt;) -&gt; anyhow::Result&lt;()&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Receipt&gt;, anyhow::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>receipts = Vec::new();
         <span class="kw">let </span><span class="kw-2">mut </span>processed = HashSet::&lt;Cid&gt;::default();
@@ -964,7 +960,7 @@
                 <span class="kw">let </span>(ret, duration) = <span class="self">self</span>.apply_message(message)<span class="question-mark">?</span>;
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(cb) = <span class="kw-2">&amp;mut </span>callback {
-                    cb(<span class="kw-2">&amp;</span>MessageCallbackCtx {
+                    cb(MessageCallbackCtx {
                         cid,
                         message,
                         apply_ret: <span class="kw-2">&amp;</span>ret,
@@ -1009,7 +1005,7 @@
                 }
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(callback) = <span class="kw-2">&amp;mut </span>callback {
-                    callback(<span class="kw-2">&amp;</span>MessageCallbackCtx {
+                    callback(MessageCallbackCtx {
                         cid: rew_msg.cid()<span class="question-mark">?</span>,
                         message: <span class="kw-2">&amp;</span>ChainMessage::Unsigned(rew_msg),
                         apply_ret: <span class="kw-2">&amp;</span>ret,
@@ -1142,7 +1138,7 @@
     }
 }
 
-<span class="attr">#[derive(Debug, Clone, Copy)]
+<span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>MessageCallbackCtx&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub </span>cid: Cid,
     <span class="kw">pub </span>message: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ChainMessage,
