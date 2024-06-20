@@ -458,7 +458,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (msg, tsk): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        estimate_gas_limit(<span class="kw-2">&amp;</span>ctx, msg, tsk).<span class="kw">await
+        estimate_gas_limit(<span class="kw-2">&amp;</span>ctx, msg, <span class="kw-2">&amp;</span>tsk).<span class="kw">await
     </span>}
 }
 
@@ -484,7 +484,7 @@
 <span class="kw">async fn </span>estimate_gas_limit&lt;DB&gt;(
     data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
     msg: Message,
-    ApiTipsetKey(tsk): ApiTipsetKey,
+    ApiTipsetKey(tsk): <span class="kw-2">&amp;</span>ApiTipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;i64, ServerError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
@@ -497,7 +497,7 @@
     <span class="kw">let </span>curr_ts = data
         .state_manager
         .chain_store()
-        .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        .load_required_tipset_or_heaviest(tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>from_a = data
         .state_manager
         .resolve_to_key_addr(<span class="kw-2">&amp;</span>msg.from, <span class="kw-2">&amp;</span>curr_ts)
@@ -552,7 +552,7 @@
 {
     <span class="kw">let </span><span class="kw-2">mut </span>msg = msg;
     <span class="kw">if </span>msg.gas_limit == <span class="number">0 </span>{
-        <span class="kw">let </span>gl = estimate_gas_limit::&lt;DB&gt;(data, msg.clone(), tsk.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>gl = estimate_gas_limit::&lt;DB&gt;(data, msg.clone(), <span class="kw-2">&amp;</span>tsk).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>gl = gl <span class="kw">as </span>f64 * data.mpool.config.gas_limit_overestimation;
         msg.set_gas_limit((gl <span class="kw">as </span>u64).min(BLOCK_GAS_LIMIT));
     }
