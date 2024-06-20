@@ -1,1 +1,0 @@
-searchState.loadedDescShard("wasmtime_versioned_export_macros", 0, "This crate defines macros to easily define and use …")

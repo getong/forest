@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["derive_challenges"],"struct":["Challenge","ComponentPrivateInputs","PrivateInputs","Proof","PublicInputs","PublicParams","RationalPoSt","RationalPoStCircuit","RationalPoStCompound","SetupParams"]};

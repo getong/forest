@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/memory.rs`."><title>memory.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-19.0.2/src/memory.rs`."><title>memory.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -956,17 +956,31 @@
 <a href="#956" id="956">956</a>
 <a href="#957" id="957">957</a>
 <a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
+<a href="#967" id="967">967</a>
+<a href="#968" id="968">968</a>
+<a href="#969" id="969">969</a>
+<a href="#970" id="970">970</a>
+<a href="#971" id="971">971</a>
+<a href="#972" id="972">972</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Memory management for linear memories.
 //!
 //! `RuntimeLinearMemory` is to WebAssembly linear memories what `Table` is to WebAssembly tables.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::mmap::Mmap;
-<span class="kw">use </span><span class="kw">crate</span>::parking_spot::ParkingSpot;
+<span class="kw">use </span><span class="kw">crate</span>::parking_spot::{ParkingSpot, Waiter};
 <span class="kw">use </span><span class="kw">crate</span>::vmcontext::VMMemoryDefinition;
 <span class="kw">use crate</span>::{MemoryImage, MemoryImageSlot, SendSyncPtr, Store, WaitResult};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>anyhow::{bail, format_err, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span>std::convert::TryFrom;
+<span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::ops::Range;
 <span class="kw">use </span>std::ptr::NonNull;
 <span class="kw">use </span>std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
@@ -1074,7 +1088,7 @@
                     // to report the growth failure to but the error should not
                     // be dropped
                     // (https://github.com/bytecodealliance/wasmtime/issues/4240).
-                    </span>store.memory_grow_failed(<span class="kw-2">&amp;</span><span class="macro">format_err!</span>(<span class="string">"Memory maximum size exceeded"</span>));
+                    </span>store.memory_grow_failed(<span class="macro">format_err!</span>(<span class="string">"Memory maximum size exceeded"</span>))<span class="question-mark">?</span>;
                 }
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
@@ -1088,7 +1102,7 @@
                 // dropped
                 // (https://github.com/bytecodealliance/wasmtime/issues/4240).
                 </span><span class="kw">if let </span><span class="prelude-val">Some</span>(store) = store {
-                    store.memory_grow_failed(<span class="kw-2">&amp;</span>e);
+                    store.memory_grow_failed(e)<span class="question-mark">?</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
             }
@@ -1522,8 +1536,10 @@
 
     <span class="doccomment">/// Implementation of `memory.atomic.notify` for this shared memory.
     </span><span class="kw">pub fn </span>atomic_notify(<span class="kw-2">&amp;</span><span class="self">self</span>, addr_index: u64, count: u32) -&gt; <span class="prelude-ty">Result</span>&lt;u32, Trap&gt; {
-        validate_atomic_addr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.def.<span class="number">0</span>, addr_index, <span class="number">4</span>, <span class="number">4</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.spot.unpark(addr_index, count))
+        <span class="kw">let </span>ptr = validate_atomic_addr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.def.<span class="number">0</span>, addr_index, <span class="number">4</span>, <span class="number">4</span>)<span class="question-mark">?</span>;
+        <span class="macro">log::trace!</span>(<span class="string">"memory.atomic.notify(addr={addr_index:#x}, count={count})"</span>);
+        <span class="kw">let </span>ptr = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>ptr };
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.spot.notify(ptr, count))
     }
 
     <span class="doccomment">/// Implementation of `memory.atomic.wait32` for this shared memory.
@@ -1534,16 +1550,19 @@
         timeout: <span class="prelude-ty">Option</span>&lt;Instant&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;WaitResult, Trap&gt; {
         <span class="kw">let </span>addr = validate_atomic_addr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.def.<span class="number">0</span>, addr_index, <span class="number">4</span>, <span class="number">4</span>)<span class="question-mark">?</span>;
+        <span class="macro">log::trace!</span>(
+            <span class="string">"memory.atomic.wait32(addr={addr_index:#x}, expected={expected}, timeout={timeout:?})"
+        </span>);
+
         <span class="comment">// SAFETY: `addr_index` was validated by `validate_atomic_addr` above.
         </span><span class="macro">assert!</span>(std::mem::size_of::&lt;AtomicU32&gt;() == <span class="number">4</span>);
         <span class="macro">assert!</span>(std::mem::align_of::&lt;AtomicU32&gt;() &lt;= <span class="number">4</span>);
         <span class="kw">let </span>atomic = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(addr <span class="kw">as </span><span class="kw-2">*const </span>AtomicU32) };
 
-        <span class="comment">// We want the sequential consistency of `SeqCst` to ensure that the `load` sees the value that the `notify` will/would see.
-        // All WASM atomic operations are also `SeqCst`.
-        </span><span class="kw">let </span>validate = || atomic.load(Ordering::SeqCst) == expected;
-
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.spot.park(addr_index, validate, timeout))
+        WAITER.with(|waiter| {
+            <span class="kw">let </span><span class="kw-2">mut </span>waiter = waiter.borrow_mut();
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.spot.wait32(atomic, expected, timeout, <span class="kw-2">&amp;mut </span>waiter))
+        })
     }
 
     <span class="doccomment">/// Implementation of `memory.atomic.wait64` for this shared memory.
@@ -1554,17 +1573,26 @@
         timeout: <span class="prelude-ty">Option</span>&lt;Instant&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;WaitResult, Trap&gt; {
         <span class="kw">let </span>addr = validate_atomic_addr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.def.<span class="number">0</span>, addr_index, <span class="number">8</span>, <span class="number">8</span>)<span class="question-mark">?</span>;
+        <span class="macro">log::trace!</span>(
+            <span class="string">"memory.atomic.wait64(addr={addr_index:#x}, expected={expected}, timeout={timeout:?})"
+        </span>);
+
         <span class="comment">// SAFETY: `addr_index` was validated by `validate_atomic_addr` above.
         </span><span class="macro">assert!</span>(std::mem::size_of::&lt;AtomicU64&gt;() == <span class="number">8</span>);
         <span class="macro">assert!</span>(std::mem::align_of::&lt;AtomicU64&gt;() &lt;= <span class="number">8</span>);
         <span class="kw">let </span>atomic = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(addr <span class="kw">as </span><span class="kw-2">*const </span>AtomicU64) };
 
-        <span class="comment">// We want the sequential consistency of `SeqCst` to ensure that the `load` sees the value that the `notify` will/would see.
-        // All WASM atomic operations are also `SeqCst`.
-        </span><span class="kw">let </span>validate = || atomic.load(Ordering::SeqCst) == expected;
-
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.spot.park(addr_index, validate, timeout))
+        WAITER.with(|waiter| {
+            <span class="kw">let </span><span class="kw-2">mut </span>waiter = waiter.borrow_mut();
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.spot.wait64(atomic, expected, timeout, <span class="kw-2">&amp;mut </span>waiter))
+        })
     }
+}
+
+<span class="macro">thread_local!</span> {
+    <span class="doccomment">/// Structure used in conjunction with `ParkingSpot` to block the current
+    /// thread if necessary. Note that this is lazily initialized.
+    </span><span class="kw">static </span>WAITER: RefCell&lt;Waiter&gt; = <span class="kw">const </span>{ RefCell::new(Waiter::new()) };
 }
 
 <span class="doccomment">/// Shared memory needs some representation of a `VMMemoryDefinition` for

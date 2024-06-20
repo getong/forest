@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/unionfind.rs`."><title>unionfind.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/unionfind.rs`."><title>unionfind.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -72,21 +72,122 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple union-find data structure.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::trace;
 <span class="kw">use </span>cranelift_entity::{packed_option::ReservedValue, EntityRef, SecondaryMap};
 <span class="kw">use </span>std::hash::Hash;
+<span class="kw">use </span>std::mem::swap;
 
 <span class="doccomment">/// A union-find data structure. The data structure can allocate
-/// `Id`s, indicating eclasses, and can merge eclasses together.
+/// `Idx`s, indicating eclasses, and can merge eclasses together.
+///
+/// Running `union(a, b)` will change the canonical `Idx` of `a` or `b`.
+/// Usually, this is chosen based on what will minimize path lengths,
+/// but it is also possible to _pin_ an eclass, such that its canonical `Idx`
+/// won't change unless it gets unioned with another pinned eclass.
+///
+/// In the context of the egraph pass, merging two pinned eclasses
+/// is very unlikely to happen – we do not know a single concrete test case
+/// where it does. The only situation where it might happen looks as follows:
+///
+/// 1. We encounter terms `A` and `B`, and the optimizer does not find any
+///    reason to union them together.
+/// 2. We encounter a term `C`, and we rewrite `C -&gt; A`, and separately, `C -&gt; B`.
+///
+/// Unless `C` somehow includes some crucial hint without which it is hard to
+/// notice that `A = B`, there's probably a rewrite rule that we should add.
+///
+/// Worst case, if we do merge two pinned eclasses, some nodes will essentially
+/// disappear from the GVN map, which only affects the quality of the generated
+/// code.
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
 </span><span class="kw">pub struct </span>UnionFind&lt;Idx: EntityRef&gt; {
     parent: SecondaryMap&lt;Idx, Val&lt;Idx&gt;&gt;,
+    <span class="doccomment">/// The `rank` table is used to perform the union operations optimally,
+    /// without creating unnecessarily long paths. Pins are represented by
+    /// eclasses with a rank of `u8::MAX`.
+    ///
+    /// `rank[x]` is the upper bound on the height of the subtree rooted at `x`.
+    /// The subtree is guaranteed to have at least `2**rank[x]` elements,
+    /// unless `rank` has been artificially inflated by pinning.
+    </span>rank: SecondaryMap&lt;Idx, u8&gt;,
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) pinned_union_count: u64,
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq)]
 </span><span class="kw">struct </span>Val&lt;Idx&gt;(Idx);
+
 <span class="kw">impl</span>&lt;Idx: EntityRef + ReservedValue&gt; Default <span class="kw">for </span>Val&lt;Idx&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(Idx::reserved_value())
@@ -98,6 +199,8 @@
     </span><span class="kw">pub fn </span>with_capacity(cap: usize) -&gt; <span class="self">Self </span>{
         UnionFind {
             parent: SecondaryMap::with_capacity(cap),
+            rank: SecondaryMap::with_capacity(cap),
+            pinned_union_count: <span class="number">0</span>,
         }
     }
 
@@ -134,16 +237,51 @@
         node
     }
 
+    <span class="doccomment">/// Request a stable identifier for `node`.
+    ///
+    /// After an `union` operation, the canonical representative of one
+    /// of the eclasses being merged together necessarily changes. If a pinned
+    /// eclass is merged with a non-pinned eclass, it'll be the other eclass
+    /// whose representative will change.
+    ///
+    /// If two pinned eclasses are unioned, one of the pins gets broken,
+    /// which is reported in the statistics for the pass. No concrete test case
+    /// which triggers this is known.
+    </span><span class="kw">pub fn </span>pin_index(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>node: Idx) -&gt; Idx {
+        node = <span class="self">self</span>.find_and_update(node);
+        <span class="self">self</span>.rank[node] = u8::MAX;
+        node
+    }
+
     <span class="doccomment">/// Merge the equivalence classes of the two `Idx`s.
     </span><span class="kw">pub fn </span>union(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: Idx, b: Idx) {
-        <span class="kw">let </span>a = <span class="self">self</span>.find_and_update(a);
-        <span class="kw">let </span>b = <span class="self">self</span>.find_and_update(b);
-        <span class="kw">let </span>(a, b) = (std::cmp::min(a, b), std::cmp::max(a, b));
-        <span class="kw">if </span>a != b {
-            <span class="comment">// Always canonicalize toward lower IDs.
-            </span><span class="self">self</span>.parent[b] = Val(a);
-            <span class="macro">trace!</span>(<span class="string">"union: {}, {}"</span>, a, b);
+        <span class="kw">let </span><span class="kw-2">mut </span>a = <span class="self">self</span>.find_and_update(a);
+        <span class="kw">let </span><span class="kw-2">mut </span>b = <span class="self">self</span>.find_and_update(b);
+
+        <span class="kw">if </span>a == b {
+            <span class="kw">return</span>;
         }
+
+        <span class="kw">if </span><span class="self">self</span>.rank[a] &lt; <span class="self">self</span>.rank[b] {
+            swap(<span class="kw-2">&amp;mut </span>a, <span class="kw-2">&amp;mut </span>b);
+        } <span class="kw">else if </span><span class="self">self</span>.rank[a] == <span class="self">self</span>.rank[b] {
+            <span class="self">self</span>.rank[a] = <span class="self">self</span>.rank[a].checked_add(<span class="number">1</span>).unwrap_or_else(
+                <span class="attr">#[cold]
+                </span>|| {
+                    <span class="comment">// Both `a` and `b` are pinned.
+                    //
+                    // This should only occur if we rewrite X -&gt; Y and X -&gt; Z,
+                    // yet neither Y -&gt; Z nor Z -&gt; Y can be established without
+                    // the "hint" provided by X. This probably means we're
+                    // missing an optimization rule.
+                    </span><span class="self">self</span>.pinned_union_count += <span class="number">1</span>;
+                    u8::MAX
+                },
+            );
+        }
+
+        <span class="self">self</span>.parent[b] = Val(a);
+        <span class="macro">trace!</span>(<span class="string">"union: {}, {}"</span>, a, b);
     }
 }
 </code></pre></div></section></main></body></html>

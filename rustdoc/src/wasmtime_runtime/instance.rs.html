@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance.rs`."><title>instance.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-19.0.2/src/instance.rs`."><title>instance.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1343,6 +1343,188 @@
 <a href="#1343" id="1343">1343</a>
 <a href="#1344" id="1344">1344</a>
 <a href="#1345" id="1345">1345</a>
+<a href="#1346" id="1346">1346</a>
+<a href="#1347" id="1347">1347</a>
+<a href="#1348" id="1348">1348</a>
+<a href="#1349" id="1349">1349</a>
+<a href="#1350" id="1350">1350</a>
+<a href="#1351" id="1351">1351</a>
+<a href="#1352" id="1352">1352</a>
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
+<a href="#1355" id="1355">1355</a>
+<a href="#1356" id="1356">1356</a>
+<a href="#1357" id="1357">1357</a>
+<a href="#1358" id="1358">1358</a>
+<a href="#1359" id="1359">1359</a>
+<a href="#1360" id="1360">1360</a>
+<a href="#1361" id="1361">1361</a>
+<a href="#1362" id="1362">1362</a>
+<a href="#1363" id="1363">1363</a>
+<a href="#1364" id="1364">1364</a>
+<a href="#1365" id="1365">1365</a>
+<a href="#1366" id="1366">1366</a>
+<a href="#1367" id="1367">1367</a>
+<a href="#1368" id="1368">1368</a>
+<a href="#1369" id="1369">1369</a>
+<a href="#1370" id="1370">1370</a>
+<a href="#1371" id="1371">1371</a>
+<a href="#1372" id="1372">1372</a>
+<a href="#1373" id="1373">1373</a>
+<a href="#1374" id="1374">1374</a>
+<a href="#1375" id="1375">1375</a>
+<a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
+<a href="#1378" id="1378">1378</a>
+<a href="#1379" id="1379">1379</a>
+<a href="#1380" id="1380">1380</a>
+<a href="#1381" id="1381">1381</a>
+<a href="#1382" id="1382">1382</a>
+<a href="#1383" id="1383">1383</a>
+<a href="#1384" id="1384">1384</a>
+<a href="#1385" id="1385">1385</a>
+<a href="#1386" id="1386">1386</a>
+<a href="#1387" id="1387">1387</a>
+<a href="#1388" id="1388">1388</a>
+<a href="#1389" id="1389">1389</a>
+<a href="#1390" id="1390">1390</a>
+<a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
+<a href="#1418" id="1418">1418</a>
+<a href="#1419" id="1419">1419</a>
+<a href="#1420" id="1420">1420</a>
+<a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+<a href="#1424" id="1424">1424</a>
+<a href="#1425" id="1425">1425</a>
+<a href="#1426" id="1426">1426</a>
+<a href="#1427" id="1427">1427</a>
+<a href="#1428" id="1428">1428</a>
+<a href="#1429" id="1429">1429</a>
+<a href="#1430" id="1430">1430</a>
+<a href="#1431" id="1431">1431</a>
+<a href="#1432" id="1432">1432</a>
+<a href="#1433" id="1433">1433</a>
+<a href="#1434" id="1434">1434</a>
+<a href="#1435" id="1435">1435</a>
+<a href="#1436" id="1436">1436</a>
+<a href="#1437" id="1437">1437</a>
+<a href="#1438" id="1438">1438</a>
+<a href="#1439" id="1439">1439</a>
+<a href="#1440" id="1440">1440</a>
+<a href="#1441" id="1441">1441</a>
+<a href="#1442" id="1442">1442</a>
+<a href="#1443" id="1443">1443</a>
+<a href="#1444" id="1444">1444</a>
+<a href="#1445" id="1445">1445</a>
+<a href="#1446" id="1446">1446</a>
+<a href="#1447" id="1447">1447</a>
+<a href="#1448" id="1448">1448</a>
+<a href="#1449" id="1449">1449</a>
+<a href="#1450" id="1450">1450</a>
+<a href="#1451" id="1451">1451</a>
+<a href="#1452" id="1452">1452</a>
+<a href="#1453" id="1453">1453</a>
+<a href="#1454" id="1454">1454</a>
+<a href="#1455" id="1455">1455</a>
+<a href="#1456" id="1456">1456</a>
+<a href="#1457" id="1457">1457</a>
+<a href="#1458" id="1458">1458</a>
+<a href="#1459" id="1459">1459</a>
+<a href="#1460" id="1460">1460</a>
+<a href="#1461" id="1461">1461</a>
+<a href="#1462" id="1462">1462</a>
+<a href="#1463" id="1463">1463</a>
+<a href="#1464" id="1464">1464</a>
+<a href="#1465" id="1465">1465</a>
+<a href="#1466" id="1466">1466</a>
+<a href="#1467" id="1467">1467</a>
+<a href="#1468" id="1468">1468</a>
+<a href="#1469" id="1469">1469</a>
+<a href="#1470" id="1470">1470</a>
+<a href="#1471" id="1471">1471</a>
+<a href="#1472" id="1472">1472</a>
+<a href="#1473" id="1473">1473</a>
+<a href="#1474" id="1474">1474</a>
+<a href="#1475" id="1475">1475</a>
+<a href="#1476" id="1476">1476</a>
+<a href="#1477" id="1477">1477</a>
+<a href="#1478" id="1478">1478</a>
+<a href="#1479" id="1479">1479</a>
+<a href="#1480" id="1480">1480</a>
+<a href="#1481" id="1481">1481</a>
+<a href="#1482" id="1482">1482</a>
+<a href="#1483" id="1483">1483</a>
+<a href="#1484" id="1484">1484</a>
+<a href="#1485" id="1485">1485</a>
+<a href="#1486" id="1486">1486</a>
+<a href="#1487" id="1487">1487</a>
+<a href="#1488" id="1488">1488</a>
+<a href="#1489" id="1489">1489</a>
+<a href="#1490" id="1490">1490</a>
+<a href="#1491" id="1491">1491</a>
+<a href="#1492" id="1492">1492</a>
+<a href="#1493" id="1493">1493</a>
+<a href="#1494" id="1494">1494</a>
+<a href="#1495" id="1495">1495</a>
+<a href="#1496" id="1496">1496</a>
+<a href="#1497" id="1497">1497</a>
+<a href="#1498" id="1498">1498</a>
+<a href="#1499" id="1499">1499</a>
+<a href="#1500" id="1500">1500</a>
+<a href="#1501" id="1501">1501</a>
+<a href="#1502" id="1502">1502</a>
+<a href="#1503" id="1503">1503</a>
+<a href="#1504" id="1504">1504</a>
+<a href="#1505" id="1505">1505</a>
+<a href="#1506" id="1506">1506</a>
+<a href="#1507" id="1507">1507</a>
+<a href="#1508" id="1508">1508</a>
+<a href="#1509" id="1509">1509</a>
+<a href="#1510" id="1510">1510</a>
+<a href="#1511" id="1511">1511</a>
+<a href="#1512" id="1512">1512</a>
+<a href="#1513" id="1513">1513</a>
+<a href="#1514" id="1514">1514</a>
+<a href="#1515" id="1515">1515</a>
+<a href="#1516" id="1516">1516</a>
+<a href="#1517" id="1517">1517</a>
+<a href="#1518" id="1518">1518</a>
+<a href="#1519" id="1519">1519</a>
+<a href="#1520" id="1520">1520</a>
+<a href="#1521" id="1521">1521</a>
+<a href="#1522" id="1522">1522</a>
+<a href="#1523" id="1523">1523</a>
+<a href="#1524" id="1524">1524</a>
+<a href="#1525" id="1525">1525</a>
+<a href="#1526" id="1526">1526</a>
+<a href="#1527" id="1527">1527</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! An `Instance` contains all the runtime state used by execution of a
 //! wasm module (except its callstack and register state). An
 //! `InstanceHandle` is a reference-counting handle for an `Instance`.
@@ -1358,25 +1540,28 @@
 };
 <span class="kw">use crate</span>::{
     ExportFunction, ExportGlobal, ExportMemory, ExportTable, Imports, ModuleRuntimeInfo,
-    SendSyncPtr, Store, VMFunctionBody, VMSharedSignatureIndex, WasmFault,
+    SendSyncPtr, Store, VMFunctionBody, VMSharedTypeIndex, WasmFault,
 };
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>sptr::Strict;
 <span class="kw">use </span>std::alloc::{<span class="self">self</span>, Layout};
 <span class="kw">use </span>std::any::Any;
-<span class="kw">use </span>std::convert::TryFrom;
 <span class="kw">use </span>std::ops::Range;
 <span class="kw">use </span>std::ptr::NonNull;
 <span class="kw">use </span>std::sync::atomic::AtomicU64;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::{mem, ptr};
+<span class="kw">use </span>wasmtime_environ::ModuleInternedTypeIndex;
 <span class="kw">use </span>wasmtime_environ::{
     packed_option::ReservedValue, DataIndex, DefinedGlobalIndex, DefinedMemoryIndex,
     DefinedTableIndex, ElemIndex, EntityIndex, EntityRef, EntitySet, FuncIndex, GlobalIndex,
-    GlobalInit, HostPtr, MemoryIndex, Module, PrimaryMap, SignatureIndex, TableIndex,
-    TableInitialValue, Trap, VMOffsets, WasmHeapType, WasmRefType, WasmType, VMCONTEXT_MAGIC,
+    GlobalInit, HostPtr, MemoryIndex, MemoryPlan, Module, PrimaryMap, TableElementExpression,
+    TableIndex, TableInitialValue, TableSegmentElements, Trap, VMOffsets, WasmHeapType,
+    WasmRefType, WasmValType, VMCONTEXT_MAGIC,
 };
+<span class="attr">#[cfg(feature = <span class="string">"wmemcheck"</span>)]
+</span><span class="kw">use </span>wasmtime_wmemcheck::Wmemcheck;
 
 <span class="kw">mod </span>allocator;
 
@@ -1410,13 +1595,21 @@
     ///
     /// This is where all runtime information about defined linear memories in
     /// this module lives.
-    </span>memories: PrimaryMap&lt;DefinedMemoryIndex, Memory&gt;,
+    ///
+    /// The `MemoryAllocationIndex` was given from our `InstanceAllocator` and
+    /// must be given back to the instance allocator when deallocating each
+    /// memory.
+    </span>memories: PrimaryMap&lt;DefinedMemoryIndex, (MemoryAllocationIndex, Memory)&gt;,
 
     <span class="doccomment">/// WebAssembly table data.
     ///
     /// Like memories, this is only for defined tables in the module and
     /// contains all of their runtime state.
-    </span>tables: PrimaryMap&lt;DefinedTableIndex, Table&gt;,
+    ///
+    /// The `TableAllocationIndex` was given from our `InstanceAllocator` and
+    /// must be given back to the instance allocator when deallocating each
+    /// table.
+    </span>tables: PrimaryMap&lt;DefinedTableIndex, (TableAllocationIndex, Table)&gt;,
 
     <span class="doccomment">/// Stores the dropped passive element segments in this instantiation by index.
     /// If the index is present in the set, the segment has been dropped.
@@ -1431,13 +1624,6 @@
     /// Most of the time from Wasmtime this is `Box::new(())`, a noop
     /// allocation, but some host-defined objects will store their state here.
     </span>host_state: Box&lt;<span class="kw">dyn </span>Any + Send + Sync&gt;,
-
-    <span class="doccomment">/// Instance of this instance within its `InstanceAllocator` trait
-    /// implementation.
-    ///
-    /// This is always 0 for the on-demand instance allocator and it's the
-    /// index of the slot in the pooling allocator.
-    </span>index: usize,
 
     <span class="doccomment">/// A pointer to the `vmctx` field at the end of the `Instance`.
     ///
@@ -1485,23 +1671,26 @@
     /// seems not too bad.
     </span>vmctx_self_reference: SendSyncPtr&lt;VMContext&gt;,
 
-    <span class="doccomment">/// Additional context used by compiled wasm code. This field is last, and
+    <span class="attr">#[cfg(feature = <span class="string">"wmemcheck"</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) wmemcheck_state: <span class="prelude-ty">Option</span>&lt;Wmemcheck&gt;,
+    <span class="comment">// TODO: add support for multiple memories, wmemcheck_state corresponds to
+    // memory 0.
+    </span><span class="doccomment">/// Additional context used by compiled wasm code. This field is last, and
     /// represents a dynamically-sized array that extends beyond the nominal
     /// end of the struct (similar to a flexible array member).
     </span>vmctx: VMContext,
 }
 
-<span class="attr">#[allow(clippy::cast_ptr_alignment)]
-</span><span class="kw">impl </span>Instance {
+<span class="kw">impl </span>Instance {
     <span class="doccomment">/// Create an instance at the given memory address.
     ///
     /// It is assumed the memory was properly aligned and the
     /// allocation was `alloc_size` in bytes.
     </span><span class="kw">unsafe fn </span>new(
         req: InstanceAllocationRequest,
-        index: usize,
-        memories: PrimaryMap&lt;DefinedMemoryIndex, Memory&gt;,
-        tables: PrimaryMap&lt;DefinedTableIndex, Table&gt;,
+        memories: PrimaryMap&lt;DefinedMemoryIndex, (MemoryAllocationIndex, Memory)&gt;,
+        tables: PrimaryMap&lt;DefinedTableIndex, (TableAllocationIndex, Table)&gt;,
+        memory_plans: <span class="kw-2">&amp;</span>PrimaryMap&lt;MemoryIndex, MemoryPlan&gt;,
     ) -&gt; InstanceHandle {
         <span class="comment">// The allocation must be *at least* the size required of `Instance`.
         </span><span class="kw">let </span>layout = <span class="self">Self</span>::alloc_layout(req.runtime_info.offsets());
@@ -1515,11 +1704,13 @@
         <span class="kw">let </span>dropped_elements = EntitySet::with_capacity(module.passive_elements.len());
         <span class="kw">let </span>dropped_data = EntitySet::with_capacity(module.passive_data_map.len());
 
+        <span class="attr">#[cfg(not(feature = <span class="string">"wmemcheck"</span>))]
+        </span><span class="kw">let _ </span>= memory_plans;
+
         ptr::write(
             ptr,
             Instance {
                 runtime_info: req.runtime_info.clone(),
-                index,
                 memories,
                 tables,
                 dropped_elements,
@@ -1530,6 +1721,21 @@
                 ),
                 vmctx: VMContext {
                     _marker: std::marker::PhantomPinned,
+                },
+                <span class="attr">#[cfg(feature = <span class="string">"wmemcheck"</span>)]
+                </span>wmemcheck_state: {
+                    <span class="kw">if </span>req.wmemcheck {
+                        <span class="kw">let </span>size = memory_plans
+                            .iter()
+                            .next()
+                            .map(|plan| plan.<span class="number">1</span>.memory.minimum)
+                            .unwrap_or(<span class="number">0</span>)
+                            * <span class="number">64
+                            </span>* <span class="number">1024</span>;
+                        <span class="prelude-val">Some</span>(Wmemcheck::new(size <span class="kw">as </span>usize))
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">None
+                    </span>}
                 },
             },
         );
@@ -1554,6 +1760,7 @@
     /// and that it's valid to acquire `&amp;mut Instance` at this time. For example
     /// this can't be called twice on the same `VMContext` to get two active
     /// pointers to the same `Instance`.
+    </span><span class="attr">#[inline]
     </span><span class="kw">pub unsafe fn </span>from_vmctx&lt;R&gt;(vmctx: <span class="kw-2">*mut </span>VMContext, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>Instance) -&gt; R) -&gt; R {
         <span class="kw">let </span>ptr = vmctx
             .cast::&lt;u8&gt;()
@@ -1672,6 +1879,15 @@
         <span class="kw">unsafe </span>{ <span class="kw-2">*</span><span class="self">self</span>.vmctx_plus_offset(<span class="self">self</span>.offsets().vmctx_vmmemory_pointer(index)) }
     }
 
+    <span class="doccomment">/// Return the memories defined within this instance (not imported).
+    </span><span class="kw">pub fn </span>defined_memories&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = (DefinedMemoryIndex, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Memory)&gt; + <span class="lifetime">'a </span>{
+        <span class="self">self</span>.memories
+            .iter()
+            .map(|(index, (_alloc_index, memory))| (index, memory))
+    }
+
     <span class="doccomment">/// Return the indexed `VMGlobalDefinition`.
     </span><span class="kw">fn </span>global(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: DefinedGlobalIndex) -&gt; <span class="kw-2">&amp;</span>VMGlobalDefinition {
         <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><span class="self">self</span>.global_ptr(index) }
@@ -1697,7 +1913,49 @@
         }
     }
 
+    <span class="doccomment">/// Get all globals within this instance.
+    ///
+    /// Returns both import and defined globals.
+    ///
+    /// Returns both exported and non-exported globals.
+    ///
+    /// Gives access to the full globals space.
+    </span><span class="kw">pub fn </span>all_globals&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = (GlobalIndex, ExportGlobal)&gt; + <span class="lifetime">'a </span>{
+        <span class="kw">let </span>module = <span class="self">self</span>.module().clone();
+        module.globals.keys().map(<span class="kw">move </span>|idx| {
+            (
+                idx,
+                ExportGlobal {
+                    definition: <span class="self">self</span>.defined_or_imported_global_ptr(idx),
+                    global: <span class="self">self</span>.module().globals[idx],
+                },
+            )
+        })
+    }
+
+    <span class="doccomment">/// Get the globals defined in this instance (not imported).
+    </span><span class="kw">pub fn </span>defined_globals&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = (DefinedGlobalIndex, ExportGlobal)&gt; + <span class="lifetime">'a </span>{
+        <span class="kw">let </span>module = <span class="self">self</span>.module().clone();
+        module
+            .globals
+            .keys()
+            .skip(module.num_imported_globals)
+            .map(<span class="kw">move </span>|global_idx| {
+                <span class="kw">let </span>def_idx = module.defined_global_index(global_idx).unwrap();
+                <span class="kw">let </span>global = ExportGlobal {
+                    definition: <span class="self">self</span>.global_ptr(def_idx),
+                    global: <span class="self">self</span>.module().globals[global_idx],
+                };
+                (def_idx, global)
+            })
+    }
+
     <span class="doccomment">/// Return a pointer to the interrupts structure
+    </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>runtime_limits(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">*mut *const </span>VMRuntimeLimits {
         <span class="kw">unsafe </span>{ <span class="self">self</span>.vmctx_plus_offset_mut(<span class="self">self</span>.offsets().vmctx_runtime_limits()) }
     }
@@ -1746,6 +2004,7 @@
 
             <span class="kw-2">*</span><span class="self">self</span>.runtime_limits() = ptr::null_mut();
             <span class="kw-2">*</span><span class="self">self</span>.epoch_ptr() = ptr::null_mut();
+
             <span class="kw-2">*</span><span class="self">self</span>.externref_activations_table() = ptr::null_mut();
         }
     }
@@ -1887,7 +2146,7 @@
         delta: u64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;usize&gt;, Error&gt; {
         <span class="kw">let </span>store = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.store() };
-        <span class="kw">let </span>memory = <span class="kw-2">&amp;mut </span><span class="self">self</span>.memories[idx];
+        <span class="kw">let </span>memory = <span class="kw-2">&amp;mut </span><span class="self">self</span>.memories[idx].<span class="number">1</span>;
 
         <span class="kw">let </span>result = <span class="kw">unsafe </span>{ memory.grow(delta, <span class="prelude-val">Some</span>(store)) };
 
@@ -1928,16 +2187,17 @@
         init_value: TableElement,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;u32&gt;, Error&gt; {
         <span class="kw">let </span>store = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.store() };
-        <span class="kw">let </span>table = <span class="self">self
+        <span class="kw">let </span>table = <span class="kw-2">&amp;mut </span><span class="self">self
             </span>.tables
             .get_mut(table_index)
-            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"no table for index {}"</span>, table_index.index()));
+            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"no table for index {}"</span>, table_index.index()))
+            .<span class="number">1</span>;
 
         <span class="kw">let </span>result = <span class="kw">unsafe </span>{ table.grow(delta, init_value, store) };
 
         <span class="comment">// Keep the `VMContext` pointers used by compiled Wasm code up to
         // date.
-        </span><span class="kw">let </span>element = <span class="self">self</span>.tables[table_index].vmtable();
+        </span><span class="kw">let </span>element = <span class="self">self</span>.tables[table_index].<span class="number">1</span>.vmtable();
         <span class="self">self</span>.set_table(table_index, element);
 
         result
@@ -1960,10 +2220,15 @@
     /// than tracking state related to whether it's been initialized
     /// before, because resetting that state on (re)instantiation is
     /// very expensive if there are many funcrefs.
-    </span><span class="kw">fn </span>construct_func_ref(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: FuncIndex, sig: SignatureIndex, into: <span class="kw-2">*mut </span>VMFuncRef) {
+    </span><span class="kw">fn </span>construct_func_ref(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        index: FuncIndex,
+        sig: ModuleInternedTypeIndex,
+        into: <span class="kw-2">*mut </span>VMFuncRef,
+    ) {
         <span class="kw">let </span>type_index = <span class="kw">unsafe </span>{
-            <span class="kw">let </span>base: <span class="kw-2">*const </span>VMSharedSignatureIndex =
-                <span class="kw-2">*</span><span class="self">self</span>.vmctx_plus_offset_mut(<span class="self">self</span>.offsets().vmctx_signature_ids_array());
+            <span class="kw">let </span>base: <span class="kw-2">*const </span>VMSharedTypeIndex =
+                <span class="kw-2">*</span><span class="self">self</span>.vmctx_plus_offset_mut(<span class="self">self</span>.offsets().vmctx_type_ids_array());
             <span class="kw-2">*</span>base.add(sig.index())
         };
 
@@ -2067,11 +2332,17 @@
         // disconnected from the lifetime of `self`.
         </span><span class="kw">let </span>module = <span class="self">self</span>.module().clone();
 
+        <span class="comment">// NB: fall back to an expressions-based list of elements which doesn't
+        // have static type information (as opposed to `Functions`) since we
+        // don't know just yet what type the table has. The type will be be
+        // inferred in the next step within `table_init_segment`.
+        </span><span class="kw">let </span>empty = TableSegmentElements::Expressions(Box::new([]));
+
         <span class="kw">let </span>elements = <span class="kw">match </span>module.passive_elements_map.get(<span class="kw-2">&amp;</span>elem_index) {
             <span class="prelude-val">Some</span>(index) <span class="kw">if </span>!<span class="self">self</span>.dropped_elements.contains(elem_index) =&gt; {
-                module.passive_elements[<span class="kw-2">*</span>index].as_ref()
+                <span class="kw-2">&amp;</span>module.passive_elements[<span class="kw-2">*</span>index]
             }
-            <span class="kw">_ </span>=&gt; <span class="kw-2">&amp;</span>[],
+            <span class="kw">_ </span>=&gt; <span class="kw-2">&amp;</span>empty,
         };
         <span class="self">self</span>.table_init_segment(table_index, elements, dst, src, len)
     }
@@ -2079,7 +2350,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>table_init_segment(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         table_index: TableIndex,
-        elements: <span class="kw-2">&amp;</span>[FuncIndex],
+        elements: <span class="kw-2">&amp;</span>TableSegmentElements,
         dst: u32,
         src: u32,
         len: u32,
@@ -2087,30 +2358,61 @@
         <span class="comment">// https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#exec-table-init
 
         </span><span class="kw">let </span>table = <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.get_table(table_index) };
+        <span class="kw">let </span>src = usize::try_from(src).map_err(|<span class="kw">_</span>| Trap::TableOutOfBounds)<span class="question-mark">?</span>;
+        <span class="kw">let </span>len = usize::try_from(len).map_err(|<span class="kw">_</span>| Trap::TableOutOfBounds)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>elements = <span class="kw">match </span>elements
-            .get(usize::try_from(src).unwrap()..)
-            .and_then(|s| s.get(..usize::try_from(len).unwrap()))
-        {
-            <span class="prelude-val">Some</span>(elements) =&gt; elements,
-            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Trap::TableOutOfBounds),
-        };
-
-        <span class="kw">match </span>table.element_type() {
-            TableElementType::Func =&gt; {
-                table.init_funcs(
+        <span class="kw">match </span>elements {
+            TableSegmentElements::Functions(funcs) =&gt; {
+                <span class="kw">let </span>elements = funcs
+                    .get(src..)
+                    .and_then(|s| s.get(..len))
+                    .ok_or(Trap::TableOutOfBounds)<span class="question-mark">?</span>;
+                table.init_func(
                     dst,
                     elements
                         .iter()
                         .map(|idx| <span class="self">self</span>.get_func_ref(<span class="kw-2">*</span>idx).unwrap_or(std::ptr::null_mut())),
                 )<span class="question-mark">?</span>;
             }
-
-            TableElementType::Extern =&gt; {
-                <span class="macro">debug_assert!</span>(elements.iter().all(|e| <span class="kw-2">*</span>e == FuncIndex::reserved_value()));
-                table.fill(dst, TableElement::ExternRef(<span class="prelude-val">None</span>), len)<span class="question-mark">?</span>;
+            TableSegmentElements::Expressions(exprs) =&gt; {
+                <span class="kw">let </span>ty = table.element_type();
+                <span class="kw">let </span>exprs = exprs
+                    .get(src..)
+                    .and_then(|s| s.get(..len))
+                    .ok_or(Trap::TableOutOfBounds)<span class="question-mark">?</span>;
+                <span class="kw">match </span>ty {
+                    TableElementType::Func =&gt; {
+                        table.init_func(
+                            dst,
+                            exprs.iter().map(|expr| <span class="kw">match </span>expr {
+                                TableElementExpression::Null =&gt; std::ptr::null_mut(),
+                                TableElementExpression::Function(idx) =&gt; {
+                                    <span class="self">self</span>.get_func_ref(<span class="kw-2">*</span>idx).unwrap()
+                                }
+                                TableElementExpression::GlobalGet(idx) =&gt; {
+                                    <span class="kw">let </span>global = <span class="self">self</span>.defined_or_imported_global_ptr(<span class="kw-2">*</span>idx);
+                                    <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>global).as_func_ref() }
+                                }
+                            }),
+                        )<span class="question-mark">?</span>;
+                    }
+                    TableElementType::Extern =&gt; {
+                        table.init_extern(
+                            dst,
+                            exprs.iter().map(|expr| <span class="kw">match </span>expr {
+                                TableElementExpression::Null =&gt; <span class="prelude-val">None</span>,
+                                TableElementExpression::Function(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+                                TableElementExpression::GlobalGet(idx) =&gt; {
+                                    <span class="kw">let </span>global = <span class="self">self</span>.defined_or_imported_global_ptr(<span class="kw-2">*</span>idx);
+                                    <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>global).as_externref().clone() }
+                                }
+                            }),
+                        )<span class="question-mark">?</span>;
+                    }
+                }
             }
         }
+
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -2126,7 +2428,7 @@
 
     <span class="doccomment">/// Get a locally-defined memory.
     </span><span class="kw">pub fn </span>get_defined_memory(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: DefinedMemoryIndex) -&gt; <span class="kw-2">*mut </span>Memory {
-        <span class="macro">ptr::addr_of_mut!</span>(<span class="self">self</span>.memories[index])
+        <span class="macro">ptr::addr_of_mut!</span>(<span class="self">self</span>.memories[index].<span class="number">1</span>)
     }
 
     <span class="doccomment">/// Do a `memory.copy`
@@ -2295,11 +2597,11 @@
         idx: DefinedTableIndex,
         range: <span class="kw">impl </span>Iterator&lt;Item = u32&gt;,
     ) -&gt; <span class="kw-2">*mut </span>Table {
-        <span class="kw">let </span>elt_ty = <span class="self">self</span>.tables[idx].element_type();
+        <span class="kw">let </span>elt_ty = <span class="self">self</span>.tables[idx].<span class="number">1</span>.element_type();
 
         <span class="kw">if </span>elt_ty == TableElementType::Func {
             <span class="kw">for </span>i <span class="kw">in </span>range {
-                <span class="kw">let </span>value = <span class="kw">match </span><span class="self">self</span>.tables[idx].get(i) {
+                <span class="kw">let </span>value = <span class="kw">match </span><span class="self">self</span>.tables[idx].<span class="number">1</span>.get(i) {
                     <span class="prelude-val">Some</span>(value) =&gt; value,
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="comment">// Out-of-bounds; caller will handle by likely
@@ -2323,32 +2625,35 @@
                 </span><span class="kw">let </span>module = <span class="self">self</span>.module();
                 <span class="kw">let </span>precomputed = <span class="kw">match </span><span class="kw-2">&amp;</span>module.table_initialization.initial_values[idx] {
                     TableInitialValue::Null { precomputed } =&gt; precomputed,
-                    TableInitialValue::FuncRef(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+                    TableInitialValue::FuncRef(<span class="kw">_</span>) | TableInitialValue::GlobalGet(<span class="kw">_</span>) =&gt; {
+                        <span class="macro">unreachable!</span>()
+                    }
                 };
                 <span class="kw">let </span>func_index = precomputed.get(i <span class="kw">as </span>usize).cloned();
                 <span class="kw">let </span>func_ref = func_index
                     .and_then(|func_index| <span class="self">self</span>.get_func_ref(func_index))
                     .unwrap_or(std::ptr::null_mut());
                 <span class="self">self</span>.tables[idx]
-                    .set(i, TableElement::FuncRef(func_ref))
+                    .<span class="number">1
+                    </span>.set(i, TableElement::FuncRef(func_ref))
                     .expect(<span class="string">"Table type should match and index should be in-bounds"</span>);
             }
         }
 
-        <span class="macro">ptr::addr_of_mut!</span>(<span class="self">self</span>.tables[idx])
+        <span class="macro">ptr::addr_of_mut!</span>(<span class="self">self</span>.tables[idx].<span class="number">1</span>)
     }
 
     <span class="doccomment">/// Get a table by index regardless of whether it is locally-defined or an
     /// imported, foreign table.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>, table_index: TableIndex) -&gt; <span class="kw-2">*mut </span>Table {
         <span class="self">self</span>.with_defined_table_index_and_instance(table_index, |idx, instance| {
-            <span class="macro">ptr::addr_of_mut!</span>(instance.tables[idx])
+            <span class="macro">ptr::addr_of_mut!</span>(instance.tables[idx].<span class="number">1</span>)
         })
     }
 
     <span class="doccomment">/// Get a locally-defined table.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_defined_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: DefinedTableIndex) -&gt; <span class="kw-2">*mut </span>Table {
-        <span class="macro">ptr::addr_of_mut!</span>(<span class="self">self</span>.tables[index])
+        <span class="macro">ptr::addr_of_mut!</span>(<span class="self">self</span>.tables[index].<span class="number">1</span>)
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_defined_table_index_and_instance&lt;R&gt;(
@@ -2388,9 +2693,9 @@
         <span class="self">self</span>.set_callee(<span class="prelude-val">None</span>);
         <span class="self">self</span>.set_store(store.as_raw());
 
-        <span class="comment">// Initialize shared signatures
-        </span><span class="kw">let </span>signatures = <span class="self">self</span>.runtime_info.signature_ids();
-        <span class="kw-2">*</span><span class="self">self</span>.vmctx_plus_offset_mut(offsets.vmctx_signature_ids_array()) = signatures.as_ptr();
+        <span class="comment">// Initialize shared types
+        </span><span class="kw">let </span>types = <span class="self">self</span>.runtime_info.type_ids();
+        <span class="kw-2">*</span><span class="self">self</span>.vmctx_plus_offset_mut(offsets.vmctx_type_ids_array()) = types.as_ptr();
 
         <span class="comment">// Initialize the built-in functions
         </span><span class="kw-2">*</span><span class="self">self</span>.vmctx_plus_offset_mut(offsets.vmctx_builtin_functions()) =
@@ -2430,7 +2735,7 @@
         // Initialize the defined tables
         </span><span class="kw">let </span><span class="kw-2">mut </span>ptr = <span class="self">self</span>.vmctx_plus_offset_mut(offsets.vmctx_tables_begin());
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..module.table_plans.len() - module.num_imported_tables {
-            ptr::write(ptr, <span class="self">self</span>.tables[DefinedTableIndex::new(i)].vmtable());
+            ptr::write(ptr, <span class="self">self</span>.tables[DefinedTableIndex::new(i)].<span class="number">1</span>.vmtable());
             ptr = ptr.add(<span class="number">1</span>);
         }
 
@@ -2446,12 +2751,13 @@
             <span class="kw">let </span>memory_index = module.memory_index(defined_memory_index);
             <span class="kw">if </span>module.memory_plans[memory_index].memory.shared {
                 <span class="kw">let </span>def_ptr = <span class="self">self</span>.memories[defined_memory_index]
-                    .as_shared_memory()
+                    .<span class="number">1
+                    </span>.as_shared_memory()
                     .unwrap()
                     .vmmemory_ptr();
                 ptr::write(ptr, def_ptr.cast_mut());
             } <span class="kw">else </span>{
-                ptr::write(owned_ptr, <span class="self">self</span>.memories[defined_memory_index].vmmemory());
+                ptr::write(owned_ptr, <span class="self">self</span>.memories[defined_memory_index].<span class="number">1</span>.vmmemory());
                 ptr::write(ptr, owned_ptr);
                 owned_ptr = owned_ptr.add(<span class="number">1</span>);
             }
@@ -2471,7 +2777,18 @@
             </span>ptr::write(to, VMGlobalDefinition::new());
 
             <span class="kw">match </span><span class="kw-2">*</span>init {
-                GlobalInit::I32Const(x) =&gt; <span class="kw-2">*</span>(<span class="kw-2">*</span>to).as_i32_mut() = x,
+                GlobalInit::I32Const(x) =&gt; {
+                    <span class="kw">let </span>index = module.global_index(index);
+                    <span class="kw">if </span>index.index() == <span class="number">0 </span>{
+                        <span class="attr">#[cfg(feature = <span class="string">"wmemcheck"</span>)]
+                        </span>{
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(wmemcheck) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.wmemcheck_state {
+                                wmemcheck.set_stack_size(x <span class="kw">as </span>usize);
+                            }
+                        }
+                    }
+                    <span class="kw-2">*</span>(<span class="kw-2">*</span>to).as_i32_mut() = x;
+                }
                 GlobalInit::I64Const(x) =&gt; <span class="kw-2">*</span>(<span class="kw-2">*</span>to).as_i64_mut() = x,
                 GlobalInit::F32Const(x) =&gt; <span class="kw-2">*</span>(<span class="kw-2">*</span>to).as_f32_bits_mut() = x,
                 GlobalInit::F64Const(x) =&gt; <span class="kw-2">*</span>(<span class="kw-2">*</span>to).as_f64_bits_mut() = x,
@@ -2486,10 +2803,11 @@
                     // count as values move between globals, everything else is just
                     // copy-able bits.
                     </span><span class="kw">match </span>wasm_ty {
-                        WasmType::Ref(WasmRefType {
+                        WasmValType::Ref(WasmRefType {
                             heap_type: WasmHeapType::Extern,
                             ..
                         }) =&gt; <span class="kw-2">*</span>(<span class="kw-2">*</span>to).as_externref_mut() = from.as_externref().clone(),
+
                         <span class="kw">_ </span>=&gt; ptr::copy_nonoverlapping(from, to, <span class="number">1</span>),
                     }
                 }
@@ -2498,7 +2816,7 @@
                 }
                 GlobalInit::RefNullConst =&gt; <span class="kw">match </span>wasm_ty {
                     <span class="comment">// `VMGlobalDefinition::new()` already zeroed out the bits
-                    </span>WasmType::Ref(WasmRefType { nullable: <span class="bool-val">true</span>, .. }) =&gt; {}
+                    </span>WasmValType::Ref(WasmRefType { nullable: <span class="bool-val">true</span>, .. }) =&gt; {}
                     ty =&gt; <span class="macro">panic!</span>(<span class="string">"unsupported reference type for global: {:?}"</span>, ty),
                 },
             }
@@ -2507,7 +2825,7 @@
 
     <span class="kw">fn </span>wasm_fault(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: usize) -&gt; <span class="prelude-ty">Option</span>&lt;WasmFault&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>fault = <span class="prelude-val">None</span>;
-        <span class="kw">for </span>(<span class="kw">_</span>, memory) <span class="kw">in </span><span class="self">self</span>.memories.iter() {
+        <span class="kw">for </span>(<span class="kw">_</span>, (<span class="kw">_</span>, memory)) <span class="kw">in </span><span class="self">self</span>.memories.iter() {
             <span class="kw">let </span>accessible = memory.wasm_accessible();
             <span class="kw">if </span>accessible.start &lt;= addr &amp;&amp; addr &lt; accessible.end {
                 <span class="comment">// All linear memories should be disjoint so assert that no
@@ -2534,14 +2852,14 @@
             };
             <span class="kw">match </span>global.wasm_ty {
                 <span class="comment">// For now only externref globals need to get destroyed
-                </span>WasmType::Ref(WasmRefType {
+                </span>WasmValType::Ref(WasmRefType {
                     heap_type: WasmHeapType::Extern,
                     ..
-                }) =&gt; {}
+                }) =&gt; <span class="kw">unsafe </span>{
+                    drop((<span class="kw-2">*</span><span class="self">self</span>.global_ptr(idx)).as_externref_mut().take());
+                },
+
                 <span class="kw">_ </span>=&gt; <span class="kw">continue</span>,
-            }
-            <span class="kw">unsafe </span>{
-                drop((<span class="kw-2">*</span><span class="self">self</span>.global_ptr(idx)).as_externref_mut().take());
             }
         }
     }
@@ -2628,6 +2946,52 @@
     ) -&gt; <span class="kw-2">*mut </span>Table {
         <span class="kw">let </span>index = <span class="self">self</span>.instance().module().table_index(index);
         <span class="self">self</span>.instance_mut().get_table_with_lazy_init(index, range)
+    }
+
+    <span class="doccomment">/// Get all memories within this instance.
+    ///
+    /// Returns both import and defined memories.
+    ///
+    /// Returns both exported and non-exported memories.
+    ///
+    /// Gives access to the full memories space.
+    </span><span class="kw">pub fn </span>all_memories&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = (MemoryIndex, ExportMemory)&gt; + <span class="lifetime">'a </span>{
+        <span class="kw">let </span>indices = (<span class="number">0</span>..<span class="self">self</span>.module().memory_plans.len())
+            .map(|i| MemoryIndex::new(i))
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        indices
+            .into_iter()
+            .map(|i| (i, <span class="self">self</span>.get_exported_memory(i)))
+    }
+
+    <span class="doccomment">/// Return the memories defined in this instance (not imported).
+    </span><span class="kw">pub fn </span>defined_memories&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = ExportMemory&gt; + <span class="lifetime">'a </span>{
+        <span class="kw">let </span>num_imported = <span class="self">self</span>.module().num_imported_memories;
+        <span class="self">self</span>.all_memories()
+            .skip(num_imported)
+            .map(|(_i, memory)| memory)
+    }
+
+    <span class="doccomment">/// Get all globals within this instance.
+    ///
+    /// Returns both import and defined globals.
+    ///
+    /// Returns both exported and non-exported globals.
+    ///
+    /// Gives access to the full globals space.
+    </span><span class="kw">pub fn </span>all_globals&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = (GlobalIndex, ExportGlobal)&gt; + <span class="lifetime">'a </span>{
+        <span class="self">self</span>.instance_mut().all_globals()
+    }
+
+    <span class="doccomment">/// Get the globals defined in this instance (not imported).
+    </span><span class="kw">pub fn </span>defined_globals&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>,
+    ) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = (DefinedGlobalIndex, ExportGlobal)&gt; + <span class="lifetime">'a </span>{
+        <span class="self">self</span>.instance_mut().defined_globals()
     }
 
     <span class="doccomment">/// Return a reference to the contained `Instance`.

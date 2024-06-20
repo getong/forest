@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-cranelift-12.0.2/src/compiler.rs`."><title>compiler.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_cranelift" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_cranelift/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-cranelift-19.0.2/src/compiler.rs`."><title>compiler.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_cranelift" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_cranelift/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1295,6 +1295,25 @@
 <a href="#1295" id="1295">1295</a>
 <a href="#1296" id="1296">1296</a>
 <a href="#1297" id="1297">1297</a>
+<a href="#1298" id="1298">1298</a>
+<a href="#1299" id="1299">1299</a>
+<a href="#1300" id="1300">1300</a>
+<a href="#1301" id="1301">1301</a>
+<a href="#1302" id="1302">1302</a>
+<a href="#1303" id="1303">1303</a>
+<a href="#1304" id="1304">1304</a>
+<a href="#1305" id="1305">1305</a>
+<a href="#1306" id="1306">1306</a>
+<a href="#1307" id="1307">1307</a>
+<a href="#1308" id="1308">1308</a>
+<a href="#1309" id="1309">1309</a>
+<a href="#1310" id="1310">1310</a>
+<a href="#1311" id="1311">1311</a>
+<a href="#1312" id="1312">1312</a>
+<a href="#1313" id="1313">1313</a>
+<a href="#1314" id="1314">1314</a>
+<a href="#1315" id="1315">1315</a>
+<a href="#1316" id="1316">1316</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::debug::{DwarfSectionRelocTarget, ModuleMemoryOffset};
 <span class="kw">use </span><span class="kw">crate</span>::func_environ::FuncEnvironment;
 <span class="kw">use crate</span>::{array_call_signature, native_call_signature, DEBUG_ASSERT_TRAP_CODE};
@@ -1303,7 +1322,10 @@
 <span class="kw">use </span>cranelift_codegen::ir::{
     <span class="self">self</span>, InstBuilder, MemFlags, UserExternalName, UserExternalNameRef, UserFuncName, Value,
 };
-<span class="kw">use </span>cranelift_codegen::isa::{OwnedTargetIsa, TargetIsa};
+<span class="kw">use </span>cranelift_codegen::isa::{
+    unwind::{UnwindInfo, UnwindInfoKind},
+    OwnedTargetIsa, TargetIsa,
+};
 <span class="kw">use </span>cranelift_codegen::print_errors::pretty_error;
 <span class="kw">use </span>cranelift_codegen::Context;
 <span class="kw">use </span>cranelift_codegen::{CompiledCode, MachStackMap};
@@ -1311,15 +1333,13 @@
 <span class="kw">use </span>cranelift_frontend::FunctionBuilder;
 <span class="kw">use </span>cranelift_wasm::{
     DefinedFuncIndex, FuncIndex, FuncTranslator, MemoryIndex, OwnedMemoryIndex, WasmFuncType,
-    WasmType,
+    WasmValType,
 };
 <span class="kw">use </span>object::write::{Object, StandardSegment, SymbolId};
 <span class="kw">use </span>object::{RelocationEncoding, RelocationKind, SectionKind};
 <span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::cmp;
-<span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::convert::TryFrom;
 <span class="kw">use </span>std::mem;
 <span class="kw">use </span>std::path;
 <span class="kw">use </span>std::sync::{Arc, Mutex};
@@ -1327,8 +1347,8 @@
 <span class="kw">use </span>wasmtime_cranelift_shared::{CompiledFunction, ModuleTextBuilder};
 <span class="kw">use </span>wasmtime_environ::{
     AddressMapSection, CacheStore, CompileError, FlagValue, FunctionBodyData, FunctionLoc,
-    ModuleTranslation, ModuleTypes, PtrSize, StackMapInformation, TrapEncodingBuilder, Tunables,
-    VMOffsets, WasmFunctionInfo,
+    ModuleTranslation, ModuleTypesBuilder, PtrSize, StackMapInformation, TrapEncodingBuilder,
+    Tunables, VMOffsets, WasmFunctionInfo,
 };
 
 <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
@@ -1368,6 +1388,7 @@
     linkopts: LinkOptions,
     cache_store: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>CacheStore&gt;&gt;,
     clif_dir: <span class="prelude-ty">Option</span>&lt;path::PathBuf&gt;,
+    wmemcheck: bool,
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>Compiler {
@@ -1405,6 +1426,7 @@
         cache_store: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>CacheStore&gt;&gt;,
         linkopts: LinkOptions,
         clif_dir: <span class="prelude-ty">Option</span>&lt;path::PathBuf&gt;,
+        wmemcheck: bool,
     ) -&gt; Compiler {
         Compiler {
             contexts: Default::default(),
@@ -1413,6 +1435,7 @@
             linkopts,
             cache_store,
             clif_dir,
+            wmemcheck,
         }
     }
 }
@@ -1423,7 +1446,7 @@
         translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
         func_index: DefinedFuncIndex,
         input: FunctionBodyData&lt;<span class="lifetime">'_</span>&gt;,
-        types: <span class="kw-2">&amp;</span>ModuleTypes,
+        types: <span class="kw-2">&amp;</span>ModuleTypesBuilder,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(WasmFunctionInfo, Box&lt;<span class="kw">dyn </span>Any + Send&gt;), CompileError&gt; {
         <span class="kw">let </span>isa = <span class="kw-2">&amp;*</span><span class="self">self</span>.isa;
         <span class="kw">let </span>module = <span class="kw-2">&amp;</span>translation.module;
@@ -1444,7 +1467,8 @@
             context.func.collect_debug_info();
         }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>func_env = FuncEnvironment::new(isa, translation, types, <span class="kw-2">&amp;</span><span class="self">self</span>.tunables);
+        <span class="kw">let </span><span class="kw-2">mut </span>func_env =
+            FuncEnvironment::new(isa, translation, types, <span class="kw-2">&amp;</span><span class="self">self</span>.tunables, <span class="self">self</span>.wmemcheck);
 
         <span class="comment">// The `stack_limit` global value below is the implementation of stack
         // overflow checks in Wasmtime.
@@ -1487,7 +1511,7 @@
                 .unwrap()
                 .into(),
             global_type: isa.pointer_type(),
-            readonly: <span class="bool-val">true</span>,
+            flags: MemFlags::trusted().with_readonly(),
         });
         <span class="kw">let </span>stack_limit = context.func.create_global_value(ir::GlobalValueData::Load {
             base: interrupts_ptr,
@@ -1495,7 +1519,7 @@
                 .unwrap()
                 .into(),
             global_type: isa.pointer_type(),
-            readonly: <span class="bool-val">false</span>,
+            flags: MemFlags::trusted(),
         });
         context.func.stack_limit = <span class="prelude-val">Some</span>(stack_limit);
         <span class="kw">let </span>FunctionBodyData { validator, body } = input;
@@ -1531,7 +1555,7 @@
     <span class="kw">fn </span>compile_array_to_wasm_trampoline(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
-        types: <span class="kw-2">&amp;</span>ModuleTypes,
+        types: <span class="kw-2">&amp;</span>ModuleTypesBuilder,
         def_func_index: DefinedFuncIndex,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>Any + Send&gt;, CompileError&gt; {
         <span class="kw">let </span>func_index = translation.module.func_index(def_func_index);
@@ -1599,7 +1623,7 @@
     <span class="kw">fn </span>compile_native_to_wasm_trampoline(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         translation: <span class="kw-2">&amp;</span>ModuleTranslation&lt;<span class="lifetime">'_</span>&gt;,
-        types: <span class="kw-2">&amp;</span>ModuleTypes,
+        types: <span class="kw-2">&amp;</span>ModuleTypesBuilder,
         def_func_index: DefinedFuncIndex,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>Any + Send&gt;, CompileError&gt; {
         <span class="kw">let </span>func_index = translation.module.func_index(def_func_index);
@@ -1812,11 +1836,11 @@
         <span class="self">self</span>.isa.triple()
     }
 
-    <span class="kw">fn </span>flags(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BTreeMap&lt;String, FlagValue&gt; {
+    <span class="kw">fn </span>flags(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, FlagValue&lt;<span class="lifetime">'static</span>&gt;)&gt; {
         wasmtime_cranelift_shared::clif_flags_to_wasmtime(<span class="self">self</span>.isa.flags().iter())
     }
 
-    <span class="kw">fn </span>isa_flags(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BTreeMap&lt;String, FlagValue&gt; {
+    <span class="kw">fn </span>isa_flags(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, FlagValue&lt;<span class="lifetime">'static</span>&gt;)&gt; {
         wasmtime_cranelift_shared::clif_flags_to_wasmtime(<span class="self">self</span>.isa.isa_flags())
     }
 
@@ -2184,7 +2208,7 @@
     </span><span class="kw">fn </span>store_values_to_array(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         builder: <span class="kw-2">&amp;mut </span>FunctionBuilder,
-        types: <span class="kw-2">&amp;</span>[WasmType],
+        types: <span class="kw-2">&amp;</span>[WasmValType],
         values: <span class="kw-2">&amp;</span>[Value],
         values_vec_ptr: Value,
         values_vec_capacity: Value,
@@ -2216,7 +2240,7 @@
     /// function that uses the array calling convention.
     </span><span class="kw">fn </span>load_values_from_array(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        types: <span class="kw-2">&amp;</span>[WasmType],
+        types: <span class="kw-2">&amp;</span>[WasmValType],
         builder: <span class="kw-2">&amp;mut </span>FunctionBuilder,
         values_vec_ptr: Value,
         values_vec_capacity: Value,
@@ -2345,13 +2369,6 @@
             );
         }
 
-        <span class="kw">if </span>body_and_tunables
-            .map(|(<span class="kw">_</span>, t)| t.generate_native_debuginfo)
-            .unwrap_or(<span class="bool-val">false</span>)
-        {
-            compiled_function.set_value_labels_ranges(compiled_code.value_labels_ranges.clone());
-        }
-
         <span class="kw">if </span>isa.flags().unwind_info() {
             <span class="kw">let </span>unwind = compiled_code
                 .create_unwind_info(isa)
@@ -2359,6 +2376,27 @@
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(unwind_info) = unwind {
                 compiled_function.set_unwind_info(unwind_info);
+            }
+        }
+
+        <span class="kw">if </span>body_and_tunables
+            .map(|(<span class="kw">_</span>, t)| t.generate_native_debuginfo)
+            .unwrap_or(<span class="bool-val">false</span>)
+        {
+            compiled_function.set_value_labels_ranges(compiled_code.value_labels_ranges.clone());
+
+            <span class="comment">// DWARF debugging needs the CFA-based unwind information even on Windows.
+            </span><span class="kw">if </span>!<span class="macro">matches!</span>(
+                compiled_function.metadata().unwind_info,
+                <span class="prelude-val">Some</span>(UnwindInfo::SystemV(<span class="kw">_</span>))
+            ) {
+                <span class="kw">let </span>cfa_unwind = compiled_code
+                    .create_unwind_info_of_kind(isa, UnwindInfoKind::SystemV)
+                    .map_err(|error| CompileError::Codegen(pretty_error(<span class="kw-2">&amp;</span>context.func, error)))<span class="question-mark">?</span>;
+
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(UnwindInfo::SystemV(cfa_unwind_info)) = cfa_unwind {
+                    compiled_function.set_cfa_unwind_info(cfa_unwind_info);
+                }
             }
         }
 
@@ -2543,10 +2581,10 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>max_align = <span class="number">1</span>;
                 <span class="kw">for </span>ty <span class="kw">in </span>other[<span class="number">1</span>..].iter() {
                     <span class="kw">let </span>size = <span class="kw">match </span>ty {
-                        WasmType::I32 | WasmType::F32 =&gt; <span class="number">4</span>,
-                        WasmType::I64 | WasmType::F64 =&gt; <span class="number">8</span>,
-                        WasmType::Ref(<span class="kw">_</span>) =&gt; pointer_type.bytes(),
-                        WasmType::V128 =&gt; <span class="number">16</span>,
+                        WasmValType::I32 | WasmValType::F32 =&gt; <span class="number">4</span>,
+                        WasmValType::I64 | WasmValType::F64 =&gt; <span class="number">8</span>,
+                        WasmValType::Ref(<span class="kw">_</span>) =&gt; pointer_type.bytes(),
+                        WasmValType::V128 =&gt; <span class="number">16</span>,
                     };
                     offset = align_to(offset, size);
                     offsets.push(offset);

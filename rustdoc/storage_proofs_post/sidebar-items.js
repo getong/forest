@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["election","fallback","rational"]};
+window.SIDEBAR_ITEMS = {"mod":["fallback"]};

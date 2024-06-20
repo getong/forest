@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/legalizer/globalvalue.rs`."><title>globalvalue.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/legalizer/globalvalue.rs`."><title>globalvalue.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -145,13 +145,17 @@
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Legalization of global values.
 //!
 //! This module exports the `expand_global_value` function which transforms a `global_value`
 //! instruction into code that depends on the kind of global value referenced.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::cursor::{Cursor, FuncCursor};
-<span class="kw">use </span><span class="kw">crate</span>::ir::{<span class="self">self</span>, InstBuilder};
+<span class="kw">use </span><span class="kw">crate</span>::ir::{<span class="self">self</span>, pcc::Fact, InstBuilder};
 <span class="kw">use </span><span class="kw">crate</span>::isa::TargetIsa;
 
 <span class="doccomment">/// Expand a `global_value` instruction according to the definition of the global value.
@@ -168,7 +172,7 @@
     );
 
     <span class="kw">match </span>func.global_values[global_value] {
-        ir::GlobalValueData::VMContext =&gt; vmctx_addr(inst, func),
+        ir::GlobalValueData::VMContext =&gt; vmctx_addr(global_value, inst, func),
         ir::GlobalValueData::IAddImm {
             base,
             offset,
@@ -178,8 +182,8 @@
             base,
             offset,
             global_type,
-            readonly,
-        } =&gt; load_addr(inst, func, base, offset, global_type, readonly, isa),
+            flags,
+        } =&gt; load_addr(inst, func, base, offset, global_type, flags, isa),
         ir::GlobalValueData::Symbol { tls, .. } =&gt; symbol(inst, func, global_value, isa, tls),
         ir::GlobalValueData::DynScaleTargetConst { vector_type } =&gt; {
             const_vector_scale(inst, func, vector_type, isa)
@@ -199,7 +203,7 @@
 }
 
 <span class="doccomment">/// Expand a `global_value` instruction for a vmctx global.
-</span><span class="kw">fn </span>vmctx_addr(inst: ir::Inst, func: <span class="kw-2">&amp;mut </span>ir::Function) {
+</span><span class="kw">fn </span>vmctx_addr(global_value: ir::GlobalValue, inst: ir::Inst, func: <span class="kw-2">&amp;mut </span>ir::Function) {
     <span class="comment">// Get the value representing the `vmctx` argument.
     </span><span class="kw">let </span>vmctx = func
         .special_param(ir::ArgumentPurpose::VMContext)
@@ -210,6 +214,15 @@
     func.dfg.clear_results(inst);
     func.dfg.change_to_alias(result, vmctx);
     func.layout.remove_inst(inst);
+
+    <span class="comment">// If there was a fact on the GV, then copy it to the vmctx arg
+    // blockparam def.
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(fact) = <span class="kw-2">&amp;</span>func.global_value_facts[global_value] {
+        <span class="kw">if </span>func.dfg.facts[vmctx].is_none() {
+            <span class="kw">let </span>fact = fact.clone();
+            func.dfg.facts[vmctx] = <span class="prelude-val">Some</span>(fact);
+        }
+    }
 }
 
 <span class="doccomment">/// Expand a `global_value` instruction for an iadd_imm global.
@@ -222,18 +235,23 @@
 ) {
     <span class="kw">let </span><span class="kw-2">mut </span>pos = FuncCursor::new(func).at_inst(inst);
 
-    <span class="comment">// Get the value for the lhs. For tidiness, expand VMContext here so that we avoid
-    // `vmctx_addr` which creates an otherwise unneeded value alias.
-    </span><span class="kw">let </span>lhs = <span class="kw">if let </span>ir::GlobalValueData::VMContext = pos.func.global_values[base] {
-        pos.func
-            .special_param(ir::ArgumentPurpose::VMContext)
-            .expect(<span class="string">"Missing vmctx parameter"</span>)
-    } <span class="kw">else </span>{
-        pos.ins().global_value(global_type, base)
-    };
+    <span class="comment">// Get the value for the lhs.
+    </span><span class="kw">let </span>lhs = pos.ins().global_value(global_type, base);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(fact) = <span class="kw-2">&amp;</span>pos.func.global_value_facts[base] {
+        pos.func.dfg.facts[lhs] = <span class="prelude-val">Some</span>(fact.clone());
+    }
+
+    <span class="comment">// Generate the constant and attach a fact to the constant if
+    // there is a fact on the base.
+    </span><span class="kw">let </span>constant = pos.ins().iconst(global_type, offset);
+    <span class="kw">if </span>pos.func.global_value_facts[base].is_some() {
+        <span class="kw">let </span>bits = u16::try_from(global_type.bits()).unwrap();
+        <span class="kw">let </span>unsigned_offset = offset <span class="kw">as </span>u64; <span class="comment">// Safety: reinterpret i64 bits as u64.
+        </span>pos.func.dfg.facts[constant] = <span class="prelude-val">Some</span>(Fact::constant(bits, unsigned_offset));
+    }
 
     <span class="comment">// Simply replace the `global_value` instruction with an `iadd_imm`, reusing the result value.
-    </span>pos.func.dfg.replace(inst).iadd_imm(lhs, offset);
+    </span>pos.func.dfg.replace(inst).iadd(lhs, constant);
 }
 
 <span class="doccomment">/// Expand a `global_value` instruction for a load global.
@@ -243,7 +261,7 @@
     base: ir::GlobalValue,
     offset: ir::immediates::Offset32,
     global_type: ir::Type,
-    readonly: bool,
+    flags: ir::MemFlags,
     isa: <span class="kw-2">&amp;</span><span class="kw">dyn </span>TargetIsa,
 ) {
     <span class="comment">// We need to load a pointer from the `base` global value, so insert a new `global_value`
@@ -253,27 +271,17 @@
     <span class="kw">let </span><span class="kw-2">mut </span>pos = FuncCursor::new(func).at_inst(inst);
     pos.use_srcloc(inst);
 
-    <span class="comment">// Get the value for the base. For tidiness, expand VMContext here so that we avoid
-    // `vmctx_addr` which creates an otherwise unneeded value alias.
-    </span><span class="kw">let </span>base_addr = <span class="kw">if let </span>ir::GlobalValueData::VMContext = pos.func.global_values[base] {
-        pos.func
-            .special_param(ir::ArgumentPurpose::VMContext)
-            .expect(<span class="string">"Missing vmctx parameter"</span>)
-    } <span class="kw">else </span>{
-        pos.ins().global_value(ptr_ty, base)
-    };
-
-    <span class="comment">// Global-value loads are always notrap and aligned. They may be readonly.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>mflags = ir::MemFlags::trusted();
-    <span class="kw">if </span>readonly {
-        mflags.set_readonly();
+    <span class="comment">// Get the value for the base.
+    </span><span class="kw">let </span>base_addr = pos.ins().global_value(ptr_ty, base);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(fact) = <span class="kw-2">&amp;</span>pos.func.global_value_facts[base] {
+        pos.func.dfg.facts[base_addr] = <span class="prelude-val">Some</span>(fact.clone());
     }
 
     <span class="comment">// Perform the load.
     </span>pos.func
         .dfg
         .replace(inst)
-        .load(global_type, mflags, base_addr, offset);
+        .load(global_type, flags, base_addr, offset);
 }
 
 <span class="doccomment">/// Expand a `global_value` instruction for a symbolic name global.

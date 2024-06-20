@@ -1638,6 +1638,8 @@
 <a href="#1638" id="1638">1638</a>
 <a href="#1639" id="1639">1639</a>
 <a href="#1640" id="1640">1640</a>
+<a href="#1641" id="1641">1641</a>
+<a href="#1642" id="1642">1642</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2203,51 +2205,53 @@
     /// indicated message, assuming it was executed in the indicated tipset.
     </span><span class="kw">pub async fn </span>replay(
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
-        ts: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
+        ts: Arc&lt;Tipset&gt;,
         mcid: Cid,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, Error&gt; {
-        <span class="kw">const </span>ERROR_MSG: <span class="kw-2">&amp;</span>str = <span class="string">"replay_halt"</span>;
+        <span class="kw">let </span>this = Arc::clone(<span class="self">self</span>);
+        tokio::task::spawn_blocking(<span class="kw">move </span>|| this.replay_blocking(ts, mcid))
+            .<span class="kw">await
+            </span>.map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">"{e}"</span>)))<span class="question-mark">?
+    </span>}
 
-        <span class="comment">// This isn't ideal to have, since the execution is synchronous, but this needs
-        // to be the case because the state transition has to be in blocking
-        // thread to avoid starving executor
-        </span><span class="kw">let </span>(tx, rx) = flume::bounded(<span class="number">1</span>);
-        <span class="kw">let </span>callback = <span class="kw">move </span>|ctx: MessageCallbackCtx&lt;<span class="lifetime">'_</span>&gt;| {
+    <span class="doccomment">/// Blocking version of `replay`
+    </span><span class="kw">pub fn </span>replay_blocking(
+        <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
+        ts: Arc&lt;Tipset&gt;,
+        mcid: Cid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ApiInvocResult, Error&gt; {
+        <span class="kw">const </span>REPLAY_HALT: <span class="kw-2">&amp;</span>str = <span class="string">"replay_halt"</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>api_invoc_result = <span class="prelude-val">None</span>;
+        <span class="kw">let </span>callback = |ctx: MessageCallbackCtx&lt;<span class="lifetime">'_</span>&gt;| {
             <span class="kw">match </span>ctx.at {
-                CalledAt::Applied | CalledAt::Reward =&gt; {
-                    <span class="kw">if </span>ctx.cid == mcid {
-                        tx.send(ApiInvocResult {
-                            msg_cid: ctx.message.cid()<span class="question-mark">?</span>,
-                            msg: ctx.message.message().clone(),
-                            msg_rct: <span class="prelude-val">Some</span>(ctx.apply_ret.msg_receipt()),
-                            error: ctx.apply_ret.failure_info().unwrap_or_default(),
-                            duration: ctx.duration.as_nanos().clamp(<span class="number">0</span>, u64::MAX <span class="kw">as </span>u128) <span class="kw">as </span>u64,
-                            gas_cost: MessageGasCost::new(ctx.message.message(), ctx.apply_ret)<span class="question-mark">?</span>,
-                            execution_trace: structured::parse_events(ctx.apply_ret.exec_trace())
-                                .unwrap_or_default(),
-                        })<span class="question-mark">?</span>;
-                        <span class="macro">anyhow::bail!</span>(ERROR_MSG);
-                    }
-                    <span class="prelude-val">Ok</span>(())
+                CalledAt::Applied | CalledAt::Reward
+                    <span class="kw">if </span>api_invoc_result.is_none() &amp;&amp; ctx.cid == mcid =&gt;
+                {
+                    api_invoc_result = <span class="prelude-val">Some</span>(ApiInvocResult {
+                        msg_cid: ctx.message.cid()<span class="question-mark">?</span>,
+                        msg: ctx.message.message().clone(),
+                        msg_rct: <span class="prelude-val">Some</span>(ctx.apply_ret.msg_receipt()),
+                        error: ctx.apply_ret.failure_info().unwrap_or_default(),
+                        duration: ctx.duration.as_nanos().clamp(<span class="number">0</span>, u64::MAX <span class="kw">as </span>u128) <span class="kw">as </span>u64,
+                        gas_cost: MessageGasCost::new(ctx.message.message(), ctx.apply_ret)<span class="question-mark">?</span>,
+                        execution_trace: structured::parse_events(ctx.apply_ret.exec_trace())
+                            .unwrap_or_default(),
+                    });
+                    <span class="macro">anyhow::bail!</span>(REPLAY_HALT);
                 }
-                CalledAt::Cron =&gt; <span class="prelude-val">Ok</span>(()), <span class="comment">// ignored
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(()), <span class="comment">// ignored
             </span>}
         };
-        <span class="kw">let </span>result = <span class="self">self
-            </span>.compute_tipset_state(Arc::clone(ts), <span class="prelude-val">Some</span>(callback), VMTrace::Traced)
-            .<span class="kw">await</span>;
-
+        <span class="kw">let </span>result = <span class="self">self</span>.compute_tipset_state_blocking(ts, <span class="prelude-val">Some</span>(callback), VMTrace::Traced);
         <span class="kw">if let </span><span class="prelude-val">Err</span>(error_message) = result {
-            <span class="kw">if </span>error_message.to_string() != ERROR_MSG {
+            <span class="kw">if </span>error_message.to_string() != REPLAY_HALT {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Other(<span class="macro">format!</span>(
                     <span class="string">"unexpected error during execution : {error_message:}"
                 </span>)));
             }
         }
-
-        <span class="comment">// Use try_recv here assuming callback execution is synchronous
-        </span>rx.try_recv()
-            .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"failed to replay: {err}"</span>)))
+        api_invoc_result.ok_or_else(|| Error::Other(<span class="string">"failed to replay"</span>.into()))
     }
 
     <span class="doccomment">/// Checks the eligibility of the miner. This is used in the validation that
@@ -2343,7 +2347,7 @@
     </span><span class="kw">pub fn </span>compute_tipset_state_blocking(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         tipset: Arc&lt;Tipset&gt;,
-        callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(MessageCallbackCtx&lt;<span class="lifetime">'_</span>&gt;) -&gt; anyhow::Result&lt;()&gt; + Send + <span class="lifetime">'static</span>&gt;,
+        callback: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>FnMut(MessageCallbackCtx&lt;<span class="lifetime">'_</span>&gt;) -&gt; anyhow::Result&lt;()&gt;&gt;,
         enable_tracing: VMTrace,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;CidPair, Error&gt; {
         <span class="prelude-val">Ok</span>(apply_block_messages(

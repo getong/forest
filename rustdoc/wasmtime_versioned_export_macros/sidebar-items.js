@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"attr":["versioned_export","versioned_link"],"macro":["versioned_stringify_ident","versioned_suffix"]};

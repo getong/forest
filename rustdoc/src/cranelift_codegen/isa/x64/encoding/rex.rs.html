@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/encoding/rex.rs`."><title>rex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/isa/x64/encoding/rex.rs`."><title>rex.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -586,6 +586,16 @@
 <a href="#586" id="586">586</a>
 <a href="#587" id="587">587</a>
 <a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Encodes instructions in the standard x86 encoding mode. This is called IA-32E mode in the Intel
 //! manuals but corresponds to the addition of the REX-prefix format (hence the name of this module)
 //! that allowed encoding instructions in both compatibility mode (32-bit instructions running on a
@@ -655,28 +665,31 @@
 /// - bit 1 set to 1 indicates the REX prefix must always be emitted.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Clone, Copy)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>RexFlags(u8);
+</span><span class="kw">pub struct </span>RexFlags(u8);
 
 <span class="kw">impl </span>RexFlags {
     <span class="doccomment">/// By default, set the W field, and don't always emit.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>set_w() -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>set_w() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(<span class="number">0</span>)
     }
+
     <span class="doccomment">/// Creates a new RexPrefix for which the REX.W bit will be cleared.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear_w() -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>clear_w() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(<span class="number">1</span>)
     }
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>always_emit(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+    <span class="doccomment">/// Require that the REX prefix is emitted.
+    </span><span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>always_emit(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
         <span class="self">self</span>.<span class="number">0 </span>= <span class="self">self</span>.<span class="number">0 </span>| <span class="number">2</span>;
         <span class="self">self
     </span>}
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>always_emit_if_8bit_needed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Reg) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+    <span class="doccomment">/// Emit the rex prefix if the referenced register would require it for 8-bit operations.
+    </span><span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>always_emit_if_8bit_needed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Reg) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
         <span class="kw">let </span>enc_reg = int_reg_enc(reg);
         <span class="kw">if </span>enc_reg &gt;= <span class="number">4 </span>&amp;&amp; enc_reg &lt;= <span class="number">7 </span>{
             <span class="self">self</span>.always_emit();
@@ -684,17 +697,21 @@
         <span class="self">self
     </span>}
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>must_clear_w(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    <span class="doccomment">/// True if 64-bit operands are used.
+    </span><span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>must_clear_w(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         (<span class="self">self</span>.<span class="number">0 </span>&amp; <span class="number">1</span>) != <span class="number">0
     </span>}
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>must_always_emit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+
+    <span class="doccomment">/// True if the REX prefix must always be emitted.
+    </span><span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>must_always_emit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         (<span class="self">self</span>.<span class="number">0 </span>&amp; <span class="number">2</span>) != <span class="number">0
     </span>}
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>emit_one_op(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;, enc_e: u8) {
+    <span class="doccomment">/// Emit a unary instruction.
+    </span><span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>emit_one_op(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;, enc_e: u8) {
         <span class="comment">// Register Operand coded in Opcode Byte
         // REX.R and REX.X unused
         // REX.B == 1 accesses r8-r15
@@ -708,8 +725,9 @@
         }
     }
 
-    <span class="attr">#[inline(always)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>emit_two_op(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;, enc_g: u8, enc_e: u8) {
+    <span class="doccomment">/// Emit a binary instruction.
+    </span><span class="attr">#[inline(always)]
+    </span><span class="kw">pub fn </span>emit_two_op(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;, enc_g: u8, enc_e: u8) {
         <span class="kw">let </span>w = <span class="kw">if </span><span class="self">self</span>.must_clear_w() { <span class="number">0 </span>} <span class="kw">else </span>{ <span class="number">1 </span>};
         <span class="kw">let </span>r = (enc_g &gt;&gt; <span class="number">3</span>) &amp; <span class="number">1</span>;
         <span class="kw">let </span>x = <span class="number">0</span>;
@@ -720,7 +738,8 @@
         }
     }
 
-    <span class="attr">#[inline(always)]
+    <span class="doccomment">/// Emit a ternary instruction.
+    </span><span class="attr">#[inline(always)]
     </span><span class="kw">pub fn </span>emit_three_op(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         sink: <span class="kw-2">&amp;mut </span>MachBuffer&lt;Inst&gt;,
@@ -1043,13 +1062,12 @@
     /// The `evex_scaling` factor provided here is `Some(N)` for EVEX
     /// instructions.  This is taken into account where the `Imm` value
     /// contained is the raw byte offset.
-    </span><span class="kw">fn </span>new(val: u32, evex_scaling: <span class="prelude-ty">Option</span>&lt;i8&gt;) -&gt; Imm {
+    </span><span class="kw">fn </span>new(val: i32, evex_scaling: <span class="prelude-ty">Option</span>&lt;i8&gt;) -&gt; Imm {
         <span class="kw">if </span>val == <span class="number">0 </span>{
             <span class="kw">return </span>Imm::None;
         }
         <span class="kw">match </span>evex_scaling {
             <span class="prelude-val">Some</span>(scaling) =&gt; {
-                <span class="kw">let </span>val = val <span class="kw">as </span>i32;
                 <span class="kw">if </span>val % i32::from(scaling) == <span class="number">0 </span>{
                     <span class="kw">let </span>scaled = val / i32::from(scaling);
                     <span class="kw">if </span>low8_will_sign_extend_to_32(scaled <span class="kw">as </span>u32) {
@@ -1058,8 +1076,10 @@
                 }
                 Imm::Imm32(val)
             }
-            <span class="prelude-val">None </span><span class="kw">if </span>low8_will_sign_extend_to_32(val) =&gt; Imm::Imm8(val <span class="kw">as </span>i8),
-            <span class="prelude-val">None </span>=&gt; Imm::Imm32(val <span class="kw">as </span>i32),
+            <span class="prelude-val">None </span>=&gt; <span class="kw">match </span>i8::try_from(val) {
+                <span class="prelude-val">Ok</span>(val) =&gt; Imm::Imm8(val),
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; Imm::Imm32(val),
+            },
         }
     }
 

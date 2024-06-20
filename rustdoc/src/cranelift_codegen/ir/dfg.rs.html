@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/ir/dfg.rs`."><title>dfg.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/ir/dfg.rs`."><title>dfg.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1684,6 +1684,54 @@
 <a href="#1684" id="1684">1684</a>
 <a href="#1685" id="1685">1685</a>
 <a href="#1686" id="1686">1686</a>
+<a href="#1687" id="1687">1687</a>
+<a href="#1688" id="1688">1688</a>
+<a href="#1689" id="1689">1689</a>
+<a href="#1690" id="1690">1690</a>
+<a href="#1691" id="1691">1691</a>
+<a href="#1692" id="1692">1692</a>
+<a href="#1693" id="1693">1693</a>
+<a href="#1694" id="1694">1694</a>
+<a href="#1695" id="1695">1695</a>
+<a href="#1696" id="1696">1696</a>
+<a href="#1697" id="1697">1697</a>
+<a href="#1698" id="1698">1698</a>
+<a href="#1699" id="1699">1699</a>
+<a href="#1700" id="1700">1700</a>
+<a href="#1701" id="1701">1701</a>
+<a href="#1702" id="1702">1702</a>
+<a href="#1703" id="1703">1703</a>
+<a href="#1704" id="1704">1704</a>
+<a href="#1705" id="1705">1705</a>
+<a href="#1706" id="1706">1706</a>
+<a href="#1707" id="1707">1707</a>
+<a href="#1708" id="1708">1708</a>
+<a href="#1709" id="1709">1709</a>
+<a href="#1710" id="1710">1710</a>
+<a href="#1711" id="1711">1711</a>
+<a href="#1712" id="1712">1712</a>
+<a href="#1713" id="1713">1713</a>
+<a href="#1714" id="1714">1714</a>
+<a href="#1715" id="1715">1715</a>
+<a href="#1716" id="1716">1716</a>
+<a href="#1717" id="1717">1717</a>
+<a href="#1718" id="1718">1718</a>
+<a href="#1719" id="1719">1719</a>
+<a href="#1720" id="1720">1720</a>
+<a href="#1721" id="1721">1721</a>
+<a href="#1722" id="1722">1722</a>
+<a href="#1723" id="1723">1723</a>
+<a href="#1724" id="1724">1724</a>
+<a href="#1725" id="1725">1725</a>
+<a href="#1726" id="1726">1726</a>
+<a href="#1727" id="1727">1727</a>
+<a href="#1728" id="1728">1728</a>
+<a href="#1729" id="1729">1729</a>
+<a href="#1730" id="1730">1730</a>
+<a href="#1731" id="1731">1731</a>
+<a href="#1732" id="1732">1732</a>
+<a href="#1733" id="1733">1733</a>
+<a href="#1734" id="1734">1734</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Data flow graph tracking Instructions, Values, and blocks.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::entity::{<span class="self">self</span>, PrimaryMap, SecondaryMap};
@@ -1691,6 +1739,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::ir::builder::ReplaceBuilder;
 <span class="kw">use </span><span class="kw">crate</span>::ir::dynamic_type::{DynamicTypeData, DynamicTypes};
 <span class="kw">use </span><span class="kw">crate</span>::ir::instructions::{CallInfo, InstructionData};
+<span class="kw">use </span><span class="kw">crate</span>::ir::pcc::Fact;
 <span class="kw">use </span><span class="kw">crate</span>::ir::{
     types, Block, BlockCall, ConstantData, ConstantPool, DynamicType, ExtFuncData, FuncRef,
     Immediate, Inst, JumpTables, RelSourceLoc, SigRef, Signature, Type, Value,
@@ -1706,7 +1755,7 @@
 
 <span class="kw">use </span>alloc::collections::BTreeMap;
 <span class="attr">#[cfg(feature = <span class="string">"enable-serde"</span>)]
-</span><span class="kw">use </span>serde::{Deserialize, Serialize};
+</span><span class="kw">use </span>serde_derive::{Deserialize, Serialize};
 <span class="kw">use </span>smallvec::SmallVec;
 
 <span class="doccomment">/// Storage for instructions within the DFG.
@@ -1811,6 +1860,9 @@
     <span class="doccomment">/// Primary value table with entries for all values.
     </span>values: PrimaryMap&lt;Value, ValueDataPacked&gt;,
 
+    <span class="doccomment">/// Facts: proof-carrying-code assertions about values.
+    </span><span class="kw">pub </span>facts: SecondaryMap&lt;Value, <span class="prelude-ty">Option</span>&lt;Fact&gt;&gt;,
+
     <span class="doccomment">/// Function signature table. These signatures are referenced by indirect call instructions as
     /// well as the external function references.
     </span><span class="kw">pub </span>signatures: PrimaryMap&lt;SigRef, Signature&gt;,
@@ -1844,6 +1896,7 @@
             dynamic_types: DynamicTypes::new(),
             value_lists: ValueListPool::new(),
             values: PrimaryMap::new(),
+            facts: SecondaryMap::new(),
             signatures: PrimaryMap::new(),
             old_signatures: SecondaryMap::new(),
             ext_funcs: PrimaryMap::new(),
@@ -1869,6 +1922,7 @@
         <span class="self">self</span>.constants.clear();
         <span class="self">self</span>.immediates.clear();
         <span class="self">self</span>.jump_tables.clear();
+        <span class="self">self</span>.facts.clear();
     }
 
     <span class="doccomment">/// Get the total number of instructions created in this function, whether they are currently
@@ -2231,10 +2285,15 @@
 /// (and is implied by `mask`), by translating 2^32-1 (0xffffffff)
 /// into 2^n-1 and panic'ing on 2^n..2^32-1.
 </span><span class="kw">fn </span>encode_narrow_field(x: u32, bits: u8) -&gt; u32 {
+    <span class="kw">let </span>max = (<span class="number">1 </span>&lt;&lt; bits) - <span class="number">1</span>;
     <span class="kw">if </span>x == <span class="number">0xffff_ffff </span>{
-        (<span class="number">1 </span>&lt;&lt; bits) - <span class="number">1
-    </span>} <span class="kw">else </span>{
-        <span class="macro">debug_assert!</span>(x &lt; (<span class="number">1 </span>&lt;&lt; bits));
+        max
+    } <span class="kw">else </span>{
+        <span class="macro">debug_assert!</span>(
+            x &lt; max,
+            <span class="string">"{x} does not fit into {bits} bits (must be less than {max} to \
+             allow for a 0xffffffff sentinal)"
+        </span>);
         x
     }
 }
@@ -2310,7 +2369,7 @@
                 <span class="self">Self</span>::make(<span class="self">Self</span>::TAG_ALIAS, ty, <span class="number">0</span>, original.as_bits())
             }
             ValueData::Union { ty, x, y } =&gt; {
-                <span class="self">Self</span>::make(<span class="self">Self</span>::TAG_ALIAS, ty, x.as_bits(), y.as_bits())
+                <span class="self">Self</span>::make(<span class="self">Self</span>::TAG_UNION, ty, x.as_bits(), y.as_bits())
             }
         }
     }
@@ -2639,7 +2698,13 @@
         <span class="comment">// Get the controlling type variable.
         </span><span class="kw">let </span>ctrl_typevar = <span class="self">self</span>.ctrl_typevar(inst);
         <span class="comment">// Create new result values.
-        </span><span class="self">self</span>.make_inst_results(new_inst, ctrl_typevar);
+        </span><span class="kw">let </span>num_results = <span class="self">self</span>.make_inst_results(new_inst, ctrl_typevar);
+        <span class="comment">// Copy over PCC facts, if any.
+        </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..num_results {
+            <span class="kw">let </span>old_result = <span class="self">self</span>.inst_results(inst)[i];
+            <span class="kw">let </span>new_result = <span class="self">self</span>.inst_results(new_inst)[i];
+            <span class="self">self</span>.facts[new_result] = <span class="self">self</span>.facts[old_result].clone();
+        }
         new_inst
     }
 
@@ -2965,6 +3030,38 @@
     </span><span class="kw">pub fn </span>detach_block_params(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: Block) -&gt; ValueList {
         <span class="self">self</span>.blocks[block].params.take()
     }
+
+    <span class="doccomment">/// Merge the facts for two values. If both values have facts and
+    /// they differ, both values get a special "conflict" fact that is
+    /// never satisfied.
+    </span><span class="kw">pub fn </span>merge_facts(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: Value, b: Value) {
+        <span class="kw">let </span>a = <span class="self">self</span>.resolve_aliases(a);
+        <span class="kw">let </span>b = <span class="self">self</span>.resolve_aliases(b);
+        <span class="kw">match </span>(<span class="kw-2">&amp;</span><span class="self">self</span>.facts[a], <span class="kw-2">&amp;</span><span class="self">self</span>.facts[b]) {
+            (<span class="prelude-val">Some</span>(a), <span class="prelude-val">Some</span>(b)) <span class="kw">if </span>a == b =&gt; { <span class="comment">/* nothing */ </span>}
+            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; { <span class="comment">/* nothing */ </span>}
+            (<span class="prelude-val">Some</span>(a), <span class="prelude-val">None</span>) =&gt; {
+                <span class="self">self</span>.facts[b] = <span class="prelude-val">Some</span>(a.clone());
+            }
+            (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(b)) =&gt; {
+                <span class="self">self</span>.facts[a] = <span class="prelude-val">Some</span>(b.clone());
+            }
+            (<span class="prelude-val">Some</span>(a_fact), <span class="prelude-val">Some</span>(b_fact)) =&gt; {
+                <span class="macro">assert_eq!</span>(<span class="self">self</span>.value_type(a), <span class="self">self</span>.value_type(b));
+                <span class="kw">let </span>merged = Fact::intersect(a_fact, b_fact);
+                <span class="macro">crate::trace!</span>(
+                    <span class="string">"facts merge on {} and {}: {:?}, {:?} -&gt; {:?}"</span>,
+                    a,
+                    b,
+                    a_fact,
+                    b_fact,
+                    merged,
+                );
+                <span class="self">self</span>.facts[a] = <span class="prelude-val">Some</span>(merged.clone());
+                <span class="self">self</span>.facts[b] = <span class="prelude-val">Some</span>(merged);
+            }
+        }
+    }
 }
 
 <span class="doccomment">/// Contents of a basic block.
@@ -3164,8 +3261,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::cursor::{Cursor, FuncCursor};
-    <span class="kw">use </span><span class="kw">crate</span>::ir::types;
-    <span class="kw">use </span><span class="kw">crate</span>::ir::{Function, InstructionData, Opcode, TrapCode};
+    <span class="kw">use </span><span class="kw">crate</span>::ir::{Function, Opcode, TrapCode};
     <span class="kw">use </span>alloc::string::ToString;
 
     <span class="attr">#[test]

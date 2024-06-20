@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/isa/x64/lower/isle.rs`."><title>isle.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/isa/x64/lower/isle.rs`."><title>isle.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1063,47 +1063,11 @@
 <a href="#1063" id="1063">1063</a>
 <a href="#1064" id="1064">1064</a>
 <a href="#1065" id="1065">1065</a>
-<a href="#1066" id="1066">1066</a>
-<a href="#1067" id="1067">1067</a>
-<a href="#1068" id="1068">1068</a>
-<a href="#1069" id="1069">1069</a>
-<a href="#1070" id="1070">1070</a>
-<a href="#1071" id="1071">1071</a>
-<a href="#1072" id="1072">1072</a>
-<a href="#1073" id="1073">1073</a>
-<a href="#1074" id="1074">1074</a>
-<a href="#1075" id="1075">1075</a>
-<a href="#1076" id="1076">1076</a>
-<a href="#1077" id="1077">1077</a>
-<a href="#1078" id="1078">1078</a>
-<a href="#1079" id="1079">1079</a>
-<a href="#1080" id="1080">1080</a>
-<a href="#1081" id="1081">1081</a>
-<a href="#1082" id="1082">1082</a>
-<a href="#1083" id="1083">1083</a>
-<a href="#1084" id="1084">1084</a>
-<a href="#1085" id="1085">1085</a>
-<a href="#1086" id="1086">1086</a>
-<a href="#1087" id="1087">1087</a>
-<a href="#1088" id="1088">1088</a>
-<a href="#1089" id="1089">1089</a>
-<a href="#1090" id="1090">1090</a>
-<a href="#1091" id="1091">1091</a>
-<a href="#1092" id="1092">1092</a>
-<a href="#1093" id="1093">1093</a>
-<a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
-<a href="#1096" id="1096">1096</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! ISLE integration glue code for x64 lowering.
 
 </span><span class="comment">// Pull in the ISLE generated code.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>generated_code;
-<span class="kw">use crate</span>::{
-    ir::types,
-    ir::AtomicRmwOp,
-    isa, isle_common_prelude_methods, isle_lower_prelude_methods,
-    machinst::{InputSourceInst, Reg, Writable},
-};
+<span class="kw">use crate</span>::{ir::types, ir::AtomicRmwOp, isa, isle_common_prelude_methods};
 <span class="kw">use </span>generated_code::{Context, MInst, RegisterClass};
 
 <span class="comment">// Types that the generated ISLE code uses via `use super::*`.
@@ -1113,33 +1077,30 @@
 <span class="kw">use </span><span class="kw">crate</span>::isa::x64::X64Backend;
 <span class="kw">use crate</span>::{
     ir::{
-        condcodes::{CondCode, FloatCC, IntCC},
+        condcodes::{FloatCC, IntCC},
         immediates::<span class="kw-2">*</span>,
         types::<span class="kw-2">*</span>,
         BlockCall, Inst, InstructionData, MemFlags, Opcode, TrapCode, Value, ValueList,
     },
-    isa::{
-        unwind::UnwindInst,
-        x64::{
-            abi::X64CallSite,
-            inst::{args::<span class="kw-2">*</span>, regs, CallInfo, ReturnCallInfo},
-        },
+    isa::x64::{
+        abi::X64CallSite,
+        inst::{args::<span class="kw-2">*</span>, regs, CallInfo, ReturnCallInfo},
     },
     machinst::{
-        isle::<span class="kw-2">*</span>, valueregs, ArgPair, InsnInput, InstOutput, Lower, MachAtomicRmwOp, MachInst,
+        isle::<span class="kw-2">*</span>, valueregs, ArgPair, InsnInput, InstOutput, MachAtomicRmwOp, MachInst,
         VCodeConstant, VCodeConstantData,
     },
 };
 <span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>regalloc2::PReg;
-<span class="kw">use </span>smallvec::SmallVec;
 <span class="kw">use </span>std::boxed::Box;
-<span class="kw">use </span>std::convert::TryFrom;
 
-<span class="kw">type </span>BoxCallInfo = Box&lt;CallInfo&gt;;
+<span class="doccomment">/// Type representing out-of-line data for calls. This type optional because the
+/// call instruction is also used by Winch to emit calls, but the
+/// `Box&lt;CallInfo&gt;` field is not used, it's only used by Cranelift. By making it
+/// optional, we reduce the number of heap allocations in Winch.
+</span><span class="kw">type </span>BoxCallInfo = <span class="prelude-ty">Option</span>&lt;Box&lt;CallInfo&gt;&gt;;
 <span class="kw">type </span>BoxReturnCallInfo = Box&lt;ReturnCallInfo&gt;;
-<span class="kw">type </span>BoxVecMachLabel = Box&lt;SmallVec&lt;[MachLabel; <span class="number">4</span>]&gt;&gt;;
-<span class="kw">type </span>MachLabelSlice = [MachLabel];
 <span class="kw">type </span>VecArgPair = Vec&lt;ArgPair&gt;;
 
 <span class="kw">pub struct </span>SinkableLoad {
@@ -1364,6 +1325,11 @@
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>use_bmi1(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.backend.x64_flags.use_bmi1()
+    }
+
+    <span class="attr">#[inline]
+    </span><span class="kw">fn </span>use_bmi2(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.backend.x64_flags.use_bmi2()
     }
 
     <span class="attr">#[inline]
@@ -1681,6 +1647,20 @@
         Imm8Gpr::new(Imm8Reg::Imm8 { imm }).unwrap()
     }
 
+    <span class="kw">fn </span>gpr_from_imm8_gpr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>Imm8Gpr) -&gt; <span class="prelude-ty">Option</span>&lt;Gpr&gt; {
+        <span class="kw">match </span>val.clone().to_imm8_reg() {
+            Imm8Reg::Reg { reg } =&gt; <span class="prelude-val">Some</span>(Gpr::new(reg).unwrap()),
+            Imm8Reg::Imm8 { .. } =&gt; <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="kw">fn </span>imm8_from_imm8_gpr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: <span class="kw-2">&amp;</span>Imm8Gpr) -&gt; <span class="prelude-ty">Option</span>&lt;u8&gt; {
+        <span class="kw">match </span>val.clone().to_imm8_reg() {
+            Imm8Reg::Imm8 { imm } =&gt; <span class="prelude-val">Some</span>(imm),
+            Imm8Reg::Reg { .. } =&gt; <span class="prelude-val">None</span>,
+        }
+    }
+
     <span class="attr">#[inline]
     </span><span class="kw">fn </span>type_register_class(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: Type) -&gt; <span class="prelude-ty">Option</span>&lt;RegisterClass&gt; {
         <span class="kw">if </span>is_int_or_ref_ty(ty) || ty == I128 {
@@ -1701,11 +1681,6 @@
             types::R32 =&gt; <span class="macro">panic!</span>(<span class="string">"shouldn't have 32-bits refs on x64"</span>),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
-    }
-
-    <span class="attr">#[inline]
-    </span><span class="kw">fn </span>intcc_without_eq(<span class="kw-2">&amp;mut </span><span class="self">self</span>, x: <span class="kw-2">&amp;</span>IntCC) -&gt; IntCC {
-        x.without_equal()
     }
 
     <span class="attr">#[inline]
@@ -1750,7 +1725,7 @@
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">fn </span>amode_offset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>Amode, offset: u32) -&gt; Amode {
+    </span><span class="kw">fn </span>amode_offset(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>Amode, offset: i32) -&gt; Amode {
         addr.offset(offset)
     }
 
@@ -1831,43 +1806,6 @@
         .expect(<span class="string">"Failed to emit LibCall"</span>);
 
         output_reg.to_reg()
-    }
-
-    <span class="attr">#[inline]
-    </span><span class="kw">fn </span>single_target(<span class="kw-2">&amp;mut </span><span class="self">self</span>, targets: <span class="kw-2">&amp;</span>MachLabelSlice) -&gt; <span class="prelude-ty">Option</span>&lt;MachLabel&gt; {
-        <span class="kw">if </span>targets.len() == <span class="number">1 </span>{
-            <span class="prelude-val">Some</span>(targets[<span class="number">0</span>])
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>}
-    }
-
-    <span class="attr">#[inline]
-    </span><span class="kw">fn </span>two_targets(<span class="kw-2">&amp;mut </span><span class="self">self</span>, targets: <span class="kw-2">&amp;</span>MachLabelSlice) -&gt; <span class="prelude-ty">Option</span>&lt;(MachLabel, MachLabel)&gt; {
-        <span class="kw">if </span>targets.len() == <span class="number">2 </span>{
-            <span class="prelude-val">Some</span>((targets[<span class="number">0</span>], targets[<span class="number">1</span>]))
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>}
-    }
-
-    <span class="attr">#[inline]
-    </span><span class="kw">fn </span>jump_table_targets(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        targets: <span class="kw-2">&amp;</span>MachLabelSlice,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;(MachLabel, BoxVecMachLabel)&gt; {
-        <span class="kw">if </span>targets.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
-
-        <span class="kw">let </span>default_label = targets[<span class="number">0</span>];
-        <span class="kw">let </span>jt_targets = Box::new(SmallVec::from(<span class="kw-2">&amp;</span>targets[<span class="number">1</span>..]));
-        <span class="prelude-val">Some</span>((default_label, jt_targets))
-    }
-
-    <span class="attr">#[inline]
-    </span><span class="kw">fn </span>jump_table_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, targets: <span class="kw-2">&amp;</span>BoxVecMachLabel) -&gt; u32 {
-        targets.len() <span class="kw">as </span>u32
     }
 
     <span class="attr">#[inline]

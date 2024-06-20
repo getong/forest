@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/machinst/lower.rs`."><title>lower.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/machinst/lower.rs`."><title>lower.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1391,6 +1391,56 @@
 <a href="#1391" id="1391">1391</a>
 <a href="#1392" id="1392">1392</a>
 <a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
+<a href="#1418" id="1418">1418</a>
+<a href="#1419" id="1419">1419</a>
+<a href="#1420" id="1420">1420</a>
+<a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+<a href="#1424" id="1424">1424</a>
+<a href="#1425" id="1425">1425</a>
+<a href="#1426" id="1426">1426</a>
+<a href="#1427" id="1427">1427</a>
+<a href="#1428" id="1428">1428</a>
+<a href="#1429" id="1429">1429</a>
+<a href="#1430" id="1430">1430</a>
+<a href="#1431" id="1431">1431</a>
+<a href="#1432" id="1432">1432</a>
+<a href="#1433" id="1433">1433</a>
+<a href="#1434" id="1434">1434</a>
+<a href="#1435" id="1435">1435</a>
+<a href="#1436" id="1436">1436</a>
+<a href="#1437" id="1437">1437</a>
+<a href="#1438" id="1438">1438</a>
+<a href="#1439" id="1439">1439</a>
+<a href="#1440" id="1440">1440</a>
+<a href="#1441" id="1441">1441</a>
+<a href="#1442" id="1442">1442</a>
+<a href="#1443" id="1443">1443</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module implements lowering (instruction selection) from Cranelift IR
 //! to machine instructions with virtual registers. This is *almost* the final
 //! machine code, except for register allocation.
@@ -1401,20 +1451,21 @@
 </span><span class="kw">use </span><span class="kw">crate</span>::entity::SecondaryMap;
 <span class="kw">use </span><span class="kw">crate</span>::fx::{FxHashMap, FxHashSet};
 <span class="kw">use </span><span class="kw">crate</span>::inst_predicates::{has_lowering_side_effect, is_constant_64bit};
+<span class="kw">use </span><span class="kw">crate</span>::ir::pcc::{Fact, FactContext, PccError, PccResult};
 <span class="kw">use </span><span class="kw">crate</span>::ir::{
     ArgumentPurpose, Block, Constant, ConstantData, DataFlowGraph, ExternalName, Function,
     GlobalValue, GlobalValueData, Immediate, Inst, InstructionData, MemFlags, RelSourceLoc, Type,
     Value, ValueDef, ValueLabelAssignments, ValueLabelStart,
 };
 <span class="kw">use </span><span class="kw">crate</span>::machinst::{
-    writable_value_regs, BlockIndex, BlockLoweringOrder, Callee, LoweredBlock, MachLabel, Reg,
-    SigSet, VCode, VCodeBuilder, VCodeConstant, VCodeConstantData, VCodeConstants, VCodeInst,
-    ValueRegs, Writable,
+    writable_value_regs, BlockIndex, BlockLoweringOrder, Callee, InsnIndex, LoweredBlock,
+    MachLabel, Reg, SigSet, VCode, VCodeBuilder, VCodeConstant, VCodeConstantData, VCodeConstants,
+    VCodeInst, ValueRegs, Writable,
 };
+<span class="kw">use </span><span class="kw">crate</span>::settings::Flags;
 <span class="kw">use crate</span>::{trace, CodegenResult};
 <span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>cranelift_control::ControlPlane;
-<span class="kw">use </span>regalloc2::{MachineEnv, PRegSet};
 <span class="kw">use </span>smallvec::{smallvec, SmallVec};
 <span class="kw">use </span>std::fmt::Debug;
 
@@ -1539,6 +1590,22 @@
     </span><span class="kw">fn </span>maybe_pinned_reg(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Reg&gt; {
         <span class="prelude-val">None
     </span>}
+
+    <span class="doccomment">/// The type of state carried between `check_fact` invocations.
+    </span><span class="kw">type </span>FactFlowState: Default + Clone + Debug;
+
+    <span class="doccomment">/// Check any facts about an instruction, given VCode with facts
+    /// on VRegs. Takes mutable `VCode` so that it can propagate some
+    /// kinds of facts automatically.
+    </span><span class="kw">fn </span>check_fact(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _ctx: <span class="kw-2">&amp;</span>FactContext&lt;<span class="lifetime">'_</span>&gt;,
+        _vcode: <span class="kw-2">&amp;mut </span>VCode&lt;<span class="self">Self</span>::MInst&gt;,
+        _inst: InsnIndex,
+        _state: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::FactFlowState,
+    ) -&gt; PccResult&lt;()&gt; {
+        <span class="prelude-val">Err</span>(PccError::UnimplementedBackend)
+    }
 }
 
 <span class="doccomment">/// Machine-independent lowering driver / machine-instruction container. Maintains a correspondence
@@ -1546,9 +1613,6 @@
 </span><span class="kw">pub struct </span>Lower&lt;<span class="lifetime">'func</span>, I: VCodeInst&gt; {
     <span class="doccomment">/// The function to lower.
     </span>f: <span class="kw-2">&amp;</span><span class="lifetime">'func </span>Function,
-
-    <span class="doccomment">/// The set of allocatable registers.
-    </span>allocatable: PRegSet,
 
     <span class="doccomment">/// Lowered machine instructions.
     </span>vcode: VCodeBuilder&lt;I&gt;,
@@ -1603,6 +1667,9 @@
 
     <span class="doccomment">/// The register to use for GetPinnedReg, if any, on this architecture.
     </span>pinned_reg: <span class="prelude-ty">Option</span>&lt;Reg&gt;,
+
+    <span class="doccomment">/// Compilation flags.
+    </span>flags: Flags,
 }
 
 <span class="doccomment">/// How is a value used in the IR?
@@ -1722,11 +1789,11 @@
     <span class="doccomment">/// Prepare a new lowering context for the given IR function.
     </span><span class="kw">pub fn </span>new(
         f: <span class="kw-2">&amp;</span><span class="lifetime">'func </span>Function,
-        machine_env: <span class="kw-2">&amp;</span>MachineEnv,
         abi: Callee&lt;I::ABIMachineSpec&gt;,
         emit_info: I::Info,
         block_order: BlockLoweringOrder,
         sigs: SigSet,
+        flags: Flags,
     ) -&gt; CodegenResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>constants = VCodeConstants::with_capacity(f.dfg.constants.len());
         <span class="kw">let </span>vcode = VCodeBuilder::new(
@@ -1747,7 +1814,7 @@
             <span class="kw">for </span><span class="kw-2">&amp;</span>param <span class="kw">in </span>f.dfg.block_params(bb) {
                 <span class="kw">let </span>ty = f.dfg.value_type(param);
                 <span class="kw">if </span>value_regs[param].is_invalid() {
-                    <span class="kw">let </span>regs = vregs.alloc(ty)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>regs = vregs.alloc_with_maybe_fact(ty, f.dfg.facts[param].clone())<span class="question-mark">?</span>;
                     value_regs[param] = regs;
                     <span class="macro">trace!</span>(<span class="string">"bb {} param {}: regs {:?}"</span>, bb, param, regs);
                 }
@@ -1756,7 +1823,7 @@
                 <span class="kw">for </span><span class="kw-2">&amp;</span>result <span class="kw">in </span>f.dfg.inst_results(inst) {
                     <span class="kw">let </span>ty = f.dfg.value_type(result);
                     <span class="kw">if </span>value_regs[result].is_invalid() &amp;&amp; !ty.is_invalid() {
-                        <span class="kw">let </span>regs = vregs.alloc(ty)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>regs = vregs.alloc_with_maybe_fact(ty, f.dfg.facts[result].clone())<span class="question-mark">?</span>;
                         value_regs[result] = regs;
                         <span class="macro">trace!</span>(
                             <span class="string">"bb {} inst {} ({:?}): result {} regs {:?}"</span>,
@@ -1827,7 +1894,6 @@
 
         <span class="prelude-val">Ok</span>(Lower {
             f,
-            allocatable: PRegSet::from(machine_env),
             vcode,
             vregs,
             value_regs,
@@ -1842,6 +1908,7 @@
             cur_inst: <span class="prelude-val">None</span>,
             ir_insts: <span class="macro">vec!</span>[],
             pinned_reg: <span class="prelude-val">None</span>,
+            flags,
         })
     }
 
@@ -2048,7 +2115,7 @@
             }
         }
 
-        <span class="kw">let </span>inst = <span class="self">self</span>.abi().gen_ret(<span class="kw-2">&amp;</span><span class="self">self</span>.sigs(), out_rets);
+        <span class="kw">let </span>inst = <span class="self">self</span>.abi().gen_rets(out_rets);
         <span class="self">self</span>.emit(inst);
     }
 
@@ -2163,6 +2230,19 @@
                     <span class="macro">debug_assert_eq!</span>(regs.len(), dsts.len());
                     <span class="kw">for </span>(dst, temp) <span class="kw">in </span>dsts.regs().iter().zip(regs.regs().iter()) {
                         <span class="self">self</span>.set_vreg_alias(<span class="kw-2">*</span>dst, <span class="kw-2">*</span>temp);
+
+                        <span class="comment">// If there was any PCC fact about the
+                        // original VReg, move it to the aliased reg
+                        // instead. Lookup goes through the alias, but
+                        // we want to preserve whatever was stated
+                        // about the vreg before its producer was
+                        // lowered.
+                        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(fact) =
+                            <span class="self">self</span>.vregs.take_fact(dst.to_virtual_reg().unwrap().into())
+                        {
+                            <span class="self">self</span>.vregs
+                                .set_fact(temp.to_virtual_reg().unwrap().into(), fact);
+                        }
                     }
                 }
             }
@@ -2355,7 +2435,7 @@
                 <span class="kw">let </span>arg = <span class="self">self</span>.f.dfg.resolve_aliases(arg);
                 <span class="kw">let </span>regs = <span class="self">self</span>.put_value_in_regs(arg);
                 <span class="kw">for </span><span class="kw-2">&amp;</span>vreg <span class="kw">in </span>regs.regs() {
-                    <span class="kw">let </span>vreg = <span class="self">self</span>.vcode.resolve_vreg_alias(vreg.into());
+                    <span class="kw">let </span>vreg = <span class="self">self</span>.vcode.vcode.resolve_vreg_alias(vreg.into());
                     branch_arg_vregs.push(vreg.into());
                 }
             }
@@ -2468,11 +2548,17 @@
             }
 
             <span class="self">self</span>.finish_bb();
+
+            <span class="comment">// Check for any deferred vreg-temp allocation errors, and
+            // bubble one up at this time if it exists.
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(e) = <span class="self">self</span>.vregs.take_deferred_error() {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
+            }
         }
 
         <span class="comment">// Now that we've emitted all instructions into the
         // VCodeBuilder, let's build the VCode.
-        </span><span class="kw">let </span>vcode = <span class="self">self</span>.vcode.build(<span class="self">self</span>.allocatable, <span class="self">self</span>.vregs);
+        </span><span class="kw">let </span>vcode = <span class="self">self</span>.vcode.build(<span class="self">self</span>.vregs);
         <span class="macro">trace!</span>(<span class="string">"built vcode: {:?}"</span>, vcode);
 
         <span class="prelude-val">Ok</span>(vcode)
@@ -2718,7 +2804,7 @@
 </span><span class="kw">impl</span>&lt;<span class="lifetime">'func</span>, I: VCodeInst&gt; Lower&lt;<span class="lifetime">'func</span>, I&gt; {
     <span class="doccomment">/// Get a new temp.
     </span><span class="kw">pub fn </span>alloc_tmp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: Type) -&gt; ValueRegs&lt;Writable&lt;Reg&gt;&gt; {
-        writable_value_regs(<span class="self">self</span>.vregs.alloc(ty).unwrap())
+        writable_value_regs(<span class="self">self</span>.vregs.alloc_with_deferred_error(ty))
     }
 
     <span class="doccomment">/// Emit a machine instruction.
@@ -2782,6 +2868,20 @@
     </span><span class="kw">pub fn </span>set_vreg_alias(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: Reg, to: Reg) {
         <span class="macro">trace!</span>(<span class="string">"set vreg alias: from {:?} to {:?}"</span>, from, to);
         <span class="self">self</span>.vcode.set_vreg_alias(from, to);
+    }
+
+    <span class="doccomment">/// Add a range fact to a register, if no other fact is present.
+    </span><span class="kw">pub fn </span>add_range_fact(<span class="kw-2">&amp;mut </span><span class="self">self</span>, reg: Reg, bit_width: u16, min: u64, max: u64) {
+        <span class="kw">if </span><span class="self">self</span>.flags.enable_pcc() {
+            <span class="self">self</span>.vregs.set_fact_if_missing(
+                reg.to_virtual_reg().unwrap(),
+                Fact::Range {
+                    bit_width,
+                    min,
+                    max,
+                },
+            );
+        }
     }
 }
 </code></pre></div></section></main></body></html>

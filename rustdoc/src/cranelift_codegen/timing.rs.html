@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.99.2/src/timing.rs`."><title>timing.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/cranelift-codegen-0.106.2/src/timing.rs`."><title>timing.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="cranelift_codegen" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../cranelift_codegen/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -269,6 +269,32 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Pass timing.
 //!
 //! This modules provides facilities for timing the execution of individual compilation passes.
@@ -276,9 +302,9 @@
 </span><span class="kw">use </span>core::fmt;
 <span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::boxed::Box;
-<span class="kw">use </span>std::cell::{Cell, RefCell};
+<span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::mem;
-<span class="kw">use </span>std::time::{Duration, Instant};
+<span class="kw">use </span>std::time::Duration;
 
 <span class="comment">// Each pass that can be timed is predefined with the `define_passes!` macro. Each pass has a
 // snake_case name and a plain text description used when printing out the timing report.
@@ -401,22 +427,6 @@
     PROFILER.with(|profiler| profiler.borrow().start_pass(pass))
 }
 
-<span class="doccomment">/// A timing token is responsible for timing the currently running pass. Timing starts when it
-/// is created and ends when it is dropped.
-///
-/// Multiple passes can be active at the same time, but they must be started and stopped in a
-/// LIFO fashion.
-</span><span class="kw">struct </span>DefaultTimingToken {
-    <span class="doccomment">/// Start time for this pass.
-    </span>start: Instant,
-
-    <span class="comment">// Pass being timed by this token.
-    </span>pass: Pass,
-
-    <span class="comment">// The previously active pass which will be restored when this token is dropped.
-    </span>prev: Pass,
-}
-
 <span class="doccomment">/// Accumulated timing information for a single pass.
 </span><span class="attr">#[derive(Default, Copy, Clone)]
 </span><span class="kw">struct </span>PassTime {
@@ -486,47 +496,89 @@
 
 <span class="comment">// Information about passes in a single thread.
 </span><span class="macro">thread_local!</span> {
-    <span class="kw">static </span>CURRENT_PASS: Cell&lt;Pass&gt; = <span class="kw">const </span>{ Cell::new(Pass::None) };
     <span class="kw">static </span>PASS_TIME: RefCell&lt;PassTimes&gt; = RefCell::new(Default::default());
 }
 
 <span class="doccomment">/// The default profiler. You can get the results using [`take_current`].
 </span><span class="kw">pub struct </span>DefaultProfiler;
 
-<span class="kw">impl </span>Profiler <span class="kw">for </span>DefaultProfiler {
-    <span class="kw">fn </span>start_pass(<span class="kw-2">&amp;</span><span class="self">self</span>, pass: Pass) -&gt; Box&lt;<span class="kw">dyn </span>Any&gt; {
-        <span class="kw">let </span>prev = CURRENT_PASS.with(|p| p.replace(pass));
-        <span class="macro">log::debug!</span>(<span class="string">"timing: Starting {}, (during {})"</span>, pass, prev);
-        Box::new(DefaultTimingToken {
-            start: Instant::now(),
-            pass,
-            prev,
-        })
-    }
-}
-
-<span class="doccomment">/// Dropping a timing token indicated the end of the pass.
-</span><span class="kw">impl </span>Drop <span class="kw">for </span>DefaultTimingToken {
-    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span>duration = <span class="self">self</span>.start.elapsed();
-        <span class="macro">log::debug!</span>(<span class="string">"timing: Ending {}: {}ms"</span>, <span class="self">self</span>.pass, duration.as_millis());
-        <span class="kw">let </span>old_cur = CURRENT_PASS.with(|p| p.replace(<span class="self">self</span>.prev));
-        <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.pass, old_cur, <span class="string">"Timing tokens dropped out of order"</span>);
-        PASS_TIME.with(|rc| {
-            <span class="kw">let </span><span class="kw-2">mut </span>table = rc.borrow_mut();
-            table.pass[<span class="self">self</span>.pass.idx()].total += duration;
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(parent) = table.pass.get_mut(<span class="self">self</span>.prev.idx()) {
-                parent.child += duration;
-            }
-        })
-    }
-}
-
 <span class="doccomment">/// Take the current accumulated pass timings and reset the timings for the current thread.
 ///
 /// Only applies when [`DefaultProfiler`] is used.
 </span><span class="kw">pub fn </span>take_current() -&gt; PassTimes {
     PASS_TIME.with(|rc| mem::take(<span class="kw-2">&amp;mut *</span>rc.borrow_mut()))
+}
+
+<span class="attr">#[cfg(feature = <span class="string">"timing"</span>)]
+</span><span class="kw">mod </span>enabled {
+    <span class="kw">use super</span>::{DefaultProfiler, Pass, Profiler, PASS_TIME};
+    <span class="kw">use </span>std::any::Any;
+    <span class="kw">use </span>std::boxed::Box;
+    <span class="kw">use </span>std::cell::Cell;
+    <span class="kw">use </span>std::time::Instant;
+
+    <span class="comment">// Information about passes in a single thread.
+    </span><span class="macro">thread_local!</span> {
+        <span class="kw">static </span>CURRENT_PASS: Cell&lt;Pass&gt; = <span class="kw">const </span>{ Cell::new(Pass::None) };
+    }
+
+    <span class="kw">impl </span>Profiler <span class="kw">for </span>DefaultProfiler {
+        <span class="kw">fn </span>start_pass(<span class="kw-2">&amp;</span><span class="self">self</span>, pass: Pass) -&gt; Box&lt;<span class="kw">dyn </span>Any&gt; {
+            <span class="kw">let </span>prev = CURRENT_PASS.with(|p| p.replace(pass));
+            <span class="macro">log::debug!</span>(<span class="string">"timing: Starting {}, (during {})"</span>, pass, prev);
+            Box::new(DefaultTimingToken {
+                start: Instant::now(),
+                pass,
+                prev,
+            })
+        }
+    }
+
+    <span class="doccomment">/// A timing token is responsible for timing the currently running pass. Timing starts when it
+    /// is created and ends when it is dropped.
+    ///
+    /// Multiple passes can be active at the same time, but they must be started and stopped in a
+    /// LIFO fashion.
+    </span><span class="kw">struct </span>DefaultTimingToken {
+        <span class="doccomment">/// Start time for this pass.
+        </span>start: Instant,
+
+        <span class="comment">// Pass being timed by this token.
+        </span>pass: Pass,
+
+        <span class="comment">// The previously active pass which will be restored when this token is dropped.
+        </span>prev: Pass,
+    }
+
+    <span class="doccomment">/// Dropping a timing token indicated the end of the pass.
+    </span><span class="kw">impl </span>Drop <span class="kw">for </span>DefaultTimingToken {
+        <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+            <span class="kw">let </span>duration = <span class="self">self</span>.start.elapsed();
+            <span class="macro">log::debug!</span>(<span class="string">"timing: Ending {}: {}ms"</span>, <span class="self">self</span>.pass, duration.as_millis());
+            <span class="kw">let </span>old_cur = CURRENT_PASS.with(|p| p.replace(<span class="self">self</span>.prev));
+            <span class="macro">debug_assert_eq!</span>(<span class="self">self</span>.pass, old_cur, <span class="string">"Timing tokens dropped out of order"</span>);
+            PASS_TIME.with(|rc| {
+                <span class="kw">let </span><span class="kw-2">mut </span>table = rc.borrow_mut();
+                table.pass[<span class="self">self</span>.pass.idx()].total += duration;
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(parent) = table.pass.get_mut(<span class="self">self</span>.prev.idx()) {
+                    parent.child += duration;
+                }
+            })
+        }
+    }
+}
+
+<span class="attr">#[cfg(not(feature = <span class="string">"timing"</span>))]
+</span><span class="kw">mod </span>disabled {
+    <span class="kw">use super</span>::{DefaultProfiler, Pass, Profiler};
+    <span class="kw">use </span>std::any::Any;
+    <span class="kw">use </span>std::boxed::Box;
+
+    <span class="kw">impl </span>Profiler <span class="kw">for </span>DefaultProfiler {
+        <span class="kw">fn </span>start_pass(<span class="kw-2">&amp;</span><span class="self">self</span>, _pass: Pass) -&gt; Box&lt;<span class="kw">dyn </span>Any&gt; {
+            Box::new(())
+        }
+    }
 }
 
 <span class="attr">#[cfg(test)]

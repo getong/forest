@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance/allocator/pooling/index_allocator.rs`."><title>index_allocator.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-19.0.2/src/instance/allocator/pooling/index_allocator.rs`."><title>index_allocator.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -597,17 +597,123 @@
 <a href="#597" id="597">597</a>
 <a href="#598" id="598">598</a>
 <a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Index/slot allocator policies for the pooling allocator.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::CompiledModuleId;
 <span class="kw">use </span>std::collections::hash_map::{Entry, HashMap};
 <span class="kw">use </span>std::mem;
 <span class="kw">use </span>std::sync::Mutex;
+<span class="kw">use </span>wasmtime_environ::DefinedMemoryIndex;
 
-<span class="doccomment">/// A slot index. The job of this allocator is to hand out these
-/// indices.
+<span class="doccomment">/// A slot index.
 </span><span class="attr">#[derive(Hash, Clone, Copy, Debug, PartialEq, Eq)]
 </span><span class="kw">pub struct </span>SlotId(<span class="kw">pub </span>u32);
+
 <span class="kw">impl </span>SlotId {
     <span class="doccomment">/// The index of this slot.
     </span><span class="kw">pub fn </span>index(<span class="self">self</span>) -&gt; usize {
@@ -615,12 +721,50 @@
     }
 }
 
-<span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>IndexAllocator(Mutex&lt;Inner&gt;);
+<span class="doccomment">/// A simple index allocator.
+///
+/// This index allocator doesn't do any module affinity or anything like that,
+/// however it is built on top of the `ModuleAffinityIndexAllocator` to save
+/// code (and code size).
+</span><span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>SimpleIndexAllocator(ModuleAffinityIndexAllocator);
+
+<span class="kw">impl </span>SimpleIndexAllocator {
+    <span class="kw">pub fn </span>new(capacity: u32) -&gt; <span class="self">Self </span>{
+        SimpleIndexAllocator(ModuleAffinityIndexAllocator::new(capacity, <span class="number">0</span>))
+    }
+
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.<span class="number">0</span>.is_empty()
+    }
+
+    <span class="kw">pub fn </span>alloc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.alloc(<span class="prelude-val">None</span>)
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>free(<span class="kw-2">&amp;</span><span class="self">self</span>, index: SlotId) {
+        <span class="self">self</span>.<span class="number">0</span>.free(index);
+    }
+
+    <span class="attr">#[cfg(test)]
+    #[allow(unused)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>testing_freelist(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;SlotId&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.testing_freelist()
+    }
+}
+
+<span class="doccomment">/// A particular defined memory within a particular module.
+</span><span class="attr">#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+</span><span class="kw">pub struct </span>MemoryInModule(<span class="kw">pub </span>CompiledModuleId, <span class="kw">pub </span>DefinedMemoryIndex);
+
+<span class="doccomment">/// An index allocator that has configurable affinity between slots and modules
+/// so that slots are often reused for the same module again.
+</span><span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>ModuleAffinityIndexAllocator(Mutex&lt;Inner&gt;);
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">struct </span>Inner {
-    <span class="doccomment">/// Maximum  number of "unused warm slots" which will be allowed during
+    <span class="doccomment">/// Maximum number of "unused warm slots" which will be allowed during
     /// allocation.
     ///
     /// This is a user-configurable knob which can be used to influence the
@@ -655,7 +799,7 @@
     ///
     /// The `List` here is appended to during deallocation and removal happens
     /// from the tail during allocation.
-    </span>module_affine: HashMap&lt;CompiledModuleId, List&gt;,
+    </span>module_affine: HashMap&lt;MemoryInModule, List&gt;,
 }
 
 <span class="doccomment">/// A helper "linked list" data structure which is based on indices.
@@ -675,8 +819,8 @@
 
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">enum </span>SlotState {
-    <span class="doccomment">/// This slot is currently in use and is affine to the specified module.
-    </span>Used(<span class="prelude-ty">Option</span>&lt;CompiledModuleId&gt;),
+    <span class="doccomment">/// This slot is currently in use and is affine to the specified module's memory.
+    </span>Used(<span class="prelude-ty">Option</span>&lt;MemoryInModule&gt;),
 
     <span class="doccomment">/// This slot is not currently used, and has never been used.
     </span>UnusedCold,
@@ -700,7 +844,7 @@
 <span class="attr">#[derive(Default, Copy, Clone, Debug)]
 </span><span class="kw">struct </span>Unused {
     <span class="doccomment">/// Which module this slot was historically affine to, if any.
-    </span>affinity: <span class="prelude-ty">Option</span>&lt;CompiledModuleId&gt;,
+    </span>affinity: <span class="prelude-ty">Option</span>&lt;MemoryInModule&gt;,
 
     <span class="doccomment">/// Metadata about the linked list for all slots affine to `affinity`.
     </span>affine_list_link: Link,
@@ -714,25 +858,40 @@
     AnySlot,
 }
 
-<span class="kw">impl </span>IndexAllocator {
+<span class="kw">impl </span>ModuleAffinityIndexAllocator {
     <span class="doccomment">/// Create the default state for this strategy.
-    </span><span class="kw">pub fn </span>new(max_instances: u32, max_unused_warm_slots: u32) -&gt; <span class="self">Self </span>{
-        IndexAllocator(Mutex::new(Inner {
+    </span><span class="kw">pub fn </span>new(capacity: u32, max_unused_warm_slots: u32) -&gt; <span class="self">Self </span>{
+        ModuleAffinityIndexAllocator(Mutex::new(Inner {
             last_cold: <span class="number">0</span>,
             max_unused_warm_slots,
             unused_warm_slots: <span class="number">0</span>,
             module_affine: HashMap::new(),
-            slot_state: (<span class="number">0</span>..max_instances).map(|<span class="kw">_</span>| SlotState::UnusedCold).collect(),
+            slot_state: (<span class="number">0</span>..capacity).map(|<span class="kw">_</span>| SlotState::UnusedCold).collect(),
             warm: List::default(),
         }))
+    }
+
+    <span class="doccomment">/// How many slots can this allocator allocate?
+    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
+        inner.slot_state.len()
+    }
+
+    <span class="doccomment">/// Are zero slots in use right now?
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
+        !inner
+            .slot_state
+            .iter()
+            .any(|s| <span class="macro">matches!</span>(s, SlotState::Used(<span class="kw">_</span>)))
     }
 
     <span class="doccomment">/// Allocate a new index from this allocator optionally using `id` as an
     /// affinity request if the allocation strategy supports it.
     ///
     /// Returns `None` if no more slots are available.
-    </span><span class="kw">pub fn </span>alloc(<span class="kw-2">&amp;</span><span class="self">self</span>, module_id: <span class="prelude-ty">Option</span>&lt;CompiledModuleId&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
-        <span class="self">self</span>._alloc(module_id, AllocMode::AnySlot)
+    </span><span class="kw">pub fn </span>alloc(<span class="kw-2">&amp;</span><span class="self">self</span>, for_memory: <span class="prelude-ty">Option</span>&lt;MemoryInModule&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
+        <span class="self">self</span>._alloc(for_memory, AllocMode::AnySlot)
     }
 
     <span class="doccomment">/// Attempts to allocate a guaranteed-affine slot to the module `id`
@@ -742,18 +901,25 @@
     /// this slot will not record the affinity to `id`, instead simply listing
     /// it as taken. This is intended to be used for clearing out all affine
     /// slots to a module.
-    </span><span class="kw">pub fn </span>alloc_affine_and_clear_affinity(<span class="kw-2">&amp;</span><span class="self">self</span>, module_id: CompiledModuleId) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
-        <span class="self">self</span>._alloc(<span class="prelude-val">Some</span>(module_id), AllocMode::ForceAffineAndClear)
+    </span><span class="kw">pub fn </span>alloc_affine_and_clear_affinity(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        module_id: CompiledModuleId,
+        memory_index: DefinedMemoryIndex,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
+        <span class="self">self</span>._alloc(
+            <span class="prelude-val">Some</span>(MemoryInModule(module_id, memory_index)),
+            AllocMode::ForceAffineAndClear,
+        )
     }
 
-    <span class="kw">fn </span>_alloc(<span class="kw-2">&amp;</span><span class="self">self</span>, module_id: <span class="prelude-ty">Option</span>&lt;CompiledModuleId&gt;, mode: AllocMode) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
+    <span class="kw">fn </span>_alloc(<span class="kw-2">&amp;</span><span class="self">self</span>, for_memory: <span class="prelude-ty">Option</span>&lt;MemoryInModule&gt;, mode: AllocMode) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
         <span class="kw">let </span>inner = <span class="kw-2">&amp;mut *</span>inner;
 
         <span class="comment">// As a first-pass always attempt an affine allocation. This will
         // succeed if any slots are considered affine to `module_id` (if it's
         // specified). Failing that something else is attempted to be chosen.
-        </span><span class="kw">let </span>slot_id = inner.pick_affine(module_id).or_else(|| {
+        </span><span class="kw">let </span>slot_id = inner.pick_affine(for_memory).or_else(|| {
             <span class="kw">match </span>mode {
                 <span class="comment">// If any slot is requested then this is a normal instantiation
                 // looking for an index. Without any affine candidates there are
@@ -796,7 +962,7 @@
 
         inner.slot_state[slot_id.index()] = SlotState::Used(<span class="kw">match </span>mode {
             AllocMode::ForceAffineAndClear =&gt; <span class="prelude-val">None</span>,
-            AllocMode::AnySlot =&gt; module_id,
+            AllocMode::AnySlot =&gt; for_memory,
         });
 
         <span class="prelude-val">Some</span>(slot_id)
@@ -805,8 +971,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>free(<span class="kw-2">&amp;</span><span class="self">self</span>, index: SlotId) {
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
         <span class="kw">let </span>inner = <span class="kw-2">&amp;mut *</span>inner;
-        <span class="kw">let </span>module = <span class="kw">match </span>inner.slot_state[index.index()] {
-            SlotState::Used(module) =&gt; module,
+        <span class="kw">let </span>module_memory = <span class="kw">match </span>inner.slot_state[index.index()] {
+            SlotState::Used(module_memory) =&gt; module_memory,
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };
 
@@ -818,7 +984,7 @@
             .warm
             .append(index, <span class="kw-2">&amp;mut </span>inner.slot_state, |s| <span class="kw-2">&amp;mut </span>s.unused_list_link);
 
-        <span class="kw">let </span>affine_list_link = <span class="kw">match </span>module {
+        <span class="kw">let </span>affine_list_link = <span class="kw">match </span>module_memory {
             <span class="comment">// If this slot is affine to a particular module then append this
             // index to the linked list for the affine module. Otherwise insert
             // a new one-element linked list.
@@ -837,15 +1003,24 @@
         };
 
         inner.slot_state[index.index()] = SlotState::UnusedWarm(Unused {
-            affinity: module,
+            affinity: module_memory,
             affine_list_link,
             unused_list_link,
         });
     }
 
-    <span class="doccomment">/// For testing only, we want to be able to assert what is on the
-    /// single freelist, for the policies that keep just one.
+    <span class="doccomment">/// Return the number of empty slots available in this allocator.
     </span><span class="attr">#[cfg(test)]
+    </span><span class="kw">pub fn </span>num_empty_slots(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
+        <span class="kw">let </span>total_slots = inner.slot_state.len();
+        (total_slots - inner.last_cold <span class="kw">as </span>usize) + inner.unused_warm_slots <span class="kw">as </span>usize
+    }
+
+    <span class="doccomment">/// For testing only, we want to be able to assert what is on the single
+    /// freelist, for the policies that keep just one.
+    </span><span class="attr">#[cfg(test)]
+    #[allow(unused)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>testing_freelist(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;SlotId&gt; {
         <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
         inner
@@ -854,10 +1029,10 @@
             .collect()
     }
 
-    <span class="doccomment">/// For testing only, get the list of all modules with at least
-    /// one slot with affinity for that module.
+    <span class="doccomment">/// For testing only, get the list of all modules with at least one slot
+    /// with affinity for that module.
     </span><span class="attr">#[cfg(test)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>testing_module_affinity_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;CompiledModuleId&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>testing_module_affinity_list(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;MemoryInModule&gt; {
         <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.lock().unwrap();
         inner.module_affine.keys().copied().collect()
     }
@@ -866,11 +1041,11 @@
 <span class="kw">impl </span>Inner {
     <span class="doccomment">/// Attempts to allocate a slot already affine to `id`, returning `None` if
     /// `id` is `None` or if there are no affine slots.
-    </span><span class="kw">fn </span>pick_affine(<span class="kw-2">&amp;mut </span><span class="self">self</span>, module_id: <span class="prelude-ty">Option</span>&lt;CompiledModuleId&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
+    </span><span class="kw">fn </span>pick_affine(<span class="kw-2">&amp;mut </span><span class="self">self</span>, for_memory: <span class="prelude-ty">Option</span>&lt;MemoryInModule&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;SlotId&gt; {
         <span class="comment">// Note that the `tail` is chosen here of the affine list as it's the
         // most recently used, which for affine allocations is what we want --
         // maximizing temporal reuse.
-        </span><span class="kw">let </span>ret = <span class="self">self</span>.module_affine.get(<span class="kw-2">&amp;</span>module_id<span class="question-mark">?</span>)<span class="question-mark">?</span>.tail<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>ret = <span class="self">self</span>.module_affine.get(<span class="kw-2">&amp;</span>for_memory<span class="question-mark">?</span>)<span class="question-mark">?</span>.tail<span class="question-mark">?</span>;
         <span class="self">self</span>.remove(ret);
         <span class="prelude-val">Some</span>(ret)
     }
@@ -982,6 +1157,7 @@
     }
 
     <span class="attr">#[cfg(test)]
+    #[allow(unused)]
     </span><span class="kw">fn </span>iter&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         states: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[SlotState],
@@ -1009,14 +1185,17 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use super</span>::{IndexAllocator, SlotId};
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::CompiledModuleIdAllocator;
+    <span class="kw">use </span>wasmtime_environ::EntityRef;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_next_available_allocation_strategy() {
         <span class="kw">for </span>size <span class="kw">in </span><span class="number">0</span>..<span class="number">20 </span>{
-            <span class="kw">let </span>state = IndexAllocator::new(size, <span class="number">0</span>);
+            <span class="kw">let </span>state = ModuleAffinityIndexAllocator::new(size, <span class="number">0</span>);
+            <span class="macro">assert_eq!</span>(state.num_empty_slots() <span class="kw">as </span>u32, size);
             <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..size {
+                <span class="macro">assert_eq!</span>(state.num_empty_slots() <span class="kw">as </span>u32, size - i);
                 <span class="macro">assert_eq!</span>(state.alloc(<span class="prelude-val">None</span>).unwrap().index(), i <span class="kw">as </span>usize);
             }
             <span class="macro">assert!</span>(state.alloc(<span class="prelude-val">None</span>).is_none());
@@ -1026,9 +1205,9 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_affinity_allocation_strategy() {
         <span class="kw">let </span>id_alloc = CompiledModuleIdAllocator::new();
-        <span class="kw">let </span>id1 = id_alloc.alloc();
-        <span class="kw">let </span>id2 = id_alloc.alloc();
-        <span class="kw">let </span>state = IndexAllocator::new(<span class="number">100</span>, <span class="number">100</span>);
+        <span class="kw">let </span>id1 = MemoryInModule(id_alloc.alloc(), DefinedMemoryIndex::new(<span class="number">0</span>));
+        <span class="kw">let </span>id2 = MemoryInModule(id_alloc.alloc(), DefinedMemoryIndex::new(<span class="number">0</span>));
+        <span class="kw">let </span>state = ModuleAffinityIndexAllocator::new(<span class="number">100</span>, <span class="number">100</span>);
 
         <span class="kw">let </span>index1 = state.alloc(<span class="prelude-val">Some</span>(id1)).unwrap();
         <span class="macro">assert_eq!</span>(index1.index(), <span class="number">0</span>);
@@ -1037,7 +1216,10 @@
         <span class="macro">assert_ne!</span>(index1, index2);
 
         state.free(index1);
-        <span class="kw">let </span>index3 = state.alloc(<span class="prelude-val">Some</span>(id1)).unwrap();
+        <span class="macro">assert_eq!</span>(state.num_empty_slots(), <span class="number">99</span>);
+
+        <span class="comment">// Allocate to the same `index1` slot again.
+        </span><span class="kw">let </span>index3 = state.alloc(<span class="prelude-val">Some</span>(id1)).unwrap();
         <span class="macro">assert_eq!</span>(index3, index1);
         state.free(index3);
 
@@ -1053,13 +1235,14 @@
         // for id1, and 98 empty. Allocate 100 for id2. The first
         // should be equal to the one we know was previously used for
         // id2. The next 99 are arbitrary.
-
-        </span><span class="kw">let </span><span class="kw-2">mut </span>indices = <span class="macro">vec!</span>[];
+        </span><span class="macro">assert_eq!</span>(state.num_empty_slots(), <span class="number">100</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>indices = <span class="macro">vec!</span>[];
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100 </span>{
             indices.push(state.alloc(<span class="prelude-val">Some</span>(id2)).unwrap());
         }
         <span class="macro">assert!</span>(state.alloc(<span class="prelude-val">None</span>).is_none());
         <span class="macro">assert_eq!</span>(indices[<span class="number">0</span>], index2);
+        <span class="macro">assert_eq!</span>(state.num_empty_slots(), <span class="number">0</span>);
 
         <span class="kw">for </span>i <span class="kw">in </span>indices {
             state.free(i);
@@ -1080,17 +1263,25 @@
     </span><span class="kw">fn </span>clear_affine() {
         <span class="kw">let </span>id_alloc = CompiledModuleIdAllocator::new();
         <span class="kw">let </span>id = id_alloc.alloc();
+        <span class="kw">let </span>memory_index = DefinedMemoryIndex::new(<span class="number">0</span>);
 
         <span class="kw">for </span>max_unused_warm_slots <span class="kw">in </span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>] {
-            <span class="kw">let </span>state = IndexAllocator::new(<span class="number">100</span>, max_unused_warm_slots);
+            <span class="kw">let </span>state = ModuleAffinityIndexAllocator::new(<span class="number">100</span>, max_unused_warm_slots);
 
-            <span class="kw">let </span>index1 = state.alloc(<span class="prelude-val">Some</span>(id)).unwrap();
-            <span class="kw">let </span>index2 = state.alloc(<span class="prelude-val">Some</span>(id)).unwrap();
+            <span class="kw">let </span>index1 = state.alloc(<span class="prelude-val">Some</span>(MemoryInModule(id, memory_index))).unwrap();
+            <span class="kw">let </span>index2 = state.alloc(<span class="prelude-val">Some</span>(MemoryInModule(id, memory_index))).unwrap();
             state.free(index2);
             state.free(index1);
-            <span class="macro">assert!</span>(state.alloc_affine_and_clear_affinity(id).is_some());
-            <span class="macro">assert!</span>(state.alloc_affine_and_clear_affinity(id).is_some());
-            <span class="macro">assert_eq!</span>(state.alloc_affine_and_clear_affinity(id), <span class="prelude-val">None</span>);
+            <span class="macro">assert!</span>(state
+                .alloc_affine_and_clear_affinity(id, memory_index)
+                .is_some());
+            <span class="macro">assert!</span>(state
+                .alloc_affine_and_clear_affinity(id, memory_index)
+                .is_some());
+            <span class="macro">assert_eq!</span>(
+                state.alloc_affine_and_clear_affinity(id, memory_index),
+                <span class="prelude-val">None
+            </span>);
         }
     }
 
@@ -1100,10 +1291,11 @@
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
         <span class="kw">let </span>id_alloc = CompiledModuleIdAllocator::new();
-        <span class="kw">let </span>ids = std::iter::repeat_with(|| id_alloc.alloc())
-            .take(<span class="number">10</span>)
-            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="kw">let </span>state = IndexAllocator::new(<span class="number">1000</span>, <span class="number">1000</span>);
+        <span class="kw">let </span>ids =
+            std::iter::repeat_with(|| MemoryInModule(id_alloc.alloc(), DefinedMemoryIndex::new(<span class="number">0</span>)))
+                .take(<span class="number">10</span>)
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>state = ModuleAffinityIndexAllocator::new(<span class="number">1000</span>, <span class="number">1000</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>allocated: Vec&lt;SlotId&gt; = <span class="macro">vec!</span>[];
         <span class="kw">let </span><span class="kw-2">mut </span>last_id = <span class="macro">vec!</span>[<span class="prelude-val">None</span>; <span class="number">1000</span>];
 
@@ -1144,10 +1336,10 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_affinity_threshold() {
         <span class="kw">let </span>id_alloc = CompiledModuleIdAllocator::new();
-        <span class="kw">let </span>id1 = id_alloc.alloc();
-        <span class="kw">let </span>id2 = id_alloc.alloc();
-        <span class="kw">let </span>id3 = id_alloc.alloc();
-        <span class="kw">let </span>state = IndexAllocator::new(<span class="number">10</span>, <span class="number">2</span>);
+        <span class="kw">let </span>id1 = MemoryInModule(id_alloc.alloc(), DefinedMemoryIndex::new(<span class="number">0</span>));
+        <span class="kw">let </span>id2 = MemoryInModule(id_alloc.alloc(), DefinedMemoryIndex::new(<span class="number">0</span>));
+        <span class="kw">let </span>id3 = MemoryInModule(id_alloc.alloc(), DefinedMemoryIndex::new(<span class="number">0</span>));
+        <span class="kw">let </span>state = ModuleAffinityIndexAllocator::new(<span class="number">10</span>, <span class="number">2</span>);
 
         <span class="comment">// Set some slot affinities
         </span><span class="macro">assert_eq!</span>(state.alloc(<span class="prelude-val">Some</span>(id1)), <span class="prelude-val">Some</span>(SlotId(<span class="number">0</span>)));
@@ -1180,13 +1372,31 @@
         state.free(SlotId(<span class="number">0</span>));
 
         <span class="comment">// LRU is 1, so that should be picked
-        </span><span class="macro">assert_eq!</span>(state.alloc(<span class="prelude-val">Some</span>(id_alloc.alloc())), <span class="prelude-val">Some</span>(SlotId(<span class="number">1</span>)));
+        </span><span class="macro">assert_eq!</span>(
+            state.alloc(<span class="prelude-val">Some</span>(MemoryInModule(
+                id_alloc.alloc(),
+                DefinedMemoryIndex::new(<span class="number">0</span>)
+            ))),
+            <span class="prelude-val">Some</span>(SlotId(<span class="number">1</span>))
+        );
 
         <span class="comment">// Pick another LRU entry, this time 2
-        </span><span class="macro">assert_eq!</span>(state.alloc(<span class="prelude-val">Some</span>(id_alloc.alloc())), <span class="prelude-val">Some</span>(SlotId(<span class="number">2</span>)));
+        </span><span class="macro">assert_eq!</span>(
+            state.alloc(<span class="prelude-val">Some</span>(MemoryInModule(
+                id_alloc.alloc(),
+                DefinedMemoryIndex::new(<span class="number">0</span>)
+            ))),
+            <span class="prelude-val">Some</span>(SlotId(<span class="number">2</span>))
+        );
 
         <span class="comment">// This should preserve slot `0` and pick up something new
-        </span><span class="macro">assert_eq!</span>(state.alloc(<span class="prelude-val">Some</span>(id_alloc.alloc())), <span class="prelude-val">Some</span>(SlotId(<span class="number">3</span>)));
+        </span><span class="macro">assert_eq!</span>(
+            state.alloc(<span class="prelude-val">Some</span>(MemoryInModule(
+                id_alloc.alloc(),
+                DefinedMemoryIndex::new(<span class="number">0</span>)
+            ))),
+            <span class="prelude-val">Some</span>(SlotId(<span class="number">3</span>))
+        );
 
         state.free(SlotId(<span class="number">1</span>));
         state.free(SlotId(<span class="number">2</span>));

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/cow.rs`."><title>cow.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-19.0.2/src/cow.rs`."><title>cow.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -886,190 +886,16 @@
 <a href="#886" id="886">886</a>
 <a href="#887" id="887">887</a>
 <a href="#888" id="888">888</a>
-<a href="#889" id="889">889</a>
-<a href="#890" id="890">890</a>
-<a href="#891" id="891">891</a>
-<a href="#892" id="892">892</a>
-<a href="#893" id="893">893</a>
-<a href="#894" id="894">894</a>
-<a href="#895" id="895">895</a>
-<a href="#896" id="896">896</a>
-<a href="#897" id="897">897</a>
-<a href="#898" id="898">898</a>
-<a href="#899" id="899">899</a>
-<a href="#900" id="900">900</a>
-<a href="#901" id="901">901</a>
-<a href="#902" id="902">902</a>
-<a href="#903" id="903">903</a>
-<a href="#904" id="904">904</a>
-<a href="#905" id="905">905</a>
-<a href="#906" id="906">906</a>
-<a href="#907" id="907">907</a>
-<a href="#908" id="908">908</a>
-<a href="#909" id="909">909</a>
-<a href="#910" id="910">910</a>
-<a href="#911" id="911">911</a>
-<a href="#912" id="912">912</a>
-<a href="#913" id="913">913</a>
-<a href="#914" id="914">914</a>
-<a href="#915" id="915">915</a>
-<a href="#916" id="916">916</a>
-<a href="#917" id="917">917</a>
-<a href="#918" id="918">918</a>
-<a href="#919" id="919">919</a>
-<a href="#920" id="920">920</a>
-<a href="#921" id="921">921</a>
-<a href="#922" id="922">922</a>
-<a href="#923" id="923">923</a>
-<a href="#924" id="924">924</a>
-<a href="#925" id="925">925</a>
-<a href="#926" id="926">926</a>
-<a href="#927" id="927">927</a>
-<a href="#928" id="928">928</a>
-<a href="#929" id="929">929</a>
-<a href="#930" id="930">930</a>
-<a href="#931" id="931">931</a>
-<a href="#932" id="932">932</a>
-<a href="#933" id="933">933</a>
-<a href="#934" id="934">934</a>
-<a href="#935" id="935">935</a>
-<a href="#936" id="936">936</a>
-<a href="#937" id="937">937</a>
-<a href="#938" id="938">938</a>
-<a href="#939" id="939">939</a>
-<a href="#940" id="940">940</a>
-<a href="#941" id="941">941</a>
-<a href="#942" id="942">942</a>
-<a href="#943" id="943">943</a>
-<a href="#944" id="944">944</a>
-<a href="#945" id="945">945</a>
-<a href="#946" id="946">946</a>
-<a href="#947" id="947">947</a>
-<a href="#948" id="948">948</a>
-<a href="#949" id="949">949</a>
-<a href="#950" id="950">950</a>
-<a href="#951" id="951">951</a>
-<a href="#952" id="952">952</a>
-<a href="#953" id="953">953</a>
-<a href="#954" id="954">954</a>
-<a href="#955" id="955">955</a>
-<a href="#956" id="956">956</a>
-<a href="#957" id="957">957</a>
-<a href="#958" id="958">958</a>
-<a href="#959" id="959">959</a>
-<a href="#960" id="960">960</a>
-<a href="#961" id="961">961</a>
-<a href="#962" id="962">962</a>
-<a href="#963" id="963">963</a>
-<a href="#964" id="964">964</a>
-<a href="#965" id="965">965</a>
-<a href="#966" id="966">966</a>
-<a href="#967" id="967">967</a>
-<a href="#968" id="968">968</a>
-<a href="#969" id="969">969</a>
-<a href="#970" id="970">970</a>
-<a href="#971" id="971">971</a>
-<a href="#972" id="972">972</a>
-<a href="#973" id="973">973</a>
-<a href="#974" id="974">974</a>
-<a href="#975" id="975">975</a>
-<a href="#976" id="976">976</a>
-<a href="#977" id="977">977</a>
-<a href="#978" id="978">978</a>
-<a href="#979" id="979">979</a>
-<a href="#980" id="980">980</a>
-<a href="#981" id="981">981</a>
-<a href="#982" id="982">982</a>
-<a href="#983" id="983">983</a>
-<a href="#984" id="984">984</a>
-<a href="#985" id="985">985</a>
-<a href="#986" id="986">986</a>
-<a href="#987" id="987">987</a>
-<a href="#988" id="988">988</a>
-<a href="#989" id="989">989</a>
-<a href="#990" id="990">990</a>
-<a href="#991" id="991">991</a>
-<a href="#992" id="992">992</a>
-<a href="#993" id="993">993</a>
-<a href="#994" id="994">994</a>
-<a href="#995" id="995">995</a>
-<a href="#996" id="996">996</a>
-<a href="#997" id="997">997</a>
-<a href="#998" id="998">998</a>
-<a href="#999" id="999">999</a>
-<a href="#1000" id="1000">1000</a>
-<a href="#1001" id="1001">1001</a>
-<a href="#1002" id="1002">1002</a>
-<a href="#1003" id="1003">1003</a>
-<a href="#1004" id="1004">1004</a>
-<a href="#1005" id="1005">1005</a>
-<a href="#1006" id="1006">1006</a>
-<a href="#1007" id="1007">1007</a>
-<a href="#1008" id="1008">1008</a>
-<a href="#1009" id="1009">1009</a>
-<a href="#1010" id="1010">1010</a>
-<a href="#1011" id="1011">1011</a>
-<a href="#1012" id="1012">1012</a>
-<a href="#1013" id="1013">1013</a>
-<a href="#1014" id="1014">1014</a>
-<a href="#1015" id="1015">1015</a>
-<a href="#1016" id="1016">1016</a>
-<a href="#1017" id="1017">1017</a>
-<a href="#1018" id="1018">1018</a>
-<a href="#1019" id="1019">1019</a>
-<a href="#1020" id="1020">1020</a>
-<a href="#1021" id="1021">1021</a>
-<a href="#1022" id="1022">1022</a>
-<a href="#1023" id="1023">1023</a>
-<a href="#1024" id="1024">1024</a>
-<a href="#1025" id="1025">1025</a>
-<a href="#1026" id="1026">1026</a>
-<a href="#1027" id="1027">1027</a>
-<a href="#1028" id="1028">1028</a>
-<a href="#1029" id="1029">1029</a>
-<a href="#1030" id="1030">1030</a>
-<a href="#1031" id="1031">1031</a>
-<a href="#1032" id="1032">1032</a>
-<a href="#1033" id="1033">1033</a>
-<a href="#1034" id="1034">1034</a>
-<a href="#1035" id="1035">1035</a>
-<a href="#1036" id="1036">1036</a>
-<a href="#1037" id="1037">1037</a>
-<a href="#1038" id="1038">1038</a>
-<a href="#1039" id="1039">1039</a>
-<a href="#1040" id="1040">1040</a>
-<a href="#1041" id="1041">1041</a>
-<a href="#1042" id="1042">1042</a>
-<a href="#1043" id="1043">1043</a>
-<a href="#1044" id="1044">1044</a>
-<a href="#1045" id="1045">1045</a>
-<a href="#1046" id="1046">1046</a>
-<a href="#1047" id="1047">1047</a>
-<a href="#1048" id="1048">1048</a>
-<a href="#1049" id="1049">1049</a>
-<a href="#1050" id="1050">1050</a>
-<a href="#1051" id="1051">1051</a>
-<a href="#1052" id="1052">1052</a>
-<a href="#1053" id="1053">1053</a>
-<a href="#1054" id="1054">1054</a>
-<a href="#1055" id="1055">1055</a>
-<a href="#1056" id="1056">1056</a>
-<a href="#1057" id="1057">1057</a>
-<a href="#1058" id="1058">1058</a>
-<a href="#1059" id="1059">1059</a>
-<a href="#1060" id="1060">1060</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Copy-on-write initialization support: creation of backing images for
 //! modules, and logic to support mapping these backing images into memory.
 
-</span><span class="attr">#![cfg_attr(any(not(unix), miri), allow(unused_imports, unused_variables))]
-
-</span><span class="kw">use crate</span>::{MmapVec, SendSyncPtr};
+</span><span class="kw">use </span><span class="kw">crate</span>::sys::vm::{<span class="self">self</span>, MemoryImageSource};
+<span class="kw">use crate</span>::{MmapVec, SendSyncPtr};
 <span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>libc::c_void;
-<span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::ffi::c_void;
+<span class="kw">use </span>std::ops::Range;
 <span class="kw">use </span>std::ptr::NonNull;
 <span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{convert::TryFrom, ops::Range};
 <span class="kw">use </span>wasmtime_environ::{
     DefinedMemoryIndex, MemoryInitialization, MemoryPlan, MemoryStyle, Module, PrimaryMap,
 };
@@ -1092,12 +918,12 @@
 <span class="doccomment">/// One backing image for one memory.
 </span><span class="attr">#[derive(Debug, PartialEq)]
 </span><span class="kw">pub struct </span>MemoryImage {
-    <span class="doccomment">/// The file descriptor source of this image.
+    <span class="doccomment">/// The platform-specific source of this image.
     ///
-    /// This might be an mmaped `*.cwasm` file or on Linux it could also be a
-    /// `Memfd` as an anonymous file in memory. In either case this is used as
-    /// the backing-source for the CoW image.
-    </span>fd: FdSource,
+    /// This might be a mapped `*.cwasm` file or on Unix it could also be a
+    /// `Memfd` as an anonymous file in memory on Linux. In either case this is
+    /// used as the backing-source for the CoW image.
+    </span>source: MemoryImageSource,
 
     <span class="doccomment">/// Length of image, in bytes.
     ///
@@ -1107,51 +933,18 @@
     /// Must be a multiple of the system page size.
     </span>len: usize,
 
-    <span class="doccomment">/// Image starts this many bytes into `fd` source.
+    <span class="doccomment">/// Image starts this many bytes into `source`.
     ///
-    /// This is 0 for anonymous-backed memfd files and is the offset of the data
-    /// section in a `*.cwasm` file for `*.cwasm`-backed images.
+    /// This is 0 for anonymous-backed memfd files and is the offset of the
+    /// data section in a `*.cwasm` file for `*.cwasm`-backed images.
     ///
     /// Must be a multiple of the system page size.
-    </span>fd_offset: u64,
+    </span>source_offset: u64,
 
     <span class="doccomment">/// Image starts this many bytes into heap space.
     ///
     /// Must be a multiple of the system page size.
     </span>linear_memory_offset: usize,
-}
-
-<span class="attr">#[derive(Debug)]
-</span><span class="kw">enum </span>FdSource {
-    <span class="attr">#[cfg(all(unix, not(miri)))]
-    </span>Mmap(Arc&lt;File&gt;),
-    <span class="attr">#[cfg(all(target_os = <span class="string">"linux"</span>, not(miri)))]
-    </span>Memfd(memfd::Memfd),
-}
-
-<span class="kw">impl </span>FdSource {
-    <span class="attr">#[cfg(all(unix, not(miri)))]
-    </span><span class="kw">fn </span>as_file(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>File {
-        <span class="kw">match </span><span class="self">self </span>{
-            FdSource::Mmap(<span class="kw-2">ref </span>file) =&gt; file,
-            <span class="attr">#[cfg(target_os = <span class="string">"linux"</span>)]
-            </span>FdSource::Memfd(<span class="kw-2">ref </span>memfd) =&gt; memfd.as_file(),
-        }
-    }
-}
-
-<span class="kw">impl </span>PartialEq <span class="kw">for </span>FdSource {
-    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>FdSource) -&gt; bool {
-        <span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(all(unix, not(miri)))] </span>{
-                <span class="kw">use </span>rustix::fd::AsRawFd;
-                <span class="self">self</span>.as_file().as_raw_fd() == other.as_file().as_raw_fd()
-            } <span class="kw">else </span>{
-                <span class="kw">let _ </span>= other;
-                <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{}
-            }
-        }
-    }
 }
 
 <span class="kw">impl </span>MemoryImage {
@@ -1184,7 +977,6 @@
         // files, but for now this is still a Linux-specific region of Wasmtime.
         // Some work will be needed to get this file compiling for macOS and
         // Windows.
-        </span><span class="attr">#[cfg(not(any(windows, miri)))]
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(mmap) = mmap {
             <span class="kw">let </span>start = mmap.as_ptr() <span class="kw">as </span>usize;
             <span class="kw">let </span>end = start + mmap.len();
@@ -1197,126 +989,45 @@
             <span class="macro">assert_eq!</span>((mmap.original_offset() <span class="kw">as </span>u32) % page_size, <span class="number">0</span>);
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(file) = mmap.original_file() {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(MemoryImage {
-                    fd: FdSource::Mmap(file.clone()),
-                    fd_offset: u64::try_from(mmap.original_offset() + (data_start - start))
-                        .unwrap(),
-                    linear_memory_offset,
-                    len,
-                }));
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(source) = MemoryImageSource::from_file(file) {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(MemoryImage {
+                        source,
+                        source_offset: u64::try_from(mmap.original_offset() + (data_start - start))
+                            .unwrap(),
+                        linear_memory_offset,
+                        len,
+                    }));
+                }
             }
         }
 
         <span class="comment">// If `mmap` doesn't come from a file then platform-specific mechanisms
         // may be used to place the data in a form that's amenable to an mmap.
-
-        </span><span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(all(target_os = <span class="string">"linux"</span>, not(miri)))] </span>{
-                <span class="comment">// On Linux `memfd_create` is used to create an anonymous
-                // in-memory file to represent the heap image. This anonymous
-                // file is then used as the basis for further mmaps.
-
-                </span><span class="kw">use </span>std::io::Write;
-
-                <span class="kw">let </span>memfd = <span class="kw">match </span>create_memfd()<span class="question-mark">? </span>{
-                    <span class="prelude-val">Some</span>(memfd) =&gt; memfd,
-                    <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-                };
-                memfd.as_file().write_all(data)<span class="question-mark">?</span>;
-
-                <span class="comment">// Seal the memfd's data and length.
-                //
-                // This is a defense-in-depth security mitigation. The
-                // memfd will serve as the starting point for the heap of
-                // every instance of this module. If anything were to
-                // write to this, it could affect every execution. The
-                // memfd object itself is owned by the machinery here and
-                // not exposed elsewhere, but it is still an ambient open
-                // file descriptor at the syscall level, so some other
-                // vulnerability that allowed writes to arbitrary fds
-                // could modify it. Or we could have some issue with the
-                // way that we map it into each instance. To be
-                // extra-super-sure that it never changes, and because
-                // this costs very little, we use the kernel's "seal" API
-                // to make the memfd image permanently read-only.
-                </span>memfd.add_seals(<span class="kw-2">&amp;</span>[
-                    memfd::FileSeal::SealGrow,
-                    memfd::FileSeal::SealShrink,
-                    memfd::FileSeal::SealWrite,
-                    memfd::FileSeal::SealSeal,
-                ])<span class="question-mark">?</span>;
-
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(MemoryImage {
-                    fd: FdSource::Memfd(memfd),
-                    fd_offset: <span class="number">0</span>,
-                    linear_memory_offset,
-                    len,
-                }))
-            } <span class="kw">else </span>{
-                <span class="comment">// Other platforms don't have an easily available way of
-                // representing the heap image as an mmap-source right now. We
-                // could theoretically create a file and immediately unlink it
-                // but that means that data may likely be preserved to disk
-                // which isn't what we want here.
-                </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-            }
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(source) = MemoryImageSource::from_data(data)<span class="question-mark">? </span>{
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(MemoryImage {
+                source,
+                source_offset: <span class="number">0</span>,
+                linear_memory_offset,
+                len,
+            }));
         }
+
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
     }
 
     <span class="kw">unsafe fn </span>map_at(<span class="kw-2">&amp;</span><span class="self">self</span>, base: <span class="kw-2">*mut </span>u8) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(all(unix, not(miri)))] </span>{
-                <span class="kw">let </span>ptr = rustix::mm::mmap(
-                    base.add(<span class="self">self</span>.linear_memory_offset).cast(),
-                    <span class="self">self</span>.len,
-                    rustix::mm::ProtFlags::READ | rustix::mm::ProtFlags::WRITE,
-                    rustix::mm::MapFlags::PRIVATE | rustix::mm::MapFlags::FIXED,
-                    <span class="self">self</span>.fd.as_file(),
-                    <span class="self">self</span>.fd_offset,
-                )<span class="question-mark">?</span>;
-                <span class="macro">assert_eq!</span>(ptr, base.add(<span class="self">self</span>.linear_memory_offset).cast());
-                <span class="prelude-val">Ok</span>(())
-            } <span class="kw">else </span>{
-                <span class="kw">match </span><span class="self">self</span>.fd {}
-            }
-        }
+        <span class="self">self</span>.source.map_at(
+            base.add(<span class="self">self</span>.linear_memory_offset),
+            <span class="self">self</span>.len,
+            <span class="self">self</span>.source_offset,
+        )<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">unsafe fn </span>remap_as_zeros_at(<span class="kw-2">&amp;</span><span class="self">self</span>, base: <span class="kw-2">*mut </span>u8) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(unix)] </span>{
-                <span class="kw">let </span>ptr = rustix::mm::mmap_anonymous(
-                    base.add(<span class="self">self</span>.linear_memory_offset).cast(),
-                    <span class="self">self</span>.len,
-                    rustix::mm::ProtFlags::READ | rustix::mm::ProtFlags::WRITE,
-                    rustix::mm::MapFlags::PRIVATE | rustix::mm::MapFlags::FIXED,
-                )<span class="question-mark">?</span>;
-                <span class="macro">assert_eq!</span>(ptr.cast(), base.add(<span class="self">self</span>.linear_memory_offset));
-                <span class="prelude-val">Ok</span>(())
-            } <span class="kw">else </span>{
-                <span class="kw">match </span><span class="self">self</span>.fd {}
-            }
-        }
-    }
-}
-
-<span class="attr">#[cfg(all(target_os = <span class="string">"linux"</span>, not(miri)))]
-</span><span class="kw">fn </span>create_memfd() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;memfd::Memfd&gt;&gt; {
-    <span class="kw">use </span>std::io::ErrorKind;
-
-    <span class="comment">// Create the memfd. It needs a name, but the
-    // documentation for `memfd_create()` says that names can
-    // be duplicated with no issues.
-    </span><span class="kw">match </span>memfd::MemfdOptions::new()
-        .allow_sealing(<span class="bool-val">true</span>)
-        .create(<span class="string">"wasm-memory-image"</span>)
-    {
-        <span class="prelude-val">Ok</span>(memfd) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(memfd)),
-        <span class="comment">// If this kernel is old enough to not support memfd then attempt to
-        // gracefully handle that and fall back to skipping the memfd
-        // optimization.
-        </span><span class="prelude-val">Err</span>(memfd::Error::Create(err)) <span class="kw">if </span>err.kind() == ErrorKind::Unsupported =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
+        <span class="self">self</span>.source
+            .remap_as_zeros_at(base.add(<span class="self">self</span>.linear_memory_offset), <span class="self">self</span>.len)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -1653,7 +1364,7 @@
 
     <span class="attr">#[allow(dead_code)] </span><span class="comment">// ignore warnings as this is only used in some cfgs
     </span><span class="kw">unsafe fn </span>reset_all_memory_contents(<span class="kw-2">&amp;mut </span><span class="self">self</span>, keep_resident: usize) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if </span>!<span class="macro">cfg!</span>(target_os = <span class="string">"linux"</span>) || <span class="macro">cfg!</span>(miri) {
+        <span class="kw">if </span>!vm::supports_madvise_dontneed() {
             <span class="comment">// If we're not on Linux then there's no generic platform way to
             // reset memory back to its original state, so instead reset memory
             // back to entirely zeros with an anonymous backing.
@@ -1763,18 +1474,8 @@
         <span class="kw">if </span>len == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
-        <span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(target_os = <span class="string">"linux"</span>)] </span>{
-                rustix::mm::madvise(
-                    <span class="self">self</span>.base.as_ptr().add(base).cast(),
-                    len,
-                    rustix::mm::Advice::LinuxDontNeed,
-                )<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(())
-            } <span class="kw">else </span>{
-                <span class="macro">unreachable!</span>();
-            }
-        }
+        vm::madvise_dontneed(<span class="self">self</span>.base.as_ptr().add(base), len)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>set_protection(<span class="kw-2">&amp;</span><span class="self">self</span>, range: Range&lt;usize&gt;, readwrite: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -1786,30 +1487,10 @@
 
         <span class="kw">unsafe </span>{
             <span class="kw">let </span>start = <span class="self">self</span>.base.as_ptr().add(range.start);
-            <span class="macro">cfg_if::cfg_if!</span> {
-                <span class="kw">if </span><span class="attr">#[cfg(miri)] </span>{
-                    <span class="kw">if </span>readwrite {
-                        std::ptr::write_bytes(start, <span class="number">0u8</span>, range.len());
-                    }
-                } <span class="kw">else if </span><span class="attr">#[cfg(unix)] </span>{
-                    <span class="kw">let </span>flags = <span class="kw">if </span>readwrite {
-                        rustix::mm::MprotectFlags::READ | rustix::mm::MprotectFlags::WRITE
-                    } <span class="kw">else </span>{
-                        rustix::mm::MprotectFlags::empty()
-                    };
-                    rustix::mm::mprotect(start.cast(), range.len(), flags)<span class="question-mark">?</span>;
-                } <span class="kw">else </span>{
-                    <span class="kw">use </span>windows_sys::Win32::System::Memory::<span class="kw-2">*</span>;
-
-                    <span class="kw">let </span>failure = <span class="kw">if </span>readwrite {
-                        VirtualAlloc(start.cast(), range.len(), MEM_COMMIT, PAGE_READWRITE).is_null()
-                    } <span class="kw">else </span>{
-                        VirtualFree(start.cast(), range.len(), MEM_DECOMMIT) == <span class="number">0
-                    </span>};
-                    <span class="kw">if </span>failure {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(std::io::Error::last_os_error().into());
-                    }
-                }
+            <span class="kw">if </span>readwrite {
+                vm::expose_existing_mapping(start, range.len())<span class="question-mark">?</span>;
+            } <span class="kw">else </span>{
+                vm::hide_existing_mapping(start, range.len())<span class="question-mark">?</span>;
             }
         }
 
@@ -1835,24 +1516,7 @@
         }
 
         <span class="kw">unsafe </span>{
-            <span class="macro">cfg_if::cfg_if!</span> {
-                <span class="kw">if </span><span class="attr">#[cfg(miri)] </span>{
-                    std::ptr::write_bytes(<span class="self">self</span>.base.as_ptr(), <span class="number">0</span>, <span class="self">self</span>.static_size);
-                } <span class="kw">else if </span><span class="attr">#[cfg(unix)] </span>{
-                    <span class="kw">let </span>ptr = rustix::mm::mmap_anonymous(
-                        <span class="self">self</span>.base.as_ptr().cast(),
-                        <span class="self">self</span>.static_size,
-                        rustix::mm::ProtFlags::empty(),
-                        rustix::mm::MapFlags::PRIVATE | rustix::mm::MapFlags::FIXED,
-                    )<span class="question-mark">?</span>;
-                    <span class="macro">assert_eq!</span>(ptr, <span class="self">self</span>.base.as_ptr().cast());
-                } <span class="kw">else </span>{
-                    <span class="kw">use </span>windows_sys::Win32::System::Memory::<span class="kw-2">*</span>;
-                    <span class="kw">if </span>VirtualFree(<span class="self">self</span>.base.as_ptr().cast(), <span class="self">self</span>.static_size, MEM_DECOMMIT) == <span class="number">0 </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(std::io::Error::last_os_error().into());
-                    }
-                }
-            }
+            vm::erase_existing_mapping(<span class="self">self</span>.base.as_ptr(), <span class="self">self</span>.static_size)<span class="question-mark">?</span>;
         }
 
         <span class="self">self</span>.image = <span class="prelude-val">None</span>;
@@ -1905,31 +1569,23 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::sync::Arc;
 
-    <span class="kw">use super</span>::{FdSource, MemoryImage, MemoryImageSlot, MemoryPlan, MemoryStyle};
+    <span class="kw">use super</span>::{MemoryImage, MemoryImageSlot, MemoryImageSource, MemoryPlan, MemoryStyle};
     <span class="kw">use </span><span class="kw">crate</span>::mmap::Mmap;
     <span class="kw">use </span>anyhow::Result;
-    <span class="kw">use </span>std::io::Write;
     <span class="kw">use </span>wasmtime_environ::Memory;
-
-    <span class="kw">fn </span>create_memfd() -&gt; <span class="prelude-ty">Result</span>&lt;memfd::Memfd&gt; {
-        <span class="prelude-val">Ok</span>(<span class="kw">super</span>::create_memfd()<span class="question-mark">?</span>.expect(<span class="string">"kernel doesn't support memfd"</span>))
-    }
 
     <span class="kw">fn </span>create_memfd_with_data(offset: usize, data: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;MemoryImage&gt; {
         <span class="comment">// Offset must be page-aligned.
         </span><span class="kw">let </span>page_size = <span class="kw">crate</span>::page_size();
         <span class="macro">assert_eq!</span>(offset &amp; (page_size - <span class="number">1</span>), <span class="number">0</span>);
-        <span class="kw">let </span>memfd = create_memfd()<span class="question-mark">?</span>;
-        memfd.as_file().write_all(data)<span class="question-mark">?</span>;
 
         <span class="comment">// The image length is rounded up to the nearest page size
         </span><span class="kw">let </span>image_len = (data.len() + page_size - <span class="number">1</span>) &amp; !(page_size - <span class="number">1</span>);
-        memfd.as_file().set_len(image_len <span class="kw">as </span>u64)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(MemoryImage {
-            fd: FdSource::Memfd(memfd),
+            source: MemoryImageSource::from_data(data)<span class="question-mark">?</span>.unwrap(),
             len: image_len,
-            fd_offset: <span class="number">0</span>,
+            source_offset: <span class="number">0</span>,
             linear_memory_offset: offset,
         })
     }

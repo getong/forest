@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ApiFeature","ApiVersion"]};
+window.SIDEBAR_ITEMS = {"enum":["AggregateVersion","ApiFeature","ApiVersion"]};

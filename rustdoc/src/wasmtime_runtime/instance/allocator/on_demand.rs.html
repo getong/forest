@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-12.0.2/src/instance/allocator/on_demand.rs`."><title>on_demand.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/wasmtime-runtime-19.0.2/src/instance/allocator/on_demand.rs`."><title>on_demand.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="wasmtime_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../wasmtime_runtime/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -125,19 +125,104 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{InstanceAllocationRequest, InstanceAllocator};
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    InstanceAllocationRequest, InstanceAllocatorImpl, MemoryAllocationIndex, TableAllocationIndex,
+};
 <span class="kw">use </span><span class="kw">crate</span>::instance::RuntimeMemoryCreator;
 <span class="kw">use </span><span class="kw">crate</span>::memory::{DefaultMemoryCreator, Memory};
+<span class="kw">use </span><span class="kw">crate</span>::mpk::ProtectionKey;
 <span class="kw">use </span><span class="kw">crate</span>::table::Table;
 <span class="kw">use </span><span class="kw">crate</span>::CompiledModuleId;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>wasmtime_environ::{DefinedMemoryIndex, DefinedTableIndex, PrimaryMap};
+<span class="kw">use </span>wasmtime_environ::{
+    DefinedMemoryIndex, DefinedTableIndex, HostPtr, MemoryPlan, Module, TablePlan, VMOffsets,
+};
+
+<span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+</span><span class="kw">use </span>wasmtime_fiber::RuntimeFiberStackCreator;
+
+<span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
+</span><span class="kw">use </span>wasmtime_environ::{
+    component::{Component, VMComponentOffsets},
+    StaticModuleIndex,
+};
 
 <span class="doccomment">/// Represents the on-demand instance allocator.
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>OnDemandInstanceAllocator {
     mem_creator: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>RuntimeMemoryCreator&gt;&gt;,
+    <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    </span>stack_creator: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>RuntimeFiberStackCreator&gt;&gt;,
     <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
     </span>stack_size: usize,
 }
@@ -145,12 +230,20 @@
 <span class="kw">impl </span>OnDemandInstanceAllocator {
     <span class="doccomment">/// Creates a new on-demand instance allocator.
     </span><span class="kw">pub fn </span>new(mem_creator: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>RuntimeMemoryCreator&gt;&gt;, stack_size: usize) -&gt; <span class="self">Self </span>{
-        <span class="kw">let _ </span>= stack_size; <span class="comment">// suppress unused warnings w/o async feature
+        <span class="kw">let _ </span>= stack_size; <span class="comment">// suppress warnings when async feature is disabled.
         </span><span class="self">Self </span>{
             mem_creator,
             <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+            </span>stack_creator: <span class="prelude-val">None</span>,
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span>stack_size,
         }
+    }
+
+    <span class="doccomment">/// Set the stack creator.
+    </span><span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+    </span><span class="kw">pub fn </span>set_stack_creator(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stack_creator: Arc&lt;<span class="kw">dyn </span>RuntimeFiberStackCreator&gt;) {
+        <span class="self">self</span>.stack_creator = <span class="prelude-val">Some</span>(stack_creator);
     }
 }
 
@@ -159,80 +252,99 @@
         <span class="self">Self </span>{
             mem_creator: <span class="prelude-val">None</span>,
             <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
+            </span>stack_creator: <span class="prelude-val">None</span>,
+            <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
             </span>stack_size: <span class="number">0</span>,
         }
     }
 }
 
-<span class="kw">unsafe impl </span>InstanceAllocator <span class="kw">for </span>OnDemandInstanceAllocator {
-    <span class="kw">fn </span>allocate_index(<span class="kw-2">&amp;</span><span class="self">self</span>, _req: <span class="kw-2">&amp;</span>InstanceAllocationRequest) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
-        <span class="prelude-val">Ok</span>(<span class="number">0</span>)
-    }
-
-    <span class="kw">fn </span>deallocate_index(<span class="kw-2">&amp;</span><span class="self">self</span>, index: usize) {
-        <span class="macro">assert_eq!</span>(index, <span class="number">0</span>);
-    }
-
-    <span class="kw">fn </span>allocate_memories(
+<span class="kw">unsafe impl </span>InstanceAllocatorImpl <span class="kw">for </span>OnDemandInstanceAllocator {
+    <span class="attr">#[cfg(feature = <span class="string">"component-model"</span>)]
+    </span><span class="kw">fn </span>validate_component_impl&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _index: usize,
-        req: <span class="kw-2">&amp;mut </span>InstanceAllocationRequest,
-        memories: <span class="kw-2">&amp;mut </span>PrimaryMap&lt;DefinedMemoryIndex, Memory&gt;,
+        _component: <span class="kw-2">&amp;</span>Component,
+        _offsets: <span class="kw-2">&amp;</span>VMComponentOffsets&lt;HostPtr&gt;,
+        _get_module: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw">dyn </span>Fn(StaticModuleIndex) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Module,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span>module = req.runtime_info.module();
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>validate_module_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, _module: <span class="kw-2">&amp;</span>Module, _offsets: <span class="kw-2">&amp;</span>VMOffsets&lt;HostPtr&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>increment_component_instance_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>decrement_component_instance_count(<span class="kw-2">&amp;</span><span class="self">self</span>) {}
+
+    <span class="kw">fn </span>increment_core_instance_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>decrement_core_instance_count(<span class="kw-2">&amp;</span><span class="self">self</span>) {}
+
+    <span class="kw">unsafe fn </span>allocate_memory(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request: <span class="kw-2">&amp;mut </span>InstanceAllocationRequest,
+        memory_plan: <span class="kw-2">&amp;</span>MemoryPlan,
+        memory_index: DefinedMemoryIndex,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(MemoryAllocationIndex, Memory)&gt; {
         <span class="kw">let </span>creator = <span class="self">self
             </span>.mem_creator
             .as_deref()
             .unwrap_or_else(|| <span class="kw-2">&amp;</span>DefaultMemoryCreator);
-        <span class="kw">let </span>num_imports = module.num_imported_memories;
-        <span class="kw">for </span>(memory_idx, plan) <span class="kw">in </span>module.memory_plans.iter().skip(num_imports) {
-            <span class="kw">let </span>defined_memory_idx = module
-                .defined_memory_index(memory_idx)
-                .expect(<span class="string">"Skipped imports, should never be None"</span>);
-            <span class="kw">let </span>image = req.runtime_info.memory_image(defined_memory_idx)<span class="question-mark">?</span>;
-
-            memories.push(Memory::new_dynamic(
-                plan,
-                creator,
-                <span class="kw">unsafe </span>{
-                    req.store
-                        .get()
-                        .expect(<span class="string">"if module has memory plans, store is not empty"</span>)
-                },
-                image,
-            )<span class="question-mark">?</span>);
-        }
-        <span class="prelude-val">Ok</span>(())
+        <span class="kw">let </span>image = request.runtime_info.memory_image(memory_index)<span class="question-mark">?</span>;
+        <span class="kw">let </span>allocation_index = MemoryAllocationIndex::default();
+        <span class="kw">let </span>memory = Memory::new_dynamic(
+            memory_plan,
+            creator,
+            request
+                .store
+                .get()
+                .expect(<span class="string">"if module has memory plans, store is not empty"</span>),
+            image,
+        )<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>((allocation_index, memory))
     }
 
-    <span class="kw">fn </span>deallocate_memories(
+    <span class="kw">unsafe fn </span>deallocate_memory(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _index: usize,
-        _mems: <span class="kw-2">&amp;mut </span>PrimaryMap&lt;DefinedMemoryIndex, Memory&gt;,
+        _memory_index: DefinedMemoryIndex,
+        allocation_index: MemoryAllocationIndex,
+        _memory: Memory,
     ) {
-        <span class="comment">// normal destructors do cleanup here
+        <span class="macro">debug_assert_eq!</span>(allocation_index, MemoryAllocationIndex::default());
+        <span class="comment">// Normal destructors do all the necessary clean up.
     </span>}
 
-    <span class="kw">fn </span>allocate_tables(
+    <span class="kw">unsafe fn </span>allocate_table(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _index: usize,
-        req: <span class="kw-2">&amp;mut </span>InstanceAllocationRequest,
-        tables: <span class="kw-2">&amp;mut </span>PrimaryMap&lt;DefinedTableIndex, Table&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span>module = req.runtime_info.module();
-        <span class="kw">let </span>num_imports = module.num_imported_tables;
-        <span class="kw">for </span>(<span class="kw">_</span>, table) <span class="kw">in </span>module.table_plans.iter().skip(num_imports) {
-            tables.push(Table::new_dynamic(table, <span class="kw">unsafe </span>{
-                req.store
-                    .get()
-                    .expect(<span class="string">"if module has table plans, store is not empty"</span>)
-            })<span class="question-mark">?</span>);
-        }
-        <span class="prelude-val">Ok</span>(())
+        request: <span class="kw-2">&amp;mut </span>InstanceAllocationRequest,
+        table_plan: <span class="kw-2">&amp;</span>TablePlan,
+        _table_index: DefinedTableIndex,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(TableAllocationIndex, Table)&gt; {
+        <span class="kw">let </span>allocation_index = TableAllocationIndex::default();
+        <span class="kw">let </span>table = Table::new_dynamic(
+            table_plan,
+            request
+                .store
+                .get()
+                .expect(<span class="string">"if module has table plans, store is not empty"</span>),
+        )<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>((allocation_index, table))
     }
 
-    <span class="kw">fn </span>deallocate_tables(<span class="kw-2">&amp;</span><span class="self">self</span>, _index: usize, _tables: <span class="kw-2">&amp;mut </span>PrimaryMap&lt;DefinedTableIndex, Table&gt;) {
-        <span class="comment">// normal destructors do cleanup here
+    <span class="kw">unsafe fn </span>deallocate_table(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _table_index: DefinedTableIndex,
+        allocation_index: TableAllocationIndex,
+        _table: Table,
+    ) {
+        <span class="macro">debug_assert_eq!</span>(allocation_index, TableAllocationIndex::default());
+        <span class="comment">// Normal destructors do all the necessary clean up.
     </span>}
 
     <span class="attr">#[cfg(feature = <span class="string">"async"</span>)]
@@ -240,8 +352,13 @@
         <span class="kw">if </span><span class="self">self</span>.stack_size == <span class="number">0 </span>{
             <span class="macro">anyhow::bail!</span>(<span class="string">"fiber stacks are not supported by the allocator"</span>)
         }
-
-        <span class="kw">let </span>stack = wasmtime_fiber::FiberStack::new(<span class="self">self</span>.stack_size)<span class="question-mark">?</span>;
+        <span class="kw">let </span>stack = <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.stack_creator {
+            <span class="prelude-val">Some</span>(stack_creator) =&gt; {
+                <span class="kw">let </span>stack = stack_creator.new_stack(<span class="self">self</span>.stack_size)<span class="question-mark">?</span>;
+                wasmtime_fiber::FiberStack::from_custom(stack)
+            }
+            <span class="prelude-val">None </span>=&gt; wasmtime_fiber::FiberStack::new(<span class="self">self</span>.stack_size),
+        }<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(stack)
     }
 
@@ -251,5 +368,26 @@
     </span>}
 
     <span class="kw">fn </span>purge_module(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: CompiledModuleId) {}
+
+    <span class="kw">fn </span>next_available_pkey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ProtectionKey&gt; {
+        <span class="comment">// The on-demand allocator cannot use protection keys--it requires
+        // back-to-back allocation of memory slots that this allocator cannot
+        // guarantee.
+        </span><span class="prelude-val">None
+    </span>}
+
+    <span class="kw">fn </span>restrict_to_pkey(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: ProtectionKey) {
+        <span class="comment">// The on-demand allocator cannot use protection keys; an on-demand
+        // allocator will never hand out protection keys to the stores its
+        // engine creates.
+        </span><span class="macro">unreachable!</span>()
+    }
+
+    <span class="kw">fn </span>allow_all_pkeys(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="comment">// The on-demand allocator cannot use protection keys; an on-demand
+        // allocator will never hand out protection keys to the stores its
+        // engine creates.
+        </span><span class="macro">unreachable!</span>()
+    }
 }
 </code></pre></div></section></main></body></html>

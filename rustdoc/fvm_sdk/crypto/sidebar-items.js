@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["batch_verify_seals","compute_unsealed_sector_cid","hash_blake2b","hash_into","hash_owned","recover_secp_public_key","verify_aggregate_seals","verify_consensus_fault","verify_post","verify_replica_update","verify_signature"]};
+window.SIDEBAR_ITEMS = {"fn":["batch_verify_seals","compute_unsealed_sector_cid","hash_blake2b","hash_into","hash_owned","recover_secp_public_key","verify_aggregate_seals","verify_bls_aggregate","verify_consensus_fault","verify_post","verify_replica_update","verify_signature"]};
