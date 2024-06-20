@@ -1741,6 +1741,28 @@
 <a href="#1741" id="1741">1741</a>
 <a href="#1742" id="1742">1742</a>
 <a href="#1743" id="1743">1743</a>
+<a href="#1744" id="1744">1744</a>
+<a href="#1745" id="1745">1745</a>
+<a href="#1746" id="1746">1746</a>
+<a href="#1747" id="1747">1747</a>
+<a href="#1748" id="1748">1748</a>
+<a href="#1749" id="1749">1749</a>
+<a href="#1750" id="1750">1750</a>
+<a href="#1751" id="1751">1751</a>
+<a href="#1752" id="1752">1752</a>
+<a href="#1753" id="1753">1753</a>
+<a href="#1754" id="1754">1754</a>
+<a href="#1755" id="1755">1755</a>
+<a href="#1756" id="1756">1756</a>
+<a href="#1757" id="1757">1757</a>
+<a href="#1758" id="1758">1758</a>
+<a href="#1759" id="1759">1759</a>
+<a href="#1760" id="1760">1760</a>
+<a href="#1761" id="1761">1761</a>
+<a href="#1762" id="1762">1762</a>
+<a href="#1763" id="1763">1763</a>
+<a href="#1764" id="1764">1764</a>
+<a href="#1765" id="1765">1765</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2050,12 +2072,18 @@
     }
 }
 
+<span class="kw">enum </span>PolicyOnRejected {
+    Fail,
+    Pass,
+    PassWithIdenticalError,
+}
+
 <span class="kw">struct </span>RpcTest {
     request: rpc::Request,
     check_syntax: Arc&lt;<span class="kw">dyn </span>Fn(serde_json::Value) -&gt; bool + Send + Sync&gt;,
     check_semantics: Arc&lt;<span class="kw">dyn </span>Fn(serde_json::Value, serde_json::Value) -&gt; bool + Send + Sync&gt;,
     ignore: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;,
-    pass_on_rejected: bool,
+    policy_on_rejected: PolicyOnRejected,
 }
 
 <span class="doccomment">/// Duplication between `&lt;method&gt;` and `&lt;method&gt;_raw` is a temporary measure, and
@@ -2083,7 +2111,7 @@
             }),
             check_semantics: Arc::new(|<span class="kw">_</span>, <span class="kw">_</span>| <span class="bool-val">true</span>),
             ignore: <span class="prelude-val">None</span>,
-            pass_on_rejected: <span class="bool-val">false</span>,
+            policy_on_rejected: PolicyOnRejected::Fail,
         }
     }
     <span class="doccomment">/// Check that an endpoint exists, has the same JSON schema, and do custom
@@ -2128,7 +2156,7 @@
                 }
             }),
             ignore: <span class="prelude-val">None</span>,
-            pass_on_rejected: <span class="bool-val">false</span>,
+            policy_on_rejected: PolicyOnRejected::Fail,
         }
     }
     <span class="doccomment">/// Check that an endpoint exists and that Forest returns exactly the same
@@ -2142,8 +2170,8 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">fn </span>pass_on_rejected(<span class="kw-2">mut </span><span class="self">self</span>, flag: bool) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.pass_on_rejected = flag;
+    <span class="kw">fn </span>policy_on_rejected(<span class="kw-2">mut </span><span class="self">self</span>, policy: PolicyOnRejected) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.policy_on_rejected = policy;
         <span class="self">self
     </span>}
 
@@ -2501,6 +2529,12 @@
             .into(),))<span class="question-mark">?</span>),
         RpcTest::identity(StateMarketParticipants::request((tipset.key().into(),))<span class="question-mark">?</span>),
         RpcTest::identity(StateMarketDeals::request((tipset.key().into(),))<span class="question-mark">?</span>),
+        RpcTest::identity(StateSectorPreCommitInfo::request((
+            Default::default(), <span class="comment">// invalid address
+            </span>u64::MAX,
+            tipset.key().into(),
+        ))<span class="question-mark">?</span>)
+        .policy_on_rejected(PolicyOnRejected::Pass),
     ];
 
     <span class="comment">// Get deals
@@ -2592,6 +2626,12 @@
                 block.miner_address,
                 tipset.key().into(),
             ))<span class="question-mark">?</span>),
+            RpcTest::identity(StateSectorPreCommitInfo::request((
+                block.miner_address,
+                u64::MAX, <span class="comment">// invalid sector number
+                </span>tipset.key().into(),
+            ))<span class="question-mark">?</span>)
+            .policy_on_rejected(PolicyOnRejected::PassWithIdenticalError),
         ]);
         <span class="kw">for </span>claim_id <span class="kw">in </span>StateGetClaims::get_claims(store, <span class="kw-2">&amp;</span>block.miner_address, tipset)<span class="question-mark">?
             </span>.keys()
@@ -2645,7 +2685,7 @@
                     sector,
                     tipset.key().into(),
                 ))<span class="question-mark">?</span>)
-                .pass_on_rejected(<span class="bool-val">true</span>),
+                .policy_on_rejected(PolicyOnRejected::PassWithIdenticalError),
                 RpcTest::identity(StateSectorPartition::request((
                     block.miner_address,
                     sector,
@@ -3252,11 +3292,15 @@
         <span class="kw">let </span>success = <span class="kw">match </span>(<span class="kw-2">&amp;</span>forest_status, <span class="kw-2">&amp;</span>lotus_status) {
             (TestSummary::Valid, TestSummary::Valid)
             | (TestSummary::Timeout, TestSummary::Timeout) =&gt; <span class="bool-val">true</span>,
-            (TestSummary::Rejected(<span class="kw-2">ref </span>reason_forest), TestSummary::Rejected(<span class="kw-2">ref </span>reason_lotus))
-                <span class="kw">if </span>test.pass_on_rejected &amp;&amp; reason_forest == reason_lotus =&gt;
-            {
-                <span class="bool-val">true
-            </span>}
+            (TestSummary::Rejected(<span class="kw-2">ref </span>reason_forest), TestSummary::Rejected(<span class="kw-2">ref </span>reason_lotus)) =&gt; {
+                <span class="kw">match </span>test.policy_on_rejected {
+                    PolicyOnRejected::Pass =&gt; <span class="bool-val">true</span>,
+                    PolicyOnRejected::PassWithIdenticalError <span class="kw">if </span>reason_forest == reason_lotus =&gt; {
+                        <span class="bool-val">true
+                    </span>}
+                    <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
+                }
+            }
             <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
         };
         <span class="kw">let </span>result_entry = (method_name, forest_status, lotus_status);
