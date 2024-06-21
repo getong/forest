@@ -44,66 +44,20 @@
 <a href="#44" id="44">44</a>
 <a href="#45" id="45">45</a>
 <a href="#46" id="46">46</a>
-<a href="#47" id="47">47</a>
-<a href="#48" id="48">48</a>
-<a href="#49" id="49">49</a>
-<a href="#50" id="50">50</a>
-<a href="#51" id="51">51</a>
-<a href="#52" id="52">52</a>
-<a href="#53" id="53">53</a>
-<a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
-<a href="#60" id="60">60</a>
-<a href="#61" id="61">61</a>
-<a href="#62" id="62">62</a>
-<a href="#63" id="63">63</a>
-<a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a>
-<a href="#76" id="76">76</a>
-<a href="#77" id="77">77</a>
-<a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub struct </span>VecLotusJson&lt;T&gt;(Vec&lt;T&gt;); <span class="comment">// need a struct to handle the serialization of an empty vec as null
-
-</span><span class="kw">impl</span>&lt;T&gt; HasLotusJson <span class="kw">for </span>Vec&lt;T&gt;
+<span class="kw">impl</span>&lt;T&gt; HasLotusJson <span class="kw">for </span>Vec&lt;T&gt;
 <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
 //                  This shouldn't recurse - LotusJson&lt;Vec&lt;T&gt;&gt; should only handle
 //                  the OUTER issue of serializing an empty Vec as null, and
 //                  shouldn't be interested in the inner representation.
 </span><span class="kw">where
-    </span>T: HasLotusJson,
+    </span>T: HasLotusJson + Clone,
 {
-    <span class="kw">type </span>LotusJson = VecLotusJson&lt;T::LotusJson&gt;;
+    <span class="kw">type </span>LotusJson = <span class="prelude-ty">Option</span>&lt;Vec&lt;T::LotusJson&gt;&gt;;
 
     <span class="attr">#[cfg(test)]
     </span><span class="kw">fn </span>snapshots() -&gt; Vec&lt;(serde_json::Value, <span class="self">Self</span>)&gt; {
@@ -111,17 +65,17 @@
     }
 
     <span class="kw">fn </span>into_lotus_json(<span class="self">self</span>) -&gt; <span class="self">Self</span>::LotusJson {
-        VecLotusJson(<span class="self">self</span>.into_iter().map(T::into_lotus_json).collect())
+        <span class="kw">match </span><span class="self">self</span>.is_empty() {
+            <span class="bool-val">true </span>=&gt; <span class="prelude-val">None</span>,
+            <span class="bool-val">false </span>=&gt; <span class="prelude-val">Some</span>(<span class="self">self</span>.into_iter().map(T::into_lotus_json).collect()),
+        }
     }
 
-    <span class="kw">fn </span>from_lotus_json(VecLotusJson(vec): <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
-        vec.into_iter().map(T::from_lotus_json).collect()
-    }
-}
-
-<span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>VecLotusJson&lt;T&gt; {
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.clone())
+    <span class="kw">fn </span>from_lotus_json(it: <span class="self">Self</span>::LotusJson) -&gt; <span class="self">Self </span>{
+        <span class="kw">match </span>it {
+            <span class="prelude-val">Some</span>(it) =&gt; it.into_iter().map(T::from_lotus_json).collect(),
+            <span class="prelude-val">None </span>=&gt; <span class="macro">vec!</span>[],
+        }
     }
 }
 
@@ -134,48 +88,6 @@
 </span><span class="macro">quickcheck!</span> {
     <span class="kw">fn </span>quickcheck(val: Vec&lt;::cid::Cid&gt;) -&gt; () {
         assert_unchanged_via_json(val)
-    }
-}
-
-<span class="kw">impl</span>&lt;T&gt; Serialize <span class="kw">for </span>VecLotusJson&lt;T&gt;
-<span class="kw">where
-    </span>T: Serialize,
-{
-    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; <span class="prelude-ty">Result</span>&lt;S::Ok, S::Error&gt;
-    <span class="kw">where
-        </span>S: Serializer,
-    {
-        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.is_empty() {
-            <span class="bool-val">true </span>=&gt; serializer.serialize_none(),
-            <span class="bool-val">false </span>=&gt; <span class="self">self</span>.<span class="number">0</span>.serialize(serializer),
-        }
-    }
-}
-
-<span class="kw">impl</span>&lt;<span class="lifetime">'de</span>, T&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>VecLotusJson&lt;T&gt;
-<span class="kw">where
-    </span>T: Deserialize&lt;<span class="lifetime">'de</span>&gt;,
-{
-    <span class="kw">fn </span>deserialize&lt;D&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, D::Error&gt;
-    <span class="kw">where
-        </span>D: Deserializer&lt;<span class="lifetime">'de</span>&gt;,
-    {
-        <span class="prelude-ty">Option</span>::&lt;Vec&lt;T&gt;&gt;::deserialize(deserializer)
-            .map(Option::unwrap_or_default)
-            .map(<span class="self">Self</span>)
-    }
-}
-
-<span class="kw">impl</span>&lt;T&gt; JsonSchema <span class="kw">for </span>VecLotusJson&lt;T&gt;
-<span class="kw">where
-    </span>T: JsonSchema,
-{
-    <span class="kw">fn </span>schema_name() -&gt; String {
-        <span class="macro">format!</span>(<span class="string">"Nullable_Array_of_{}"</span>, T::schema_name())
-    }
-
-    <span class="kw">fn </span>json_schema(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; Schema {
-        <span class="prelude-ty">Option</span>::&lt;Vec&lt;T&gt;&gt;::json_schema(gen)
     }
 }
 </code></pre></div></section></main></body></html>

@@ -1661,6 +1661,7 @@
 <a href="#1661" id="1661">1661</a>
 <a href="#1662" id="1662">1662</a>
 <a href="#1663" id="1663">1663</a>
+<a href="#1664" id="1664">1664</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1672,7 +1673,6 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::{index::ResolveNullTipset, ChainStore};
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
-<span class="kw">use </span><span class="kw">crate</span>::lotus_json::LotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, HasLotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as _</span>, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
@@ -1751,21 +1751,23 @@
     </span>InvokeContract = <span class="number">3844450837</span>,
 }
 
-<span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
-</span><span class="kw">pub struct </span>BigInt(
-    <span class="attr">#[schemars(with = <span class="string">"LotusJson&lt;num_bigint::BigInt&gt;"</span>)]
-    #[serde(with = <span class="string">"crate::lotus_json::hexify"</span>)]
+<span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4436
+//                  use ethereum_types::U256 or use lotus_json::big_int
+</span><span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
+</span><span class="kw">pub struct </span>EthBigInt(
+    <span class="attr">#[serde(with = <span class="string">"crate::lotus_json::hexify"</span>)]
+    #[schemars(with = <span class="string">"String"</span>)]
     </span><span class="kw">pub </span>num_bigint::BigInt,
 );
-<span class="macro">lotus_json_with_self!</span>(BigInt);
+<span class="macro">lotus_json_with_self!</span>(EthBigInt);
 
-<span class="kw">impl </span>From&lt;TokenAmount&gt; <span class="kw">for </span>BigInt {
+<span class="kw">impl </span>From&lt;TokenAmount&gt; <span class="kw">for </span>EthBigInt {
     <span class="kw">fn </span>from(amount: TokenAmount) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(amount.atto().to_owned())
     }
 }
 
-<span class="kw">type </span>GasPriceResult = BigInt;
+<span class="kw">type </span>GasPriceResult = EthBigInt;
 
 <span class="attr">#[derive(PartialEq, Debug, Deserialize, Serialize, Default, Clone, JsonSchema)]
 </span><span class="kw">pub struct </span>Nonce(
@@ -1940,7 +1942,7 @@
     <span class="kw">pub </span>extra_data: EthBytes,
     <span class="kw">pub </span>mix_hash: Hash,
     <span class="kw">pub </span>nonce: Nonce,
-    <span class="kw">pub </span>base_fee_per_gas: BigInt,
+    <span class="kw">pub </span>base_fee_per_gas: EthBigInt,
     <span class="kw">pub </span>size: Uint64,
     <span class="comment">// can be Vec&lt;Tx&gt; or Vec&lt;String&gt; depending on query params
     </span><span class="kw">pub </span>transactions: Transactions,
@@ -1982,18 +1984,18 @@
         default
     )]
     </span><span class="kw">pub </span>to: <span class="prelude-ty">Option</span>&lt;EthAddress&gt;,
-    <span class="kw">pub </span>value: BigInt,
+    <span class="kw">pub </span>value: EthBigInt,
     <span class="kw">pub </span>r#type: Uint64,
     <span class="kw">pub </span>input: EthBytes,
     <span class="kw">pub </span>gas: Uint64,
-    <span class="kw">pub </span>max_fee_per_gas: BigInt,
-    <span class="kw">pub </span>max_priority_fee_per_gas: BigInt,
+    <span class="kw">pub </span>max_fee_per_gas: EthBigInt,
+    <span class="kw">pub </span>max_priority_fee_per_gas: EthBigInt,
     <span class="attr">#[schemars(with = <span class="string">"Option&lt;Vec&lt;Hash&gt;&gt;"</span>)]
     #[serde(with = <span class="string">"crate::lotus_json"</span>)]
     </span><span class="kw">pub </span>access_list: Vec&lt;Hash&gt;,
-    <span class="kw">pub </span>v: BigInt,
-    <span class="kw">pub </span>r: BigInt,
-    <span class="kw">pub </span>s: BigInt,
+    <span class="kw">pub </span>v: EthBigInt,
+    <span class="kw">pub </span>r: EthBigInt,
+    <span class="kw">pub </span>s: EthBigInt,
 }
 
 <span class="kw">impl </span>Tx {
@@ -2010,14 +2012,14 @@
     <span class="kw">pub </span>chain_id: u64,
     <span class="kw">pub </span>nonce: u64,
     <span class="kw">pub </span>to: <span class="prelude-ty">Option</span>&lt;EthAddress&gt;,
-    <span class="kw">pub </span>value: BigInt,
-    <span class="kw">pub </span>max_fee_per_gas: BigInt,
-    <span class="kw">pub </span>max_priority_fee_per_gas: BigInt,
+    <span class="kw">pub </span>value: EthBigInt,
+    <span class="kw">pub </span>max_fee_per_gas: EthBigInt,
+    <span class="kw">pub </span>max_priority_fee_per_gas: EthBigInt,
     <span class="kw">pub </span>gas_limit: u64,
     <span class="kw">pub </span>input: Vec&lt;u8&gt;,
-    <span class="kw">pub </span>v: BigInt,
-    <span class="kw">pub </span>r: BigInt,
-    <span class="kw">pub </span>s: BigInt,
+    <span class="kw">pub </span>v: EthBigInt,
+    <span class="kw">pub </span>r: EthBigInt,
+    <span class="kw">pub </span>s: EthBigInt,
 }
 
 <span class="kw">impl </span>From&lt;Tx&gt; <span class="kw">for </span>TxArgs {
@@ -2052,7 +2054,7 @@
     }
 }
 
-<span class="kw">fn </span>format_bigint(value: <span class="kw-2">&amp;</span>BigInt) -&gt; <span class="prelude-ty">Result</span>&lt;BytesMut&gt; {
+<span class="kw">fn </span>format_bigint(value: <span class="kw-2">&amp;</span>EthBigInt) -&gt; <span class="prelude-ty">Result</span>&lt;BytesMut&gt; {
     <span class="prelude-val">Ok</span>(<span class="kw">if </span>value.<span class="number">0</span>.is_positive() {
         BytesMut::from_iter(value.<span class="number">0</span>.to_bytes_be().<span class="number">1</span>.iter())
     } <span class="kw">else </span>{
@@ -2300,9 +2302,9 @@
         <span class="kw">let </span>base_fee = <span class="kw-2">&amp;</span>block0.parent_base_fee;
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(premium) = gas::estimate_gas_premium(<span class="kw-2">&amp;</span>ctx, <span class="number">10000</span>).<span class="kw">await </span>{
             <span class="kw">let </span>gas_price = base_fee.add(premium);
-            <span class="prelude-val">Ok</span>(BigInt(gas_price.atto().clone()))
+            <span class="prelude-val">Ok</span>(EthBigInt(gas_price.atto().clone()))
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(BigInt(num_bigint::BigInt::zero()))
+            <span class="prelude-val">Ok</span>(EthBigInt(num_bigint::BigInt::zero()))
         }
     }
 }
@@ -2315,7 +2317,7 @@
     <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
 
     <span class="kw">type </span>Params = (EthAddress, BlockNumberOrHash);
-    <span class="kw">type </span><span class="prelude-val">Ok </span>= BigInt;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= EthBigInt;
 
     <span class="kw">async fn </span>handle(
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
@@ -2326,7 +2328,7 @@
         <span class="kw">let </span>state =
             StateTree::new_from_root(ctx.state_manager.blockstore_owned(), ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = state.get_required_actor(<span class="kw-2">&amp;</span>fil_addr)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(BigInt(actor.balance.atto().clone()))
+        <span class="prelude-val">Ok</span>(EthBigInt(actor.balance.atto().clone()))
     }
 }
 
@@ -2467,7 +2469,7 @@
     })
 }
 
-<span class="kw">fn </span>recover_sig(sig: <span class="kw-2">&amp;</span>Signature) -&gt; <span class="prelude-ty">Result</span>&lt;(BigInt, BigInt, BigInt)&gt; {
+<span class="kw">fn </span>recover_sig(sig: <span class="kw-2">&amp;</span>Signature) -&gt; <span class="prelude-ty">Result</span>&lt;(EthBigInt, EthBigInt, EthBigInt)&gt; {
     <span class="kw">if </span>sig.signature_type() != SignatureType::Delegated {
         <span class="macro">bail!</span>(<span class="string">"recover_sig only supports Delegated signature"</span>);
     }
@@ -2492,7 +2494,7 @@
         sig.bytes().get(<span class="number">64</span>..<span class="number">65</span>).expect(<span class="string">"failed to get slice"</span>),
     );
 
-    <span class="prelude-val">Ok</span>((BigInt(r), BigInt(s), BigInt(v)))
+    <span class="prelude-val">Ok</span>((EthBigInt(r), EthBigInt(s), EthBigInt(v)))
 }
 
 <span class="doccomment">/// `eth_tx_from_signed_eth_message` does NOT populate:
@@ -3111,10 +3113,10 @@
 
     <span class="attr">#[quickcheck]
     </span><span class="kw">fn </span>gas_price_result_serde_roundtrip(i: u128) {
-        <span class="kw">let </span>r = BigInt(i.into());
+        <span class="kw">let </span>r = EthBigInt(i.into());
         <span class="kw">let </span>encoded = serde_json::to_string(<span class="kw-2">&amp;</span>r).unwrap();
         <span class="macro">assert_eq!</span>(encoded, <span class="macro">format!</span>(<span class="string">"\"{i:#x}\""</span>));
-        <span class="kw">let </span>decoded: BigInt = serde_json::from_str(<span class="kw-2">&amp;</span>encoded).unwrap();
+        <span class="kw">let </span>decoded: EthBigInt = serde_json::from_str(<span class="kw-2">&amp;</span>encoded).unwrap();
         <span class="macro">assert_eq!</span>(r.<span class="number">0</span>, decoded.<span class="number">0</span>);
     }
 
@@ -3166,19 +3168,19 @@
                 ethereum_types::H160::from_str(<span class="string">"0xeb4a9cdb9f42d3a503d580a39b6e3736eb21fffd"</span>)
                     .unwrap(),
             )),
-            value: BigInt(num_bigint::BigInt::from(<span class="number">0</span>)),
-            max_fee_per_gas: BigInt(num_bigint::BigInt::from(<span class="number">1500000120</span>)),
-            max_priority_fee_per_gas: BigInt(num_bigint::BigInt::from(<span class="number">1500000000</span>)),
+            value: EthBigInt(num_bigint::BigInt::from(<span class="number">0</span>)),
+            max_fee_per_gas: EthBigInt(num_bigint::BigInt::from(<span class="number">1500000120</span>)),
+            max_priority_fee_per_gas: EthBigInt(num_bigint::BigInt::from(<span class="number">1500000000</span>)),
             gas_limit: <span class="number">37442471</span>,
             input: decode_hex(<span class="string">"383487be000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000660d4d120000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000003b6261666b726569656f6f75326d36356276376561786e7767656d7562723675787269696867366474646e6c7a663469616f37686c6e6a6d647372750000000000"</span>).unwrap(),
-            v: BigInt(num_bigint::BigInt::from_str(<span class="string">"1"</span>).unwrap()),
-            r: BigInt(
+            v: EthBigInt(num_bigint::BigInt::from_str(<span class="string">"1"</span>).unwrap()),
+            r: EthBigInt(
                 num_bigint::BigInt::from_str(
                     <span class="string">"84103132941276310528712440865285269631208564772362393569572880532520338257200"</span>,
                 )
                 .unwrap(),
             ),
-            s: BigInt(
+            s: EthBigInt(
                 num_bigint::BigInt::from_str(
                     <span class="string">"7820796778417228639067439047870612492553874254089570360061550763595363987236"</span>,
                 )
@@ -3215,7 +3217,7 @@
 
     <span class="attr">#[quickcheck]
     </span><span class="kw">fn </span>bigint_roundtrip(bi: num_bigint::BigInt) {
-        <span class="kw">let </span>eth_bi = BigInt(bi.clone());
+        <span class="kw">let </span>eth_bi = EthBigInt(bi.clone());
 
         <span class="kw">match </span>format_bigint(<span class="kw-2">&amp;</span>eth_bi) {
             <span class="prelude-val">Ok</span>(bm) =&gt; {

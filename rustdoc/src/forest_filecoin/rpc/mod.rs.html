@@ -526,6 +526,16 @@
 <a href="#526" id="526">526</a>
 <a href="#527" id="527">527</a>
 <a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -996,7 +1006,8 @@
     module
 }
 
-<span class="kw">pub fn </span>openrpc() -&gt; openrpc_types::OpenRPC {
+<span class="doccomment">/// If `include` is not [`None`], only methods that are listed will be returned
+</span><span class="kw">pub fn </span>openrpc(include: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]&gt;) -&gt; openrpc_types::OpenRPC {
     <span class="kw">use </span>schemars::gen::{SchemaGenerator, SchemaSettings};
     <span class="kw">let </span><span class="kw-2">mut </span>methods = <span class="macro">vec!</span>[];
     <span class="comment">// spec says draft07
@@ -1006,10 +1017,19 @@
     <span class="kw">let </span><span class="kw-2">mut </span>gen = SchemaGenerator::new(settings);
     <span class="macro">macro_rules!</span> callback {
         (<span class="macro-nonterminal">$ty</span>:ty) =&gt; {
-            methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
-                <span class="kw-2">&amp;mut </span>gen,
-                ParamStructure::ByPosition,
-            )));
+            <span class="kw">match </span>include {
+                <span class="prelude-val">Some</span>(include) =&gt; <span class="kw">match </span>include.contains(<span class="kw-2">&amp;</span>&lt;<span class="macro-nonterminal">$ty</span>&gt;::NAME) {
+                    <span class="bool-val">true </span>=&gt; methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
+                        <span class="kw-2">&amp;mut </span>gen,
+                        ParamStructure::ByPosition,
+                    ))),
+                    <span class="bool-val">false </span>=&gt; {}
+                },
+                <span class="prelude-val">None </span>=&gt; methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
+                    <span class="kw-2">&amp;mut </span>gen,
+                    ParamStructure::ByPosition,
+                ))),
+            }
         };
     }
     <span class="macro">for_each_method!</span>(callback);
@@ -1042,7 +1062,7 @@
     // `cargo insta review`
     </span><span class="attr">#[test]
     </span><span class="kw">fn </span>openrpc() {
-        <span class="kw">let </span>_spec = <span class="kw">super</span>::openrpc();
+        <span class="kw">let </span>_spec = <span class="kw">super</span>::openrpc(<span class="prelude-val">None</span>);
         <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
         //                  this is disabled because it causes lots of merge
         //                  conflicts.

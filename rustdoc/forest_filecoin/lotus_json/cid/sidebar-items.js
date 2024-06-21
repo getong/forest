@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["CidLotusJsonGeneric"]};
+window.SIDEBAR_ITEMS = {"struct":["CidLotusJson"]};

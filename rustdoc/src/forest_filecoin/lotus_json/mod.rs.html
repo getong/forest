@@ -793,6 +793,7 @@
     beacon_entry <span class="kw">for </span><span class="kw">crate</span>::beacon::BeaconEntry,
     big_int <span class="kw">for </span>num::BigInt,
     block_header <span class="kw">for </span><span class="kw">crate</span>::blocks::CachingBlockHeader,
+    cid <span class="kw">for </span>::cid::Cid,
     election_proof <span class="kw">for </span><span class="kw">crate</span>::blocks::ElectionProof,
     gossip_block <span class="kw">for </span><span class="kw">crate</span>::blocks::GossipBlock,
     key_info <span class="kw">for </span><span class="kw">crate</span>::key_management::KeyInfo,
@@ -818,7 +819,6 @@
 </span><span class="kw">mod </span>allocation;
 <span class="kw">mod </span>beneficiary_term; <span class="comment">// fil_actor_miner_state::v12::BeneficiaryTerm: !quickcheck::Arbitrary
 </span><span class="kw">mod </span>bit_field; <span class="comment">//  fil_actors_shared::fvm_ipld_bitfield::BitField: !quickcheck::Arbitrary
-</span><span class="kw">mod </span>cid; <span class="comment">// can't make snapshots of generic type
 </span><span class="kw">mod </span>hash_map;
 <span class="kw">mod </span>ipld; <span class="comment">// NaN != NaN
 </span><span class="kw">mod </span>miner_info; <span class="comment">// fil_actor_miner_state::v12::MinerInfo: !quickcheck::Arbitrary
@@ -1045,15 +1045,11 @@
 }
 
 <span class="doccomment">/// A domain struct that is (de) serialized through its lotus JSON representation.
-</span><span class="attr">#[derive(Debug, Deserialize, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[serde(bound = <span class="string">"T: HasLotusJson"</span>, transparent)]
+</span><span class="attr">#[derive(
+    Debug, Deserialize, From, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Clone,
+)]
+#[serde(bound = <span class="string">"T: HasLotusJson + Clone"</span>, transparent)]
 </span><span class="kw">pub struct </span>LotusJson&lt;T&gt;(<span class="attr">#[serde(with = <span class="string">"self"</span>)] </span><span class="kw">pub </span>T);
-
-<span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>LotusJson&lt;T&gt; {
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.clone())
-    }
-}
 
 <span class="kw">impl</span>&lt;T&gt; JsonSchema <span class="kw">for </span>LotusJson&lt;T&gt;
 <span class="kw">where
@@ -1062,6 +1058,10 @@
 {
     <span class="kw">fn </span>schema_name() -&gt; String {
         T::LotusJson::schema_name()
+    }
+
+    <span class="kw">fn </span>schema_id() -&gt; std::borrow::Cow&lt;<span class="lifetime">'static</span>, str&gt; {
+        T::LotusJson::schema_id()
     }
 
     <span class="kw">fn </span>json_schema(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; Schema {
