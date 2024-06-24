@@ -712,6 +712,11 @@ fn state_tests_with_tipset<DB: Blockstore>(
             Address::SYSTEM_ACTOR,
             Default::default(),
         ))?),
+        RpcTest::identity(StateDecodeParams::request((
+            Address::SYSTEM_ACTOR,
+            1,
+            tipset.key().into(),
+        ))?),
         // This should return `Address::new_id(0xdeadbeef)`
         RpcTest::identity(StateLookupID::request((
             Address::new_id(0xdeadbeef),

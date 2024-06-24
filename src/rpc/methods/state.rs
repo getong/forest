@@ -13,6 +13,7 @@ use crate::blocks::Tipset;
 use crate::cid_collections::CidHashSet;
 use crate::libp2p::NetworkMessage;
 use crate::lotus_json::lotus_json_with_self;
+use crate::message::Message as _;
 use crate::networks::{ChainConfig, NetworkChain};
 use crate::shim::actors::verifreg::VerifiedRegistryStateExt as _;
 use crate::shim::actors::{
@@ -54,7 +55,7 @@ use fil_actor_verifreg_state::v13::ClaimID;
 use fil_actors_shared::fvm_ipld_bitfield::BitField;
 use futures::StreamExt;
 use fvm_ipld_blockstore::Blockstore;
-use fvm_ipld_encoding::{CborStore, DAG_CBOR};
+use fvm_ipld_encoding::{CborStore, RawBytes, DAG_CBOR};
 pub use fvm_shared3::sector::StoragePower;
 use jsonrpsee::types::error::ErrorObject;
 use libipld_core::ipld::Ipld;
@@ -117,6 +118,31 @@ impl RpcMethod<2> for StateReplay {
             .chain_store()
             .load_required_tipset_or_heaviest(&tsk)?;
         Ok(state_manager.replay(tipset, message_cid).await?)
+    }
+}
+
+pub enum StateDecodeParams {}
+impl RpcMethod<3> for StateDecodeParams {
+    const NAME: &'static str = "Filecoin.StateDecodeParams";
+    const PARAM_NAMES: [&'static str; 3] = ["address", "method_num", "tipset_key"];
+    const API_VERSION: ApiVersion = ApiVersion::V0;
+    const PERMISSION: Permission = Permission::Read;
+
+    type Params = (Address, u64, ApiTipsetKey);
+    type Ok = RawBytes;
+
+    async fn handle(
+        ctx: Ctx<impl Blockstore>,
+        (address, method_num, ApiTipsetKey(tsk)): Self::Params,
+    ) -> Result<Self::Ok, ServerError> {
+        let ts = ctx.chain_store.load_required_tipset_or_heaviest(&tsk)?;
+        let msgs = ctx.chain_store.messages_for_tipset(&ts)?;
+        for msg in msgs {
+            if msg.method_num() == method_num && msg.to() == address {
+                return Ok(msg.params().clone());
+            }
+        }
+        Err(anyhow::anyhow!("Method {method_num} not found").into())
     }
 }
 

@@ -170,6 +170,7 @@ macro_rules! for_each_method {
         $callback!(crate::rpc::state::StateGetAllocations);
         $callback!(crate::rpc::state::StateSectorExpiration);
         $callback!(crate::rpc::state::StateSectorPartition);
+        $callback!(crate::rpc::state::StateDecodeParams);
 
         // sync vertical
         $callback!(crate::rpc::sync::SyncCheckBad);
