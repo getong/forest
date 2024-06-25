@@ -1640,6 +1640,17 @@
 <a href="#1640" id="1640">1640</a>
 <a href="#1641" id="1641">1641</a>
 <a href="#1642" id="1642">1642</a>
+<a href="#1643" id="1643">1643</a>
+<a href="#1644" id="1644">1644</a>
+<a href="#1645" id="1645">1645</a>
+<a href="#1646" id="1646">1646</a>
+<a href="#1647" id="1647">1647</a>
+<a href="#1648" id="1648">1648</a>
+<a href="#1649" id="1649">1649</a>
+<a href="#1650" id="1650">1650</a>
+<a href="#1651" id="1651">1651</a>
+<a href="#1652" id="1652">1652</a>
+<a href="#1653" id="1653">1653</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2426,7 +2437,9 @@
         <span class="kw-2">mut </span>current: Arc&lt;Tipset&gt;,
         message: <span class="kw-2">&amp;</span>ChainMessage,
         look_back_limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+        allow_replaced: <span class="prelude-ty">Option</span>&lt;bool&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
+        <span class="kw">let </span>allow_replaced = allow_replaced.unwrap_or(<span class="bool-val">true</span>);
         <span class="kw">let </span>message_from_address = message.from();
         <span class="kw">let </span>message_sequence = message.sequence();
         <span class="kw">let </span><span class="kw-2">mut </span>current_actor_state = <span class="self">self
@@ -2453,7 +2466,7 @@
                     &amp;&amp; parent_actor_state.as_ref().unwrap().sequence &lt;= message_sequence)
             {
                 <span class="kw">let </span>receipt = <span class="self">self
-                    </span>.tipset_executed_message(current.as_ref(), message, <span class="bool-val">true</span>)<span class="question-mark">?
+                    </span>.tipset_executed_message(current.as_ref(), message, allow_replaced)<span class="question-mark">?
                     </span>.context(<span class="string">"Failed to get receipt with tipset_executed_message"</span>)<span class="question-mark">?</span>;
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((current, receipt)));
             }
@@ -2474,8 +2487,9 @@
         current: Arc&lt;Tipset&gt;,
         message: <span class="kw-2">&amp;</span>ChainMessage,
         look_back_limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+        allow_replaced: <span class="prelude-ty">Option</span>&lt;bool&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
-        <span class="self">self</span>.check_search(current, message, look_back_limit)
+        <span class="self">self</span>.check_search(current, message, look_back_limit, allow_replaced)
     }
 
     <span class="doccomment">/// Returns a message receipt from a given tipset and message CID.
@@ -2487,7 +2501,7 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(receipt);
         }
 
-        <span class="kw">let </span>maybe_tuple = <span class="self">self</span>.search_back_for_message(tipset, <span class="kw-2">&amp;</span>m, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>maybe_tuple = <span class="self">self</span>.search_back_for_message(tipset, <span class="kw-2">&amp;</span>m, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>message_receipt = maybe_tuple
             .ok_or_else(|| {
                 Error::Other(<span class="string">"Could not get receipt from search back message"</span>.to_string())
@@ -2504,6 +2518,8 @@
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
         msg_cid: Cid,
         confidence: i64,
+        look_back_limit: <span class="prelude-ty">Option</span>&lt;ChainEpoch&gt;,
+        allow_replaced: <span class="prelude-ty">Option</span>&lt;bool&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;, <span class="prelude-ty">Option</span>&lt;Receipt&gt;), Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>subscriber = <span class="self">self</span>.cs.publisher().subscribe();
         <span class="kw">let </span>(sender, <span class="kw-2">mut </span>receiver) = oneshot::channel::&lt;()&gt;();
@@ -2524,8 +2540,12 @@
         <span class="kw">let </span>message_for_task = message.clone();
         <span class="kw">let </span>height_of_head = current_tipset.epoch();
         <span class="kw">let </span>task = tokio::task::spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span>back_tuple =
-                sm_cloned.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message_for_task, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>back_tuple = sm_cloned.search_back_for_message(
+                current_tipset,
+                <span class="kw-2">&amp;</span>message_for_task,
+                look_back_limit,
+                allow_replaced,
+            )<span class="question-mark">?</span>;
             sender
                 .send(())
                 .map_err(|e| Error::Other(<span class="macro">format!</span>(<span class="string">"Could not send to channel {e:?}"</span>)))<span class="question-mark">?</span>;
@@ -2622,16 +2642,18 @@
         from: <span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;,
         msg_cid: Cid,
         look_back_limit: <span class="prelude-ty">Option</span>&lt;i64&gt;,
+        allow_replaced: <span class="prelude-ty">Option</span>&lt;bool&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(Arc&lt;Tipset&gt;, Receipt)&gt;, Error&gt; {
         <span class="kw">let </span>from = from.unwrap_or_else(|| <span class="self">self</span>.chain_store().heaviest_tipset());
         <span class="kw">let </span>message = <span class="kw">crate</span>::chain::get_chain_message(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>msg_cid)
             .map_err(|err| Error::Other(<span class="macro">format!</span>(<span class="string">"failed to load message {err}"</span>)))<span class="question-mark">?</span>;
         <span class="kw">let </span>current_tipset = <span class="self">self</span>.cs.heaviest_tipset();
-        <span class="kw">let </span>maybe_message_reciept = <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>message, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>maybe_message_reciept =
+            <span class="self">self</span>.tipset_executed_message(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>message, allow_replaced.unwrap_or(<span class="bool-val">true</span>))<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = maybe_message_reciept {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((from, r)))
         } <span class="kw">else </span>{
-            <span class="self">self</span>.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message, look_back_limit)
+            <span class="self">self</span>.search_back_for_message(current_tipset, <span class="kw-2">&amp;</span>message, look_back_limit, allow_replaced)
         }
     }
 
