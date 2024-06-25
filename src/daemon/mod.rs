@@ -242,7 +242,7 @@ pub(super) async fn start(
         genesis_header.clone(),
     )?);
 
-    if !opts.no_gc {
+    if !opts.no_gc || true {
         let mut db_garbage_collector = {
             let chain_store = chain_store.clone();
             let depth = cmp::max(
@@ -427,19 +427,55 @@ pub(super) async fn start(
     // Import chain if needed
     if !opts.skip_load.unwrap_or_default() {
         if let Some(path) = &config.client.snapshot_path {
-            let (car_db_path, ts) = import_chain_as_forest_car(
-                path,
-                &forest_car_db_dir,
-                config.client.consume_snapshot,
-            )
-            .await?;
-            db.read_only_files(std::iter::once(car_db_path.clone()))?;
-            debug!("Loaded car DB at {}", car_db_path.display());
-            state_manager
-                .chain_store()
-                .set_heaviest_tipset(Arc::new(ts.clone()))?;
+            if config.client.snapshot {
+                let (car_db_path, ts) = import_chain_as_forest_car(
+                    path,
+                    &forest_car_db_dir,
+                    config.client.consume_snapshot,
+                )
+                .await?;
+                db.read_only_files(std::iter::once(car_db_path.clone()))?;
+                debug!("Loaded car DB at {}", car_db_path.display());
+                state_manager
+                    .chain_store()
+                    .set_heaviest_tipset(Arc::new(ts.clone()))?;
 
-            populate_eth_mappings(&state_manager, &ts)?;
+                populate_eth_mappings(&state_manager, &ts)?;
+            } else {
+                use futures::TryStreamExt;
+                use fvm_ipld_blockstore::Blockstore;
+                use indicatif::{ProgressBar, ProgressStyle};
+                use tokio::io::{AsyncWrite, AsyncWriteExt};
+                fn indicatif_sink(task: &'static str) -> impl AsyncWrite {
+                    let sink = tokio::io::sink();
+                    let pb = ProgressBar::new_spinner()
+                        .with_style(
+                            ProgressStyle::with_template(
+                                "{spinner} {prefix} {total_bytes} at {binary_bytes_per_sec} in {elapsed_precise}",
+                            )
+                            .expect("infallible"),
+                        )
+                        .with_prefix(task)
+                        .with_finish(indicatif::ProgressFinish::AndLeave);
+                    pb.enable_steady_tick(std::time::Duration::from_secs_f32(0.1));
+                    pb.wrap_async_write(sink)
+                }
+                let mut sink = indicatif_sink("populated");
+
+                let mut s = Box::pin(
+                    crate::utils::db::car_stream::CarStream::new(tokio::io::BufReader::new(
+                        tokio::fs::File::open(path).await?,
+                    ))
+                    .await?,
+                );
+
+                info!("populating temp db");
+                while let Some(block) = s.try_next().await? {
+                    db.put_keyed(&block.cid, &block.data)?;
+                    sink.write_all(&block.data).await?;
+                }
+                info!("finished populating temp db");
+            }
         }
     }
 

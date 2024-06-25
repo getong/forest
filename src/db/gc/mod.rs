@@ -128,6 +128,7 @@ impl<DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + 'static
     // Populate the initial set with all the available database keys.
     fn populate(&mut self) -> anyhow::Result<()> {
         self.marked = self.db.get_keys()?;
+        info!("DB key count: {}", self.marked.len());
         Ok(())
     }
 
@@ -152,6 +153,7 @@ impl<DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + 'static
     // Remove marked keys from the database.
     fn sweep(&mut self) -> anyhow::Result<()> {
         let marked = mem::take(&mut self.marked);
+        info!("removing keys: {}", marked.len());
         self.db.remove_keys(marked)
     }
 
@@ -194,17 +196,17 @@ impl<DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + 'static
         let last_gc_run = self.fetch_last_gc_run()?;
         // Don't run the GC if there aren't enough state-roots yet or if we're too close to the last
         // GC run. Sleep and yield to the main loop in order to refresh the heaviest tipset value.
-        if depth > current_epoch - last_gc_run {
-            time::sleep(interval).await;
-            return anyhow::Ok(());
-        }
+        // if depth > current_epoch - last_gc_run {
+        //     time::sleep(interval).await;
+        //     return anyhow::Ok(());
+        // }
 
         // This signifies a new run.
         if self.marked.is_empty() {
             // Make sure we don't run the GC too often.
-            time::sleep(interval).await;
+            // time::sleep(interval).await;
 
-            info!("populate keys for GC");
+            info!("populate keys for GC at epoch {current_epoch}");
             self.populate()?;
             self.epoch_marked = current_epoch;
         }
@@ -213,11 +215,15 @@ impl<DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + 'static
         // Don't proceed with next steps until we advance at least `depth` epochs. Sleep and yield
         // to the main loop in order to refresh the heaviest tipset value.
         if epochs_since_marked < depth {
-            time::sleep(self.block_time * (depth - epochs_since_marked) as u32).await;
-            return anyhow::Ok(());
+            // time::sleep(self.block_time * (depth - epochs_since_marked) as u32).await;
+            time::sleep(self.block_time * 3).await;
+            // return anyhow::Ok(());
         }
 
-        info!("filter keys for GC");
+        let tipset = (self.get_heaviest_tipset)();
+        let current_epoch = tipset.epoch();
+
+        info!("filter keys for GC at epoch {current_epoch}");
         self.filter(tipset, depth).await?;
 
         info!("GC sweep");
