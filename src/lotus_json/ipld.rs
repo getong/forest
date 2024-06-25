@@ -30,7 +30,7 @@ use ::cid::multibase;
 use libipld::{ipld, Ipld};
 use serde::de;
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[schemars(rename = "Ipld")]
 pub struct IpldLotusJson(
     #[serde(with = "self")]

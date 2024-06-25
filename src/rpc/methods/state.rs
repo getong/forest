@@ -55,7 +55,7 @@ use fil_actor_verifreg_state::v13::ClaimID;
 use fil_actors_shared::fvm_ipld_bitfield::BitField;
 use futures::StreamExt;
 use fvm_ipld_blockstore::Blockstore;
-use fvm_ipld_encoding::{CborStore, RawBytes, DAG_CBOR};
+use fvm_ipld_encoding::{CborStore, DAG_CBOR};
 pub use fvm_shared3::sector::StoragePower;
 use jsonrpsee::types::error::ErrorObject;
 use libipld_core::ipld::Ipld;
@@ -129,7 +129,7 @@ impl RpcMethod<3> for StateDecodeParams {
     const PERMISSION: Permission = Permission::Read;
 
     type Params = (Address, u64, ApiTipsetKey);
-    type Ok = RawBytes;
+    type Ok = Ipld;
 
     async fn handle(
         ctx: Ctx<impl Blockstore>,
@@ -138,8 +138,9 @@ impl RpcMethod<3> for StateDecodeParams {
         let ts = ctx.chain_store.load_required_tipset_or_heaviest(&tsk)?;
         let msgs = ctx.chain_store.messages_for_tipset(&ts)?;
         for msg in msgs {
-            if msg.method_num() == method_num && msg.to() == address {
-                return Ok(msg.params().clone());
+            if msg.method_num() == method_num {
+                let decoded = msg.params().deserialize().unwrap_or(Ipld::Null);
+                return Ok(decoded);
             }
         }
         Err(anyhow::anyhow!("Method {method_num} not found").into())
