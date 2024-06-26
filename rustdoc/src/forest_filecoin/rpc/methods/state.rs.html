@@ -2369,6 +2369,17 @@
 <a href="#2369" id="2369">2369</a>
 <a href="#2370" id="2370">2370</a>
 <a href="#2371" id="2371">2371</a>
+<a href="#2372" id="2372">2372</a>
+<a href="#2373" id="2373">2373</a>
+<a href="#2374" id="2374">2374</a>
+<a href="#2375" id="2375">2375</a>
+<a href="#2376" id="2376">2376</a>
+<a href="#2377" id="2377">2377</a>
+<a href="#2378" id="2378">2378</a>
+<a href="#2379" id="2379">2379</a>
+<a href="#2380" id="2380">2380</a>
+<a href="#2381" id="2381">2381</a>
+<a href="#2382" id="2382">2382</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -3956,10 +3967,12 @@
     }
 }
 
-<span class="kw">pub enum </span>StateSectorPreCommitInfo {}
+<span class="kw">pub enum </span>StateSectorPreCommitInfoV0 {}
 
-<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateSectorPreCommitInfo {
-    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateSectorPreCommitInfo"</span>;
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateSectorPreCommitInfoV0 {
+    <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/3960
+    // point v0 implementation back to this one
+    </span><span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateSectorPreCommitInfoV0"</span>;
     <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"miner_address"</span>, <span class="string">"sector_number"</span>, <span class="string">"tipset_key"</span>];
     <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V0;
     <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
@@ -3979,27 +3992,36 @@
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>state = miner::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="kw">match </span>state {
-            miner::State::V8(s) =&gt; s
-                .get_precommitted_sector(ctx.store(), sector_number)<span class="question-mark">?
-                </span>.map(SectorPreCommitOnChainInfo::from),
-            miner::State::V9(s) =&gt; s
-                .get_precommitted_sector(ctx.store(), sector_number)<span class="question-mark">?
-                </span>.map(SectorPreCommitOnChainInfo::from),
-            miner::State::V10(s) =&gt; s
-                .get_precommitted_sector(ctx.store(), sector_number)<span class="question-mark">?
-                </span>.map(SectorPreCommitOnChainInfo::from),
-            miner::State::V11(s) =&gt; s
-                .get_precommitted_sector(ctx.store(), sector_number)<span class="question-mark">?
-                </span>.map(SectorPreCommitOnChainInfo::from),
-            miner::State::V12(s) =&gt; s
-                .get_precommitted_sector(ctx.store(), sector_number)<span class="question-mark">?
-                </span>.map(SectorPreCommitOnChainInfo::from),
-            miner::State::V13(s) =&gt; s
-                .get_precommitted_sector(ctx.store(), sector_number)<span class="question-mark">?
-                </span>.map(SectorPreCommitOnChainInfo::from),
-        }
-        .context(<span class="string">"precommit info does not exist"</span>)<span class="question-mark">?</span>)
+        <span class="prelude-val">Ok</span>(state
+            .load_precommit_on_chain_info(ctx.store(), sector_number)<span class="question-mark">?
+            </span>.context(<span class="string">"precommit info does not exist"</span>)<span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">pub enum </span>StateSectorPreCommitInfo {}
+
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">3</span>&gt; <span class="kw">for </span>StateSectorPreCommitInfo {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateSectorPreCommitInfo"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">3</span>] = [<span class="string">"miner_address"</span>, <span class="string">"sector_number"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_VERSION: ApiVersion = ApiVersion::V1;
+    <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
+
+    <span class="kw">type </span>Params = (Address, u64, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= <span class="prelude-ty">Option</span>&lt;SectorPreCommitOnChainInfo&gt;;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
+        (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = ctx
+            .state_manager
+            .chain_store()
+            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = ctx
+            .state_manager
+            .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>state = miner::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(state.load_precommit_on_chain_info(ctx.store(), sector_number)<span class="question-mark">?</span>)
     }
 }
 
