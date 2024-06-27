@@ -644,7 +644,6 @@
 <a href="#644" id="644">644</a>
 <a href="#645" id="645">645</a>
 <a href="#646" id="646">646</a>
-<a href="#647" id="647">647</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -797,7 +796,7 @@
                 <span class="kw">let </span>store = ManyCar::try_from(snapshot_files)<span class="question-mark">?</span>;
                 <span class="kw">let </span>heaviest_tipset = store.heaviest_tipset()<span class="question-mark">?</span>;
                 do_export(
-                    store,
+                    store.into(),
                     heaviest_tipset,
                     output_path,
                     epoch,
@@ -955,16 +954,16 @@
         NetworkChain::from_genesis(genesis.cid()).context(<span class="string">"Unrecognizable genesis block"</span>)<span class="question-mark">?</span>;
 
     <span class="macro">println!</span>(<span class="string">"{}:"</span>, chain_name);
-    <span class="kw">for </span>(epoch, cid) <span class="kw">in </span>list_checkpoints(store, root) {
+    <span class="kw">for </span>(epoch, cid) <span class="kw">in </span>list_checkpoints(<span class="kw-2">&amp;</span>store, root) {
         <span class="macro">println!</span>(<span class="string">"  {}: {}"</span>, epoch, cid);
     }
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">fn </span>list_checkpoints(
-    db: <span class="kw">impl </span>Blockstore,
+    db: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore,
     root: Tipset,
-) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (ChainEpoch, cid::Cid)&gt; {
+) -&gt; <span class="kw">impl </span>Iterator&lt;Item = (ChainEpoch, cid::Cid)&gt; + <span class="lifetime">'_ </span>{
     <span class="kw">let </span>interval = EPOCHS_IN_DAY * <span class="number">30</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>target_epoch = root.epoch() - root.epoch() % interval;
     root.chain(db).filter_map(<span class="kw">move </span>|tipset| {
@@ -1002,7 +1001,7 @@
 
 <span class="attr">#[allow(clippy::too_many_arguments)]
 </span><span class="kw">async fn </span>do_export(
-    store: <span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>,
+    store: Arc&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
     root: Tipset,
     output_path: PathBuf,
     epoch_option: <span class="prelude-ty">Option</span>&lt;ChainEpoch&gt;,
@@ -1012,7 +1011,6 @@
     force: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>ts = Arc::new(root);
-    <span class="kw">let </span>store = Arc::new(store);
 
     <span class="kw">let </span>genesis = ts.genesis(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
     <span class="kw">let </span>network = NetworkChain::from_genesis_or_devnet_placeholder(genesis.cid());
@@ -1043,7 +1041,7 @@
         <span class="kw">let </span>diff_limit = diff_depth.map(|depth| diff_ts.epoch() - depth).unwrap_or(<span class="number">0</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>stream = unordered_stream_graph(
             store.clone(),
-            diff_ts.clone().chain(store.clone()),
+            diff_ts.clone().chain_owned(store.clone()),
             diff_limit,
         );
         <span class="kw">while </span>stream.try_next().<span class="kw">await</span><span class="question-mark">?</span>.is_some() {}
@@ -1248,7 +1246,7 @@
         <span class="kw">let </span>store = AnyCar::try_from(calibnet::DEFAULT_GENESIS).unwrap();
         <span class="kw">let </span>heaviest_tipset = store.heaviest_tipset().unwrap();
         do_export(
-            store,
+            store.into(),
             heaviest_tipset,
             output_path.path().into(),
             <span class="prelude-val">Some</span>(<span class="number">0</span>),

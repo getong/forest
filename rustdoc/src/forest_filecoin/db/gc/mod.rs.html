@@ -459,10 +459,6 @@
 <a href="#459" id="459">459</a>
 <a href="#460" id="460">460</a>
 <a href="#461" id="461">461</a>
-<a href="#462" id="462">462</a>
-<a href="#463" id="463">463</a>
-<a href="#464" id="464">464</a>
-<a href="#465" id="465">465</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -600,11 +596,7 @@
     // NOTE: One concern here is that this is going to consume a lot of CPU.
     </span><span class="kw">async fn </span>filter(<span class="kw-2">&amp;mut </span><span class="self">self</span>, tipset: Arc&lt;Tipset&gt;, depth: ChainEpochDelta) -&gt; anyhow::Result&lt;()&gt; {
         <span class="comment">// NOTE: We want to keep all the block headers from genesis to heaviest tipset epoch.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>stream = stream_graph(
-            <span class="self">self</span>.db.clone(),
-            (<span class="kw-2">*</span>tipset).clone().chain(<span class="self">self</span>.db.clone()),
-            depth,
-        );
+        </span><span class="kw">let </span><span class="kw-2">mut </span>stream = stream_graph(<span class="self">self</span>.db.clone(), (<span class="kw-2">*</span>tipset).clone().chain(<span class="kw-2">&amp;</span><span class="self">self</span>.db), depth);
 
         <span class="kw">while let </span><span class="prelude-val">Some</span>(block) = stream.next().<span class="kw">await </span>{
             <span class="kw">let </span>block = block<span class="question-mark">?</span>;
@@ -712,14 +704,14 @@
 
     <span class="kw">const </span>ZERO_DURATION: Duration = Duration::from_secs(<span class="number">0</span>);
 
-    <span class="kw">fn </span>insert_unreachable(db: <span class="kw">impl </span>Blockstore, quantity: u64) {
+    <span class="kw">fn </span>insert_unreachable(db: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore, quantity: u64) {
         <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..quantity {
             <span class="kw">let </span>block: CachingBlockHeader = mock_block(<span class="number">1 </span>+ idx, <span class="number">1 </span>+ quantity);
             db.put_cbor_default(<span class="kw-2">&amp;</span>block).unwrap();
         }
     }
 
-    <span class="kw">fn </span>run_to_epoch(db: <span class="kw">impl </span>Blockstore, cs: <span class="kw-2">&amp;</span>ChainStore&lt;MemoryDB&gt;, epoch: ChainEpoch) {
+    <span class="kw">fn </span>run_to_epoch(db: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore, cs: <span class="kw-2">&amp;</span>ChainStore&lt;MemoryDB&gt;, epoch: ChainEpoch) {
         <span class="kw">let </span><span class="kw-2">mut </span>heaviest_tipset = cs.heaviest_tipset();
 
         <span class="kw">for _ in </span>heaviest_tipset.epoch()..epoch {

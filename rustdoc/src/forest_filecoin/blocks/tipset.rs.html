@@ -791,6 +791,20 @@
 <a href="#791" id="791">791</a>
 <a href="#792" id="792">792</a>
 <a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1001,11 +1015,11 @@
 
     <span class="doccomment">/// Fetch a tipset from the blockstore. This call fails if the tipset is
     /// present but invalid. If the tipset is missing, None is returned.
-    </span><span class="kw">pub fn </span>load(store: <span class="kw">impl </span>Blockstore, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Tipset&gt;&gt; {
+    </span><span class="kw">pub fn </span>load(store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Tipset&gt;&gt; {
         <span class="prelude-val">Ok</span>(tsk
             .to_cids()
             .into_iter()
-            .map(|key| CachingBlockHeader::load(<span class="kw-2">&amp;</span>store, key))
+            .map(|key| CachingBlockHeader::load(store, key))
             .collect::&lt;anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;&gt;()<span class="question-mark">?
             </span>.map(Tipset::new)
             .transpose()<span class="question-mark">?</span>)
@@ -1032,12 +1046,12 @@
 
     <span class="doccomment">/// Fetch a tipset from the blockstore. This calls fails if the tipset is
     /// missing or invalid.
-    </span><span class="kw">pub fn </span>load_required(store: <span class="kw">impl </span>Blockstore, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; anyhow::Result&lt;Tipset&gt; {
+    </span><span class="kw">pub fn </span>load_required(store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore, tsk: <span class="kw-2">&amp;</span>TipsetKey) -&gt; anyhow::Result&lt;Tipset&gt; {
         Tipset::load(store, tsk)<span class="question-mark">?</span>.context(<span class="string">"Required tipset missing from database"</span>)
     }
 
     <span class="doccomment">/// Constructs and returns a full tipset if messages from storage exists
-    </span><span class="kw">pub fn </span>fill_from_blockstore(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>Blockstore) -&gt; <span class="prelude-ty">Option</span>&lt;FullTipset&gt; {
+    </span><span class="kw">pub fn </span>fill_from_blockstore(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore) -&gt; <span class="prelude-ty">Option</span>&lt;FullTipset&gt; {
         <span class="comment">// Find tipset messages. If any are missing, return `None`.
         </span><span class="kw">let </span>blocks = <span class="self">self
             </span>.block_headers()
@@ -1134,8 +1148,9 @@
         }
         broken
     }
-    <span class="doccomment">/// Returns an iterator of all tipsets
-    </span><span class="kw">pub fn </span>chain(<span class="self">self</span>, store: <span class="kw">impl </span>Blockstore) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Tipset&gt; {
+
+    <span class="doccomment">/// Returns an iterator of all tipsets, taking an owned [`Blockstore`]
+    </span><span class="kw">pub fn </span>chain_owned(<span class="self">self</span>, store: <span class="kw">impl </span>Blockstore) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Tipset&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>tipset = <span class="prelude-val">Some</span>(<span class="self">self</span>);
         std::iter::from_fn(<span class="kw">move </span>|| {
             <span class="kw">let </span>child = tipset.take()<span class="question-mark">?</span>;
@@ -1145,11 +1160,24 @@
     }
 
     <span class="doccomment">/// Returns an iterator of all tipsets
-    </span><span class="kw">pub fn </span>chain_arc(<span class="self">self</span>: Arc&lt;<span class="self">Self</span>&gt;, store: <span class="kw">impl </span>Blockstore) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Arc&lt;Tipset&gt;&gt; {
+    </span><span class="kw">pub fn </span>chain(<span class="self">self</span>, store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Tipset&gt; + <span class="lifetime">'_ </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>tipset = <span class="prelude-val">Some</span>(<span class="self">self</span>);
         std::iter::from_fn(<span class="kw">move </span>|| {
             <span class="kw">let </span>child = tipset.take()<span class="question-mark">?</span>;
-            tipset = Tipset::load_required(<span class="kw-2">&amp;</span>store, child.parents())
+            tipset = Tipset::load_required(store, child.parents()).ok();
+            <span class="prelude-val">Some</span>(child)
+        })
+    }
+
+    <span class="doccomment">/// Returns an iterator of all tipsets
+    </span><span class="kw">pub fn </span>chain_arc(
+        <span class="self">self</span>: Arc&lt;<span class="self">Self</span>&gt;,
+        store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore,
+    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Arc&lt;Tipset&gt;&gt; + <span class="lifetime">'_ </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>tipset = <span class="prelude-val">Some</span>(<span class="self">self</span>);
+        std::iter::from_fn(<span class="kw">move </span>|| {
+            <span class="kw">let </span>child = tipset.take()<span class="question-mark">?</span>;
+            tipset = Tipset::load_required(store, child.parents())
                 .ok()
                 .map(Arc::new);
             <span class="prelude-val">Some</span>(child)
@@ -1157,7 +1185,7 @@
     }
 
     <span class="doccomment">/// Fetch the genesis block header for a given tipset.
-    </span><span class="kw">pub fn </span>genesis(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw">impl </span>Blockstore) -&gt; anyhow::Result&lt;CachingBlockHeader&gt; {
+    </span><span class="kw">pub fn </span>genesis(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span><span class="kw">impl </span>Blockstore) -&gt; anyhow::Result&lt;CachingBlockHeader&gt; {
         <span class="comment">// Scanning through millions of epochs to find the genesis is quite
         // slow. Let's use a list of known blocks to short-circuit the search.
         // The blocks are hash-chained together and known blocks are guaranteed
@@ -1173,7 +1201,7 @@
             serde_yaml::from_str(<span class="macro">include_str!</span>(<span class="string">"../../build/known_blocks.yaml"</span>)).unwrap()
         });
 
-        <span class="kw">for </span>tipset <span class="kw">in </span><span class="self">self</span>.clone().chain(<span class="kw-2">&amp;</span>store) {
+        <span class="kw">for </span>tipset <span class="kw">in </span><span class="self">self</span>.clone().chain(store) {
             <span class="comment">// Search for known calibnet and mainnet blocks
             </span><span class="kw">for </span>(genesis_cid, known_blocks) <span class="kw">in </span>[
                 (<span class="kw-2">*</span>calibnet::GENESIS_CID, <span class="kw-2">&amp;</span>headers.calibnet),
