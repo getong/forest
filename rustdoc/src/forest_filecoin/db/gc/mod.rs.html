@@ -459,6 +459,8 @@
 <a href="#459" id="459">459</a>
 <a href="#460" id="460">460</a>
 <a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -533,10 +535,10 @@
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::ChainEpochDelta;
 
-<span class="kw">use </span><span class="kw">crate</span>::db::{truncated_hash, GarbageCollectable, SettingsStore};
+<span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
+<span class="kw">use </span><span class="kw">crate</span>::db::{GarbageCollectable, SettingsStore};
 <span class="kw">use </span><span class="kw">crate</span>::ipld::stream_graph;
 <span class="kw">use </span><span class="kw">crate</span>::shim::clock::ChainEpoch;
-<span class="kw">use </span>ahash::{HashSet, HashSetExt};
 <span class="kw">use </span>futures::StreamExt;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>std::mem;
@@ -548,7 +550,7 @@
 <span class="kw">const </span>SETTINGS_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"LAST_GC_RUN"</span>;
 
 <span class="doccomment">/// [`MarkAndSweep`] is a simple garbage collector implementation that traverses all the database
-/// keys writing them to a [`HashSet`], then filters out those that need to be kept and schedules
+/// keys writing them to a [`CidHashSet`], then filters out those that need to be kept and schedules
 /// the rest for removal.
 ///
 /// Note: The GC does not know anything about the hybrid CAR-backed and ParityDB approach, only
@@ -556,13 +558,15 @@
 </span><span class="kw">pub struct </span>MarkAndSweep&lt;DB&gt; {
     db: Arc&lt;DB&gt;,
     get_heaviest_tipset: Box&lt;<span class="kw">dyn </span>Fn() -&gt; Arc&lt;Tipset&gt; + Send&gt;,
-    marked: HashSet&lt;u32&gt;,
+    marked: CidHashSet,
     epoch_marked: ChainEpoch,
     depth: ChainEpochDelta,
     block_time: Duration,
 }
 
-<span class="kw">impl</span>&lt;DB: Blockstore + SettingsStore + GarbageCollectable + Sync + Send + <span class="lifetime">'static</span>&gt; MarkAndSweep&lt;DB&gt; {
+<span class="kw">impl</span>&lt;DB: Blockstore + SettingsStore + GarbageCollectable&lt;CidHashSet&gt; + Sync + Send + <span class="lifetime">'static</span>&gt;
+    MarkAndSweep&lt;DB&gt;
+{
     <span class="doccomment">/// Creates a new mark-and-sweep garbage collector.
     ///
     /// # Arguments
@@ -581,7 +585,7 @@
             db,
             get_heaviest_tipset,
             depth,
-            marked: HashSet::new(),
+            marked: CidHashSet::new(),
             epoch_marked: <span class="number">0</span>,
             block_time,
         }
@@ -600,7 +604,7 @@
 
         <span class="kw">while let </span><span class="prelude-val">Some</span>(block) = stream.next().<span class="kw">await </span>{
             <span class="kw">let </span>block = block<span class="question-mark">?</span>;
-            <span class="self">self</span>.marked.remove(<span class="kw-2">&amp;</span>truncated_hash(block.cid.hash()));
+            <span class="self">self</span>.marked.remove(<span class="kw-2">&amp;</span>block.cid);
         }
 
         anyhow::Ok(())

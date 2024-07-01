@@ -110,13 +110,15 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::db::{truncated_hash, GarbageCollectable};
+</span><span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
+<span class="kw">use </span><span class="kw">crate</span>::db::GarbageCollectable;
 <span class="kw">use </span><span class="kw">crate</span>::libp2p_bitswap::{BitswapStoreRead, BitswapStoreReadWrite};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth;
-<span class="kw">use </span>ahash::{HashMap, HashSet, HashSetExt};
+<span class="kw">use </span>ahash::HashMap;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>itertools::Itertools;
@@ -131,22 +133,22 @@
     eth_mappings_db: RwLock&lt;HashMap&lt;eth::Hash, Vec&lt;u8&gt;&gt;&gt;,
 }
 
-<span class="kw">impl </span>GarbageCollectable <span class="kw">for </span>MemoryDB {
-    <span class="kw">fn </span>get_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;HashSet&lt;u32&gt;&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>set = HashSet::with_capacity(<span class="self">self</span>.blockchain_db.read().len());
+<span class="kw">impl </span>GarbageCollectable&lt;CidHashSet&gt; <span class="kw">for </span>MemoryDB {
+    <span class="kw">fn </span>get_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;CidHashSet&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>set = CidHashSet::new();
         <span class="kw">for </span>key <span class="kw">in </span><span class="self">self</span>.blockchain_db.read().keys() {
             <span class="kw">let </span>cid = Cid::try_from(key.as_slice())<span class="question-mark">?</span>;
-            set.insert(truncated_hash(cid.hash()));
+            set.insert(cid);
         }
         <span class="prelude-val">Ok</span>(set)
     }
 
-    <span class="kw">fn </span>remove_keys(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: HashSet&lt;u32&gt;) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">fn </span>remove_keys(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: CidHashSet) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>db = <span class="self">self</span>.blockchain_db.write();
         db.retain(|key, <span class="kw">_</span>| {
             <span class="kw">let </span>cid = Cid::try_from(key.as_slice());
             <span class="kw">match </span>cid {
-                <span class="prelude-val">Ok</span>(cid) =&gt; !keys.contains(<span class="kw-2">&amp;</span>truncated_hash(cid.hash())),
+                <span class="prelude-val">Ok</span>(cid) =&gt; !keys.contains(<span class="kw-2">&amp;</span>cid),
                 <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
             }
         });

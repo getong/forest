@@ -500,29 +500,16 @@
 <a href="#500" id="500">500</a>
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
-<a href="#503" id="503">503</a>
-<a href="#504" id="504">504</a>
-<a href="#505" id="505">505</a>
-<a href="#506" id="506">506</a>
-<a href="#507" id="507">507</a>
-<a href="#508" id="508">508</a>
-<a href="#509" id="509">509</a>
-<a href="#510" id="510">510</a>
-<a href="#511" id="511">511</a>
-<a href="#512" id="512">512</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span>ahash::{HashSet, HashSetExt};
-<span class="kw">use </span>std::path::PathBuf;
+</span><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span><span class="kw">super</span>::SettingsStore;
 
 <span class="kw">use </span><span class="kw">super</span>::EthMappingsStore;
 
-<span class="kw">use </span><span class="kw">crate</span>::db::{
-    parity_db_config::ParityDbConfig, truncated_hash, DBStatistics, GarbageCollectable,
-};
+<span class="kw">use </span><span class="kw">crate</span>::db::{parity_db_config::ParityDbConfig, DBStatistics, GarbageCollectable};
 <span class="kw">use </span><span class="kw">crate</span>::libp2p_bitswap::{BitswapStoreRead, BitswapStoreReadWrite};
 
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth;
@@ -540,6 +527,7 @@
 <span class="kw">use </span>parity_db::{CompressionType, Db, Operation, Options};
 <span class="kw">use </span>strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
 
+<span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
 <span class="kw">use </span>tracing::warn;
 
 <span class="doccomment">/// This is specific to Forest's `ParityDb` usage.
@@ -829,61 +817,53 @@
     }
 }
 
-<span class="kw">impl </span>GarbageCollectable <span class="kw">for </span>ParityDb {
-    <span class="kw">fn </span>get_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;HashSet&lt;u32&gt;&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>set = HashSet::new();
+<span class="kw">impl </span>GarbageCollectable&lt;CidHashSet&gt; <span class="kw">for </span>ParityDb {
+    <span class="kw">fn </span>get_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;CidHashSet&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>set = CidHashSet::new();
 
-        <span class="comment">// First iterate over all of the indexed entries.
+        <span class="comment">// First iterate over all the indexed entries.
         </span><span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.db.iter(DbColumn::GraphFull <span class="kw">as </span>u8)<span class="question-mark">?</span>;
         <span class="kw">while let </span><span class="prelude-val">Some</span>((key, <span class="kw">_</span>)) = iter.next()<span class="question-mark">? </span>{
             <span class="kw">let </span>cid = Cid::try_from(key)<span class="question-mark">?</span>;
-            set.insert(truncated_hash(cid.hash()));
+            set.insert(cid);
         }
 
         <span class="self">self</span>.db
             .iter_column_while(DbColumn::GraphDagCborBlake2b256 <span class="kw">as </span>u8, |val| {
                 <span class="kw">let </span>hash = Blake2b256.digest(<span class="kw-2">&amp;</span>val.value);
-                set.insert(truncated_hash(<span class="kw-2">&amp;</span>hash));
+                <span class="kw">let </span>cid = Cid::new_v1(DAG_CBOR, hash);
+                set.insert(cid);
                 <span class="bool-val">true
             </span>})<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(set)
     }
 
-    <span class="kw">fn </span>remove_keys(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: HashSet&lt;u32&gt;) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">fn </span>remove_keys(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: CidHashSet) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self</span>.db.iter(DbColumn::GraphFull <span class="kw">as </span>u8)<span class="question-mark">?</span>;
+        <span class="comment">// It's easier to store cid's scheduled for removal directly as an `Op` to avoid costly
+        // conversion with allocation.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>deref_vec = Vec::new();
         <span class="kw">while let </span><span class="prelude-val">Some</span>((key, <span class="kw">_</span>)) = iter.next()<span class="question-mark">? </span>{
             <span class="kw">let </span>cid = Cid::try_from(key)<span class="question-mark">?</span>;
 
-            <span class="kw">if </span>keys.contains(<span class="kw-2">&amp;</span>truncated_hash(cid.hash())) {
-                <span class="self">self</span>.db
-                    .commit_changes([<span class="self">Self</span>::dereference_operation(<span class="kw-2">&amp;</span>cid)])
-                    .context(<span class="string">"error remove"</span>)<span class="question-mark">?
-            </span>}
+            <span class="kw">if </span>keys.contains(<span class="kw-2">&amp;</span>cid) {
+                deref_vec.push(<span class="self">Self</span>::dereference_operation(<span class="kw-2">&amp;</span>cid));
+            }
         }
-
-        <span class="comment">// An unfortunate consequence of having to use `iter_column_while`.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>result = <span class="prelude-val">Ok</span>(());
 
         <span class="self">self</span>.db
             .iter_column_while(DbColumn::GraphDagCborBlake2b256 <span class="kw">as </span>u8, |val| {
                 <span class="kw">let </span>hash = Blake2b256.digest(<span class="kw-2">&amp;</span>val.value);
-                <span class="kw">if </span>keys.contains(<span class="kw-2">&amp;</span>truncated_hash(<span class="kw-2">&amp;</span>hash)) {
-                    <span class="kw">let </span>cid = Cid::new_v1(DAG_CBOR, hash);
-                    <span class="kw">let </span>res = <span class="self">self
-                        </span>.db
-                        .commit_changes([<span class="self">Self</span>::dereference_operation(<span class="kw-2">&amp;</span>cid)])
-                        .context(<span class="string">"error remove"</span>);
+                <span class="kw">let </span>cid = Cid::new_v1(DAG_CBOR, hash);
 
-                    <span class="kw">if </span>res.is_err() {
-                        result = res;
-                        <span class="kw">return </span><span class="bool-val">false</span>;
-                    }
+                <span class="kw">if </span>keys.contains(<span class="kw-2">&amp;</span>cid) {
+                    deref_vec.push(<span class="self">Self</span>::dereference_operation(<span class="kw-2">&amp;</span>cid));
                 }
                 <span class="bool-val">true
             </span>})<span class="question-mark">?</span>;
 
-        result
+        <span class="self">self</span>.db.commit_changes(deref_vec).context(<span class="string">"error remove"</span>)
     }
 }
 
