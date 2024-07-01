@@ -1636,6 +1636,9 @@
 <a href="#1636" id="1636">1636</a>
 <a href="#1637" id="1637">1637</a>
 <a href="#1638" id="1638">1638</a>
+<a href="#1639" id="1639">1639</a>
+<a href="#1640" id="1640">1640</a>
+<a href="#1641" id="1641">1641</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2460,7 +2463,7 @@
 
     <span class="attr">#[allow(deprecated)] </span><span class="comment">// Tracking issue: https://github.com/ChainSafe/forest/issues/3157
     </span><span class="kw">let </span>wp = WithProgressRaw::new(<span class="string">"Downloading headers"</span>, total_size <span class="kw">as </span>u64);
-    <span class="kw">while </span>pending_tipsets.last().epoch() &gt; until_epoch {
+    <span class="lifetime">'outer</span>: <span class="kw">while </span>pending_tipsets.last().epoch() &gt; until_epoch {
         <span class="kw">let </span>oldest_pending_tipset = pending_tipsets.last();
         <span class="kw">let </span>work_to_be_done = oldest_pending_tipset.epoch() - until_epoch + <span class="number">1</span>;
         wp.set((work_to_be_done - total_size).unsigned_abs());
@@ -2480,17 +2483,20 @@
             <span class="kw">continue</span>;
         }
 
-        <span class="kw">let </span>epoch_diff = oldest_pending_tipset.epoch() - current_head.epoch();
-        <span class="kw">let </span>window = min(epoch_diff, MAX_TIPSETS_TO_REQUEST <span class="kw">as </span>i64);
+        <span class="kw">let </span>window = min(
+            oldest_pending_tipset.epoch() - until_epoch, <span class="comment">// (oldest_pending_tipset.epoch() - 1) - until_epoch + 1
+            </span>MAX_TIPSETS_TO_REQUEST <span class="kw">as </span>i64,
+        );
         <span class="kw">let </span>network_tipsets = network
             .chain_exchange_headers(<span class="prelude-val">None</span>, oldest_pending_tipset.parents(), window <span class="kw">as </span>u64)
             .<span class="kw">await
             </span>.map_err(TipsetRangeSyncerError::NetworkTipsetQueryFailed)<span class="question-mark">?</span>;
 
-        <span class="kw">for </span>tipset <span class="kw">in </span>network_tipsets
-            .into_iter()
-            .take_while(|ts| ts.epoch() &gt;= until_epoch)
-        {
+        <span class="kw">for </span>tipset <span class="kw">in </span>network_tipsets {
+            <span class="comment">// This could happen when the `until_epoch` is a null epoch
+            </span><span class="kw">if </span>tipset.epoch() &lt; until_epoch {
+                <span class="kw">break </span><span class="lifetime">'outer</span>;
+            }
             validate_tipset_against_cache(bad_block_cache, tipset.key(), <span class="kw-2">&amp;</span>accepted_blocks)<span class="question-mark">?</span>;
             accepted_blocks.extend(tipset.cids());
             tracker.write().set_epoch(tipset.epoch());
