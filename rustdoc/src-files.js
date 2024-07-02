@@ -325,7 +325,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["memfd",["",[],["errors.rs","lib.rs","memfd.rs","sealing.rs"]]],\
 ["memmap2",["",[],["advice.rs","lib.rs","unix.rs"]]],\
 ["memoffset",["",[],["lib.rs","offset_of.rs","raw_field.rs","span_of.rs"]]],\
-["memory_stats",["",[],["lib.rs","linux.rs"]]],\
+["memory_stats",["",[],["lib.rs","linux.rs","page_size.rs"]]],\
 ["merkletree",["",[["store",[],["disk.rs","level_cache.rs","mmap.rs","mod.rs","vec.rs"]]],["hash.rs","hash_impl.rs","lib.rs","merkle.rs","proof.rs"]]],\
 ["mime",["",[],["lib.rs","parse.rs"]]],\
 ["minimal_lexical",["",[],["bigint.rs","extended_float.rs","lemire.rs","lib.rs","mask.rs","num.rs","number.rs","parse.rs","rounding.rs","slow.rs","stackvec.rs","table.rs","table_lemire.rs","table_small.rs"]]],\
@@ -363,7 +363,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["num_traits",["",[["ops",[],["bytes.rs","checked.rs","euclid.rs","inv.rs","mod.rs","mul_add.rs","overflowing.rs","saturating.rs","wrapping.rs"]]],["bounds.rs","cast.rs","float.rs","identities.rs","int.rs","lib.rs","macros.rs","pow.rs","real.rs","sign.rs"]]],\
 ["number_prefix",["",[],["lib.rs","parse.rs"]]],\
 ["nunny",["",[["mirror_std",[],["cmp.rs","from.rs","partial_eq.rs","try_from.rs"]]],["array.rs","iter.rs","lib.rs","quickcheck1.rs","schemars08.rs","serde1.rs","slice.rs","vec.rs"]]],\
-["object",["",[["read",[["coff",[],["comdat.rs","file.rs","import.rs","mod.rs","relocation.rs","section.rs","symbol.rs"]],["elf",[],["attributes.rs","comdat.rs","compression.rs","dynamic.rs","file.rs","hash.rs","mod.rs","note.rs","relocation.rs","section.rs","segment.rs","symbol.rs","version.rs"]],["macho",[],["dyld_cache.rs","fat.rs","file.rs","load_command.rs","mod.rs","relocation.rs","section.rs","segment.rs","symbol.rs"]],["pe",[],["data_directory.rs","export.rs","file.rs","import.rs","mod.rs","relocation.rs","resource.rs","rich.rs","section.rs"]],["xcoff",[],["comdat.rs","file.rs","mod.rs","relocation.rs","section.rs","segment.rs","symbol.rs"]]],["any.rs","archive.rs","mod.rs","read_cache.rs","read_ref.rs","traits.rs","util.rs"]]],["archive.rs","common.rs","elf.rs","endian.rs","lib.rs","macho.rs","pe.rs","pod.rs","xcoff.rs"]]],\
+["object",["",[["read",[["coff",[],["comdat.rs","file.rs","import.rs","mod.rs","relocation.rs","section.rs","symbol.rs"]],["elf",[],["attributes.rs","comdat.rs","compression.rs","dynamic.rs","file.rs","hash.rs","mod.rs","note.rs","relocation.rs","section.rs","segment.rs","symbol.rs","version.rs"]],["macho",[],["dyld_cache.rs","fat.rs","file.rs","load_command.rs","mod.rs","relocation.rs","section.rs","segment.rs","symbol.rs"]],["pe",[],["data_directory.rs","export.rs","file.rs","import.rs","mod.rs","relocation.rs","resource.rs","rich.rs","section.rs"]],["xcoff",[],["comdat.rs","file.rs","mod.rs","relocation.rs","section.rs","segment.rs","symbol.rs"]]],["any.rs","archive.rs","gnu_compression.rs","mod.rs","read_cache.rs","read_ref.rs","traits.rs","util.rs"]]],["archive.rs","common.rs","elf.rs","endian.rs","lib.rs","macho.rs","pe.rs","pod.rs","xcoff.rs"]]],\
 ["oid_registry",["",[],["lib.rs","load.rs"]]],\
 ["once_cell",["",[],["imp_std.rs","lib.rs","race.rs"]]],\
 ["opaque_debug",["",[],["lib.rs"]]],\
