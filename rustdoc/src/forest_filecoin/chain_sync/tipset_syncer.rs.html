@@ -1639,6 +1639,28 @@
 <a href="#1639" id="1639">1639</a>
 <a href="#1640" id="1640">1640</a>
 <a href="#1641" id="1641">1641</a>
+<a href="#1642" id="1642">1642</a>
+<a href="#1643" id="1643">1643</a>
+<a href="#1644" id="1644">1644</a>
+<a href="#1645" id="1645">1645</a>
+<a href="#1646" id="1646">1646</a>
+<a href="#1647" id="1647">1647</a>
+<a href="#1648" id="1648">1648</a>
+<a href="#1649" id="1649">1649</a>
+<a href="#1650" id="1650">1650</a>
+<a href="#1651" id="1651">1651</a>
+<a href="#1652" id="1652">1652</a>
+<a href="#1653" id="1653">1653</a>
+<a href="#1654" id="1654">1654</a>
+<a href="#1655" id="1655">1655</a>
+<a href="#1656" id="1656">1656</a>
+<a href="#1657" id="1657">1657</a>
+<a href="#1658" id="1658">1658</a>
+<a href="#1659" id="1659">1659</a>
+<a href="#1660" id="1660">1660</a>
+<a href="#1661" id="1661">1661</a>
+<a href="#1662" id="1662">1662</a>
+<a href="#1663" id="1663">1663</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2463,7 +2485,7 @@
 
     <span class="attr">#[allow(deprecated)] </span><span class="comment">// Tracking issue: https://github.com/ChainSafe/forest/issues/3157
     </span><span class="kw">let </span>wp = WithProgressRaw::new(<span class="string">"Downloading headers"</span>, total_size <span class="kw">as </span>u64);
-    <span class="lifetime">'outer</span>: <span class="kw">while </span>pending_tipsets.last().epoch() &gt; until_epoch {
+    <span class="kw">while </span>pending_tipsets.last().epoch() &gt; until_epoch {
         <span class="kw">let </span>oldest_pending_tipset = pending_tipsets.last();
         <span class="kw">let </span>work_to_be_done = oldest_pending_tipset.epoch() - until_epoch + <span class="number">1</span>;
         wp.set((work_to_be_done - total_size).unsigned_abs());
@@ -2492,15 +2514,21 @@
             .<span class="kw">await
             </span>.map_err(TipsetRangeSyncerError::NetworkTipsetQueryFailed)<span class="question-mark">?</span>;
 
-        <span class="kw">for </span>tipset <span class="kw">in </span>network_tipsets {
-            <span class="comment">// This could happen when the `until_epoch` is a null epoch
-            </span><span class="kw">if </span>tipset.epoch() &lt; until_epoch {
-                <span class="kw">break </span><span class="lifetime">'outer</span>;
-            }
+        <span class="kw">let </span>callback = |tipset: Arc&lt;Tipset&gt;| {
             validate_tipset_against_cache(bad_block_cache, tipset.key(), <span class="kw-2">&amp;</span>accepted_blocks)<span class="question-mark">?</span>;
             accepted_blocks.extend(tipset.cids());
             tracker.write().set_epoch(tipset.epoch());
             pending_tipsets.push(tipset);
+            <span class="prelude-val">Ok</span>(())
+        };
+        <span class="comment">// Breaks the loop when `until_epoch` is overreached, which happens
+        // when there are null tipsets in the queried range.
+        // Note that when the `until_epoch` is null, the outer while condition
+        // is always true, and it relies on the returned boolean value(until epoch is overreached)
+        // to break the loop.
+        </span><span class="kw">if </span>for_each_tipset_until_epoch_overreached(network_tipsets, until_epoch, callback)<span class="question-mark">? </span>{
+            <span class="comment">// Breaks when the `until_epoch` is overreached.
+            </span><span class="kw">break</span>;
         }
     }
     drop(wp);
@@ -2563,6 +2591,22 @@
     }
 
     <span class="prelude-val">Ok</span>(pending_tipsets)
+}
+
+<span class="comment">// tipsets is sorted by epoch in descending order
+// returns true when `until_epoch_inclusive` is overreached
+</span><span class="kw">fn </span>for_each_tipset_until_epoch_overreached(
+    tipsets: <span class="kw">impl </span>IntoIterator&lt;Item = Arc&lt;Tipset&gt;&gt;,
+    until_epoch_inclusive: ChainEpoch,
+    <span class="kw-2">mut </span>callback: <span class="kw">impl </span>FnMut(Arc&lt;Tipset&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), TipsetRangeSyncerError&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;bool, TipsetRangeSyncerError&gt; {
+    <span class="kw">for </span>tipset <span class="kw">in </span>tipsets {
+        <span class="kw">if </span>tipset.epoch() &lt; until_epoch_inclusive {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
+        }
+        callback(tipset)<span class="question-mark">?</span>;
+    }
+    <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
 }
 
 <span class="attr">#[allow(clippy::too_many_arguments)]
