@@ -373,6 +373,29 @@
 <a href="#373" id="373">373</a>
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -442,6 +465,8 @@
 /// - All `Ctx`s must be `Send + Sync + 'static` due to bounds on [`RpcModule`].
 /// - Handlers don't specialize on top of the given bounds, but they MAY relax them.
 </span><span class="kw">pub trait </span>RpcMethod&lt;<span class="kw">const </span>ARITY: usize&gt; {
+    <span class="doccomment">/// Number of required parameters, defaults to `ARITY`.
+    </span><span class="kw">const </span>N_REQUIRED_PARAMS: usize = ARITY;
     <span class="doccomment">/// Method name.
     </span><span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str;
     <span class="doccomment">/// Name of each argument, MUST be unique.
@@ -537,11 +562,18 @@
         Method {
             name: String::from(<span class="self">Self</span>::NAME),
             params: itertools::zip_eq(<span class="self">Self</span>::PARAM_NAMES, <span class="self">Self</span>::Params::schemas(gen))
-                .map(|(name, (schema, optional))| {
+                .enumerate()
+                .map(|(pos, (name, (schema, nullable)))| {
+                    <span class="kw">let </span>required = pos &lt;= <span class="self">Self</span>::N_REQUIRED_PARAMS;
+                    <span class="kw">if </span>!required &amp;&amp; !nullable {
+                        <span class="macro">panic!</span>(
+                            <span class="string">"Optional parameter at position {pos} should be of an optional type. method={}, param_name={name}"</span>, <span class="self">Self</span>::NAME
+                        );
+                    }
                     ReferenceOr::Item(ContentDescriptor {
                         name: String::from(name),
                         schema,
-                        required: <span class="prelude-val">Some</span>(!optional),
+                        required: <span class="prelude-val">Some</span>(required),
                         ..Default::default()
                     })
                 })
@@ -572,13 +604,25 @@
     <span class="kw">where
         </span>&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson: Clone + <span class="lifetime">'static</span>,
     {
+        <span class="macro">assert!</span>(
+            <span class="self">Self</span>::N_REQUIRED_PARAMS &lt;= ARITY,
+            <span class="string">"N_REQUIRED_PARAMS({}) can not be greater than ARITY({ARITY}) in {}"</span>,
+            <span class="self">Self</span>::N_REQUIRED_PARAMS,
+            <span class="self">Self</span>::NAME
+        );
+
         module.register_async_method(<span class="self">Self</span>::NAME, <span class="kw">move </span>|params, ctx, _extensions| <span class="kw">async move </span>{
             <span class="kw">let </span>raw = params
                 .as_str()
                 .map(serde_json::from_str)
                 .transpose()
                 .map_err(|e| Error::invalid_params(e, <span class="prelude-val">None</span>))<span class="question-mark">?</span>;
-            <span class="kw">let </span>params = <span class="self">Self</span>::Params::parse(raw, <span class="self">Self</span>::PARAM_NAMES, calling_convention)<span class="question-mark">?</span>;
+            <span class="kw">let </span>params = <span class="self">Self</span>::Params::parse(
+                raw,
+                <span class="self">Self</span>::PARAM_NAMES,
+                calling_convention,
+                <span class="self">Self</span>::N_REQUIRED_PARAMS,
+            )<span class="question-mark">?</span>;
             <span class="kw">let </span>ok = <span class="self">Self</span>::handle(ctx, params).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, jsonrpsee::types::ErrorObjectOwned&gt;::Ok(ok.into_lotus_json())
         })
@@ -629,7 +673,7 @@
 /// This should NOT be manually implemented.
 </span><span class="kw">pub trait </span>Params&lt;<span class="kw">const </span>ARITY: usize&gt;: HasLotusJson {
     <span class="doccomment">/// A [`Schema`] and [`Optional::optional`](`util::Optional::optional`)
-    /// pair for argument, in-order.
+    /// schema-nullable pair for argument, in-order.
     </span><span class="kw">fn </span>schemas(gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; [(Schema, bool); ARITY];
     <span class="doccomment">/// Convert from raw request parameters, to the argument tuple required by
     /// [`RpcMethod::handle`]
@@ -637,6 +681,7 @@
         raw: <span class="prelude-ty">Option</span>&lt;RequestParameters&gt;,
         names: [<span class="kw-2">&amp;</span>str; ARITY],
         calling_convention: ParamStructure,
+        n_required: usize,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized;
@@ -691,8 +736,9 @@
                 raw: <span class="prelude-ty">Option</span>&lt;RequestParameters&gt;,
                 arg_names: [<span class="kw-2">&amp;</span>str; <span class="macro-nonterminal">$arity</span>],
                 calling_convention: ParamStructure,
+                n_required: usize,
             ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>_parser = Parser::new(raw, <span class="kw-2">&amp;</span>arg_names, calling_convention)<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>_parser = Parser::new(raw, <span class="kw-2">&amp;</span>arg_names, calling_convention, n_required)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(($(_parser.parse::&lt;<span class="kw">crate</span>::lotus_json::LotusJson&lt;<span class="macro-nonterminal">$arg</span>&gt;&gt;()<span class="question-mark">?</span>.into_inner(),)<span class="kw-2">*</span>))
             }
             <span class="kw">fn </span>schemas(_gen: <span class="kw-2">&amp;mut </span>SchemaGenerator) -&gt; [(Schema, bool); <span class="macro-nonterminal">$arity</span>] {
