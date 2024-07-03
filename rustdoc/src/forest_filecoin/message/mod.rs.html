@@ -142,6 +142,18 @@
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -153,6 +165,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::shim::{gas::Gas, version::NetworkVersion};
 <span class="kw">pub use </span>chain_message::ChainMessage;
 <span class="kw">use </span>fvm_ipld_encoding::RawBytes;
+<span class="kw">use </span>num::Zero;
 <span class="kw">pub use </span>signed_message::SignedMessage;
 
 <span class="doccomment">/// Message interface to interact with Signed and unsigned messages in a generic
@@ -186,6 +199,17 @@
     </span><span class="kw">fn </span>set_gas_fee_cap(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cap: TokenAmount);
     <span class="doccomment">/// sets the gas premium.
     </span><span class="kw">fn </span>set_gas_premium(<span class="kw-2">&amp;mut </span><span class="self">self</span>, prem: TokenAmount);
+    <span class="doccomment">/// This method returns the effective gas premium claimable by the miner
+    /// given the supplied base fee. This method is not used anywhere except the `Eth` API.
+    ///
+    /// Filecoin clamps the gas premium at `gas_fee_cap` - `base_fee`, if lower than the
+    /// specified premium. Returns 0 if `gas_fee_cap` is less than `base_fee`.
+    </span><span class="kw">fn </span>effective_gas_premium(<span class="kw-2">&amp;</span><span class="self">self</span>, base_fee: <span class="kw-2">&amp;</span>TokenAmount) -&gt; TokenAmount {
+        <span class="kw">let </span>available = <span class="self">self</span>.gas_fee_cap() - base_fee;
+        <span class="comment">// It's possible that storage providers may include messages with gasFeeCap less than the baseFee
+        // In such cases, their reward should be viewed as zero
+        </span>available.clamp(TokenAmount::zero(), <span class="self">self</span>.gas_premium())
+    }
 }
 
 <span class="kw">impl </span>Message <span class="kw">for </span>ShimMessage {

@@ -396,6 +396,17 @@
 <a href="#396" id="396">396</a>
 <a href="#397" id="397">397</a>
 <a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -631,7 +642,18 @@
     </span><span class="kw">fn </span>request(params: <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">crate</span>::rpc::Request&lt;<span class="self">Self</span>::Ok&gt;, serde_json::Error&gt; {
         <span class="comment">// hardcode calling convention because lotus is by-position only
         </span><span class="kw">let </span>params = <span class="kw">match </span><span class="self">Self</span>::build_params(params, ConcreteCallingConvention::ByPosition)<span class="question-mark">? </span>{
-            RequestParameters::ByPosition(it) =&gt; serde_json::Value::Array(it),
+            RequestParameters::ByPosition(<span class="kw-2">mut </span>it) =&gt; {
+                <span class="comment">// Omit optional parameters when they are null
+                // This can be refactored into using `while pop_if`
+                // when the API is stablized.
+                </span><span class="kw">while </span><span class="self">Self</span>::N_REQUIRED_PARAMS &lt; it.len() {
+                    <span class="kw">match </span>it.last() {
+                        <span class="prelude-val">Some</span>(last) <span class="kw">if </span>last.is_null() =&gt; it.pop(),
+                        <span class="kw">_ </span>=&gt; <span class="kw">break</span>,
+                    };
+                }
+                serde_json::Value::Array(it)
+            }
             RequestParameters::ByName(it) =&gt; serde_json::Value::Object(it),
         };
         <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::rpc::Request {

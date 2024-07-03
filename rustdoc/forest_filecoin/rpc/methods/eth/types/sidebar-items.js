@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["GET_STORAGE_AT_PARAMS_ARRAY_LENGTH","METHOD_GET_BYTE_CODE","METHOD_GET_STORAGE_AT"],"struct":["EthAddress","EthBytes","GetBytecodeReturn","GetStorageAtParams"]};
+window.SIDEBAR_ITEMS = {"constant":["GET_STORAGE_AT_PARAMS_ARRAY_LENGTH","METHOD_GET_BYTE_CODE","METHOD_GET_STORAGE_AT"],"enum":["BlockNumberOrPredefined"],"struct":["EthAddress","EthBytes","EthFeeHistoryResult","GasReward","GetBytecodeReturn","GetStorageAtParams"]};
