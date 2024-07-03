@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["construct_messages","construct_ticket"]};
+window.SIDEBAR_ITEMS = {"fn":["construct_eth_messages","construct_messages","construct_ticket"]};

@@ -743,6 +743,21 @@
 <a href="#743" id="743">743</a>
 <a href="#744" id="744">744</a>
 <a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -765,7 +780,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::db::car::ManyCar;
 <span class="kw">use </span><span class="kw">crate</span>::db::db_engine::{db_root, open_db};
-<span class="kw">use </span><span class="kw">crate</span>::db::MarkAndSweep;
+<span class="kw">use </span><span class="kw">crate</span>::db::{ttl::EthMappingCollector, MarkAndSweep};
 <span class="kw">use </span><span class="kw">crate</span>::genesis::{get_network_name_from_genesis, read_genesis_header};
 <span class="kw">use </span><span class="kw">crate</span>::key_management::{
     KeyStore, KeyStoreConfig, ENCRYPTED_KEYSTORE_NAME, FOREST_KEYSTORE_PHRASE_ENV,
@@ -1005,6 +1020,21 @@
             )
         };
         services.spawn(<span class="kw">async move </span>{ db_garbage_collector.gc_loop(GC_INTERVAL).<span class="kw">await </span>});
+    }
+
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(ttl) = config.client.eth_mapping_ttl {
+        <span class="kw">let </span>chain_store = chain_store.clone();
+        <span class="kw">let </span>chain_config = chain_config.clone();
+        services.spawn(<span class="kw">async move </span>{
+            <span class="macro">tracing::info!</span>(<span class="string">"Starting collector for eth_mappings"</span>);
+
+            <span class="kw">let </span><span class="kw-2">mut </span>collector = EthMappingCollector::new(
+                chain_store.db.clone(),
+                chain_config.eth_chain_id,
+                Duration::from_secs(ttl.into()),
+            );
+            collector.run().<span class="kw">await
+        </span>});
     }
 
     <span class="kw">let </span>publisher = chain_store.publisher();

@@ -1661,6 +1661,20 @@
 <a href="#1661" id="1661">1661</a>
 <a href="#1662" id="1662">1662</a>
 <a href="#1663" id="1663">1663</a>
+<a href="#1664" id="1664">1664</a>
+<a href="#1665" id="1665">1665</a>
+<a href="#1666" id="1666">1666</a>
+<a href="#1667" id="1667">1667</a>
+<a href="#1668" id="1668">1668</a>
+<a href="#1669" id="1669">1669</a>
+<a href="#1670" id="1670">1670</a>
+<a href="#1671" id="1671">1671</a>
+<a href="#1672" id="1672">1672</a>
+<a href="#1673" id="1673">1673</a>
+<a href="#1674" id="1674">1674</a>
+<a href="#1675" id="1675">1675</a>
+<a href="#1676" id="1676">1676</a>
+<a href="#1677" id="1677">1677</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2424,7 +2438,12 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>(why.into());
     };
 
-    <span class="comment">//  Sync and validate messages from the tipsets
+    <span class="comment">// Persist tipset keys
+    </span><span class="kw">for </span>ts <span class="kw">in </span>parent_tipsets.iter() {
+        chain_store.put_tipset_key(ts.key())<span class="question-mark">?</span>;
+    }
+
+    <span class="comment">// Sync and validate messages from the tipsets
     </span>tracker.write().set_stage(SyncStage::Messages);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(why) = sync_messages_check_state(
         tracker.clone(),
@@ -2432,7 +2451,7 @@
         network,
         chain_store.clone(),
         <span class="kw-2">&amp;</span>bad_block_cache,
-        parent_tipsets,
+        parent_tipsets.clone(),
         <span class="kw-2">&amp;</span>genesis,
         InvalidBlockStrategy::Forgiving,
     )
@@ -2442,6 +2461,9 @@
         tracker.write().error(why.to_string());
         <span class="kw">return </span><span class="prelude-val">Err</span>(why);
     };
+
+    <span class="comment">// Call only once messages persisted
+    </span>chain_store.put_delegated_message_hashes(headers.into_iter())<span class="question-mark">?</span>;
 
     <span class="comment">// At this point the head is synced and it can be set in the store as the
     // heaviest
@@ -2624,6 +2646,9 @@
         proposed_head.block_headers().iter(),
     )<span class="question-mark">?</span>;
 
+    <span class="comment">// Persist tipset key
+    </span>chain_store.put_tipset_key(proposed_head.key())<span class="question-mark">?</span>;
+
     <span class="comment">// Sync and validate messages from the tipsets
     </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = sync_messages_check_state(
         <span class="comment">// Include a dummy WorkerState
@@ -2641,6 +2666,9 @@
         <span class="macro">warn!</span>(<span class="string">"Sync messages check state failed for single tipset"</span>);
         <span class="kw">return </span><span class="prelude-val">Err</span>(e);
     }
+
+    <span class="comment">// Call only once messages persisted
+    </span>chain_store.put_delegated_message_hashes(proposed_head.block_headers().iter())<span class="question-mark">?</span>;
 
     <span class="comment">// Add the tipset to the store. The tipset will be expanded with other blocks
     // with the same [epoch, parents] before updating the heaviest Tipset in

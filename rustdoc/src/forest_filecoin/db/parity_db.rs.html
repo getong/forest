@@ -500,6 +500,27 @@
 <a href="#500" id="500">500</a>
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -692,6 +713,27 @@
             .get_size(DbColumn::EthMappings <span class="kw">as </span>u8, key.<span class="number">0</span>.as_bytes())
             .map(|size| size.is_some())
             .context(<span class="string">"error checking if key exists"</span>)
+    }
+
+    <span class="kw">fn </span>get_message_cids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;(Cid, u64)&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>cids = Vec::new();
+
+        <span class="self">self</span>.db
+            .iter_column_while(DbColumn::EthMappings <span class="kw">as </span>u8, |val| {
+                <span class="kw">if let </span><span class="prelude-val">Ok</span>(value) = fvm_ipld_encoding::from_slice::&lt;(Cid, u64)&gt;(<span class="kw-2">&amp;</span>val.value) {
+                    cids.push(value);
+                }
+                <span class="bool-val">true
+            </span>})<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(cids)
+    }
+
+    <span class="kw">fn </span>delete(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: Vec&lt;eth::Hash&gt;) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.db.commit_changes(keys.into_iter().map(|key| {
+            <span class="kw">let </span>bytes = key.<span class="number">0</span>.as_bytes().to_vec();
+            (DbColumn::EthMappings <span class="kw">as </span>u8, Operation::Dereference(bytes))
+        }))<span class="question-mark">?</span>)
     }
 }
 

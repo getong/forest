@@ -1768,6 +1768,63 @@
 <a href="#1768" id="1768">1768</a>
 <a href="#1769" id="1769">1769</a>
 <a href="#1770" id="1770">1770</a>
+<a href="#1771" id="1771">1771</a>
+<a href="#1772" id="1772">1772</a>
+<a href="#1773" id="1773">1773</a>
+<a href="#1774" id="1774">1774</a>
+<a href="#1775" id="1775">1775</a>
+<a href="#1776" id="1776">1776</a>
+<a href="#1777" id="1777">1777</a>
+<a href="#1778" id="1778">1778</a>
+<a href="#1779" id="1779">1779</a>
+<a href="#1780" id="1780">1780</a>
+<a href="#1781" id="1781">1781</a>
+<a href="#1782" id="1782">1782</a>
+<a href="#1783" id="1783">1783</a>
+<a href="#1784" id="1784">1784</a>
+<a href="#1785" id="1785">1785</a>
+<a href="#1786" id="1786">1786</a>
+<a href="#1787" id="1787">1787</a>
+<a href="#1788" id="1788">1788</a>
+<a href="#1789" id="1789">1789</a>
+<a href="#1790" id="1790">1790</a>
+<a href="#1791" id="1791">1791</a>
+<a href="#1792" id="1792">1792</a>
+<a href="#1793" id="1793">1793</a>
+<a href="#1794" id="1794">1794</a>
+<a href="#1795" id="1795">1795</a>
+<a href="#1796" id="1796">1796</a>
+<a href="#1797" id="1797">1797</a>
+<a href="#1798" id="1798">1798</a>
+<a href="#1799" id="1799">1799</a>
+<a href="#1800" id="1800">1800</a>
+<a href="#1801" id="1801">1801</a>
+<a href="#1802" id="1802">1802</a>
+<a href="#1803" id="1803">1803</a>
+<a href="#1804" id="1804">1804</a>
+<a href="#1805" id="1805">1805</a>
+<a href="#1806" id="1806">1806</a>
+<a href="#1807" id="1807">1807</a>
+<a href="#1808" id="1808">1808</a>
+<a href="#1809" id="1809">1809</a>
+<a href="#1810" id="1810">1810</a>
+<a href="#1811" id="1811">1811</a>
+<a href="#1812" id="1812">1812</a>
+<a href="#1813" id="1813">1813</a>
+<a href="#1814" id="1814">1814</a>
+<a href="#1815" id="1815">1815</a>
+<a href="#1816" id="1816">1816</a>
+<a href="#1817" id="1817">1817</a>
+<a href="#1818" id="1818">1818</a>
+<a href="#1819" id="1819">1819</a>
+<a href="#1820" id="1820">1820</a>
+<a href="#1821" id="1821">1821</a>
+<a href="#1822" id="1822">1822</a>
+<a href="#1823" id="1823">1823</a>
+<a href="#1824" id="1824">1824</a>
+<a href="#1825" id="1825">1825</a>
+<a href="#1826" id="1826">1826</a>
+<a href="#1827" id="1827">1827</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1834,6 +1891,8 @@
 
 <span class="kw">const </span>COLLECTION_SAMPLE_SIZE: usize = <span class="number">5</span>;
 
+<span class="kw">const </span>CALIBNET_CHAIN_ID: u32 = <span class="kw">crate</span>::networks::calibnet::ETH_CHAIN_ID <span class="kw">as </span>u32;
+
 <span class="attr">#[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
 </span><span class="kw">pub enum </span>ApiCommands {
@@ -1893,6 +1952,9 @@
         <span class="doccomment">/// Worker address to use where key is applicable. Worker key must be in the key-store.
         </span><span class="attr">#[arg(long)]
         </span>worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+        <span class="doccomment">/// Ethereum chain ID. Default to the calibnet chain ID.
+        </span><span class="attr">#[arg(long, default_value_t = CALIBNET_CHAIN_ID)]
+        </span>eth_chain_id: u32,
     },
 }
 
@@ -1907,6 +1969,7 @@
     max_concurrent_requests: usize,
     miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
     worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    eth_chain_id: u32,
 }
 
 <span class="kw">impl </span>ApiCommands {
@@ -1934,6 +1997,7 @@
                 max_concurrent_requests,
                 miner_address,
                 worker_address,
+                eth_chain_id,
             } =&gt; {
                 <span class="kw">let </span>config = ApiTestFlags {
                     filter,
@@ -1944,6 +2008,7 @@
                     max_concurrent_requests,
                     miner_address,
                     worker_address,
+                    eth_chain_id,
                 };
 
                 compare_apis(
@@ -2965,6 +3030,35 @@
     ]
 }
 
+<span class="kw">fn </span>eth_state_tests_with_tipset&lt;DB: Blockstore&gt;(
+    store: <span class="kw-2">&amp;</span>Arc&lt;DB&gt;,
+    shared_tipset: <span class="kw-2">&amp;</span>Tipset,
+    eth_chain_id: u32,
+) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
+
+    <span class="kw">for </span>block <span class="kw">in </span>shared_tipset.block_headers() {
+        <span class="kw">let </span>state = StateTree::new_from_root(store.clone(), shared_tipset.parent_state())<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>(bls_messages, secp_messages) = <span class="kw">crate</span>::chain::store::block_messages(store, block)<span class="question-mark">?</span>;
+        <span class="kw">for </span>smsg <span class="kw">in </span>sample_signed_messages(bls_messages.iter(), secp_messages.iter()) {
+            <span class="kw">let </span>tx = new_eth_tx_from_signed_message(<span class="kw-2">&amp;</span>smsg, <span class="kw-2">&amp;</span>state, eth_chain_id)<span class="question-mark">?</span>;
+            tests.push(RpcTest::identity(
+                EthGetMessageCidByTransactionHash::request((tx.hash,)).unwrap(),
+            ));
+        }
+    }
+    tests.push(RpcTest::identity(
+        EthGetMessageCidByTransactionHash::request((Hash::from_str(
+            <span class="string">"0x37690cfec6c1bf4c3b9288c7a5d783e98731e90b0a4c177c2a374c7a9427355f"</span>,
+        )
+        .unwrap(),))
+        .unwrap(),
+    ));
+
+    <span class="prelude-val">Ok</span>(tests)
+}
+
 <span class="kw">fn </span>gas_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
     <span class="comment">// This is a testnet address with a few FILs. The private key has been
     // discarded. If calibnet is reset, a new address should be created.
@@ -3010,6 +3104,11 @@
         tests.extend(state_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>);
         tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
         tests.extend(gas_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
+        tests.extend(eth_state_tests_with_tipset(
+            <span class="kw-2">&amp;</span>store,
+            <span class="kw-2">&amp;</span>tipset,
+            config.eth_chain_id,
+        )<span class="question-mark">?</span>);
     }
     <span class="prelude-val">Ok</span>(tests)
 }
@@ -3044,6 +3143,21 @@
                 .unique()
                 .take(COLLECTION_SAMPLE_SIZE),
         )
+        .unique()
+}
+
+<span class="kw">fn </span>sample_signed_messages&lt;<span class="lifetime">'a</span>&gt;(
+    bls_messages: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Message&gt; + <span class="lifetime">'a</span>,
+    secp_messages: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>SignedMessage&gt; + <span class="lifetime">'a</span>,
+) -&gt; <span class="kw">impl </span>Iterator&lt;Item = SignedMessage&gt; + <span class="lifetime">'a </span>{
+    bls_messages
+        .unique()
+        .take(COLLECTION_SAMPLE_SIZE)
+        .map(|msg| {
+            <span class="kw">let </span>sig = Signature::new_bls(<span class="macro">vec!</span>[]);
+            SignedMessage::new_unchecked(msg.clone(), sig)
+        })
+        .chain(secp_messages.cloned().unique().take(COLLECTION_SAMPLE_SIZE))
         .unique()
 }
 
