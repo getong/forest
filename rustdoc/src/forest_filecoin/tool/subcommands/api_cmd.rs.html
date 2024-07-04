@@ -1840,16 +1840,6 @@
 <a href="#1840" id="1840">1840</a>
 <a href="#1841" id="1841">1841</a>
 <a href="#1842" id="1842">1842</a>
-<a href="#1843" id="1843">1843</a>
-<a href="#1844" id="1844">1844</a>
-<a href="#1845" id="1845">1845</a>
-<a href="#1846" id="1846">1846</a>
-<a href="#1847" id="1847">1847</a>
-<a href="#1848" id="1848">1848</a>
-<a href="#1849" id="1849">1849</a>
-<a href="#1850" id="1850">1850</a>
-<a href="#1851" id="1851">1851</a>
-<a href="#1852" id="1852">1852</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1869,7 +1859,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth::types::{EthAddress, EthBytes};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::gas::GasEstimateGasLimit;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::miner::BlockTemplate;
-<span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageFilter, MessageLookup, SectorOnChainInfo};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageFilter, MessageLookup};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, eth::<span class="kw-2">*</span>};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{prelude::<span class="kw-2">*</span>, start_rpc, RPCState};
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
@@ -2634,7 +2624,13 @@
         RpcTest::identity(StateMarketDeals::request((tipset.key().into(),))<span class="question-mark">?</span>),
         RpcTest::identity(StateSectorPreCommitInfo::request((
             Default::default(), <span class="comment">// invalid address
-            </span>u64::MAX,
+            </span>u16::MAX <span class="kw">as _</span>,
+            tipset.key().into(),
+        ))<span class="question-mark">?</span>)
+        .policy_on_rejected(PolicyOnRejected::Pass),
+        RpcTest::identity(StateSectorGetInfo::request((
+            Default::default(), <span class="comment">// invalid address
+            </span>u16::MAX <span class="kw">as _</span>,
             tipset.key().into(),
         ))<span class="question-mark">?</span>)
         .policy_on_rejected(PolicyOnRejected::Pass),
@@ -2666,7 +2662,7 @@
 
     <span class="kw">for </span>block <span class="kw">in </span>tipset.block_headers() {
         tests.extend([
-            validate_sector_on_chain_info_vec(StateMinerActiveSectors::request((
+            RpcTest::identity(StateMinerActiveSectors::request((
                 block.miner_address,
                 tipset.key().into(),
             ))<span class="question-mark">?</span>),
@@ -2674,7 +2670,7 @@
                 block.miner_address,
                 tipset.key().into(),
             ))<span class="question-mark">?</span>),
-            validate_sector_on_chain_info_vec(StateMinerSectors::request((
+            RpcTest::identity(StateMinerSectors::request((
                 block.miner_address,
                 <span class="prelude-val">None</span>,
                 tipset.key().into(),
@@ -2731,7 +2727,13 @@
             ))<span class="question-mark">?</span>),
             RpcTest::identity(StateSectorPreCommitInfo::request((
                 block.miner_address,
-                u64::MAX, <span class="comment">// invalid sector number
+                u16::MAX <span class="kw">as _</span>, <span class="comment">// invalid sector number
+                </span>tipset.key().into(),
+            ))<span class="question-mark">?</span>)
+            .policy_on_rejected(PolicyOnRejected::PassWithIdenticalError),
+            RpcTest::identity(StateSectorGetInfo::request((
+                block.miner_address,
+                u16::MAX <span class="kw">as _</span>, <span class="comment">// invalid sector number
                 </span>tipset.key().into(),
             ))<span class="question-mark">?</span>)
             .policy_on_rejected(PolicyOnRejected::PassWithIdenticalError),
@@ -2769,12 +2771,12 @@
             .take(COLLECTION_SAMPLE_SIZE)
         {
             tests.extend([
-                validate_sector_on_chain_info(StateSectorGetInfo::request((
+                RpcTest::identity(StateSectorGetInfo::request((
                     block.miner_address,
                     sector,
                     tipset.key().into(),
                 ))<span class="question-mark">?</span>),
-                validate_sector_on_chain_info_vec(StateMinerSectors::request((
+                RpcTest::identity(StateMinerSectors::request((
                     block.miner_address,
                     {
                         <span class="kw">let </span><span class="kw-2">mut </span>bf = BitField::new();
@@ -3556,28 +3558,6 @@
         <span class="comment">// TODO(hanabi1224): https://github.com/ChainSafe/forest/issues/3784
         </span>forest.return_dec = Ipld::Null;
         lotus.return_dec = Ipld::Null;
-        forest == lotus
-    })
-}
-
-<span class="kw">fn </span>validate_sector_on_chain_info(req: rpc::Request&lt;SectorOnChainInfo&gt;) -&gt; RpcTest {
-    RpcTest::validate(req, |<span class="kw-2">mut </span>forest, <span class="kw-2">mut </span>lotus| {
-        <span class="comment">// https://github.com/filecoin-project/lotus/issues/11962
-        </span>forest.flags = <span class="number">0</span>;
-        lotus.flags = <span class="number">0</span>;
-        forest == lotus
-    })
-}
-
-<span class="kw">fn </span>validate_sector_on_chain_info_vec(req: rpc::Request&lt;Vec&lt;SectorOnChainInfo&gt;&gt;) -&gt; RpcTest {
-    RpcTest::validate(req, |<span class="kw-2">mut </span>forest, <span class="kw-2">mut </span>lotus| {
-        <span class="comment">// https://github.com/filecoin-project/lotus/issues/11962
-        </span><span class="kw">for </span>f <span class="kw">in </span><span class="kw-2">&amp;mut </span>forest {
-            f.flags = <span class="number">0</span>;
-        }
-        <span class="kw">for </span>l <span class="kw">in </span><span class="kw-2">&amp;mut </span>lotus {
-            l.flags = <span class="number">0</span>;
-        }
         forest == lotus
     })
 }
