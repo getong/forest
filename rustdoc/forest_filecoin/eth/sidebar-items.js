@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["eip_1559_transaction","eip_155_transaction","homestead_transaction","transaction"],"type":["EthChainId"]};

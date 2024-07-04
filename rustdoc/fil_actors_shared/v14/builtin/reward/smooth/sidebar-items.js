@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["extrapolated_cum_sum_of_ratio"],"struct":["AlphaBetaFilter","DEFAULT_ALPHA","DEFAULT_BETA","FilterEstimate"]};

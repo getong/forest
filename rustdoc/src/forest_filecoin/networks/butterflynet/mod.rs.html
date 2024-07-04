@@ -208,7 +208,6 @@
 <a href="#208" id="208">208</a>
 <a href="#209" id="209">209</a>
 <a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -219,7 +218,10 @@
 <span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>url::Url;
 
-<span class="kw">use crate</span>::{db::SettingsStore, make_height, shim::version::NetworkVersion, utils::net::http_get};
+<span class="kw">use crate</span>::{
+    db::SettingsStore, eth::EthChainId, make_height, shim::version::NetworkVersion,
+    utils::net::http_get,
+};
 
 <span class="kw">use super</span>::{
     actors_bundle::ACTOR_BUNDLES_METADATA,
@@ -228,7 +230,7 @@
     NetworkChain,
 };
 
-<span class="kw">pub const </span>GENESIS_NETWORK_VERSION: NetworkVersion = NetworkVersion::V21;
+<span class="kw">pub const </span>GENESIS_NETWORK_VERSION: NetworkVersion = NetworkVersion::V22;
 
 <span class="doccomment">/// Fetches the genesis CAR from the local database or downloads it if it does not exist.
 /// The result bytes may be compressed.
@@ -250,7 +252,7 @@
 
 <span class="doccomment">/// Genesis CID
 </span><span class="kw">pub static </span>GENESIS_CID: Lazy&lt;Cid&gt; = Lazy::new(|| {
-    Cid::from_str(<span class="string">"bafy2bzaceddfs2mf6ufmvszvwho2n6c7zvrnywpwkyq5wudtsknxhfvhwrhhs"</span>).unwrap()
+    Cid::from_str(<span class="string">"bafy2bzaceajpno2eryhvocvmol7s3urztu7aie2sk3fp2ecl72qhxj7a3vone"</span>).unwrap()
 });
 
 <span class="doccomment">/// Compressed genesis file. It is compressed with zstd and cuts the download size by 80% (from 10 MB to 2 MB).
@@ -265,7 +267,7 @@
 /// The genesis file does not live on the `master` branch, currently on a draft PR.
 /// `&lt;https://github.com/filecoin-project/lotus/pull/11458&gt;`
 </span><span class="kw">static </span>GENESIS_URL_ALT: Lazy&lt;Url&gt; = Lazy::new(|| {
-    <span class="string">"https://github.com/filecoin-project/lotus/raw/c643e174798202e77b3e8f8a080d81e1ea32f7c5/build/genesis/butterflynet.car"</span>.parse().expect(<span class="string">"hard-coded URL must parse"</span>)
+    <span class="string">"https://github.com/filecoin-project/lotus/raw/4dfe16f58e55b3bbb87c5ff95fbe80bb41d44b80/build/genesis/butterflynet.car"</span>.parse().expect(<span class="string">"hard-coded URL must parse"</span>)
 });
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MINIMUM_CONSENSUS_POWER: i64 = <span class="number">2 </span>&lt;&lt; <span class="number">30</span>;
@@ -277,7 +279,7 @@
     Lazy::new(|| parse_bootstrap_peers(<span class="macro">include_str!</span>(<span class="string">"../../../build/bootstrap/butterflynet"</span>)));
 
 <span class="comment">// https://github.com/ethereum-lists/chains/blob/4731f6713c6fc2bf2ae727388642954a6545b3a9/_data/chains/eip155-314159.json
-</span><span class="kw">pub const </span>ETH_CHAIN_ID: u64 = <span class="number">3141592</span>;
+</span><span class="kw">pub const </span>ETH_CHAIN_ID: EthChainId = <span class="number">3141592</span>;
 
 <span class="kw">pub const </span>BREEZE_GAS_TAMPING_DURATION: i64 = <span class="number">120</span>;
 
@@ -307,16 +309,10 @@
         <span class="macro">make_height!</span>(Hygge, -<span class="number">21</span>),
         <span class="macro">make_height!</span>(Lightning, -<span class="number">22</span>),
         <span class="macro">make_height!</span>(Thunder, -<span class="number">23</span>),
-        <span class="macro">make_height!</span>(Watermelon, -<span class="number">1</span>, get_bundle_cid(<span class="string">"v12.0.0"</span>)),
-        <span class="macro">make_height!</span>(Dragon, <span class="number">480</span>, get_bundle_cid(<span class="string">"v13.0.0"</span>)),
-        (
-            Height::Phoenix,
-            HeightInfo {
-                epoch: <span class="number">600</span>,
-                bundle: <span class="prelude-val">None</span>,
-            },
-        ),
-        <span class="macro">make_height!</span>(Aussie, <span class="number">9999999999</span>),
+        <span class="macro">make_height!</span>(Watermelon, -<span class="number">24</span>),
+        <span class="macro">make_height!</span>(Dragon, -<span class="number">25</span>, get_bundle_cid(<span class="string">"v13.0.0"</span>)),
+        <span class="macro">make_height!</span>(Phoenix, i64::MAX),
+        <span class="macro">make_height!</span>(Waffle, <span class="number">100</span>, get_bundle_cid(<span class="string">"v14.0.0-rc.1"</span>)),
     ])
 });
 
@@ -412,12 +408,14 @@
         <span class="kw">let </span>v11 = <span class="macro">make_butterfly_policy!</span>(v11);
         <span class="kw">let </span>v12 = <span class="macro">make_butterfly_policy!</span>(v12);
         <span class="kw">let </span>v13 = <span class="macro">make_butterfly_policy!</span>(v13);
+        <span class="kw">let </span>v14 = <span class="macro">make_butterfly_policy!</span>(v14);
 
         <span class="comment">// basic sanity checks
         </span><span class="macro">assert_eq!</span>(v10.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
         <span class="macro">assert_eq!</span>(v11.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
         <span class="macro">assert_eq!</span>(v12.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
         <span class="macro">assert_eq!</span>(v13.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
+        <span class="macro">assert_eq!</span>(v14.minimum_consensus_power, MINIMUM_CONSENSUS_POWER.into());
     }
 }
 </code></pre></div></section></main></body></html>

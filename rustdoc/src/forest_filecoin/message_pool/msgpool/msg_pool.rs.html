@@ -660,6 +660,15 @@
 <a href="#660" id="660">660</a>
 <a href="#661" id="661">661</a>
 <a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -674,6 +683,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::{HeadChange, MINIMUM_BASE_FEE};
 <span class="attr">#[cfg(test)]
 </span><span class="kw">use </span><span class="kw">crate</span>::db::SettingsStore;
+<span class="kw">use </span><span class="kw">crate</span>::eth::is_valid_eth_tx_for_sending;
 <span class="kw">use </span><span class="kw">crate</span>::libp2p::{NetworkMessage, Topic, PUBSUB_MSG_STR};
 <span class="kw">use </span><span class="kw">crate</span>::message::{valid_for_block_inclusion, ChainMessage, Message, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, NEWEST_NETWORK_VERSION};
@@ -944,6 +954,14 @@
 
         <span class="comment">// This message can only be included in the next epoch and beyond, hence the +1.
         </span><span class="kw">let </span>nv = <span class="self">self</span>.chain_config.network_version(cur_ts.epoch() + <span class="number">1</span>);
+        <span class="kw">let </span>eth_chain_id = <span class="self">self</span>.chain_config.eth_chain_id;
+        <span class="kw">if </span>msg.signature().signature_type() == SignatureType::Delegated
+            &amp;&amp; !is_valid_eth_tx_for_sending(eth_chain_id, nv, <span class="kw-2">&amp;</span>msg)
+        {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Other(
+                <span class="string">"Invalid Ethereum message for the current network version"</span>.to_owned(),
+            ));
+        }
         <span class="kw">if </span>!is_valid_for_sending(nv, <span class="kw-2">&amp;</span>sender_actor) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::Other(
                 <span class="string">"Sender actor is not a valid top-level sender"</span>.to_owned(),

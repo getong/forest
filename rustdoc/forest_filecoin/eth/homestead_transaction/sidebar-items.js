@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["HOMESTEAD_SIG_LEN","HOMESTEAD_SIG_PREFIX"],"enum":["EthLegacyHomesteadTxArgsBuilderError"],"struct":["EthLegacyHomesteadTxArgs","EthLegacyHomesteadTxArgsBuilder"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EIP_1559_SIG_LEN"],"enum":["EthEip1559TxArgsBuilderError"],"struct":["EthEip1559TxArgs","EthEip1559TxArgsBuilder"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["EIP_155_SIG_PREFIX"],"enum":["EthLegacyEip155TxArgsBuilderError"],"fn":["calc_eip155_sig_len","calc_valid_eip155_sig_len","derive_eip_155_chain_id","validate_eip155_chain_id"],"struct":["EthLegacyEip155TxArgs","EthLegacyEip155TxArgsBuilder"]};

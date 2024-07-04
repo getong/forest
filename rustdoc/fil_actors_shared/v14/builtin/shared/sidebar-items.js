@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FIRST_ACTOR_SPECIFIC_EXIT_CODE","FIRST_EXPORTED_METHOD_NUMBER","HAMT_BIT_WIDTH"],"fn":["extract_send_result","resolve_to_actor_id","restrict_internal_api"],"struct":["SendError"]};

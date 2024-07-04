@@ -1908,6 +1908,19 @@
 <a href="#1908" id="1908">1908</a>
 <a href="#1909" id="1909">1909</a>
 <a href="#1910" id="1910">1910</a>
+<a href="#1911" id="1911">1911</a>
+<a href="#1912" id="1912">1912</a>
+<a href="#1913" id="1913">1913</a>
+<a href="#1914" id="1914">1914</a>
+<a href="#1915" id="1915">1915</a>
+<a href="#1916" id="1916">1916</a>
+<a href="#1917" id="1917">1917</a>
+<a href="#1918" id="1918">1918</a>
+<a href="#1919" id="1919">1919</a>
+<a href="#1920" id="1920">1920</a>
+<a href="#1921" id="1921">1921</a>
+<a href="#1922" id="1922">1922</a>
+<a href="#1923" id="1923">1923</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1919,6 +1932,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::chain::{index::ResolveNullTipset, ChainStore};
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::SyncStage;
 <span class="kw">use </span><span class="kw">crate</span>::cid_collections::CidHashSet;
+<span class="kw">use </span><span class="kw">crate</span>::eth::EthChainId <span class="kw">as </span>EthChainIdType;
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::{lotus_json_with_self, HasLotusJson};
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as _</span>, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
@@ -2278,7 +2292,10 @@
     <span class="kw">pub </span>gas: Uint64,
     <span class="kw">pub </span>max_fee_per_gas: EthBigInt,
     <span class="kw">pub </span>max_priority_fee_per_gas: EthBigInt,
-    <span class="attr">#[schemars(with = <span class="string">"Option&lt;Vec&lt;Hash&gt;&gt;"</span>)]
+    <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/4477
+    // RPC methods will need to be updated to support different Ethereum transaction types.
+    // pub gas_price: EthBigInt,
+    </span><span class="attr">#[schemars(with = <span class="string">"Option&lt;Vec&lt;Hash&gt;&gt;"</span>)]
     #[serde(with = <span class="string">"crate::lotus_json"</span>)]
     </span><span class="kw">pub </span>access_list: Vec&lt;Hash&gt;,
     <span class="kw">pub </span>v: EthBigInt,
@@ -2790,7 +2807,10 @@
 /// - `block_hash`
 /// - `block_number`
 /// - `transaction_index`
-</span><span class="kw">pub fn </span>eth_tx_from_signed_eth_message(smsg: <span class="kw-2">&amp;</span>SignedMessage, chain_id: u32) -&gt; <span class="prelude-ty">Result</span>&lt;Tx&gt; {
+</span><span class="kw">pub fn </span>eth_tx_from_signed_eth_message(
+    smsg: <span class="kw-2">&amp;</span>SignedMessage,
+    chain_id: EthChainIdType,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Tx&gt; {
     <span class="comment">// The from address is always an f410f address, never an ID or other address.
     </span><span class="kw">let </span>from = smsg.message().from;
     <span class="kw">if </span>!is_eth_address(<span class="kw-2">&amp;</span>from) {
@@ -2813,7 +2833,7 @@
 
     <span class="prelude-val">Ok</span>(Tx {
         nonce: Uint64(tx_args.nonce),
-        chain_id: Uint64(chain_id <span class="kw">as </span>u64),
+        chain_id: Uint64(chain_id),
         to: tx_args.to,
         from,
         value: tx_args.value,
@@ -2821,7 +2841,10 @@
         gas: Uint64(tx_args.gas_limit),
         max_fee_per_gas: tx_args.max_fee_per_gas,
         max_priority_fee_per_gas: tx_args.max_priority_fee_per_gas,
-        access_list: <span class="macro">vec!</span>[],
+        <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/4477
+        // RPC methods will need to be updated to support different Ethereum transaction types.
+        // gas_price: EthBigInt::default(),
+        </span>access_list: <span class="macro">vec!</span>[],
         v,
         r,
         s,
@@ -2957,7 +2980,7 @@
 </span><span class="kw">fn </span>eth_tx_from_native_message&lt;DB: Blockstore&gt;(
     msg: <span class="kw-2">&amp;</span>Message,
     state: <span class="kw-2">&amp;</span>StateTree&lt;DB&gt;,
-    chain_id: u32,
+    chain_id: EthChainIdType,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Tx&gt; {
     <span class="comment">// Lookup the from address. This must succeed.
     </span><span class="kw">let </span>from = <span class="kw">match </span>lookup_eth_address(<span class="kw-2">&amp;</span>msg.from(), state) {
@@ -3009,13 +3032,16 @@
         from,
         input,
         nonce: Uint64(msg.sequence),
-        chain_id: Uint64(chain_id <span class="kw">as </span>u64),
+        chain_id: Uint64(chain_id),
         value: msg.value.clone().into(),
         r#type: Uint64(EIP_1559_TX_TYPE),
         gas: Uint64(msg.gas_limit),
         max_fee_per_gas: msg.gas_fee_cap.clone().into(),
         max_priority_fee_per_gas: msg.gas_premium.clone().into(),
-        access_list: <span class="macro">vec!</span>[],
+        <span class="comment">// TODO(forest): https://github.com/ChainSafe/forest/issues/4477
+        // RPC methods will need to be updated to support different Ethereum transaction types.
+        // gas_price: EthBigInt::default(),
+        </span>access_list: <span class="macro">vec!</span>[],
         ..Tx::default()
     })
 }
@@ -3023,7 +3049,7 @@
 <span class="kw">pub fn </span>new_eth_tx_from_signed_message&lt;DB: Blockstore&gt;(
     smsg: <span class="kw-2">&amp;</span>SignedMessage,
     state: <span class="kw-2">&amp;</span>StateTree&lt;DB&gt;,
-    chain_id: u32,
+    chain_id: EthChainIdType,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Tx&gt; {
     <span class="kw">let </span>(tx, hash) = <span class="kw">if </span>smsg.is_delegated() {
         <span class="comment">// This is an eth tx
