@@ -1033,6 +1033,15 @@
 <a href="#1033" id="1033">1033</a>
 <a href="#1034" id="1034">1034</a>
 <a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1072,7 +1081,7 @@
     try_join, StreamExt,
 };
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
-<span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>itertools::{Either, Itertools};
 <span class="kw">use </span>parking_lot::RwLock;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>thiserror::Error;
@@ -1415,6 +1424,14 @@
                     .get_or_create(<span class="kw-2">&amp;</span>metrics::values::HELLO_RESPONSE_OUTBOUND)
                     .inc();
                 <span class="kw">let </span>tipset_keys = TipsetKey::from(request.heaviest_tip_set.clone());
+                network.peer_manager().update_peer_head(
+                    source,
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(ts)) = Tipset::load(chain_store.blockstore(), <span class="kw-2">&amp;</span>tipset_keys) {
+                        Either::Right(Arc::new(ts))
+                    } <span class="kw">else </span>{
+                        Either::Left(tipset_keys.clone())
+                    },
+                );
                 <span class="kw">let </span>tipset = <span class="kw">match </span><span class="self">Self</span>::get_full_tipset(
                     network.clone(),
                     chain_store.clone(),
@@ -1516,6 +1533,12 @@
             }
         };
 
+        <span class="comment">// Update the peer head
+        </span>network.peer_manager().update_peer_head(
+            source,
+            Either::Right(Arc::new(tipset.clone().into_tipset())),
+        );
+
         <span class="kw">if </span>tipset.epoch() + (SECONDS_IN_DAY / block_delay <span class="kw">as </span>i64)
             &lt; chain_store.heaviest_tipset().epoch()
         {
@@ -1548,11 +1571,6 @@
 
         <span class="comment">// This is needed for the Ethereum mapping
         </span>chain_store.put_tipset_key(tipset.key())<span class="question-mark">?</span>;
-
-        <span class="comment">// Update the peer head
-        </span>network
-            .peer_manager()
-            .update_peer_head(source, Arc::new(tipset.clone().into_tipset()));
 
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((tipset, source)))
     }
