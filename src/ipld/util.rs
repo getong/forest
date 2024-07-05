@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use std::ops::DerefMut;
-use std::{collections::VecDeque, mem, sync::Arc};
+use std::{cmp, collections::VecDeque, mem, sync::Arc};
 
 use crate::blocks::Tipset;
 use crate::cid_collections::CidHashSet;
@@ -24,6 +24,9 @@ use tokio::task;
 use tokio::task::{JoinHandle, JoinSet};
 
 const BLOCK_CHANNEL_LIMIT: usize = 2048;
+// Make sure to reserve one CPU core for the main thread.
+const CPU_OFFSET: usize = 1;
+const MIN_CPU: usize = 1;
 
 fn should_save_block_to_snapshot(cid: Cid) -> bool {
     // Don't include identity CIDs.
@@ -398,12 +401,12 @@ impl<DB: Blockstore + Send + Sync + 'static, T: Iterator<Item = Tipset> + Unpin>
         task::spawn(async move {
             let mut handles = JoinSet::new();
 
-            for _ in 0..num_cpus::get() {
+            for _ in 0..cmp::max(num_cpus::get() - CPU_OFFSET, MIN_CPU) {
                 let seen = seen.clone();
                 let extract_receiver = extract_receiver.clone();
                 let db = db.clone();
                 let block_sender = block_sender.clone();
-                handles.spawn(async move {
+                handles.spawn_blocking(async move {
                     'main: while let Ok(cid) = extract_receiver.recv_async().await {
                         let mut cid_vec = vec![cid];
                         while let Some(cid) = cid_vec.pop() {
