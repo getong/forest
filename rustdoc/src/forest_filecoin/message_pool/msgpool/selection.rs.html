@@ -1350,6 +1350,8 @@
 <a href="#1350" id="1350">1350</a>
 <a href="#1351" id="1351">1351</a>
 <a href="#1352" id="1352">1352</a>
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1358,10 +1360,9 @@
 //! `select_messages` API which selects an appropriate set of messages such that
 //! it optimizes miner reward and chain capacity. See &lt;https://docs.filecoin.io/mine/lotus/message-pool/#message-selection&gt; for more details
 
-</span><span class="attr">#![allow(clippy::indexing_slicing)]
 </span><span class="kw">use </span>std::{borrow::BorrowMut, cmp::Ordering, sync::Arc};
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{Tipset, BLOCK_MESSAGE_LIMIT};
 <span class="kw">use </span><span class="kw">crate</span>::message::{Message, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, econ::TokenAmount};
 <span class="kw">use </span>ahash::{HashMap, HashMapExt};
@@ -1424,11 +1425,12 @@
         <span class="kw">if </span>pending.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(Vec::new());
         }
+
         <span class="comment">// 0b. Select all priority messages that fit in the block
         </span><span class="kw">let </span>(result, gas_limit) = <span class="self">self</span>.select_priority_messages(<span class="kw-2">&amp;mut </span>pending, <span class="kw-2">&amp;</span>base_fee, ts)<span class="question-mark">?</span>;
 
         <span class="comment">// check if block has been filled
-        </span><span class="kw">if </span>gas_limit &lt; MIN_GAS {
+        </span><span class="kw">if </span>gas_limit &lt; MIN_GAS || result.len() &gt; BLOCK_MESSAGE_LIMIT {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(result);
         }
 
@@ -1451,7 +1453,8 @@
         <span class="prelude-val">Ok</span>(msgs)
     }
 
-    <span class="kw">fn </span>select_messages_optimal(
+    <span class="attr">#[allow(clippy::indexing_slicing)]
+    </span><span class="kw">fn </span>select_messages_optimal(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         cur_ts: <span class="kw-2">&amp;</span>Tipset,
         target_tipset: <span class="kw-2">&amp;</span>Tipset,
@@ -1885,6 +1888,7 @@
 }
 
 <span class="doccomment">/// Returns merged and trimmed messages with the gas limit
+</span><span class="attr">#[allow(clippy::indexing_slicing)]
 </span><span class="kw">fn </span>merge_and_trim(
     chains: <span class="kw-2">&amp;mut </span>Chains,
     <span class="kw-2">mut </span>result: Vec&lt;SignedMessage&gt;,
