@@ -406,8 +406,10 @@ impl<DB: Blockstore + Send + Sync + 'static, T: Iterator<Item = Tipset> + Unpin>
                 let extract_receiver = extract_receiver.clone();
                 let db = db.clone();
                 let block_sender = block_sender.clone();
-                handles.spawn_blocking(async move {
-                    'main: while let Ok(cid) = extract_receiver.recv_async().await {
+                handles.spawn_blocking( move|| {
+                    // 1. Start with a sync receive.
+                    // 2. Convert to async (stateful, yielding on every iteration of the loop to avoid starvation.
+                    'main: while let Ok(cid) = extract_receiver.recv() {
                         let mut cid_vec = vec![cid];
                         while let Some(cid) = cid_vec.pop() {
                             if should_save_block_to_snapshot(cid) && seen.lock().insert(cid) {
