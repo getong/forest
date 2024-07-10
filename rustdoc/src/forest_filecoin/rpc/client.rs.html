@@ -295,6 +295,7 @@
 <a href="#295" id="295">295</a>
 <a href="#296" id="296">296</a>
 <a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -320,7 +321,7 @@
 <span class="kw">use </span>tracing::{debug, Instrument, Level};
 <span class="kw">use </span>url::Url;
 
-<span class="kw">use super</span>::{ApiVersion, Request, MAX_REQUEST_BODY_SIZE, MAX_RESPONSE_BODY_SIZE};
+<span class="kw">use super</span>::{ApiPath, ApiPaths, Request, MAX_REQUEST_BODY_SIZE, MAX_RESPONSE_BODY_SIZE};
 
 <span class="doccomment">/// A JSON-RPC client that can dispatch either a [`crate::rpc::Request`] to a single URL.
 </span><span class="kw">pub struct </span>Client {
@@ -372,12 +373,12 @@
         <span class="kw">let </span>Request {
             method_name,
             params,
-            api_version,
+            api_paths,
             timeout,
             ..
         } = req;
 
-        <span class="kw">let </span>client = <span class="self">self</span>.get_or_init_client(api_version).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>client = <span class="self">self</span>.get_or_init_client(api_paths).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>span = <span class="macro">tracing::debug_span!</span>(<span class="string">"request"</span>, method = %method_name, url = %client.url);
         <span class="kw">let </span>work = <span class="kw">async </span>{
             <span class="comment">// jsonrpsee's clients have a global `timeout`, but not a per-request timeout, which
@@ -426,17 +427,18 @@
         };
         work.instrument(span.or_current()).<span class="kw">await
     </span>}
-    <span class="kw">async fn </span>get_or_init_client(<span class="kw-2">&amp;</span><span class="self">self</span>, version: ApiVersion) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>UrlClient, ClientError&gt; {
-        <span class="kw">match </span>version {
-            ApiVersion::V0 =&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.v0,
-            ApiVersion::V1 =&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.v1,
+    <span class="kw">async fn </span>get_or_init_client(<span class="kw-2">&amp;</span><span class="self">self</span>, version: ApiPaths) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>UrlClient, ClientError&gt; {
+        <span class="kw">let </span>path = ApiPaths::max(<span class="kw-2">&amp;</span>version);
+        <span class="kw">match </span>path {
+            ApiPath::V0 =&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.v0,
+            ApiPath::V1 =&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.v1,
         }
         .get_or_try_init(|| <span class="kw">async </span>{
             <span class="kw">let </span>url = <span class="self">self
                 </span>.base_url
-                .join(<span class="kw">match </span>version {
-                    ApiVersion::V0 =&gt; <span class="string">"rpc/v0"</span>,
-                    ApiVersion::V1 =&gt; <span class="string">"rpc/v1"</span>,
+                .join(<span class="kw">match </span>path {
+                    ApiPath::V0 =&gt; <span class="string">"rpc/v0"</span>,
+                    ApiPath::V1 =&gt; <span class="string">"rpc/v1"</span>,
                 })
                 .map_err(|it| {
                     ClientError::Custom(<span class="macro">format!</span>(<span class="string">"creating url for endpoint failed: {}"</span>, it))

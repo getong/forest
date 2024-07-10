@@ -360,53 +360,6 @@
 <a href="#360" id="360">360</a>
 <a href="#361" id="361">361</a>
 <a href="#362" id="362">362</a>
-<a href="#363" id="363">363</a>
-<a href="#364" id="364">364</a>
-<a href="#365" id="365">365</a>
-<a href="#366" id="366">366</a>
-<a href="#367" id="367">367</a>
-<a href="#368" id="368">368</a>
-<a href="#369" id="369">369</a>
-<a href="#370" id="370">370</a>
-<a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -435,31 +388,16 @@
 <span class="kw">use </span><span class="self">self</span>::{jsonrpc_types::RequestParameters, util::Optional <span class="kw">as _</span>};
 <span class="kw">use </span><span class="kw">super</span>::error::ServerError <span class="kw">as </span>Error;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
+<span class="kw">use </span>itertools::{Either, Itertools <span class="kw">as _</span>};
 <span class="kw">use </span>jsonrpsee::RpcModule;
 <span class="kw">use </span>openrpc_types::{ContentDescriptor, Method, ParamStructure, ReferenceOr};
 <span class="kw">use </span>parser::Parser;
 <span class="kw">use </span>schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
-<span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>serde::{
     de::{Error <span class="kw">as _</span>, Unexpected},
     Deserialize,
 };
-<span class="kw">use </span>std::iter;
-<span class="kw">use </span>std::{future::Future, sync::Arc};
-
-<span class="doccomment">/// Narrow list of categories emitted by our OpenRPC machinery.
-/// Destined to become a [`openrpc_types::Tag`]
-</span><span class="attr">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, strum::EnumIter)]
-</span><span class="kw">pub enum </span>Tag {
-    ClientInteroperability,
-}
-<span class="kw">impl </span>AsTag <span class="kw">for </span>Tag {
-    <span class="kw">fn </span>slug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="kw">match </span><span class="self">self </span>{
-            Tag::ClientInteroperability =&gt; <span class="string">"client_interoperability"</span>.into(),
-        }
-    }
-}
+<span class="kw">use </span>std::{future::Future, iter, sync::Arc};
 
 <span class="doccomment">/// Type to be used by [`RpcMethod::handle`].
 </span><span class="kw">pub type </span>Ctx&lt;T&gt; = Arc&lt;<span class="kw">crate</span>::rpc::RPCState&lt;T&gt;&gt;;
@@ -482,12 +420,10 @@
     </span><span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str;
     <span class="doccomment">/// Name of each argument, MUST be unique.
     </span><span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; ARITY];
-    <span class="doccomment">/// See [`ApiVersion`].
-    </span><span class="kw">const </span>API_VERSION: ApiVersion;
+    <span class="doccomment">/// See [`ApiPaths`].
+    </span><span class="kw">const </span>API_PATHS: ApiPaths;
     <span class="doccomment">/// See [`Permission`]
     </span><span class="kw">const </span>PERMISSION: Permission;
-    <span class="doccomment">/// See [`Tag`].
-    </span><span class="kw">const </span>TAGS: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[Tag] = <span class="kw-2">&amp;</span>[];
     <span class="doccomment">/// Becomes [`openrpc_types::Method::summary`].
     </span><span class="kw">const </span>SUMMARY: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; = <span class="prelude-val">None</span>;
     <span class="doccomment">/// Becomes [`openrpc_types::Method::description`].
@@ -512,37 +448,40 @@
     Read,
 }
 
-<span class="doccomment">/// Lotus groups methods into API versions.
-///
-/// These are significant because they are expressed in the URL path against which
-/// RPC calls are made, e.g `rpc/v0` or `rpc/v1`.
+<span class="doccomment">/// Which paths should this method be exposed on?
 ///
 /// This information is important when using [`crate::rpc::client`].
-</span><span class="attr">#[derive(
-    Debug,
-    Clone,
-    Copy,
-    Hash,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Serialize,
-    Deserialize,
-    strum::EnumIter,
-)]
-</span><span class="kw">pub enum </span>ApiVersion {
-    V0,
-    V1,
+</span><span class="attr">#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>ApiPaths {
+    <span class="doccomment">/// Only expose this method on `/rpc/v0`
+    </span>V0,
+    <span class="doccomment">/// Only expose this method on `/rpc/v1`
+    </span>V1,
+    <span class="doccomment">/// Expose this method on both `/rpc/v0` and `/rpc/v1`
+    </span><span class="attr">#[allow(dead_code)]
+    </span>Both,
 }
 
-<span class="kw">impl </span>AsTag <span class="kw">for </span>ApiVersion {
-    <span class="kw">fn </span>slug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+<span class="kw">impl </span>ApiPaths {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = ApiPath&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            ApiVersion::V0 =&gt; <span class="string">"v0"</span>.into(),
-            ApiVersion::V1 =&gt; <span class="string">"v1"</span>.into(),
+            ApiPaths::V0 =&gt; Either::Left(iter::once(ApiPath::V0)),
+            ApiPaths::V1 =&gt; Either::Left(iter::once(ApiPath::V1)),
+            ApiPaths::Both =&gt; Either::Right([ApiPath::V0, ApiPath::V1].into_iter()),
         }
     }
+    <span class="kw">pub fn </span>max(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ApiPath {
+        <span class="self">self</span>.iter().max().expect(<span class="string">"cannot create an empty ApiPaths"</span>)
+    }
+    <span class="kw">pub fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, path: ApiPath) -&gt; bool {
+        <span class="self">self</span>.iter().contains(<span class="kw-2">&amp;</span>path)
+    }
+}
+
+<span class="attr">#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd, clap::ValueEnum)]
+</span><span class="kw">pub enum </span>ApiPath {
+    V0,
+    V1,
 }
 
 <span class="doccomment">/// Utility methods, defined as an extension trait to avoid having to specify
@@ -596,12 +535,6 @@
                 required: <span class="prelude-val">Some</span>(!&lt;<span class="self">Self</span>::Ok <span class="kw">as </span>HasLotusJson&gt;::LotusJson::optional()),
                 ..Default::default()
             })),
-            tags: <span class="prelude-val">Some</span>(
-                iter::once(<span class="kw-2">&amp;</span><span class="self">Self</span>::API_VERSION <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>AsTag)
-                    .chain(<span class="self">Self</span>::TAGS.iter().map(|it| it <span class="kw">as </span><span class="kw-2">&amp;</span><span class="kw">dyn </span>AsTag))
-                    .map(AsTagExt::reference)
-                    .collect(),
-            ),
             summary: <span class="self">Self</span>::SUMMARY.map(Into::into),
             description: <span class="self">Self</span>::DESCRIPTION.map(Into::into),
             ..Default::default()
@@ -660,7 +593,7 @@
             method_name: <span class="self">Self</span>::NAME,
             params,
             result_type: std::marker::PhantomData,
-            api_version: <span class="self">Self</span>::API_VERSION,
+            api_paths: <span class="self">Self</span>::API_PATHS,
             timeout: <span class="kw-2">*</span><span class="kw">crate</span>::rpc::DEFAULT_REQUEST_TIMEOUT,
         })
     }
@@ -789,31 +722,4 @@
     <span class="attr">#[allow(unused)] </span><span class="comment">// included for completeness
     </span>ByName,
 }
-
-<span class="doccomment">/// A type that can be represented as an [`openrpc_types::Tag`].
-</span><span class="kw">pub trait </span>AsTag {
-    <span class="kw">fn </span>slug(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
-    <span class="kw">fn </span>summary(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
-        <span class="prelude-val">None
-    </span>}
-    <span class="kw">fn </span>description(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
-        <span class="prelude-val">None
-    </span>}
-}
-
-<span class="kw">pub trait </span>AsTagExt: AsTag {
-    <span class="kw">fn </span>as_tag(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; openrpc_types::Tag {
-        openrpc_types::Tag {
-            name: <span class="self">self</span>.slug(),
-            summary: <span class="self">self</span>.summary(),
-            description: <span class="self">self</span>.description(),
-            external_docs: <span class="prelude-val">None</span>,
-            extensions: Default::default(),
-        }
-    }
-    <span class="kw">fn </span>reference(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ReferenceOr&lt;openrpc_types::Tag&gt; {
-        ReferenceOr::Reference(<span class="macro">format!</span>(<span class="string">"#/components/tags/{}"</span>, <span class="self">self</span>.slug()))
-    }
-}
-<span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized&gt; AsTagExt <span class="kw">for </span>T <span class="kw">where </span>T: AsTag {}
 </code></pre></div></section></main></body></html>

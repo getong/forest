@@ -539,8 +539,6 @@
 <a href="#539" id="539">539</a>
 <a href="#540" id="540">540</a>
 <a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -552,15 +550,14 @@
 <span class="kw">pub use </span>client::Client;
 <span class="kw">pub use </span>error::ServerError;
 <span class="kw">use </span>futures::FutureExt <span class="kw">as _</span>;
-<span class="kw">pub use </span>reflect::{ApiVersion, RpcMethod, RpcMethodExt};
-<span class="kw">use </span>reflect::{AsTagExt <span class="kw">as _</span>, Ctx, Tag};
+<span class="kw">use </span>reflect::Ctx;
+<span class="kw">pub use </span>reflect::{ApiPath, ApiPaths, RpcMethod, RpcMethodExt};
 <span class="kw">pub use </span>request::Request;
 <span class="kw">mod </span>error;
 <span class="kw">mod </span>reflect;
 <span class="kw">pub mod </span>types;
 <span class="kw">pub use </span>methods::<span class="kw-2">*</span>;
 <span class="kw">use </span>reflect::Permission;
-<span class="kw">use </span>strum::IntoEnumIterator <span class="kw">as _</span>;
 
 <span class="doccomment">/// Protocol or transport-specific error
 </span><span class="kw">pub use </span>jsonrpsee::core::ClientError;
@@ -1017,7 +1014,7 @@
 }
 
 <span class="doccomment">/// If `include` is not [`None`], only methods that are listed will be returned
-</span><span class="kw">pub fn </span>openrpc(include: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]&gt;) -&gt; openrpc_types::OpenRPC {
+</span><span class="kw">pub fn </span>openrpc(path: ApiPath, include: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]&gt;) -&gt; openrpc_types::OpenRPC {
     <span class="kw">use </span>schemars::gen::{SchemaGenerator, SchemaSettings};
     <span class="kw">let </span><span class="kw-2">mut </span>methods = <span class="macro">vec!</span>[];
     <span class="comment">// spec says draft07
@@ -1027,18 +1024,20 @@
     <span class="kw">let </span><span class="kw-2">mut </span>gen = SchemaGenerator::new(settings);
     <span class="macro">macro_rules!</span> callback {
         (<span class="macro-nonterminal">$ty</span>:ty) =&gt; {
-            <span class="kw">match </span>include {
-                <span class="prelude-val">Some</span>(include) =&gt; <span class="kw">match </span>include.contains(<span class="kw-2">&amp;</span>&lt;<span class="macro-nonterminal">$ty</span>&gt;::NAME) {
-                    <span class="bool-val">true </span>=&gt; methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
+            <span class="kw">if </span>&lt;<span class="macro-nonterminal">$ty</span>&gt;::API_PATHS.contains(path) {
+                <span class="kw">match </span>include {
+                    <span class="prelude-val">Some</span>(include) =&gt; <span class="kw">match </span>include.contains(<span class="kw-2">&amp;</span>&lt;<span class="macro-nonterminal">$ty</span>&gt;::NAME) {
+                        <span class="bool-val">true </span>=&gt; methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
+                            <span class="kw-2">&amp;mut </span>gen,
+                            ParamStructure::ByPosition,
+                        ))),
+                        <span class="bool-val">false </span>=&gt; {}
+                    },
+                    <span class="prelude-val">None </span>=&gt; methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
                         <span class="kw-2">&amp;mut </span>gen,
                         ParamStructure::ByPosition,
                     ))),
-                    <span class="bool-val">false </span>=&gt; {}
-                },
-                <span class="prelude-val">None </span>=&gt; methods.push(openrpc_types::ReferenceOr::Item(&lt;<span class="macro-nonterminal">$ty</span>&gt;::openrpc(
-                    <span class="kw-2">&amp;mut </span>gen,
-                    ParamStructure::ByPosition,
-                ))),
+                }
             }
         };
     }
@@ -1047,13 +1046,6 @@
         methods,
         components: <span class="prelude-val">Some</span>(openrpc_types::Components {
             schemas: <span class="prelude-val">Some</span>(gen.take_definitions().into_iter().collect()),
-            tags: <span class="prelude-val">Some</span>(
-                ApiVersion::iter()
-                    .map(|it| it.as_tag())
-                    .chain(Tag::iter().map(|it| it.as_tag()))
-                    .map(|it| (it.name.clone(), it))
-                    .collect(),
-            ),
             ..Default::default()
         }),
         openrpc: openrpc_types::OPEN_RPC_SPECIFICATION_VERSION,
@@ -1068,20 +1060,24 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::rpc::ApiPath;
+
     <span class="comment">// `cargo test --lib -- --exact 'rpc::tests::openrpc'`
     // `cargo insta review`
     </span><span class="attr">#[test]
     </span><span class="kw">fn </span>openrpc() {
-        <span class="kw">let </span>_spec = <span class="kw">super</span>::openrpc(<span class="prelude-val">None</span>);
-        <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
-        //                  this is disabled because it causes lots of merge
-        //                  conflicts.
-        //                  We should consider re-enabling it when our RPC is
-        //                  more stable.
-        //                  (We still run this test to make sure we're not
-        //                  violating other invariants)
-        </span><span class="attr">#[cfg(never)]
-        </span><span class="macro">insta::assert_yaml_snapshot!</span>(_spec);
+        <span class="kw">for </span>path <span class="kw">in </span>[ApiPath::V0, ApiPath::V1] {
+            <span class="kw">let </span>_spec = <span class="kw">super</span>::openrpc(path, <span class="prelude-val">None</span>);
+            <span class="comment">// TODO(aatifsyed): https://github.com/ChainSafe/forest/issues/4032
+            //                  this is disabled because it causes lots of merge
+            //                  conflicts.
+            //                  We should consider re-enabling it when our RPC is
+            //                  more stable.
+            //                  (We still run this test to make sure we're not
+            //                  violating other invariants)
+            </span><span class="attr">#[cfg(never)]
+            </span><span class="macro">insta::assert_yaml_snapshot!</span>(_spec);
+        }
     }
 }
 </code></pre></div></section></main></body></html>
