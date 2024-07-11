@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["balance_table"],"trait":["BalanceTableExt"]};
+window.SIDEBAR_ITEMS = {"mod":["balance_table","state"],"trait":["BalanceTableExt","MarketStateExt"]};

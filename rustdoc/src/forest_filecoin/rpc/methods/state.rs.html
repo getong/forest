@@ -2473,6 +2473,29 @@
 <a href="#2473" id="2473">2473</a>
 <a href="#2474" id="2474">2474</a>
 <a href="#2475" id="2475">2475</a>
+<a href="#2476" id="2476">2476</a>
+<a href="#2477" id="2477">2477</a>
+<a href="#2478" id="2478">2478</a>
+<a href="#2479" id="2479">2479</a>
+<a href="#2480" id="2480">2480</a>
+<a href="#2481" id="2481">2481</a>
+<a href="#2482" id="2482">2482</a>
+<a href="#2483" id="2483">2483</a>
+<a href="#2484" id="2484">2484</a>
+<a href="#2485" id="2485">2485</a>
+<a href="#2486" id="2486">2486</a>
+<a href="#2487" id="2487">2487</a>
+<a href="#2488" id="2488">2488</a>
+<a href="#2489" id="2489">2489</a>
+<a href="#2490" id="2490">2490</a>
+<a href="#2491" id="2491">2491</a>
+<a href="#2492" id="2492">2492</a>
+<a href="#2493" id="2493">2493</a>
+<a href="#2494" id="2494">2494</a>
+<a href="#2495" id="2495">2495</a>
+<a href="#2496" id="2496">2496</a>
+<a href="#2497" id="2497">2497</a>
+<a href="#2498" id="2498">2498</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2492,7 +2515,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::shim::actors::verifreg::VerifiedRegistryStateExt <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::actors::{
-    market::BalanceTableExt <span class="kw">as _</span>,
+    market::{BalanceTableExt <span class="kw">as _</span>, MarketStateExt <span class="kw">as _</span>},
     miner::{MinerStateExt <span class="kw">as _</span>, PartitionExt <span class="kw">as _</span>},
 };
 <span class="kw">use </span><span class="kw">crate</span>::shim::message::Message;
@@ -3055,7 +3078,7 @@
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>store = ctx.state_manager.blockstore();
+        <span class="kw">let </span>store = ctx.store();
         <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>res = Vec::new();
         state.for_each_deadline(policy, store, |_idx, deadline| {
@@ -3775,7 +3798,7 @@
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>blk = ctx.state_manager.blockstore().get_required(<span class="kw-2">&amp;</span>actor.state)<span class="question-mark">?</span>;
+        <span class="kw">let </span>blk = ctx.store().get_required(<span class="kw-2">&amp;</span>actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = <span class="kw-2">*</span>fvm_ipld_encoding::from_slice::&lt;NonEmpty&lt;Cid&gt;&gt;(<span class="kw-2">&amp;</span>blk)<span class="question-mark">?</span>.first();
         <span class="prelude-val">Ok</span>(ApiActorState {
             balance: actor.balance.clone().into(),
@@ -3806,11 +3829,7 @@
         <span class="kw">let </span>height = ts.epoch();
         <span class="kw">let </span>root = ts.parent_state();
         <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.state_manager.chain_config().clone());
-        <span class="kw">let </span>supply = genesis_info.get_state_circulating_supply(
-            height,
-            <span class="kw-2">&amp;</span>ctx.state_manager.blockstore_owned(),
-            root,
-        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>supply = genesis_info.get_state_circulating_supply(height, <span class="kw-2">&amp;</span>ctx.store_owned(), root)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(supply)
     }
 }
@@ -3855,7 +3874,7 @@
         <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.state_manager.chain_config().clone());
         <span class="prelude-val">Ok</span>(genesis_info.get_vm_circulating_supply_detailed(
             ts.epoch(),
-            <span class="kw-2">&amp;</span>ctx.state_manager.blockstore_owned(),
+            <span class="kw-2">&amp;</span>ctx.store_owned(),
             ts.parent_state(),
         )<span class="question-mark">?</span>)
     }
@@ -4596,11 +4615,7 @@
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::get_claims(
-            <span class="kw-2">&amp;</span>ctx.state_manager.blockstore_owned(),
-            <span class="kw-2">&amp;</span>address,
-            <span class="kw-2">&amp;</span>ts,
-        )<span class="question-mark">?</span>)
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::get_claims(<span class="kw-2">&amp;</span>ctx.store_owned(), <span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
 
@@ -4657,11 +4672,7 @@
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::get_allocations(
-            <span class="kw-2">&amp;</span>ctx.state_manager.blockstore_owned(),
-            <span class="kw-2">&amp;</span>address,
-            <span class="kw-2">&amp;</span>ts,
-        )<span class="question-mark">?</span>)
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::get_allocations(<span class="kw-2">&amp;</span>ctx.store_owned(), <span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
 
@@ -4790,6 +4801,41 @@
         <span class="kw">let </span>actor = state_tree.get_required_actor(<span class="kw-2">&amp;</span>Address::VERIFIED_REGISTRY_ACTOR)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = verifreg::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
         state.get_allocations(store, address)
+    }
+}
+
+<span class="kw">pub enum </span>StateGetAllocationIdForPendingDeal {}
+
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">2</span>&gt; <span class="kw">for </span>StateGetAllocationIdForPendingDeal {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.StateGetAllocationIdForPendingDeal"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"deal_id"</span>, <span class="string">"tipset_key"</span>];
+    <span class="kw">const </span>API_PATHS: ApiPaths = ApiPaths::V1;
+    <span class="kw">const </span>PERMISSION: Permission = Permission::Read;
+
+    <span class="kw">type </span>Params = (DealID, ApiTipsetKey);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= AllocationID;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (deal_id, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>state_tree = StateTree::new_from_root(ctx.store_owned(), ts.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>market_actor = state_tree.get_required_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?</span>;
+        <span class="kw">let </span>market_state = market::State::load(ctx.store(), market_actor.code, market_actor.state)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(market_state.get_allocation_id_for_pending_deal(ctx.store(), <span class="kw-2">&amp;</span>deal_id)<span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">impl </span>StateGetAllocationIdForPendingDeal {
+    <span class="kw">pub fn </span>get_allocations_for_pending_deals(
+        store: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">impl </span>Blockstore&gt;,
+        tipset: <span class="kw-2">&amp;</span>Tipset,
+    ) -&gt; anyhow::Result&lt;HashMap&lt;DealID, AllocationID&gt;&gt; {
+        <span class="kw">let </span>state_tree = StateTree::new_from_root(store.clone(), tipset.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = state_tree.get_required_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?</span>;
+        <span class="kw">let </span>state = market::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
+        state.get_allocations_for_pending_deals(store)
     }
 }
 
