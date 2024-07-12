@@ -160,7 +160,7 @@
     /// The signature will be verified.
     </span><span class="kw">pub fn </span>new_from_parts(message: Message, signature: Signature) -&gt; anyhow::Result&lt;SignedMessage&gt; {
         signature
-            .verify(<span class="kw-2">&amp;</span>message.cid()<span class="question-mark">?</span>.to_bytes(), <span class="kw-2">&amp;</span>message.from())
+            .verify(<span class="kw-2">&amp;</span>message.cid().to_bytes(), <span class="kw-2">&amp;</span>message.from())
             .map_err(anyhow::Error::msg)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(SignedMessage { message, signature })
     }
@@ -204,18 +204,18 @@
     <span class="doccomment">/// Verifies that the from address of the message generated the signature.
     </span><span class="kw">pub fn </span>verify(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), String&gt; {
         <span class="self">self</span>.signature
-            .verify(<span class="kw-2">&amp;</span><span class="self">self</span>.message.cid().unwrap().to_bytes(), <span class="kw-2">&amp;</span><span class="self">self</span>.from())
+            .verify(<span class="kw-2">&amp;</span><span class="self">self</span>.message.cid().to_bytes(), <span class="kw-2">&amp;</span><span class="self">self</span>.from())
     }
 
     <span class="comment">// Important note: `msg.cid()` is different from
     // `Cid::from_cbor_blake2b256(msg)`. The behavior comes from Lotus, and
     // Lotus, by, definition, is correct.
-    </span><span class="kw">pub fn </span>cid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;cid::Cid, fvm_ipld_encoding::Error&gt; {
+    </span><span class="kw">pub fn </span>cid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; cid::Cid {
         <span class="kw">if </span><span class="self">self</span>.is_bls() {
             <span class="self">self</span>.message.cid()
         } <span class="kw">else </span>{
             <span class="kw">use </span><span class="kw">crate</span>::utils::cid::CidCborExt;
-            cid::Cid::from_cbor_blake2b256(<span class="self">self</span>)
+            cid::Cid::from_cbor_blake2b256(<span class="self">self</span>).expect(<span class="string">"message serialization is infallible"</span>)
         }
     }
 }
