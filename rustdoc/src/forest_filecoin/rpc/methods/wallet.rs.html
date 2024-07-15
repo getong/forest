@@ -323,17 +323,66 @@
 <a href="#323" id="323">323</a>
 <a href="#324" id="324">324</a>
 <a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::any::Any;
 
 <span class="kw">use </span><span class="kw">crate</span>::key_management::{Key, KeyInfo};
+<span class="kw">use </span><span class="kw">crate</span>::message::SignedMessage;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiPaths, Ctx, Permission, RpcMethod, ServerError};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::Address,
     crypto::{Signature, SignatureType},
     econ::TokenAmount,
+    message::Message,
     state_tree::StateTree,
 };
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
@@ -545,6 +594,51 @@
         )<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(sig)
+    }
+}
+
+<span class="kw">pub enum </span>WalletSignMessage {}
+<span class="kw">impl </span>RpcMethod&lt;<span class="number">2</span>&gt; <span class="kw">for </span>WalletSignMessage {
+    <span class="kw">const </span>NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"Filecoin.WalletSignMessage"</span>;
+    <span class="kw">const </span>PARAM_NAMES: [<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str; <span class="number">2</span>] = [<span class="string">"address"</span>, <span class="string">"message"</span>];
+    <span class="kw">const </span>API_PATHS: ApiPaths = ApiPaths::V0;
+    <span class="kw">const </span>PERMISSION: Permission = Permission::Sign;
+
+    <span class="kw">type </span>Params = (Address, Message);
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= SignedMessage;
+
+    <span class="kw">async fn </span>handle(
+        ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
+        (address, message): <span class="self">Self</span>::Params,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
+        <span class="kw">let </span>ts = ctx.chain_store.heaviest_tipset();
+        <span class="kw">let </span>key_addr = ctx
+            .state_manager
+            .resolve_to_deterministic_address(address, ts)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>keystore = <span class="kw-2">&amp;mut *</span>ctx.keystore.write().<span class="kw">await</span>;
+        <span class="kw">let </span>key = <span class="kw">match </span><span class="kw">crate</span>::key_management::find_key(<span class="kw-2">&amp;</span>key_addr, keystore) {
+            <span class="prelude-val">Ok</span>(key) =&gt; key,
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                <span class="kw">let </span>key_info = <span class="kw">crate</span>::key_management::try_find(<span class="kw-2">&amp;</span>key_addr, keystore)<span class="question-mark">?</span>;
+                Key::try_from(key_info)<span class="question-mark">?
+            </span>}
+        };
+
+        <span class="kw">let </span>sig = <span class="kw">crate</span>::key_management::sign(
+            <span class="kw-2">*</span>key.key_info.key_type(),
+            key.key_info.private_key(),
+            message.cid().to_bytes().as_slice(),
+        )<span class="question-mark">?</span>;
+
+        <span class="comment">// Could use `SignedMessage::new_unchecked` here but let's make sure
+        // we're actually signing the message as expected.
+        </span><span class="kw">let </span>smsg = SignedMessage::new_from_parts(message, sig).expect(
+            <span class="string">"This is infallible. We just generated the signature, so it cannot be invalid."</span>,
+        );
+
+        <span class="prelude-val">Ok</span>(smsg)
     }
 }
 
