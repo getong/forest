@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["reveal_three_trees"]};
+window.SIDEBAR_ITEMS = {"fn":["reveal_three_trees","reveal_upgrade_logo","reveal_waffle_upgrade"]};
