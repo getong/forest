@@ -130,6 +130,13 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -162,16 +169,23 @@
         <span class="prelude-val">Ok</span>(set)
     }
 
-    <span class="kw">fn </span>remove_keys(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: CidHashSet) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">fn </span>remove_keys(<span class="kw-2">&amp;</span><span class="self">self</span>, keys: CidHashSet) -&gt; anyhow::Result&lt;u32&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>db = <span class="self">self</span>.blockchain_db.write();
+        <span class="kw">let </span><span class="kw-2">mut </span>deleted = <span class="number">0</span>;
         db.retain(|key, <span class="kw">_</span>| {
             <span class="kw">let </span>cid = Cid::try_from(key.as_slice());
             <span class="kw">match </span>cid {
-                <span class="prelude-val">Ok</span>(cid) =&gt; !keys.contains(<span class="kw-2">&amp;</span>cid),
+                <span class="prelude-val">Ok</span>(cid) =&gt; {
+                    <span class="kw">let </span>retain = !keys.contains(<span class="kw-2">&amp;</span>cid);
+                    <span class="kw">if </span>!retain {
+                        deleted += <span class="number">1</span>;
+                    }
+                    retain
+                }
                 <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
             }
         });
-        <span class="prelude-val">Ok</span>(())
+        <span class="prelude-val">Ok</span>(deleted)
     }
 }
 
