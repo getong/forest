@@ -1651,6 +1651,20 @@
 <a href="#1651" id="1651">1651</a>
 <a href="#1652" id="1652">1652</a>
 <a href="#1653" id="1653">1653</a>
+<a href="#1654" id="1654">1654</a>
+<a href="#1655" id="1655">1655</a>
+<a href="#1656" id="1656">1656</a>
+<a href="#1657" id="1657">1657</a>
+<a href="#1658" id="1658">1658</a>
+<a href="#1659" id="1659">1659</a>
+<a href="#1660" id="1660">1660</a>
+<a href="#1661" id="1661">1661</a>
+<a href="#1662" id="1662">1662</a>
+<a href="#1663" id="1663">1663</a>
+<a href="#1664" id="1664">1664</a>
+<a href="#1665" id="1665">1665</a>
+<a href="#1666" id="1666">1666</a>
+<a href="#1667" id="1667">1667</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1681,6 +1695,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::state::{ApiInvocResult, InvocResult, MessageGasCost};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{MiningBaseInfo, SectorOnChainInfo};
 <span class="kw">use </span><span class="kw">crate</span>::shim::actors::miner::MinerStateExt <span class="kw">as _</span>;
+<span class="kw">use </span><span class="kw">crate</span>::shim::actors::verifreg::VerifiedRegistryStateExt;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Payload, Protocol},
     clock::ChainEpoch,
@@ -2407,8 +2422,8 @@
                     &amp;&amp; s.equal_call(message)
             })
             .map(|(index, m)| {
-                <span class="comment">// A replacing message is a message with a different CID, 
-                // any of Gas values, and different signature, but with all 
+                <span class="comment">// A replacing message is a message with a different CID,
+                // any of Gas values, and different signature, but with all
                 // other parameters matching (source/destination, nonce, params, etc.)
                 </span><span class="kw">if </span>!allow_replaced &amp;&amp; message.cid() != m.cid(){
                     <span class="prelude-val">Err</span>(Error::Other(<span class="macro">format!</span>(
@@ -2995,6 +3010,11 @@
         state.get_claim(<span class="self">self</span>.blockstore(), id_address.into(), claim_id)
     }
 
+    <span class="kw">pub fn </span>get_all_claims(<span class="kw-2">&amp;</span><span class="self">self</span>, ts: <span class="kw-2">&amp;</span>Tipset) -&gt; anyhow::Result&lt;HashMap&lt;ClaimID, Claim&gt;&gt; {
+        <span class="kw">let </span>state = <span class="self">self</span>.get_verified_registry_actor_state(ts)<span class="question-mark">?</span>;
+        state.get_all_claims(<span class="self">self</span>.blockstore())
+    }
+
     <span class="kw">pub fn </span>get_allocation(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         addr: <span class="kw-2">&amp;</span>Address,
@@ -3004,6 +3024,14 @@
         <span class="kw">let </span>id_address = <span class="self">self</span>.lookup_required_id(addr, ts)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = <span class="self">self</span>.get_verified_registry_actor_state(ts)<span class="question-mark">?</span>;
         state.get_allocation(<span class="self">self</span>.blockstore(), id_address.id()<span class="question-mark">?</span>, allocation_id)
+    }
+
+    <span class="kw">pub fn </span>get_all_allocations(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        ts: <span class="kw-2">&amp;</span>Tipset,
+    ) -&gt; anyhow::Result&lt;HashMap&lt;AllocationID, Allocation&gt;&gt; {
+        <span class="kw">let </span>state = <span class="self">self</span>.get_verified_registry_actor_state(ts)<span class="question-mark">?</span>;
+        state.get_all_allocations(<span class="self">self</span>.blockstore())
     }
 
     <span class="kw">pub fn </span>verified_client_status(
