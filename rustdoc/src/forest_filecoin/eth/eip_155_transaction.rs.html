@@ -206,20 +206,37 @@
 <a href="#206" id="206">206</a>
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use crate</span>::{
-    rpc::eth::types::EthAddress,
-    shim::crypto::{Signature, SignatureType},
-};
+</span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>derive_builder::Builder;
 <span class="kw">use </span>num::{BigInt, BigUint};
 <span class="kw">use </span>num_bigint::Sign;
 <span class="kw">use </span>num_traits::cast::ToPrimitive;
-
-<span class="kw">use super</span>::{homestead_transaction::HOMESTEAD_SIG_LEN, EthChainId};
 
 <span class="kw">pub const </span>EIP_155_SIG_PREFIX: u8 = <span class="number">0x02</span>;
 
@@ -233,6 +250,7 @@
 </span><span class="attr">#[derive(PartialEq, Debug, Clone, Default, Builder)]
 #[builder(setter(into))]
 </span><span class="kw">pub struct </span>EthLegacyEip155TxArgs {
+    <span class="kw">pub </span>chain_id: EthChainId,
     <span class="kw">pub </span>nonce: u64,
     <span class="kw">pub </span>gas_price: BigInt,
     <span class="kw">pub </span>gas_limit: u64,
@@ -248,17 +266,13 @@
 }
 
 <span class="kw">impl </span>EthLegacyEip155TxArgs {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_signature(
-        <span class="kw-2">mut </span><span class="self">self</span>,
-        signature: <span class="kw-2">&amp;</span>Signature,
-        eth_chain_id: EthChainId,
-    ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub fn </span>with_signature(<span class="kw-2">mut </span><span class="self">self</span>, signature: <span class="kw-2">&amp;</span>Signature) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             signature.signature_type() == SignatureType::Delegated,
             <span class="string">"Signature is not delegated type"
         </span>);
 
-        <span class="kw">let </span>valid_sig_len = calc_valid_eip155_sig_len(eth_chain_id);
+        <span class="kw">let </span>valid_sig_len = calc_valid_eip155_sig_len(<span class="self">self</span>.chain_id);
         <span class="macro">ensure!</span>(
             signature.bytes().len() == valid_sig_len.<span class="number">0 </span><span class="kw">as </span>usize
                 || signature.bytes().len() == valid_sig_len.<span class="number">1 </span><span class="kw">as </span>usize,
@@ -291,13 +305,43 @@
         );
         <span class="kw">let </span>v = BigInt::from_bytes_be(Sign::Plus, signature.bytes().get(<span class="number">65</span>..).expect(<span class="string">"infallible"</span>));
 
-        validate_eip155_chain_id(eth_chain_id, <span class="kw-2">&amp;</span>v)<span class="question-mark">?</span>;
+        validate_eip155_chain_id(<span class="self">self</span>.chain_id, <span class="kw-2">&amp;</span>v)<span class="question-mark">?</span>;
 
         <span class="self">self</span>.r = r;
         <span class="self">self</span>.s = s;
         <span class="self">self</span>.v = v;
 
         <span class="prelude-val">Ok</span>(<span class="self">self</span>)
+    }
+
+    <span class="kw">pub fn </span>rlp_signed_message(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>stream = rlp::RlpStream::new();
+        stream
+            .begin_unbounded_list()
+            .append(<span class="kw-2">&amp;</span>format_u64(<span class="self">self</span>.nonce))
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.gas_price)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span>format_u64(<span class="self">self</span>.gas_limit))
+            .append(<span class="kw-2">&amp;</span>format_address(<span class="kw-2">&amp;</span><span class="self">self</span>.to))
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.value)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span><span class="self">self</span>.input)
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.v)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.r)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.s)<span class="question-mark">?</span>)
+            .finalize_unbounded_list();
+        <span class="prelude-val">Ok</span>(stream.out().to_vec())
+    }
+}
+
+<span class="kw">impl </span>EthLegacyEip155TxArgsBuilder {
+    <span class="kw">pub fn </span>unsigned_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>Message) -&gt; anyhow::Result&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt; {
+        <span class="kw">let </span>(params, to) = get_eth_params_and_recipient(message)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">self
+            </span>.nonce(message.sequence)
+            .value(message.value.clone())
+            .gas_price(message.gas_fee_cap.clone())
+            .gas_limit(message.gas_limit)
+            .to(to)
+            .input(params))
     }
 }
 
@@ -340,7 +384,7 @@
 
 <span class="doccomment">/// Returns the valid signature lengths for EIP-155 transactions.
 /// The length is based on the chain ID and the V value in the signature.
-</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>calc_valid_eip155_sig_len(eth_chain_id: EthChainId) -&gt; (u64, u64) {
+</span><span class="kw">pub fn </span>calc_valid_eip155_sig_len(eth_chain_id: EthChainId) -&gt; (u64, u64) {
     <span class="kw">let </span>sig_len1 = calc_eip155_sig_len(eth_chain_id, <span class="number">35</span>);
     <span class="kw">let </span>sig_len2 = calc_eip155_sig_len(eth_chain_id, <span class="number">36</span>);
     (sig_len1, sig_len2)

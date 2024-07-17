@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["EAMMethod","EVMMethod","EthTx"],"fn":["get_eth_params_and_recipient","is_valid_eth_tx_for_sending"]};
+window.SIDEBAR_ITEMS = {"enum":["EAMMethod","EVMMethod","EthTx"],"fn":["format_address","format_bigint","format_u64","get_eth_params_and_recipient","is_valid_eth_tx_for_sending"]};

@@ -71,13 +71,38 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use crate</span>::{
-    rpc::eth::types::EthAddress,
-    shim::crypto::{Signature, SignatureType},
-};
+</span><span class="kw">use super</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>derive_builder::Builder;
 <span class="kw">use </span>num::BigInt;
@@ -103,8 +128,9 @@
     <span class="attr">#[builder(setter(skip))]
     </span><span class="kw">pub </span>s: BigInt,
 }
+
 <span class="kw">impl </span>EthLegacyHomesteadTxArgs {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>with_signature(<span class="kw-2">mut </span><span class="self">self</span>, signature: <span class="kw-2">&amp;</span>Signature) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub fn </span>with_signature(<span class="kw-2">mut </span><span class="self">self</span>, signature: <span class="kw-2">&amp;</span>Signature) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             signature.signature_type() == SignatureType::Delegated,
             <span class="string">"Signature is not delegated type"
@@ -142,6 +168,36 @@
         <span class="self">self</span>.v = v;
 
         <span class="prelude-val">Ok</span>(<span class="self">self</span>)
+    }
+
+    <span class="kw">pub fn </span>rlp_signed_message(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>stream = rlp::RlpStream::new();
+        stream
+            .begin_unbounded_list()
+            .append(<span class="kw-2">&amp;</span>format_u64(<span class="self">self</span>.nonce))
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.gas_price)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span>format_u64(<span class="self">self</span>.gas_limit))
+            .append(<span class="kw-2">&amp;</span>format_address(<span class="kw-2">&amp;</span><span class="self">self</span>.to))
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.value)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span><span class="self">self</span>.input)
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.v)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.r)<span class="question-mark">?</span>)
+            .append(<span class="kw-2">&amp;</span>format_bigint(<span class="kw-2">&amp;</span><span class="self">self</span>.s)<span class="question-mark">?</span>)
+            .finalize_unbounded_list();
+        <span class="prelude-val">Ok</span>(stream.out().to_vec())
+    }
+}
+
+<span class="kw">impl </span>EthLegacyHomesteadTxArgsBuilder {
+    <span class="kw">pub fn </span>unsigned_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>Message) -&gt; anyhow::Result&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt; {
+        <span class="kw">let </span>(params, to) = get_eth_params_and_recipient(message)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">self
+            </span>.nonce(message.sequence)
+            .value(message.value.clone())
+            .gas_price(message.gas_fee_cap.clone())
+            .gas_limit(message.gas_limit)
+            .to(to)
+            .input(params))
     }
 }
 </code></pre></div></section></main></body></html>
