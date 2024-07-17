@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["VERBOSE_PARAM"],"fn":["check_epoch_up_to_date","check_peers_connected","check_rpc_server_running","check_sync_state_complete","check_sync_state_not_error","healthz","livez","readyz"],"struct":["MessageAccumulator"]};
+window.SIDEBAR_ITEMS = {"constant":["VERBOSE_PARAM"],"fn":["check_epoch_up_to_date","check_eth_mapping_up_to_date","check_peers_connected","check_rpc_server_running","check_sync_state_complete","check_sync_state_not_error","healthz","livez","readyz"],"struct":["MessageAccumulator"]};

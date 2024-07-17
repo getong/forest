@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["HEAD_KEY","MPOOL_CONFIG_KEY"]};
+window.SIDEBAR_ITEMS = {"constant":["ETH_MAPPING_UP_TO_DATE_KEY","HEAD_KEY","MPOOL_CONFIG_KEY"]};

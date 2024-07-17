@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["car","db_engine","db_mode","gc","memory","migration","parity_db","parity_db_config","setting_keys","ttl"],"trait":["DBStatistics","EthMappingsStore","EthMappingsStoreExt","GarbageCollectable","SettingsStore","SettingsStoreExt"]};
+window.SIDEBAR_ITEMS = {"constant":["CAR_DB_DIR_NAME"],"mod":["car","db_engine","db_mode","gc","memory","migration","parity_db","parity_db_config","setting_keys","ttl"],"trait":["DBStatistics","EthMappingsStore","EthMappingsStoreExt","GarbageCollectable","SettingsExt","SettingsStore","SettingsStoreExt"]};

@@ -758,6 +758,46 @@
 <a href="#758" id="758">758</a>
 <a href="#759" id="759">759</a>
 <a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -769,7 +809,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
 <span class="kw">use </span><span class="kw">crate</span>::chain::ChainStore;
 <span class="kw">use </span><span class="kw">crate</span>::chain_sync::ChainMuxer;
-<span class="kw">use </span><span class="kw">crate</span>::cli_shared::snapshot;
+<span class="kw">use </span><span class="kw">crate</span>::cli_shared::{car_db_path, snapshot};
 <span class="kw">use </span><span class="kw">crate</span>::cli_shared::{
     chain_path,
     cli::{CliOpts, Config},
@@ -780,7 +820,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::db::car::ManyCar;
 <span class="kw">use </span><span class="kw">crate</span>::db::db_engine::{db_root, open_db};
-<span class="kw">use </span><span class="kw">crate</span>::db::{ttl::EthMappingCollector, MarkAndSweep};
+<span class="kw">use </span><span class="kw">crate</span>::db::{ttl::EthMappingCollector, MarkAndSweep, MemoryDB, SettingsExt, CAR_DB_DIR_NAME};
 <span class="kw">use </span><span class="kw">crate</span>::genesis::{get_network_name_from_genesis, read_genesis_header};
 <span class="kw">use </span><span class="kw">crate</span>::key_management::{
     KeyStore, KeyStoreConfig, ENCRYPTED_KEYSTORE_NAME, FOREST_KEYSTORE_PHRASE_ENV,
@@ -803,6 +843,7 @@
 <span class="kw">use </span>dialoguer::console::Term;
 <span class="kw">use </span>dialoguer::theme::ColorfulTheme;
 <span class="kw">use </span>futures::{select, Future, FutureExt};
+<span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>raw_sync_2::events::{Event, EventInit <span class="kw">as _</span>, EventState};
 <span class="kw">use </span>shared_memory::ShmemConf;
@@ -941,7 +982,7 @@
     <span class="kw">let </span>db_root_dir = db_root(<span class="kw-2">&amp;</span>chain_data_path)<span class="question-mark">?</span>;
     <span class="kw">let </span>db_writer = Arc::new(open_db(db_root_dir.clone(), config.db_config().clone())<span class="question-mark">?</span>);
     <span class="kw">let </span>db = Arc::new(ManyCar::new(db_writer.clone()));
-    <span class="kw">let </span>forest_car_db_dir = db_root_dir.join(<span class="string">"car_db"</span>);
+    <span class="kw">let </span>forest_car_db_dir = db_root_dir.join(CAR_DB_DIR_NAME);
     load_all_forest_cars(<span class="kw-2">&amp;</span>db, <span class="kw-2">&amp;</span>forest_car_db_dir)<span class="question-mark">?</span>;
 
     <span class="kw">if </span>config.client.load_actors &amp;&amp; !opts.stateless {
@@ -1128,6 +1169,7 @@
             genesis_timestamp: genesis_header.timestamp,
             sync_state: sync_state.clone(),
             peer_manager,
+            settings_store: chain_store.settings(),
         };
 
         <span class="kw">let </span>listener =
@@ -1213,8 +1255,6 @@
             state_manager
                 .chain_store()
                 .set_heaviest_tipset(Arc::new(ts.clone()))<span class="question-mark">?</span>;
-
-            populate_eth_mappings(<span class="kw-2">&amp;</span>state_manager, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
         }
     }
 
@@ -1241,6 +1281,17 @@
         <span class="comment">// Cancel all async services
         </span>services.shutdown().<span class="kw">await</span>;
         <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+    }
+
+    <span class="comment">// Populate task
+    </span><span class="kw">if </span>!opts.stateless &amp;&amp; !chain_config.is_devnet() {
+        <span class="kw">let </span>state_manager = Arc::clone(<span class="kw-2">&amp;</span>state_manager);
+        services.spawn(<span class="kw">async move </span>{
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = init_ethereum_mapping(state_manager, <span class="kw-2">&amp;</span>config) {
+                <span class="macro">tracing::warn!</span>(<span class="string">"Init Ethereum mapping failed: {}"</span>, err)
+            }
+            <span class="prelude-val">Ok</span>(())
+        });
     }
 
     <span class="kw">if </span>!opts.stateless {
@@ -1516,6 +1567,35 @@
     };
     <span class="kw">if let </span><span class="prelude-val">Some</span>(logo) = logo {
         <span class="macro">info!</span>(<span class="string">"\n{logo}"</span>);
+    }
+}
+
+<span class="kw">fn </span>init_ethereum_mapping&lt;DB: Blockstore&gt;(
+    state_manager: Arc&lt;StateManager&lt;DB&gt;&gt;,
+    config: <span class="kw-2">&amp;</span>Config,
+) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">match </span>state_manager
+        .chain_store()
+        .settings()
+        .eth_mapping_up_to_date()<span class="question-mark">?
+    </span>{
+        <span class="prelude-val">Some</span>(<span class="bool-val">false</span>) | <span class="prelude-val">None </span>=&gt; {
+            <span class="kw">let </span>car_db_path = car_db_path(config)<span class="question-mark">?</span>;
+            <span class="kw">let </span>db: Arc&lt;ManyCar&lt;MemoryDB&gt;&gt; = Arc::default();
+            load_all_forest_cars(<span class="kw-2">&amp;</span>db, <span class="kw-2">&amp;</span>car_db_path)<span class="question-mark">?</span>;
+            <span class="kw">let </span>ts = db.heaviest_tipset()<span class="question-mark">?</span>;
+
+            populate_eth_mappings(<span class="kw-2">&amp;</span>state_manager, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
+
+            state_manager
+                .chain_store()
+                .settings()
+                .set_eth_mapping_up_to_date()
+        }
+        <span class="prelude-val">Some</span>(<span class="bool-val">true</span>) =&gt; {
+            <span class="macro">tracing::info!</span>(<span class="string">"Ethereum mapping up to date"</span>);
+            <span class="prelude-val">Ok</span>(())
+        }
     }
 }
 </code></pre></div></section></main></body></html>

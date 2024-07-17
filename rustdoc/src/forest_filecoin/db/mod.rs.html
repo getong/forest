@@ -211,6 +211,31 @@
 <a href="#211" id="211">211</a>
 <a href="#212" id="212">212</a>
 <a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -223,6 +248,7 @@
 <span class="kw">pub mod </span>ttl;
 <span class="kw">pub use </span>gc::MarkAndSweep;
 <span class="kw">pub use </span>memory::MemoryDB;
+<span class="kw">use </span>setting_keys::ETH_MAPPING_UP_TO_DATE_KEY;
 <span class="kw">mod </span>db_mode;
 <span class="kw">pub mod </span>migration;
 
@@ -233,11 +259,15 @@
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>std::sync::Arc;
 
+<span class="kw">pub const </span>CAR_DB_DIR_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"car_db"</span>;
+
 <span class="kw">pub mod </span>setting_keys {
     <span class="doccomment">/// Key used to store the heaviest tipset in the settings store. This is expected to be a [`crate::blocks::TipsetKey`]s
     </span><span class="kw">pub const </span>HEAD_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"head"</span>;
     <span class="doccomment">/// Key used to store the memory pool configuration in the settings store.
     </span><span class="kw">pub const </span>MPOOL_CONFIG_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"/mpool/config"</span>;
+    <span class="doccomment">/// Key used to store the state of the Ethereum mapping. This is expected to be a [`bool`].
+    </span><span class="kw">pub const </span>ETH_MAPPING_UP_TO_DATE_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"eth_mapping_up_to_date"</span>;
 }
 
 <span class="doccomment">/// Interface used to store and retrieve settings from the database.
@@ -303,6 +333,26 @@
         <span class="self">self</span>.read_bin(key)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"Key {key} not found"</span>))
             .and_then(|bytes| serde_json::from_slice(<span class="kw-2">&amp;</span>bytes).map_err(Into::into))
+    }
+}
+
+<span class="doccomment">/// Extension trait for the [`SettingsStoreExt`] trait. It is implemented for all types that implement
+/// [`SettingsStoreExt`].
+/// It provides methods to store and retrieve settings from the database.
+</span><span class="kw">pub trait </span>SettingsExt {
+    <span class="kw">fn </span>set_eth_mapping_up_to_date(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
+    <span class="kw">fn </span>eth_mapping_up_to_date(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;bool&gt;&gt;;
+}
+
+<span class="kw">impl</span>&lt;T: <span class="question-mark">?</span>Sized + SettingsStoreExt&gt; SettingsExt <span class="kw">for </span>T {
+    <span class="doccomment">/// Sets the Ethereum mapping status to "up-to-date".
+    </span><span class="kw">fn </span>set_eth_mapping_up_to_date(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="self">self</span>.write_obj(ETH_MAPPING_UP_TO_DATE_KEY, <span class="kw-2">&amp;</span><span class="bool-val">true</span>)
+    }
+
+    <span class="doccomment">/// Returns `Ok(Some(true))` if the mapping is "up-to-date".
+    </span><span class="kw">fn </span>eth_mapping_up_to_date(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;bool&gt;&gt; {
+        <span class="self">self</span>.read_obj(ETH_MAPPING_UP_TO_DATE_KEY)
     }
 }
 

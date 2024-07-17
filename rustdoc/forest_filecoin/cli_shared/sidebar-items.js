@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["chain_path","read_config"],"mod":["cli","logger","snapshot"]};
+window.SIDEBAR_ITEMS = {"fn":["car_db_path","chain_path","read_config"],"mod":["cli","logger","snapshot"]};
