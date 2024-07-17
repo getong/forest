@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {};
+window.SIDEBAR_ITEMS = {"macro":["list_all_inner","list_all_inner_pre_v12"]};
