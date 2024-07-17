@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["MpoolGetNonce","MpoolPending","MpoolPush","MpoolPushMessage","MpoolSelect"]};
+window.SIDEBAR_ITEMS = {"enum":["MpoolGetNonce","MpoolPending","MpoolPush","MpoolPushMessage","MpoolPushUntrusted","MpoolSelect"]};
