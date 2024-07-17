@@ -480,7 +480,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["serde_tuple",["",[],["lib.rs"]]],\
 ["serde_tuple_macros",["",[],["lib.rs"]]],\
 ["serde_urlencoded",["",[["ser",[],["key.rs","mod.rs","pair.rs","part.rs","value.rs"]]],["de.rs","lib.rs"]]],\
-["serde_with",["",[["content",[],["de.rs","mod.rs","ser.rs"]],["de",[],["duplicates.rs","impls.rs","mod.rs"]],["duplicate_key_impls",[],["error_on_duplicate.rs","first_value_wins.rs","last_value_wins.rs","mod.rs"]],["ser",[],["duplicates.rs","impls.rs","mod.rs"]],["utils",[],["duration.rs"]]],["chrono_0_4.rs","enum_map.rs","flatten_maybe.rs","formats.rs","key_value_map.rs","lib.rs","rust.rs","serde_conv.rs","utils.rs","with_prefix.rs"]]],\
+["serde_with",["",[["content",[],["de.rs","mod.rs","ser.rs"]],["de",[],["duplicates.rs","impls.rs","mod.rs","skip_error.rs"]],["duplicate_key_impls",[],["error_on_duplicate.rs","first_value_wins.rs","last_value_wins.rs","mod.rs"]],["ser",[],["duplicates.rs","impls.rs","mod.rs","skip_error.rs"]],["utils",[],["duration.rs"]]],["chrono_0_4.rs","enum_map.rs","flatten_maybe.rs","formats.rs","key_value_map.rs","lib.rs","rust.rs","serde_conv.rs","utils.rs","with_prefix.rs"]]],\
 ["serde_with_macros",["",[],["apply.rs","lib.rs","utils.rs"]]],\
 ["serde_yaml",["",[["libyaml",[],["cstr.rs","emitter.rs","error.rs","mod.rs","parser.rs","tag.rs","util.rs"]],["value",[],["de.rs","debug.rs","from.rs","index.rs","mod.rs","partial_eq.rs","ser.rs","tagged.rs"]]],["de.rs","error.rs","lib.rs","loader.rs","mapping.rs","number.rs","path.rs","ser.rs","with.rs"]]],\
 ["sha1",["",[["compress",[],["soft.rs","x86.rs"]]],["compress.rs","lib.rs"]]],\
