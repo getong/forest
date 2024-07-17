@@ -1913,8 +1913,8 @@
         })
     }
 
-    <span class="kw">pub fn </span>beacon_schedule(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;BeaconSchedule&gt; {
-        Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.beacon)
+    <span class="kw">pub fn </span>beacon_schedule(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;BeaconSchedule&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.beacon
     }
 
     <span class="doccomment">/// Returns network version for the given epoch.
@@ -1961,6 +1961,15 @@
     <span class="doccomment">/// Returns reference to the state manager's [`ChainStore`].
     </span><span class="kw">pub fn </span>chain_store(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;ChainStore&lt;DB&gt;&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.cs
+    }
+
+    <span class="kw">pub fn </span>chain_rand(<span class="kw-2">&amp;</span><span class="self">self</span>, tipset: Arc&lt;Tipset&gt;) -&gt; ChainRand&lt;DB&gt; {
+        ChainRand::new(
+            <span class="self">self</span>.chain_config.clone(),
+            tipset,
+            <span class="self">self</span>.cs.chain_index.clone(),
+            <span class="self">self</span>.beacon.clone(),
+        )
     }
 
     <span class="doccomment">/// Returns the internal, protocol-level network name.
@@ -2380,7 +2389,7 @@
             <span class="self">self</span>.chain_store().genesis_block_header().timestamp,
             Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_store().chain_index),
             Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_config),
-            <span class="self">self</span>.beacon_schedule(),
+            <span class="self">self</span>.beacon_schedule().clone(),
             <span class="kw-2">&amp;</span><span class="self">self</span>.engine,
             tipset,
             callback,
@@ -2835,7 +2844,7 @@
 
     <span class="kw">pub async fn </span>miner_get_base_info(
         <span class="self">self</span>: <span class="kw-2">&amp;</span>Arc&lt;<span class="self">Self</span>&gt;,
-        beacon_schedule: Arc&lt;BeaconSchedule&gt;,
+        beacon_schedule: <span class="kw-2">&amp;</span>BeaconSchedule,
         tipset: Arc&lt;Tipset&gt;,
         addr: Address,
         epoch: ChainEpoch,
@@ -2983,7 +2992,7 @@
             genesis_timestamp,
             <span class="self">self</span>.chain_store().chain_index.clone(),
             <span class="self">self</span>.chain_config().clone(),
-            <span class="self">self</span>.beacon_schedule(),
+            <span class="self">self</span>.beacon_schedule().clone(),
             <span class="kw-2">&amp;</span><span class="self">self</span>.engine,
             tipsets,
         )
@@ -3087,15 +3096,6 @@
                 state.resolve_to_deterministic_addr(<span class="self">self</span>.chain_store().blockstore(), address)
             }
         }
-    }
-
-    <span class="kw">fn </span>chain_rand(<span class="kw-2">&amp;</span><span class="self">self</span>, tipset: Arc&lt;Tipset&gt;) -&gt; ChainRand&lt;DB&gt; {
-        ChainRand::new(
-            <span class="self">self</span>.chain_config.clone(),
-            tipset,
-            <span class="self">self</span>.cs.chain_index.clone(),
-            <span class="self">self</span>.beacon.clone(),
-        )
     }
 }
 

@@ -1673,16 +1673,6 @@
 <a href="#1673" id="1673">1673</a>
 <a href="#1674" id="1674">1674</a>
 <a href="#1675" id="1675">1675</a>
-<a href="#1676" id="1676">1676</a>
-<a href="#1677" id="1677">1677</a>
-<a href="#1678" id="1678">1678</a>
-<a href="#1679" id="1679">1679</a>
-<a href="#1680" id="1680">1680</a>
-<a href="#1681" id="1681">1681</a>
-<a href="#1682" id="1682">1682</a>
-<a href="#1683" id="1683">1683</a>
-<a href="#1684" id="1684">1684</a>
-<a href="#1685" id="1685">1685</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2188,14 +2178,14 @@
         // This is the parent of the head tipset. The head tipset is speculative, has not been
         // recognized by the network, and its messages are only included, not executed.
         // See https://github.com/filecoin-project/ref-fvm/issues/1135.
-        </span><span class="kw">let </span>heaviest = ctx.state_manager.chain_store().heaviest_tipset();
+        </span><span class="kw">let </span>heaviest = ctx.chain_store().heaviest_tipset();
         <span class="kw">if </span>heaviest.epoch() == <span class="number">0 </span>{
             <span class="comment">// We're at genesis.
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="string">"0x0"</span>.to_string());
         }
         <span class="comment">// First non-null parent.
         </span><span class="kw">let </span>effective_parent = heaviest.parents();
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(parent)) = ctx.chain_store.chain_index.load_tipset(effective_parent) {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(parent)) = ctx.chain_index().load_tipset(effective_parent) {
             <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">"{:#x}"</span>, parent.epoch()))
         } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="string">"0x0"</span>.to_string())
@@ -2217,10 +2207,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(
-            <span class="string">"{:#x}"</span>,
-            ctx.state_manager.chain_config().eth_chain_id
-        ))
+        <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(<span class="string">"{:#x}"</span>, ctx.chain_config().eth_chain_id))
     }
 }
 
@@ -2238,7 +2225,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.state_manager.chain_store().heaviest_tipset();
+        <span class="kw">let </span>ts = ctx.chain_store().heaviest_tipset();
         <span class="kw">let </span>block0 = ts.block_headers().first();
         <span class="kw">let </span>base_fee = <span class="kw-2">&amp;</span>block0.parent_base_fee;
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(premium) = gas::estimate_gas_premium(<span class="kw-2">&amp;</span>ctx, <span class="number">10000</span>).<span class="kw">await </span>{
@@ -2265,9 +2252,8 @@
         (address, block_param): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>fil_addr = address.to_filecoin_address()<span class="question-mark">?</span>;
-        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_param)<span class="question-mark">?</span>;
-        <span class="kw">let </span>state =
-            StateTree::new_from_root(ctx.state_manager.blockstore_owned(), ts.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_param)<span class="question-mark">?</span>;
+        <span class="kw">let </span>state = StateTree::new_from_root(ctx.store_owned(), ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = state.get_required_actor(<span class="kw-2">&amp;</span>fil_addr)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(EthBigInt(actor.balance.atto().clone()))
     }
@@ -2339,11 +2325,11 @@
     data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
     tipset: <span class="kw-2">&amp;</span>Arc&lt;Tipset&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(Cid, Vec&lt;(ChainMessage, Receipt)&gt;)&gt; {
-    <span class="kw">let </span>msgs = data.chain_store.messages_for_tipset(tipset)<span class="question-mark">?</span>;
+    <span class="kw">let </span>msgs = data.chain_store().messages_for_tipset(tipset)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>(state_root, receipt_root) = data.state_manager.tipset_state(tipset).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>receipts = Receipt::get_receipts(data.state_manager.blockstore(), receipt_root)<span class="question-mark">?</span>;
+    <span class="kw">let </span>receipts = Receipt::get_receipts(data.store(), receipt_root)<span class="question-mark">?</span>;
 
     <span class="kw">if </span>msgs.len() != receipts.len() {
         <span class="macro">bail!</span>(
@@ -2616,7 +2602,7 @@
 
     <span class="kw">let </span>(state_root, msgs_and_receipts) = execute_tipset(<span class="kw-2">&amp;</span>data, <span class="kw-2">&amp;</span>tipset).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>state_tree = StateTree::new_from_root(data.state_manager.blockstore_owned(), <span class="kw-2">&amp;</span>state_root)<span class="question-mark">?</span>;
+    <span class="kw">let </span>state_tree = StateTree::new_from_root(data.store_owned(), <span class="kw-2">&amp;</span>state_root)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>full_transactions = <span class="macro">vec!</span>[];
     <span class="kw">let </span><span class="kw-2">mut </span>hash_transactions = <span class="macro">vec!</span>[];
@@ -2632,11 +2618,8 @@
             }
         };
 
-        <span class="kw">let </span><span class="kw-2">mut </span>tx = new_eth_tx_from_signed_message(
-            <span class="kw-2">&amp;</span>smsg,
-            <span class="kw-2">&amp;</span>state_tree,
-            data.state_manager.chain_config().eth_chain_id,
-        )<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>tx =
+            new_eth_tx_from_signed_message(<span class="kw-2">&amp;</span>smsg, <span class="kw-2">&amp;</span>state_tree, data.chain_config().eth_chain_id)<span class="question-mark">?</span>;
         tx.block_hash = block_hash.clone();
         tx.block_number = block_number.clone();
         tx.transaction_index = ti;
@@ -2683,7 +2666,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (block_param, full_tx_info): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_param)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_param)<span class="question-mark">?</span>;
         <span class="kw">let </span>block = block_from_filecoin_tipset(ctx, ts, full_tx_info).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(block)
     }
@@ -2703,7 +2686,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (block_param, full_tx_info): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_param)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_param)<span class="question-mark">?</span>;
         <span class="kw">let </span>block = block_from_filecoin_tipset(ctx, ts, full_tx_info).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(block)
     }
@@ -2723,9 +2706,9 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (block_hash,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = get_tipset_from_hash(<span class="kw-2">&amp;</span>ctx.chain_store, <span class="kw-2">&amp;</span>block_hash)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = get_tipset_from_hash(ctx.chain_store(), <span class="kw-2">&amp;</span>block_hash)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>head = ctx.chain_store.heaviest_tipset();
+        <span class="kw">let </span>head = ctx.chain_store().heaviest_tipset();
         <span class="kw">if </span>ts.epoch() &gt; head.epoch() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"requested a future epoch (beyond \"latest\")"</span>).into());
         }
@@ -2749,15 +2732,13 @@
         (block_number,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>height = block_number.<span class="number">0</span>;
-        <span class="kw">let </span>head = ctx.chain_store.heaviest_tipset();
+        <span class="kw">let </span>head = ctx.chain_store().heaviest_tipset();
         <span class="kw">if </span>height &gt; head.epoch() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"requested a future epoch (beyond \"latest\")"</span>).into());
         }
-        <span class="kw">let </span>ts = ctx.chain_store.chain_index.tipset_by_height(
-            height,
-            head,
-            ResolveNullTipset::TakeOlder,
-        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx
+            .chain_index()
+            .tipset_by_height(height, head, ResolveNullTipset::TakeOlder)<span class="question-mark">?</span>;
         <span class="kw">let </span>count = count_messages_in_tipset(ctx.store(), <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(Uint64(count <span class="kw">as _</span>))
     }
@@ -2777,7 +2758,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (tx_hash,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>result = ctx.chain_store.get_mapping(<span class="kw-2">&amp;</span>tx_hash);
+        <span class="kw">let </span>result = ctx.chain_store().get_mapping(<span class="kw-2">&amp;</span>tx_hash);
         <span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cid)) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cid)),
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="macro">tracing::debug!</span>(<span class="string">"Undefined key {tx_hash}"</span>),
@@ -2790,14 +2771,14 @@
         </span><span class="kw">let </span>cid = tx_hash.to_cid();
 
         <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;Vec&lt;SignedMessage&gt;, <span class="kw">crate</span>::chain::Error&gt; =
-            <span class="kw">crate</span>::chain::messages_from_cids(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>[cid]);
+            <span class="kw">crate</span>::chain::messages_from_cids(ctx.store(), <span class="kw-2">&amp;</span>[cid]);
         <span class="kw">if </span>result.is_ok() {
             <span class="comment">// This is an Eth Tx, Secp message, Or BLS message in the mpool
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cid));
         }
 
         <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;Vec&lt;Message&gt;, <span class="kw">crate</span>::chain::Error&gt; =
-            <span class="kw">crate</span>::chain::messages_from_cids(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>[cid]);
+            <span class="kw">crate</span>::chain::messages_from_cids(ctx.store(), <span class="kw-2">&amp;</span>[cid]);
         <span class="kw">if </span>result.is_ok() {
             <span class="comment">// This is a BLS message
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cid));
@@ -2884,7 +2865,7 @@
         <span class="kw">let </span>reward_percentiles = reward_percentiles.unwrap_or_default();
         <span class="self">Self</span>::validate_reward_precentiles(<span class="kw-2">&amp;</span>reward_percentiles)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>tipset = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, newest_block_number.into())<span class="question-mark">?</span>;
+        <span class="kw">let </span>tipset = tipset_by_block_number_or_hash(ctx.chain_store(), newest_block_number.into())<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>oldest_block_height = <span class="number">1</span>;
         <span class="comment">// NOTE: baseFeePerGas should include the next block after the newest of the returned range,
         //  because the next base fee can be inferred from the messages in the newest block.
@@ -3004,7 +2985,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (eth_address, block_number_or_hash): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_number_or_hash)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_number_or_hash)<span class="question-mark">?</span>;
         <span class="kw">let </span>to_address = FilecoinAddress::try_from(<span class="kw-2">&amp;</span>eth_address)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
@@ -3067,7 +3048,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>make_empty_result = || EthBytes(<span class="macro">vec!</span>[<span class="number">0</span>; EVM_WORD_LENGTH]);
 
-        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_number_or_hash)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_number_or_hash)<span class="question-mark">?</span>;
         <span class="kw">let </span>to_address = FilecoinAddress::try_from(<span class="kw-2">&amp;</span>eth_address)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="prelude-val">Some</span>(actor) = ctx
             .state_manager
@@ -3139,9 +3120,8 @@
         (sender, block_param): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>addr = sender.to_filecoin_address()<span class="question-mark">?</span>;
-        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(<span class="kw-2">&amp;</span>ctx.chain_store, block_param)<span class="question-mark">?</span>;
-        <span class="kw">let </span>state =
-            StateTree::new_from_root(ctx.state_manager.blockstore_owned(), ts.parent_state())<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_param)<span class="question-mark">?</span>;
+        <span class="kw">let </span>state = StateTree::new_from_root(ctx.store_owned(), ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = state.get_required_actor(<span class="kw-2">&amp;</span>addr)<span class="question-mark">?</span>;
         <span class="kw">if </span>fil_actor_interface::is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
             <span class="kw">let </span>evm_state =
@@ -3192,7 +3172,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>epoch = ctx.chain_store.heaviest_tipset().epoch();
+        <span class="kw">let </span>epoch = ctx.chain_store().heaviest_tipset().epoch();
         <span class="kw">let </span>version = u32::from(ctx.state_manager.get_network_version(epoch).<span class="number">0</span>);
         <span class="prelude-val">Ok</span>(Uint64(version.into()))
     }
@@ -3213,11 +3193,11 @@
         (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>smsgs_result: <span class="prelude-ty">Result</span>&lt;Vec&lt;SignedMessage&gt;, <span class="kw">crate</span>::chain::Error&gt; =
-            <span class="kw">crate</span>::chain::messages_from_cids(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>[cid]);
+            <span class="kw">crate</span>::chain::messages_from_cids(ctx.store(), <span class="kw-2">&amp;</span>[cid]);
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(smsgs) = smsgs_result {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(smsg) = smsgs.first() {
                 <span class="kw">let </span>hash = <span class="kw">if </span>smsg.is_delegated() {
-                    <span class="kw">let </span>chain_id = ctx.state_manager.chain_config().eth_chain_id;
+                    <span class="kw">let </span>chain_id = ctx.chain_config().eth_chain_id;
                     <span class="kw">let </span>(<span class="kw">_</span>, tx) = eth_tx_from_signed_eth_message(smsg, chain_id)<span class="question-mark">?</span>;
                     tx.eth_hash()<span class="question-mark">?</span>.into()
                 } <span class="kw">else if </span>smsg.is_secp256k1() {
@@ -3229,7 +3209,7 @@
             }
         }
 
-        <span class="kw">let </span>msg_result = <span class="kw">crate</span>::chain::get_chain_message(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>cid);
+        <span class="kw">let </span>msg_result = <span class="kw">crate</span>::chain::get_chain_message(ctx.store(), <span class="kw-2">&amp;</span>cid);
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(msg) = msg_result {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(msg.cid().into()));
         }

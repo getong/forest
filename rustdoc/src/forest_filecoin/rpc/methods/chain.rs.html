@@ -1082,41 +1082,6 @@
 <a href="#1082" id="1082">1082</a>
 <a href="#1083" id="1083">1083</a>
 <a href="#1084" id="1084">1084</a>
-<a href="#1085" id="1085">1085</a>
-<a href="#1086" id="1086">1086</a>
-<a href="#1087" id="1087">1087</a>
-<a href="#1088" id="1088">1088</a>
-<a href="#1089" id="1089">1089</a>
-<a href="#1090" id="1090">1090</a>
-<a href="#1091" id="1091">1091</a>
-<a href="#1092" id="1092">1092</a>
-<a href="#1093" id="1093">1093</a>
-<a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
-<a href="#1096" id="1096">1096</a>
-<a href="#1097" id="1097">1097</a>
-<a href="#1098" id="1098">1098</a>
-<a href="#1099" id="1099">1099</a>
-<a href="#1100" id="1100">1100</a>
-<a href="#1101" id="1101">1101</a>
-<a href="#1102" id="1102">1102</a>
-<a href="#1103" id="1103">1103</a>
-<a href="#1104" id="1104">1104</a>
-<a href="#1105" id="1105">1105</a>
-<a href="#1106" id="1106">1106</a>
-<a href="#1107" id="1107">1107</a>
-<a href="#1108" id="1108">1108</a>
-<a href="#1109" id="1109">1109</a>
-<a href="#1110" id="1110">1110</a>
-<a href="#1111" id="1111">1111</a>
-<a href="#1112" id="1112">1112</a>
-<a href="#1113" id="1113">1113</a>
-<a href="#1114" id="1114">1114</a>
-<a href="#1115" id="1115">1115</a>
-<a href="#1116" id="1116">1116</a>
-<a href="#1117" id="1117">1117</a>
-<a href="#1118" id="1118">1118</a>
-<a href="#1119" id="1119">1119</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1178,8 +1143,7 @@
         (msg_cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>chain_message: ChainMessage = ctx
-            .state_manager
-            .blockstore()
+            .store()
             .get_cbor(<span class="kw-2">&amp;</span>msg_cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find message with cid {msg_cid}"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>chain_message {
@@ -1203,7 +1167,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (block_cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>store = ctx.state_manager.blockstore();
+        <span class="kw">let </span>store = ctx.store();
         <span class="kw">let </span>block_header: CachingBlockHeader = store
             .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
@@ -1230,7 +1194,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (block_cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>store = ctx.state_manager.blockstore();
+        <span class="kw">let </span>store = ctx.store();
         <span class="kw">let </span>block_header: CachingBlockHeader = store
             .get_cbor(<span class="kw-2">&amp;</span>block_cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find block header with cid {block_cid}"</span>))<span class="question-mark">?</span>;
@@ -1275,7 +1239,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>tipset = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>tipset = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         load_api_messages_from_tipset(ctx.store(), <span class="kw-2">&amp;</span>tipset)
     }
 }
@@ -1310,7 +1274,7 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"Another chain export job is still in progress"</span>).into());
         }
 
-        <span class="kw">let </span>chain_finality = ctx.state_manager.chain_config().policy.chain_finality;
+        <span class="kw">let </span>chain_finality = ctx.chain_config().policy.chain_finality;
         <span class="kw">if </span>recent_roots &lt; chain_finality {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="macro">format!</span>(
                 <span class="string">"recent-stateroots must be greater than {chain_finality}"
@@ -1318,16 +1282,14 @@
             .into());
         }
 
-        <span class="kw">let </span>head = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>start_ts = ctx.chain_store.chain_index.tipset_by_height(
-            epoch,
-            head,
-            ResolveNullTipset::TakeOlder,
-        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>head = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>start_ts =
+            ctx.chain_index()
+                .tipset_by_height(epoch, head, ResolveNullTipset::TakeOlder)<span class="question-mark">?</span>;
 
         <span class="kw">match if </span>dry_run {
             <span class="kw">crate</span>::chain::export::&lt;Sha256&gt;(
-                Arc::clone(<span class="kw-2">&amp;</span>ctx.chain_store.db),
+                ctx.store_owned(),
                 <span class="kw-2">&amp;</span>start_ts,
                 recent_roots,
                 VoidAsyncWriter,
@@ -1338,7 +1300,7 @@
         </span>} <span class="kw">else </span>{
             <span class="kw">let </span>file = tokio::fs::File::create(<span class="kw-2">&amp;</span>output_path).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">crate</span>::chain::export::&lt;Sha256&gt;(
-                Arc::clone(<span class="kw-2">&amp;</span>ctx.chain_store.db),
+                ctx.store_owned(),
                 <span class="kw-2">&amp;</span>start_ts,
                 recent_roots,
                 file,
@@ -1368,8 +1330,7 @@
         (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>bytes = ctx
-            .state_manager
-            .blockstore()
+            .store()
             .get(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?
             </span>.with_context(|| <span class="macro">format!</span>(<span class="string">"can't find object with cid={cid}"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(bytes)
@@ -1390,7 +1351,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="prelude-val">Ok</span>(ctx.state_manager.blockstore().get(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>.is_some())
+        <span class="prelude-val">Ok</span>(ctx.store().get(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>.is_some())
     }
 }
 
@@ -1462,15 +1423,11 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>blk: CachingBlockHeader = ctx.state_manager.blockstore().get_cbor_required(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>;
+        <span class="kw">let </span>blk: CachingBlockHeader = ctx.store().get_cbor_required(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>;
         <span class="kw">let </span>blk_msgs = <span class="kw-2">&amp;</span>blk.messages;
-        <span class="kw">let </span>(unsigned_cids, signed_cids) =
-            <span class="kw">crate</span>::chain::read_msg_cids(ctx.state_manager.blockstore(), blk_msgs)<span class="question-mark">?</span>;
-        <span class="kw">let </span>(bls_msg, secp_msg) = <span class="kw">crate</span>::chain::block_messages_from_cids(
-            ctx.state_manager.blockstore(),
-            <span class="kw-2">&amp;</span>unsigned_cids,
-            <span class="kw-2">&amp;</span>signed_cids,
-        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>(unsigned_cids, signed_cids) = <span class="kw">crate</span>::chain::read_msg_cids(ctx.store(), blk_msgs)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(bls_msg, secp_msg) =
+            <span class="kw">crate</span>::chain::block_messages_from_cids(ctx.store(), <span class="kw-2">&amp;</span>unsigned_cids, <span class="kw-2">&amp;</span>signed_cids)<span class="question-mark">?</span>;
         <span class="kw">let </span>cids = unsigned_cids.into_iter().chain(signed_cids).collect();
 
         <span class="kw">let </span>ret = BlockMessages {
@@ -1496,7 +1453,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (from, to): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        impl_chain_get_path(<span class="kw-2">&amp;</span>ctx.chain_store, <span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>to).map_err(Into::into)
+        impl_chain_get_path(ctx.chain_store(), <span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>to).map_err(Into::into)
     }
 }
 
@@ -1573,14 +1530,9 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (height, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>tss = ctx
-            .state_manager
-            .chain_store()
-            .chain_index
+            .chain_index()
             .tipset_by_height(height, ts, ResolveNullTipset::TakeOlder)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tss).clone())
     }
@@ -1600,14 +1552,9 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (height, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>tss = ctx
-            .state_manager
-            .chain_store()
-            .chain_index
+            .chain_index()
             .tipset_by_height(height, ts, ResolveNullTipset::TakeNewer)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>tss).clone())
     }
@@ -1624,7 +1571,7 @@
     <span class="kw">type </span><span class="prelude-val">Ok </span>= <span class="prelude-ty">Option</span>&lt;Tipset&gt;;
 
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>genesis = ctx.state_manager.chain_store().genesis_block_header();
+        <span class="kw">let </span>genesis = ctx.chain_store().genesis_block_header();
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Tipset::from(genesis)))
     }
 }
@@ -1640,7 +1587,7 @@
     <span class="kw">type </span><span class="prelude-val">Ok </span>= Tipset;
 
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>heaviest = ctx.state_manager.chain_store().heaviest_tipset();
+        <span class="kw">let </span>heaviest = ctx.chain_store().heaviest_tipset();
         <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>heaviest).clone())
     }
 }
@@ -1659,7 +1606,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (cid,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>blk: CachingBlockHeader = ctx.state_manager.blockstore().get_cbor_required(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>;
+        <span class="kw">let </span>blk: CachingBlockHeader = ctx.store().get_cbor_required(<span class="kw-2">&amp;</span>cid)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(blk)
     }
 }
@@ -1678,10 +1625,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>((<span class="kw-2">*</span>ts).clone())
     }
 }
@@ -1703,26 +1647,16 @@
         <span class="comment">// This is basically a port of the reference implementation at
         // https://github.com/filecoin-project/lotus/blob/v1.23.0/node/impl/full/chain.go#L321
 
-        </span><span class="kw">let </span>new_head = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>current = ctx.state_manager.chain_store().heaviest_tipset();
+        </span><span class="kw">let </span>new_head = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>current = ctx.chain_store().heaviest_tipset();
         <span class="kw">while </span>current.epoch() &gt;= new_head.epoch() {
             <span class="kw">for </span>cid <span class="kw">in </span>current.key().to_cids() {
-                ctx.state_manager
-                    .chain_store()
-                    .unmark_block_as_validated(<span class="kw-2">&amp;</span>cid);
+                ctx.chain_store().unmark_block_as_validated(<span class="kw-2">&amp;</span>cid);
             }
             <span class="kw">let </span>parents = <span class="kw-2">&amp;</span>current.block_headers().first().parents;
-            current = ctx
-                .state_manager
-                .chain_store()
-                .chain_index
-                .load_required_tipset(parents)<span class="question-mark">?</span>;
+            current = ctx.chain_index().load_required_tipset(parents)<span class="question-mark">?</span>;
         }
-        ctx.state_manager
-            .chain_store()
+        ctx.chain_store()
             .set_heaviest_tipset(new_head)
             .map_err(Into::into)
     }
@@ -1742,16 +1676,12 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (lookback,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>current = ctx.state_manager.chain_store().heaviest_tipset();
+        <span class="kw">let </span><span class="kw-2">mut </span>current = ctx.chain_store().heaviest_tipset();
         <span class="kw">let </span><span class="kw-2">mut </span>min_base_fee = current.block_headers().first().parent_base_fee.clone();
 
         <span class="kw">for _ in </span><span class="number">0</span>..lookback {
             <span class="kw">let </span>parents = <span class="kw-2">&amp;</span>current.block_headers().first().parents;
-            current = ctx
-                .state_manager
-                .chain_store()
-                .chain_index
-                .load_required_tipset(parents)<span class="question-mark">?</span>;
+            current = ctx.chain_index().load_required_tipset(parents)<span class="question-mark">?</span>;
 
             min_base_fee =
                 min_base_fee.min(current.block_headers().first().parent_base_fee.to_owned());
@@ -1775,8 +1705,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>tsk = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>weight = <span class="kw">crate</span>::fil_cns::weight(ctx.chain_store.blockstore(), <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>tsk = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>weight = <span class="kw">crate</span>::fil_cns::weight(ctx.store(), <span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(weight)
     }
 }
@@ -1789,7 +1719,7 @@
     <span class="kw">let </span>(sender, receiver) = broadcast::channel(<span class="number">100</span>);
 
     <span class="comment">// As soon as the channel is created, send the current tipset
-    </span><span class="kw">let </span>current = data.chain_store.heaviest_tipset();
+    </span><span class="kw">let </span>current = data.chain_store().heaviest_tipset();
     <span class="kw">let </span>(change, tipset) = (<span class="string">"current"</span>.into(), current);
     sender
         .send(<span class="macro">vec!</span>[ApiHeadChange {
@@ -1798,7 +1728,7 @@
         }])
         .expect(<span class="string">"receiver is not dropped"</span>);
 
-    <span class="kw">let </span><span class="kw-2">mut </span>subscriber = data.chain_store.publisher().subscribe();
+    <span class="kw">let </span><span class="kw-2">mut </span>subscriber = data.chain_store().publisher().subscribe();
 
     tokio::spawn(<span class="kw">async move </span>{
         <span class="comment">// Skip first message

@@ -265,16 +265,6 @@
 <a href="#265" id="265">265</a>
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a>
-<a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -370,21 +360,21 @@
         <span class="kw">let </span>encoded_message = to_vec(<span class="kw-2">&amp;</span>block_msg)<span class="question-mark">?</span>;
         <span class="kw">let </span>pubsub_block_str = <span class="macro">format!</span>(<span class="string">"{}/{}"</span>, PUBSUB_BLOCK_STR, ctx.network_name);
         <span class="kw">let </span>(bls_messages, secp_messages) =
-            chain::store::block_messages(<span class="kw-2">&amp;</span>ctx.chain_store.db, <span class="kw-2">&amp;</span>block_msg.header)<span class="question-mark">?</span>;
+            chain::store::block_messages(<span class="kw-2">&amp;</span>ctx.chain_store().db, <span class="kw-2">&amp;</span>block_msg.header)<span class="question-mark">?</span>;
         <span class="kw">let </span>block = Block {
             header: block_msg.header.clone(),
             bls_messages,
             secp_messages,
         };
         <span class="kw">let </span>ts = FullTipset::from(block);
-        <span class="kw">let </span>genesis_ts = Arc::new(Tipset::from(ctx.chain_store.genesis_block_header()));
+        <span class="kw">let </span>genesis_ts = Arc::new(Tipset::from(ctx.chain_store().genesis_block_header()));
 
         TipsetValidator(<span class="kw-2">&amp;</span>ts)
             .validate(
-                ctx.chain_store.clone(),
+                ctx.chain_store().clone(),
                 ctx.bad_blocks.clone(),
                 genesis_ts,
-                ctx.state_manager.chain_config().block_delay_secs,
+                ctx.chain_config().block_delay_secs,
             )
             .context(<span class="string">"failed to validate the tipset"</span>)<span class="question-mark">?</span>;
 
@@ -413,7 +403,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::sync::Arc;
 
-    <span class="kw">use </span><span class="kw">crate</span>::beacon::{mock_beacon::MockBeacon, BeaconPoint, BeaconSchedule};
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::blocks::RawBlockHeader;
     <span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
     <span class="kw">use </span><span class="kw">crate</span>::chain::ChainStore;
@@ -430,16 +420,9 @@
     <span class="kw">use </span>tokio::sync::mpsc;
     <span class="kw">use </span>tokio::{sync::RwLock, task::JoinSet};
 
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-
     <span class="kw">const </span>TEST_NET_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"test"</span>;
 
     <span class="kw">fn </span>ctx() -&gt; (Arc&lt;RPCState&lt;MemoryDB&gt;&gt;, flume::Receiver&lt;NetworkMessage&gt;) {
-        <span class="kw">let </span>beacon = Arc::new(BeaconSchedule(<span class="macro">vec!</span>[BeaconPoint {
-            height: <span class="number">0</span>,
-            beacon: Box::&lt;MockBeacon&gt;::default(),
-        }]));
-
         <span class="kw">let </span>(network_send, network_rx) = flume::bounded(<span class="number">5</span>);
         <span class="kw">let </span>(tipset_send, <span class="kw">_</span>) = flume::bounded(<span class="number">5</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>services = JoinSet::new();
@@ -468,7 +451,6 @@
             Arc::new(StateManager::new(cs_arc.clone(), chain_config, sync_config).unwrap());
         <span class="kw">let </span>state_manager_for_thread = state_manager.clone();
         <span class="kw">let </span>cs_for_test = <span class="kw-2">&amp;</span>cs_arc;
-        <span class="kw">let </span>cs_for_chain = <span class="kw-2">&amp;</span>cs_arc;
         <span class="kw">let </span>mpool_network_send = network_send.clone();
         <span class="kw">let </span>pool = {
             <span class="kw">let </span>bz = hex::decode(<span class="string">"904300e80781586082cb7477a801f55c1f2ea5e5d1167661feea60a39f697e1099af132682b81cc5047beacf5b6e80d5f52b9fd90323fb8510a5396416dd076c13c85619e176558582744053a3faef6764829aa02132a1571a76aabdc498a638ea0054d3bb57f41d82015860812d2396cc4592cdf7f829374b01ffd03c5469a4b0a9acc5ccc642797aa0a5498b97b28d90820fedc6f79ff0a6005f5c15dbaca3b8a45720af7ed53000555667207a0ccb50073cd24510995abd4c4e45c1e9e114905018b2da9454190499941e818201582012dd0a6a7d0e222a97926da03adb5a7768d31cc7c5c2bd6828e14a7d25fa3a608182004b76616c69642070726f6f6681d82a5827000171a0e4022030f89a8b0373ad69079dbcbc5addfe9b34dce932189786e50d3eb432ede3ba9c43000f0001d82a5827000171a0e4022052238c7d15c100c1b9ebf849541810c9e3c2d86e826512c6c416d2318fcd496dd82a5827000171a0e40220e5658b3d18cd06e1db9015b4b0ec55c123a24d5be1ea24d83938c5b8397b4f2fd82a5827000171a0e4022018d351341c302a21786b585708c9873565a0d07c42521d4aaf52da3ff6f2e461586102c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001a5f2c5439586102b5cd48724dce0fec8799d77fd6c5113276e7f470c8391faa0b5a6033a3eaf357d635705c36abe10309d73592727289680515afd9d424793ba4796b052682d21b03c5c8a37d94827fecc59cdc5750e198fdf20dee012f4d627c6665132298ab95004500053724e0"</span>).unwrap();
@@ -508,8 +490,6 @@
             network_send,
             network_name: TEST_NET_NAME.to_owned(),
             start_time,
-            chain_store: cs_for_chain.clone(),
-            beacon,
             shutdown: mpsc::channel(<span class="number">1</span>).<span class="number">0</span>, <span class="comment">// dummy for tests
             </span>tipset_send,
         });

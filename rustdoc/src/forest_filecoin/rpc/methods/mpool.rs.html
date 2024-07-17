@@ -206,16 +206,6 @@
 <a href="#206" id="206">206</a>
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
-<a href="#209" id="209">209</a>
-<a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
-<a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
-<a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a>
-<a href="#218" id="218">218</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -267,10 +257,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(<span class="kw-2">mut </span>pending, mpts) = ctx.mpool.pending()<span class="question-mark">?</span>;
 
@@ -318,11 +305,7 @@
                 <span class="kw">break</span>;
             }
 
-            ts = ctx
-                .state_manager
-                .chain_store()
-                .chain_index
-                .load_required_tipset(ts.parents())<span class="question-mark">?</span>;
+            ts = ctx.chain_index().load_required_tipset(ts.parents())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(NotNullVec(pending.into_iter().collect()))
     }
@@ -343,10 +326,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk), ticket_quality): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx.mpool.select_messages(<span class="kw-2">&amp;</span>ts, ticket_quality)<span class="question-mark">?</span>)
     }
 }
@@ -392,7 +372,7 @@
         <span class="kw">let </span>from = umsg.from;
 
         <span class="kw">let </span><span class="kw-2">mut </span>keystore = ctx.keystore.as_ref().write().<span class="kw">await</span>;
-        <span class="kw">let </span>heaviest_tipset = ctx.state_manager.chain_store().heaviest_tipset();
+        <span class="kw">let </span>heaviest_tipset = ctx.chain_store().heaviest_tipset();
         <span class="kw">let </span>key_addr = ctx
             .state_manager
             .resolve_to_key_addr(<span class="kw-2">&amp;</span>from, <span class="kw-2">&amp;</span>heaviest_tipset)

@@ -123,7 +123,7 @@
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>node_status = NodeStatusResult::default();
 
-        <span class="kw">let </span>head = ctx.state_manager.chain_store().heaviest_tipset();
+        <span class="kw">let </span>head = ctx.chain_store().heaviest_tipset();
         <span class="kw">let </span>cur_duration: Duration = SystemTime::now().duration_since(UNIX_EPOCH)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>ts = head.min_timestamp();
@@ -137,7 +137,7 @@
             .into());
         };
 
-        <span class="kw">let </span>chain_finality = ctx.state_manager.chain_config().policy.chain_finality;
+        <span class="kw">let </span>chain_finality = ctx.chain_config().policy.chain_finality;
 
         node_status.sync_status.epoch = head.epoch() <span class="kw">as </span>u64;
         node_status.sync_status.behind = behind;
@@ -149,7 +149,7 @@
             <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100 </span>{
                 block_count += ts.block_headers().len();
                 <span class="kw">let </span>tsk = ts.parents();
-                ts = ctx.chain_store.chain_index.load_required_tipset(tsk)<span class="question-mark">?</span>;
+                ts = ctx.chain_index().load_required_tipset(tsk)<span class="question-mark">?</span>;
             }
 
             node_status.chain_status.blocks_per_tipset_last_100 = block_count <span class="kw">as </span>f64 / <span class="number">100.</span>;
@@ -157,7 +157,7 @@
             <span class="kw">for _ in </span><span class="number">100</span>..chain_finality {
                 block_count += ts.block_headers().len();
                 <span class="kw">let </span>tsk = ts.parents();
-                ts = ctx.chain_store.chain_index.load_required_tipset(tsk)<span class="question-mark">?</span>;
+                ts = ctx.chain_index().load_required_tipset(tsk)<span class="question-mark">?</span>;
             }
 
             node_status.chain_status.blocks_per_tipset_last_finality =

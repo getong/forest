@@ -289,14 +289,6 @@
 <a href="#289" id="289">289</a>
 <a href="#290" id="290">290</a>
 <a href="#291" id="291">291</a>
-<a href="#292" id="292">292</a>
-<a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-<a href="#295" id="295">295</a>
-<a href="#296" id="296">296</a>
-<a href="#297" id="297">297</a>
-<a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -409,15 +401,14 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (block_template,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>store = ctx.state_manager.blockstore();
+        <span class="kw">let </span>store = ctx.store();
         <span class="kw">let </span>parent_tipset = ctx
-            .chain_store
-            .chain_index
+            .chain_index()
             .load_required_tipset(<span class="kw-2">&amp;</span>block_template.parents)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>lookback_state = ChainStore::get_lookback_tipset_for_round(
-            ctx.state_manager.chain_store().chain_index.clone(),
-            ctx.state_manager.chain_config().clone(),
+            ctx.chain_index().clone(),
+            ctx.chain_config().clone(),
             parent_tipset.clone(),
             block_template.epoch,
         )
@@ -432,8 +423,7 @@
         </span><span class="kw">let </span>parent_base_fee = compute_base_fee(
             store,
             <span class="kw-2">&amp;</span>parent_tipset,
-            ctx.state_manager
-                .chain_config()
+            ctx.chain_config()
                 .height_infos
                 .get(<span class="kw-2">&amp;</span>Height::Smoke)
                 .context(<span class="string">"Missing Smoke height"</span>)<span class="question-mark">?
@@ -452,17 +442,14 @@
         <span class="kw">for </span>msg <span class="kw">in </span>block_template.messages {
             <span class="kw">match </span>msg.signature().signature_type() {
                 SignatureType::Bls =&gt; {
-                    <span class="kw">let </span>cid = ctx
-                        .chain_store
-                        .blockstore()
-                        .put_cbor_default(<span class="kw-2">&amp;</span>msg.message)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>cid = ctx.store().put_cbor_default(<span class="kw-2">&amp;</span>msg.message)<span class="question-mark">?</span>;
                     bls_msg_cids.push(cid);
                     bls_sigs.push(msg.signature);
                     bls_messages.push(msg.message);
                 }
                 SignatureType::Secp256k1 | SignatureType::Delegated =&gt; {
                     <span class="kw">if </span>msg.signature.is_valid_secpk_sig_type(network_version) {
-                        <span class="kw">let </span>cid = ctx.chain_store.blockstore().put_cbor_default(<span class="kw-2">&amp;</span>msg)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>cid = ctx.store().put_cbor_default(<span class="kw-2">&amp;</span>msg)<span class="question-mark">?</span>;
                         secpk_msg_cids.push(cid);
                         secpk_messages.push(msg);
                     } <span class="kw">else </span>{
@@ -475,7 +462,7 @@
             }
         }
 
-        <span class="kw">let </span>store = ctx.chain_store.blockstore();
+        <span class="kw">let </span>store = ctx.store();
         <span class="kw">let </span><span class="kw-2">mut </span>message_array = Amt::&lt;Cid, <span class="kw">_</span>&gt;::new(store);
         <span class="kw">for </span>(i, cid) <span class="kw">in </span>bls_msg_cids.iter().enumerate() {
             message_array.set(i <span class="kw">as </span>u64, <span class="kw-2">*</span>cid)<span class="question-mark">?</span>;
@@ -585,14 +572,11 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, epoch, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(ctx
             .state_manager
-            .miner_get_base_info(ctx.state_manager.beacon_schedule(), ts, address, epoch)
+            .miner_get_base_info(ctx.beacon(), ts, address, epoch)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }

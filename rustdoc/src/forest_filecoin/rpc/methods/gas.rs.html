@@ -275,13 +275,6 @@
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
 <a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
-<a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
-<a href="#281" id="281">281</a>
-<a href="#282" id="282">282</a>
-<a href="#283" id="283">283</a>
-<a href="#284" id="284">284</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -327,7 +320,7 @@
     max_queue_blks: i64,
     <span class="kw">_</span>: ApiTipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;TokenAmount, ServerError&gt; {
-    <span class="kw">let </span>ts = data.state_manager.chain_store().heaviest_tipset();
+    <span class="kw">let </span>ts = data.chain_store().heaviest_tipset();
 
     <span class="kw">let </span>parent_base_fee = <span class="kw-2">&amp;</span>ts.block_headers().first().parent_base_fee;
     <span class="kw">let </span>increase_factor =
@@ -378,19 +371,15 @@
     <span class="kw">let </span><span class="kw-2">mut </span>prices: Vec&lt;GasMeta&gt; = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>blocks = <span class="number">0</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>ts = data.state_manager.chain_store().heaviest_tipset();
+    <span class="kw">let </span><span class="kw-2">mut </span>ts = data.chain_store().heaviest_tipset();
 
     <span class="kw">for _ in </span><span class="number">0</span>..(nblocksincl * <span class="number">2</span>) {
         <span class="kw">if </span>ts.epoch() == <span class="number">0 </span>{
             <span class="kw">break</span>;
         }
-        <span class="kw">let </span>pts = data
-            .state_manager
-            .chain_store()
-            .chain_index
-            .load_required_tipset(ts.parents())<span class="question-mark">?</span>;
+        <span class="kw">let </span>pts = data.chain_index().load_required_tipset(ts.parents())<span class="question-mark">?</span>;
         blocks += pts.block_headers().len();
-        <span class="kw">let </span>msgs = <span class="kw">crate</span>::chain::messages_for_tipset(data.state_manager.blockstore_owned(), <span class="kw-2">&amp;</span>pts)<span class="question-mark">?</span>;
+        <span class="kw">let </span>msgs = <span class="kw">crate</span>::chain::messages_for_tipset(data.store_owned(), <span class="kw-2">&amp;</span>pts)<span class="question-mark">?</span>;
 
         prices.append(
             <span class="kw-2">&amp;mut </span>msgs
@@ -494,10 +483,7 @@
     msg.set_gas_fee_cap(TokenAmount::from_atto(<span class="number">0</span>));
     msg.set_gas_premium(TokenAmount::from_atto(<span class="number">0</span>));
 
-    <span class="kw">let </span>curr_ts = data
-        .state_manager
-        .chain_store()
-        .load_required_tipset_or_heaviest(tsk)<span class="question-mark">?</span>;
+    <span class="kw">let </span>curr_ts = data.chain_store().load_required_tipset_or_heaviest(tsk)<span class="question-mark">?</span>;
     <span class="kw">let </span>from_a = data
         .state_manager
         .resolve_to_key_addr(<span class="kw-2">&amp;</span>msg.from, <span class="kw-2">&amp;</span>curr_ts)

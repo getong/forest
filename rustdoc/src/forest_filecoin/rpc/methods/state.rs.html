@@ -2544,56 +2544,6 @@
 <a href="#2544" id="2544">2544</a>
 <a href="#2545" id="2545">2545</a>
 <a href="#2546" id="2546">2546</a>
-<a href="#2547" id="2547">2547</a>
-<a href="#2548" id="2548">2548</a>
-<a href="#2549" id="2549">2549</a>
-<a href="#2550" id="2550">2550</a>
-<a href="#2551" id="2551">2551</a>
-<a href="#2552" id="2552">2552</a>
-<a href="#2553" id="2553">2553</a>
-<a href="#2554" id="2554">2554</a>
-<a href="#2555" id="2555">2555</a>
-<a href="#2556" id="2556">2556</a>
-<a href="#2557" id="2557">2557</a>
-<a href="#2558" id="2558">2558</a>
-<a href="#2559" id="2559">2559</a>
-<a href="#2560" id="2560">2560</a>
-<a href="#2561" id="2561">2561</a>
-<a href="#2562" id="2562">2562</a>
-<a href="#2563" id="2563">2563</a>
-<a href="#2564" id="2564">2564</a>
-<a href="#2565" id="2565">2565</a>
-<a href="#2566" id="2566">2566</a>
-<a href="#2567" id="2567">2567</a>
-<a href="#2568" id="2568">2568</a>
-<a href="#2569" id="2569">2569</a>
-<a href="#2570" id="2570">2570</a>
-<a href="#2571" id="2571">2571</a>
-<a href="#2572" id="2572">2572</a>
-<a href="#2573" id="2573">2573</a>
-<a href="#2574" id="2574">2574</a>
-<a href="#2575" id="2575">2575</a>
-<a href="#2576" id="2576">2576</a>
-<a href="#2577" id="2577">2577</a>
-<a href="#2578" id="2578">2578</a>
-<a href="#2579" id="2579">2579</a>
-<a href="#2580" id="2580">2580</a>
-<a href="#2581" id="2581">2581</a>
-<a href="#2582" id="2582">2582</a>
-<a href="#2583" id="2583">2583</a>
-<a href="#2584" id="2584">2584</a>
-<a href="#2585" id="2585">2585</a>
-<a href="#2586" id="2586">2586</a>
-<a href="#2587" id="2587">2587</a>
-<a href="#2588" id="2588">2588</a>
-<a href="#2589" id="2589">2589</a>
-<a href="#2590" id="2590">2590</a>
-<a href="#2591" id="2591">2591</a>
-<a href="#2592" id="2592">2592</a>
-<a href="#2593" id="2593">2593</a>
-<a href="#2594" id="2594">2594</a>
-<a href="#2595" id="2595">2595</a>
-<a href="#2596" id="2596">2596</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -2625,7 +2575,6 @@
     address::Address, clock::ChainEpoch, deal::DealID, econ::TokenAmount, executor::Receipt,
     state_tree::ActorState, version::NetworkVersion,
 };
-<span class="kw">use </span><span class="kw">crate</span>::state_manager::chain_rand::ChainRand;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::circulating_supply::GenesisInfo;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::MarketBalance;
 <span class="kw">use </span><span class="kw">crate</span>::utils::db::{
@@ -2682,14 +2631,10 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (message, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>ctx.state_manager;
-        <span class="kw">let </span>tipset = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>tipset = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="comment">// Handle expensive fork error?
         // TODO(elmattic): https://github.com/ChainSafe/forest/issues/3733
-        </span><span class="prelude-val">Ok</span>(state_manager.call(<span class="kw-2">&amp;</span>message, <span class="prelude-val">Some</span>(tipset))<span class="question-mark">?</span>)
+        </span><span class="prelude-val">Ok</span>(ctx.state_manager.call(<span class="kw-2">&amp;</span>message, <span class="prelude-val">Some</span>(tipset))<span class="question-mark">?</span>)
     }
 }
 
@@ -2709,12 +2654,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk), message_cid): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>ctx.state_manager;
-        <span class="kw">let </span>tipset = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(state_manager.replay(tipset, message_cid).<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>tipset = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(ctx.state_manager.replay(tipset, message_cid).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }
 
@@ -2729,10 +2670,10 @@
     <span class="kw">type </span><span class="prelude-val">Ok </span>= String;
 
     <span class="kw">async fn </span>handle(ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;, (): <span class="self">Self</span>::Params) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>ctx.state_manager;
-        <span class="kw">let </span>heaviest_tipset = state_manager.chain_store().heaviest_tipset();
-
-        <span class="prelude-val">Ok</span>(state_manager.get_network_name(heaviest_tipset.parent_state())<span class="question-mark">?</span>)
+        <span class="kw">let </span>heaviest_tipset = ctx.chain_store().heaviest_tipset();
+        <span class="prelude-val">Ok</span>(ctx
+            .state_manager
+            .get_network_name(heaviest_tipset.parent_state())<span class="question-mark">?</span>)
     }
 }
 
@@ -2750,7 +2691,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx.state_manager.get_network_version(ts.epoch()))
     }
 }
@@ -2772,7 +2713,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx
             .state_manager
             .resolve_to_deterministic_address(address, ts)
@@ -2797,7 +2738,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx
             .state_manager
             .lookup_required_id(<span class="kw-2">&amp;</span>address, ts.as_ref())<span class="question-mark">?</span>)
@@ -2821,7 +2762,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>aid = ctx
             .state_manager
             .lookup_required_id(<span class="kw-2">&amp;</span>address, ts.as_ref())<span class="question-mark">?</span>;
@@ -2849,7 +2790,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = ctx.state_manager.get_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(state)
     }
@@ -2872,7 +2813,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         ctx.state_manager
             .market_balance(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)
             .map_err(From::from)
@@ -2894,7 +2835,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -2941,7 +2882,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx.state_manager.miner_info(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
@@ -2961,8 +2902,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -2997,7 +2938,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3022,8 +2963,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, dl_idx, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3059,7 +3000,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, sectors, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3085,8 +3026,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3123,7 +3064,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3150,7 +3091,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         ctx.state_manager
             .miner_power(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)
             .map_err(From::from)
@@ -3172,8 +3113,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3206,8 +3147,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3232,7 +3173,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         ctx.state_manager
             .miner_faults(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)
             .map_err(From::from)
@@ -3254,7 +3195,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         ctx.state_manager
             .miner_recoveries(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)
             .map_err(From::from)
@@ -3276,7 +3217,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3332,7 +3273,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, pci, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>state = <span class="kw-2">*</span>ts.parent_state();
 
@@ -3366,7 +3307,7 @@
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>Address::REWARD_ACTOR, state)<span class="question-mark">?</span>;
         <span class="kw">let </span>reward_state = reward::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
-        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.state_manager.chain_config().clone());
+        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.chain_config().clone());
         <span class="kw">let </span>circ_supply = genesis_info.get_vm_circulating_supply_detailed(
             ts.epoch(),
             <span class="kw-2">&amp;</span>Arc::new(ctx.store()),
@@ -3401,7 +3342,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, pci, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>state = <span class="kw-2">*</span>ts.parent_state();
 
@@ -3463,10 +3404,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (cid, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>tipset = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>tipset = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         ctx.state_manager
             .get_receipt(tipset, cid)
             .map_err(From::from)
@@ -3651,7 +3589,7 @@
         (root_cid, save_to_file): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>network_send = ctx.network_send.clone();
-        <span class="kw">let </span>db = ctx.chain_store.db.clone();
+        <span class="kw">let </span>db = ctx.store_owned();
 
         <span class="kw">let </span>(car_tx, car_handle) = <span class="kw">if let </span><span class="prelude-val">Some</span>(save_to_file) = save_to_file {
             <span class="kw">let </span>(car_tx, car_rx) = flume::bounded(<span class="number">100</span>);
@@ -3814,9 +3752,9 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (epoch,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>tipset = ctx.chain_store.chain_index.tipset_by_height(
+        <span class="kw">let </span>tipset = ctx.chain_index().tipset_by_height(
             epoch,
-            ctx.chain_store.heaviest_tipset(),
+            ctx.chain_store().heaviest_tipset(),
             ResolveNullTipset::TakeOlder,
         )<span class="question-mark">?</span>;
         <span class="kw">let </span>(state_root, <span class="kw">_</span>) = ctx
@@ -3855,14 +3793,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (personalization, rand_epoch, entropy, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>tipset = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>chain_config = ctx.state_manager.chain_config();
-        <span class="kw">let </span>chain_index = <span class="kw-2">&amp;</span>ctx.chain_store.chain_index;
-        <span class="kw">let </span>beacon = ctx.state_manager.beacon_schedule();
-        <span class="kw">let </span>chain_rand = ChainRand::new(chain_config.clone(), tipset, chain_index.clone(), beacon);
+        <span class="kw">let </span>tipset = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>chain_rand = ctx.state_manager.chain_rand(tipset);
         <span class="kw">let </span>digest = chain_rand.get_chain_randomness(rand_epoch, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>value = <span class="kw">crate</span>::state_manager::chain_rand::draw_randomness_from_digest(
             <span class="kw-2">&amp;</span>digest,
@@ -3891,14 +3823,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (personalization, rand_epoch, entropy, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>tipset = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>chain_config = ctx.state_manager.chain_config();
-        <span class="kw">let </span>chain_index = <span class="kw-2">&amp;</span>ctx.chain_store.chain_index;
-        <span class="kw">let </span>beacon = ctx.state_manager.beacon_schedule();
-        <span class="kw">let </span>chain_rand = ChainRand::new(chain_config.clone(), tipset, chain_index.clone(), beacon);
+        <span class="kw">let </span>tipset = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>chain_rand = ctx.state_manager.chain_rand(tipset);
         <span class="kw">let </span>digest = chain_rand.get_beacon_randomness_v3(rand_epoch)<span class="question-mark">?</span>;
         <span class="kw">let </span>value = <span class="kw">crate</span>::state_manager::chain_rand::draw_randomness_from_digest(
             <span class="kw-2">&amp;</span>digest,
@@ -3926,7 +3852,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -3957,10 +3883,10 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>height = ts.epoch();
         <span class="kw">let </span>root = ts.parent_state();
-        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.state_manager.chain_config().clone());
+        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.chain_config().clone());
         <span class="kw">let </span>supply = genesis_info.get_state_circulating_supply(height, <span class="kw-2">&amp;</span>ctx.store_owned(), root)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(supply)
     }
@@ -3981,7 +3907,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>status = ctx.state_manager.verified_client_status(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(status)
     }
@@ -4002,8 +3928,8 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.state_manager.chain_config().clone());
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.chain_config().clone());
         <span class="prelude-val">Ok</span>(genesis_info.get_vm_circulating_supply_detailed(
             ts.epoch(),
             <span class="kw-2">&amp;</span>ctx.store_owned(),
@@ -4027,7 +3953,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -4057,7 +3983,7 @@
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>actors = <span class="macro">vec!</span>[];
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>state_tree = ctx.state_manager.get_state_tree(ts.parent_state())<span class="question-mark">?</span>;
         state_tree.for_each(|addr, _state| {
             actors.push(addr);
@@ -4082,7 +4008,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (deal_id, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>store = ctx.store();
         <span class="kw">let </span>actor = ctx
             .state_manager
@@ -4113,7 +4039,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>market_state = ctx.state_manager.market_state(<span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>;
         <span class="kw">let </span>escrow_table = market_state.escrow_table(ctx.store())<span class="question-mark">?</span>;
         <span class="kw">let </span>locked_table = market_state.locked_table(ctx.store())<span class="question-mark">?</span>;
@@ -4155,9 +4081,7 @@
         </span><span class="kw">let _</span>: bool = verified;
 
         <span class="kw">let </span>state_manager = <span class="kw-2">&amp;</span>ctx.state_manager;
-        <span class="kw">let </span>ts = state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>power_actor =
             state_manager.get_required_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -4170,17 +4094,17 @@
         <span class="kw">let </span>power_state = power::State::load(store, power_actor.code, power_actor.state)<span class="question-mark">?</span>;
         <span class="kw">let </span>reward_state = reward::State::load(store, reward_actor.code, reward_actor.state)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(state_manager.chain_config().clone());
+        <span class="kw">let </span>genesis_info = GenesisInfo::from_chain_config(ctx.chain_config().clone());
 
         <span class="kw">let </span>supply = genesis_info.get_vm_circulating_supply(
             ts.epoch(),
-            <span class="kw-2">&amp;</span>state_manager.blockstore_owned(),
+            <span class="kw-2">&amp;</span>ctx.store_owned(),
             ts.parent_state(),
         )<span class="question-mark">?</span>;
 
         <span class="kw">let </span>power_claim = power_state.total_power();
 
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>state_manager.chain_config().policy;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
 
         <span class="kw">let </span>baseline_power = reward_state.this_epoch_baseline_power();
 
@@ -4220,8 +4144,8 @@
         (epoch,): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         {
-            <span class="kw">let </span>genesis_timestamp = ctx.chain_store.genesis_block_header().timestamp <span class="kw">as </span>i64;
-            <span class="kw">let </span>block_delay = ctx.state_manager.chain_config().block_delay_secs <span class="kw">as </span>i64;
+            <span class="kw">let </span>genesis_timestamp = ctx.chain_store().genesis_block_header().timestamp <span class="kw">as </span>i64;
+            <span class="kw">let </span>block_delay = ctx.chain_config().block_delay_secs <span class="kw">as </span>i64;
             <span class="comment">// Give it a 1s clock drift buffer
             </span><span class="kw">let </span>epoch_timestamp = genesis_timestamp + block_delay * epoch + <span class="number">1</span>;
             <span class="kw">let </span>now_timestamp = chrono::Utc::now().timestamp();
@@ -4233,7 +4157,7 @@
             };
         }
 
-        <span class="kw">let </span>(<span class="kw">_</span>, beacon) = ctx.beacon.beacon_for_epoch(epoch)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw">_</span>, beacon) = ctx.beacon().beacon_for_epoch(epoch)<span class="question-mark">?</span>;
         <span class="kw">let </span>network_version = ctx.state_manager.get_network_version(epoch);
         <span class="kw">let </span>round = beacon.max_beacon_round_for_epoch(network_version, epoch);
         <span class="kw">let </span>entry = beacon.entry(round).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -4258,10 +4182,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -4287,10 +4208,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -4518,10 +4436,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore&gt;,
         (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx
             .state_manager
             .get_all_sectors(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?
@@ -4563,11 +4478,8 @@
         (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>store = ctx.store();
-        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy;
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>ctx.chain_config().policy;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
@@ -4625,19 +4537,13 @@
         (miner_address, sector_number, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>store = ctx.store();
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = ctx
             .state_manager
             .get_required_actor(<span class="kw-2">&amp;</span>miner_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>state = miner::State::load(store, actor.code, actor.state)<span class="question-mark">?</span>;
-        <span class="kw">let </span>(deadline, partition) = state.find_sector(
-            store,
-            sector_number,
-            <span class="kw-2">&amp;</span>ctx.state_manager.chain_config().policy,
-        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>(deadline, partition) =
+            state.find_sector(store, sector_number, <span class="kw-2">&amp;</span>ctx.chain_config().policy)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(SectorLocation {
             deadline,
             partition,
@@ -4661,10 +4567,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (from_to, ApiTipsetKey(tsk), max_height): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx
-            .state_manager
-            .chain_store()
-            .load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">if </span>from_to.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorObject::owned(
                 <span class="number">1</span>,
@@ -4688,7 +4591,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>cur_ts = ts.clone();
 
         <span class="kw">while </span>cur_ts.epoch() &gt;= max_height {
-            <span class="kw">let </span>msgs = ctx.chain_store.messages_for_tipset(<span class="kw-2">&amp;</span>cur_ts)<span class="question-mark">?</span>;
+            <span class="kw">let </span>msgs = ctx.chain_store().messages_for_tipset(<span class="kw-2">&amp;</span>cur_ts)<span class="question-mark">?</span>;
 
             <span class="kw">for </span>msg <span class="kw">in </span>msgs {
                 <span class="kw">if </span>from_to.matches(msg.message()) {
@@ -4700,10 +4603,7 @@
                 <span class="kw">break</span>;
             }
 
-            <span class="kw">let </span>next = ctx
-                .chain_store
-                .chain_index
-                .load_required_tipset(cur_ts.parents())<span class="question-mark">?</span>;
+            <span class="kw">let </span>next = ctx.chain_index().load_required_tipset(cur_ts.parents())<span class="question-mark">?</span>;
             cur_ts = next;
         }
 
@@ -4726,7 +4626,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, claim_id, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx.state_manager.get_claim(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts, claim_id)<span class="question-mark">?</span>)
     }
 }
@@ -4746,7 +4646,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>::get_claims(<span class="kw-2">&amp;</span>ctx.store_owned(), <span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
@@ -4781,7 +4681,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx.state_manager.get_all_claims(<span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
@@ -4801,7 +4701,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, allocation_id, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx
             .state_manager
             .get_allocation(<span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts, allocation_id)<span class="question-mark">?</span>)
@@ -4823,7 +4723,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>::get_allocations(<span class="kw-2">&amp;</span>ctx.store_owned(), <span class="kw-2">&amp;</span>address, <span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
@@ -4971,7 +4871,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (ApiTipsetKey(tsk),): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ctx.state_manager.get_all_allocations(<span class="kw-2">&amp;</span>ts)<span class="question-mark">?</span>)
     }
 }
@@ -4991,7 +4891,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (deal_id, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>ts = ctx.chain_store.load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
         <span class="kw">let </span>state_tree = StateTree::new_from_root(ctx.store_owned(), ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>market_actor = state_tree.get_required_actor(<span class="kw-2">&amp;</span>Address::MARKET_ACTOR)<span class="question-mark">?</span>;
         <span class="kw">let </span>market_state = market::State::load(ctx.store(), market_actor.code, market_actor.state)<span class="question-mark">?</span>;
@@ -5051,7 +4951,7 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        <span class="kw">let </span>config = ctx.state_manager.chain_config().as_ref();
+        <span class="kw">let </span>config = ctx.chain_config().as_ref();
         <span class="kw">let </span>policy = <span class="kw-2">&amp;</span>config.policy;
 
         <span class="comment">// This is the correct implementation, but for conformance with Lotus,
