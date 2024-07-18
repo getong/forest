@@ -1665,6 +1665,32 @@
 <a href="#1665" id="1665">1665</a>
 <a href="#1666" id="1666">1666</a>
 <a href="#1667" id="1667">1667</a>
+<a href="#1668" id="1668">1668</a>
+<a href="#1669" id="1669">1669</a>
+<a href="#1670" id="1670">1670</a>
+<a href="#1671" id="1671">1671</a>
+<a href="#1672" id="1672">1672</a>
+<a href="#1673" id="1673">1673</a>
+<a href="#1674" id="1674">1674</a>
+<a href="#1675" id="1675">1675</a>
+<a href="#1676" id="1676">1676</a>
+<a href="#1677" id="1677">1677</a>
+<a href="#1678" id="1678">1678</a>
+<a href="#1679" id="1679">1679</a>
+<a href="#1680" id="1680">1680</a>
+<a href="#1681" id="1681">1681</a>
+<a href="#1682" id="1682">1682</a>
+<a href="#1683" id="1683">1683</a>
+<a href="#1684" id="1684">1684</a>
+<a href="#1685" id="1685">1685</a>
+<a href="#1686" id="1686">1686</a>
+<a href="#1687" id="1687">1687</a>
+<a href="#1688" id="1688">1688</a>
+<a href="#1689" id="1689">1689</a>
+<a href="#1690" id="1690">1690</a>
+<a href="#1691" id="1691">1691</a>
+<a href="#1692" id="1692">1692</a>
+<a href="#1693" id="1693">1693</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1696,6 +1722,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{MiningBaseInfo, SectorOnChainInfo};
 <span class="kw">use </span><span class="kw">crate</span>::shim::actors::miner::MinerStateExt <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::actors::verifreg::VerifiedRegistryStateExt;
+<span class="kw">use </span><span class="kw">crate</span>::shim::actors::LoadActorStateFromBlockstore;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Payload, Protocol},
     clock::ChainEpoch,
@@ -1939,6 +1966,31 @@
     </span><span class="kw">pub fn </span>get_actor(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>Address, state_cid: Cid) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;ActorState&gt;&gt; {
         <span class="kw">let </span>state = <span class="self">self</span>.get_state_tree(<span class="kw-2">&amp;</span>state_cid)<span class="question-mark">?</span>;
         state.get_actor(addr)
+    }
+
+    <span class="doccomment">/// Gets actor state from implicit actor address
+    </span><span class="kw">pub fn </span>get_actor_state&lt;S: LoadActorStateFromBlockstore&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        ts: <span class="kw-2">&amp;</span>Tipset,
+    ) -&gt; anyhow::Result&lt;S&gt; {
+        <span class="kw">let </span>address = S::ACTOR.with_context(|| {
+            <span class="macro">format!</span>(
+                <span class="string">"No accociated actor address for {}, use `get_actor_state_from_address` instead."</span>,
+                std::any::type_name::&lt;S&gt;()
+            )
+        })<span class="question-mark">?</span>;
+        <span class="kw">let </span>actor = <span class="self">self</span>.get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
+        S::load(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>actor)
+    }
+
+    <span class="doccomment">/// Gets actor state from explicit actor address
+    </span><span class="kw">pub fn </span>get_actor_state_from_address&lt;S: LoadActorStateFromBlockstore&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        ts: <span class="kw-2">&amp;</span>Tipset,
+        actor_address: <span class="kw-2">&amp;</span>Address,
+    ) -&gt; anyhow::Result&lt;S&gt; {
+        <span class="kw">let </span>actor = <span class="self">self</span>.get_required_actor(actor_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
+        S::load(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>actor)
     }
 
     <span class="doccomment">/// Gets required actor from given [`Cid`].
