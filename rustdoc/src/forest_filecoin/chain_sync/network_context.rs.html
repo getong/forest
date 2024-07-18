@@ -631,6 +631,38 @@
 <a href="#631" id="631">631</a>
 <a href="#632" id="632">632</a>
 <a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -644,31 +676,39 @@
     time::{Duration, SystemTime},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::{FullTipset, Tipset, TipsetKey};
-<span class="kw">use </span><span class="kw">crate</span>::libp2p::{
-    chain_exchange::{
-        ChainExchangeRequest, ChainExchangeResponse, CompactedMessages, TipsetBundle, HEADERS,
-        MESSAGES,
+<span class="kw">use crate</span>::{
+    blocks::{FullTipset, Tipset, TipsetKey},
+    libp2p::{
+        chain_exchange::{
+            ChainExchangeRequest, ChainExchangeResponse, CompactedMessages, TipsetBundle, HEADERS,
+            MESSAGES,
+        },
+        hello::{HelloRequest, HelloResponse},
+        rpc::RequestResponseError,
+        NetworkMessage, PeerId, PeerManager, BITSWAP_TIMEOUT,
     },
-    hello::{HelloRequest, HelloResponse},
-    rpc::RequestResponseError,
-    NetworkMessage, PeerId, PeerManager, BITSWAP_TIMEOUT,
+    utils::{
+        misc::{AdaptiveValueProvider, ExponentialAdaptiveValueProvider},
+        stats::Stats,
+    },
 };
 <span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>fvm_ipld_encoding::CborStore;
+<span class="kw">use </span>once_cell::sync::Lazy;
+<span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>tokio::sync::Semaphore;
 <span class="kw">use </span>tokio::task::JoinSet;
 <span class="kw">use </span>tracing::{debug, trace, warn};
 
-<span class="doccomment">/// Timeout for response from an RPC request
-</span><span class="comment">// This value could be tweaked, this is just set pretty low to avoid peers
-// timing out requests from slowing the node down. If increase, should create a
-// countermeasure for this.
-</span><span class="kw">const </span>CHAIN_EXCHANGE_TIMEOUT: Duration = Duration::from_secs(<span class="number">5</span>);
+<span class="doccomment">/// Timeout milliseconds for response from an RPC request
+</span><span class="comment">// This value is automatically adapted in the range of [5, 60] for different network conditions,
+// being decreased on success and increased on failure
+</span><span class="kw">static </span>CHAIN_EXCHANGE_TIMEOUT_MILLIS: Lazy&lt;ExponentialAdaptiveValueProvider&lt;u64&gt;&gt; =
+    Lazy::new(|| ExponentialAdaptiveValueProvider::new(<span class="number">5000</span>, <span class="number">2000</span>, <span class="number">60000</span>, <span class="bool-val">false</span>));
 
 <span class="doccomment">/// Maximum number of concurrent chain exchange request being sent to the
 /// network.
@@ -936,13 +976,16 @@
                 }
                 <span class="kw">let </span>n_peers = peers.len();
                 <span class="kw">let </span><span class="kw-2">mut </span>batch = RaceBatch::new(MAX_CONCURRENT_CHAIN_EXCHANGE_REQUESTS);
+                <span class="kw">let </span>success_time_cost_millis_stats = Arc::new(Mutex::new(Stats::new()));
                 <span class="kw">for </span>peer_id <span class="kw">in </span>peers.into_iter() {
                     <span class="kw">let </span>peer_manager = <span class="self">self</span>.peer_manager.clone();
                     <span class="kw">let </span>network_send = <span class="self">self</span>.network_send.clone();
                     <span class="kw">let </span>request = request.clone();
                     <span class="kw">let </span>network_failures = network_failures.clone();
                     <span class="kw">let </span>lookup_failures = lookup_failures.clone();
+                    <span class="kw">let </span>success_time_cost_millis_stats = success_time_cost_millis_stats.clone();
                     batch.add(<span class="kw">async move </span>{
+                        <span class="kw">let </span>start = chrono::Utc::now();
                         <span class="kw">match </span><span class="self">Self</span>::chain_exchange_request(
                             peer_manager,
                             network_send,
@@ -953,7 +996,12 @@
                         </span>{
                             <span class="prelude-val">Ok</span>(chain_exchange_result) =&gt; {
                                 <span class="kw">match </span>chain_exchange_result.into_result::&lt;T&gt;() {
-                                    <span class="prelude-val">Ok</span>(r) =&gt; <span class="prelude-val">Ok</span>(r),
+                                    <span class="prelude-val">Ok</span>(r) =&gt; {
+                                        success_time_cost_millis_stats.lock().update(
+                                            (chrono::Utc::now() - start).num_milliseconds(),
+                                        );
+                                        <span class="prelude-val">Ok</span>(r)
+                                    }
                                     <span class="prelude-val">Err</span>(error) =&gt; {
                                         lookup_failures.fetch_add(<span class="number">1</span>, Ordering::Relaxed);
                                         <span class="macro">debug!</span>(%peer_id, %request_len, %options, %n_peers, %error, <span class="string">"Failed chain_exchange response"</span>);
@@ -971,6 +1019,11 @@
                 }
 
                 <span class="kw">let </span>make_failure_message = || {
+                    CHAIN_EXCHANGE_TIMEOUT_MILLIS.adapt_on_failure();
+                    <span class="macro">tracing::info!</span>(
+                        <span class="string">"Increased chain exchange timeout to {}ms"</span>,
+                        CHAIN_EXCHANGE_TIMEOUT_MILLIS.get()
+                    );
                     <span class="kw">let </span><span class="kw-2">mut </span>message = String::new();
                     message.push_str(<span class="string">"ChainExchange request failed for all top peers. "</span>);
                     message.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -989,6 +1042,15 @@
                     .get_ok_validated(validate)
                     .<span class="kw">await
                     </span>.ok_or_else(make_failure_message)<span class="question-mark">?</span>;
+                <span class="kw">if let </span><span class="prelude-val">Ok</span>(mean) = success_time_cost_millis_stats.lock().mean() {
+                    <span class="kw">if </span>CHAIN_EXCHANGE_TIMEOUT_MILLIS.adapt_on_success(mean <span class="kw">as _</span>) {
+                        <span class="macro">tracing::info!</span>(
+                            <span class="string">"Decreased chain exchange timeout to {}ms. Current average: {}ms"</span>,
+                            CHAIN_EXCHANGE_TIMEOUT_MILLIS.get(),
+                            mean,
+                        );
+                    }
+                }
                 <span class="macro">trace!</span>(<span class="string">"Succeed: handle_chain_exchange_request"</span>);
                 v
             }
@@ -1032,8 +1094,10 @@
         <span class="comment">// Add timeout to receiving response from p2p service to avoid stalling.
         // There is also a timeout inside the request-response calls, but this ensures
         // this.
-        </span><span class="kw">let </span>res =
-            tokio::task::spawn_blocking(<span class="kw">move </span>|| rx.recv_timeout(CHAIN_EXCHANGE_TIMEOUT)).<span class="kw">await</span>;
+        </span><span class="kw">let </span>res = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
+            rx.recv_timeout(Duration::from_millis(CHAIN_EXCHANGE_TIMEOUT_MILLIS.get()))
+        })
+        .<span class="kw">await</span>;
         <span class="kw">let </span>res_duration = SystemTime::now()
             .duration_since(req_pre_time)
             .unwrap_or_default();

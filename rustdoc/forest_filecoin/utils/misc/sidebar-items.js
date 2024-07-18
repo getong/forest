@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["LoggingColor"],"mod":["logo"]};
+window.SIDEBAR_ITEMS = {"enum":["LoggingColor"],"mod":["adaptive_value_provider","logo"]};

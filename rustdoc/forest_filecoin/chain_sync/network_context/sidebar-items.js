@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["CHAIN_EXCHANGE_TIMEOUT","MAX_CONCURRENT_CHAIN_EXCHANGE_REQUESTS"],"fn":["validate_network_tipsets"],"struct":["RaceBatch","SyncNetworkContext"]};
+window.SIDEBAR_ITEMS = {"constant":["MAX_CONCURRENT_CHAIN_EXCHANGE_REQUESTS"],"fn":["validate_network_tipsets"],"static":["CHAIN_EXCHANGE_TIMEOUT_MILLIS"],"struct":["RaceBatch","SyncNetworkContext"]};
