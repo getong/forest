@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["RetryError"],"fn":["multiaddr2url","retry"],"mod":["cid","db","encoding","io","misc","monitoring","net","proofs_api","reqwest_resume","stats","stream","version"],"struct":["RetryArgs","UrlFromMultiAddr"]};
+window.SIDEBAR_ITEMS = {"enum":["RetryError"],"fn":["multiaddr2url","retry"],"mod":["cid","db","encoding","flume","io","misc","monitoring","net","p2p","proofs_api","reqwest_resume","stats","stream","version"],"struct":["RetryArgs","UrlFromMultiAddr"]};

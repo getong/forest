@@ -1897,9 +1897,6 @@
 <a href="#1897" id="1897">1897</a>
 <a href="#1898" id="1898">1898</a>
 <a href="#1899" id="1899">1899</a>
-<a href="#1900" id="1900">1900</a>
-<a href="#1901" id="1901">1901</a>
-<a href="#1902" id="1902">1902</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1915,7 +1912,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::lotus_json::HasLotusJson;
 <span class="kw">use </span><span class="kw">crate</span>::message::{Message <span class="kw">as _</span>, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::message_pool::{MessagePool, MpoolRpcProvider};
-<span class="kw">use </span><span class="kw">crate</span>::networks::{parse_bootstrap_peers, ChainConfig, NetworkChain};
+<span class="kw">use </span><span class="kw">crate</span>::networks::{ChainConfig, NetworkChain};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::beacon::BeaconGetEntry;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::eth::types::{EthAddress, EthBytes};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::gas::GasEstimateGasLimit;
@@ -2477,15 +2474,8 @@
 }
 
 <span class="kw">fn </span>net_tests() -&gt; Vec&lt;RpcTest&gt; {
-    <span class="kw">let </span>bootstrap_peers = parse_bootstrap_peers(<span class="macro">include_str!</span>(<span class="string">"../../../build/bootstrap/calibnet"</span>));
-    <span class="kw">let </span>peer_id = bootstrap_peers
-        .last()
-        .expect(<span class="string">"No bootstrap peers found - bootstrap file is empty or corrupted"</span>)
-        .to_string()
-        .rsplit_once(<span class="string">'/'</span>)
-        .expect(<span class="string">"No peer id found - address is not in the expected format"</span>)
-        .<span class="number">1
-        </span>.to_string();
+    <span class="comment">// Tests with a known peer id tend to be flaky, use a random peer id to test the unhappy path only
+    </span><span class="kw">let </span>random_peer_id = libp2p::PeerId::random().to_string();
 
     <span class="comment">// More net commands should be tested. Tracking issue:
     // https://github.com/ChainSafe/forest/issues/3639
@@ -2493,7 +2483,11 @@
         RpcTest::basic(NetAddrsListen::request(()).unwrap()),
         RpcTest::basic(NetPeers::request(()).unwrap()),
         RpcTest::identity(NetListening::request(()).unwrap()),
-        RpcTest::basic(NetAgentVersion::request((peer_id,)).unwrap()),
+        RpcTest::basic(NetAgentVersion::request((random_peer_id.clone(),)).unwrap())
+            .policy_on_rejected(PolicyOnRejected::PassWithIdenticalError),
+        RpcTest::basic(NetFindPeer::request((random_peer_id,)).unwrap())
+            .policy_on_rejected(PolicyOnRejected::Pass)
+            .ignore(<span class="string">"It times out in lotus when peer not found"</span>),
         RpcTest::basic(NetInfo::request(()).unwrap())
             .ignore(<span class="string">"Not implemented in Lotus. Why do we even have this method?"</span>),
         RpcTest::basic(NetAutoNatStatus::request(()).unwrap()),

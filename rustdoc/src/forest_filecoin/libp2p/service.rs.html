@@ -898,14 +898,6 @@
 <a href="#898" id="898">898</a>
 <a href="#899" id="899">899</a>
 <a href="#900" id="900">900</a>
-<a href="#901" id="901">901</a>
-<a href="#902" id="902">902</a>
-<a href="#903" id="903">903</a>
-<a href="#904" id="904">904</a>
-<a href="#905" id="905">905</a>
-<a href="#906" id="906">906</a>
-<a href="#907" id="907">907</a>
-<a href="#908" id="908">908</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -914,17 +906,20 @@
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::libp2p_bitswap::{
-    request_manager::{BitswapRequestManager, ValidatePeerCallback},
-    BitswapStoreRead, BitswapStoreReadWrite,
-};
 <span class="kw">use </span><span class="kw">crate</span>::message::SignedMessage;
 <span class="kw">use crate</span>::{blocks::GossipBlock, rpc::net::NetInfoResult};
 <span class="kw">use crate</span>::{chain::ChainStore, utils::encoding::from_slice_with_fallback};
+<span class="kw">use crate</span>::{
+    libp2p_bitswap::{
+        request_manager::{BitswapRequestManager, ValidatePeerCallback},
+        BitswapStoreRead, BitswapStoreReadWrite,
+    },
+    utils::flume::FlumeSenderExt <span class="kw">as _</span>,
+};
 <span class="kw">use </span>ahash::{HashMap, HashSet};
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>flume::Sender;
-<span class="kw">use </span>futures::{channel::oneshot, select, stream::StreamExt <span class="kw">as _</span>};
+<span class="kw">use </span>futures::{select, stream::StreamExt <span class="kw">as _</span>};
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">pub use </span>libp2p::gossipsub::{IdentTopic, Topic};
 <span class="kw">use </span>libp2p::{
@@ -1053,13 +1048,14 @@
 <span class="doccomment">/// Network RPC API methods used to gather data from libp2p node.
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>NetRPCMethods {
-    AddrsListen(oneshot::Sender&lt;(PeerId, HashSet&lt;Multiaddr&gt;)&gt;),
-    Peers(oneshot::Sender&lt;HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt;&gt;),
-    Info(oneshot::Sender&lt;NetInfoResult&gt;),
-    Connect(oneshot::Sender&lt;bool&gt;, PeerId, HashSet&lt;Multiaddr&gt;),
-    Disconnect(oneshot::Sender&lt;()&gt;, PeerId),
-    AgentVersion(oneshot::Sender&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;, PeerId),
-    AutoNATStatus(oneshot::Sender&lt;NatStatus&gt;),
+    AddrsListen(flume::Sender&lt;(PeerId, HashSet&lt;Multiaddr&gt;)&gt;),
+    Peer(flume::Sender&lt;<span class="prelude-ty">Option</span>&lt;HashSet&lt;Multiaddr&gt;&gt;&gt;, PeerId),
+    Peers(flume::Sender&lt;HashMap&lt;PeerId, HashSet&lt;Multiaddr&gt;&gt;&gt;),
+    Info(flume::Sender&lt;NetInfoResult&gt;),
+    Connect(flume::Sender&lt;bool&gt;, PeerId, HashSet&lt;Multiaddr&gt;),
+    Disconnect(flume::Sender&lt;()&gt;, PeerId),
+    AgentVersion(flume::Sender&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt;, PeerId),
+    AutoNATStatus(flume::Sender&lt;NatStatus&gt;),
 }
 
 <span class="doccomment">/// The `Libp2pService` listens to events from the libp2p swarm.
@@ -1387,25 +1383,21 @@
                 NetRPCMethods::AddrsListen(response_channel) =&gt; {
                     <span class="kw">let </span>listeners = Swarm::listeners(swarm).cloned().collect();
                     <span class="kw">let </span>peer_id = Swarm::local_peer_id(swarm);
-
-                    <span class="kw">if </span>response_channel.send((<span class="kw-2">*</span>peer_id, listeners)).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to get Libp2p listeners"</span>);
-                    }
+                    response_channel.send_or_warn((<span class="kw-2">*</span>peer_id, listeners));
+                }
+                NetRPCMethods::Peer(response_channel, peer) =&gt; {
+                    <span class="kw">let </span>addresses = swarm.behaviour().peer_addresses().get(<span class="kw-2">&amp;</span>peer).cloned();
+                    response_channel.send_or_warn(addresses);
                 }
                 NetRPCMethods::Peers(response_channel) =&gt; {
                     <span class="kw">let </span>peer_addresses = swarm.behaviour().peer_addresses();
-                    <span class="kw">if </span>response_channel.send(peer_addresses).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to get Libp2p peers"</span>);
-                    }
+                    response_channel.send_or_warn(peer_addresses);
                 }
                 NetRPCMethods::Info(response_channel) =&gt; {
-                    <span class="kw">if </span>response_channel.send(swarm.network_info().into()).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to get Libp2p peers"</span>);
-                    }
+                    response_channel.send_or_warn(swarm.network_info().into());
                 }
                 NetRPCMethods::Connect(response_channel, peer_id, addresses) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>success = <span class="bool-val">false</span>;
-
                     <span class="kw">for </span><span class="kw-2">mut </span>multiaddr <span class="kw">in </span>addresses {
                         multiaddr.push(Protocol::P2p(peer_id));
 
@@ -1433,15 +1425,11 @@
                         };
                     }
 
-                    <span class="kw">if </span>response_channel.send(success).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to connect to a peer"</span>);
-                    }
+                    response_channel.send_or_warn(success);
                 }
                 NetRPCMethods::Disconnect(response_channel, peer_id) =&gt; {
                     <span class="kw">let _ </span>= Swarm::disconnect_peer_id(swarm, peer_id);
-                    <span class="kw">if </span>response_channel.send(()).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to disconnect from a peer"</span>);
-                    }
+                    response_channel.send_or_warn(());
                 }
                 NetRPCMethods::AgentVersion(response_channel, peer_id) =&gt; {
                     <span class="kw">let </span>agent_version = swarm.behaviour().peer_info(<span class="kw-2">&amp;</span>peer_id).and_then(|info| {
@@ -1449,15 +1437,11 @@
                             .as_ref()
                             .map(|id| id.agent_version.clone())
                     });
-                    <span class="kw">if </span>response_channel.send(agent_version).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to get agent version"</span>);
-                    }
+                    response_channel.send_or_warn(agent_version);
                 }
                 NetRPCMethods::AutoNATStatus(response_channel) =&gt; {
                     <span class="kw">let </span>nat_status = swarm.behaviour().discovery.nat_status();
-                    <span class="kw">if </span>response_channel.send(nat_status).is_err() {
-                        <span class="macro">warn!</span>(<span class="string">"Failed to get nat status"</span>);
-                    }
+                    response_channel.send_or_warn(nat_status);
                 }
             }
         }
