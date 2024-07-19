@@ -1673,6 +1673,8 @@
 <a href="#1673" id="1673">1673</a>
 <a href="#1674" id="1674">1674</a>
 <a href="#1675" id="1675">1675</a>
+<a href="#1676" id="1676">1676</a>
+<a href="#1677" id="1677">1677</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1694,6 +1696,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as _</span>, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::error::ServerError;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{ApiPaths, Ctx, Permission, RpcMethod};
+<span class="kw">use </span><span class="kw">crate</span>::shim::actors::is_evm_actor;
+<span class="kw">use </span><span class="kw">crate</span>::shim::actors::EVMActorStateLoad <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{Address <span class="kw">as </span>FilecoinAddress, Protocol};
 <span class="kw">use </span><span class="kw">crate</span>::shim::crypto::Signature;
 <span class="kw">use </span><span class="kw">crate</span>::shim::econ::{TokenAmount, BLOCK_GAS_LIMIT};
@@ -2992,7 +2996,7 @@
             .get_required_actor(<span class="kw-2">&amp;</span>to_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
         <span class="comment">// Not a contract. We could try to distinguish between accounts and "native" contracts here,
         // but it's not worth it.
-        </span><span class="kw">if </span>!fil_actor_interface::is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
+        </span><span class="kw">if </span>!is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(Default::default());
         }
 
@@ -3057,7 +3061,7 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(make_empty_result());
         };
 
-        <span class="kw">if </span>!fil_actor_interface::is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
+        <span class="kw">if </span>!is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(make_empty_result());
         }
 
@@ -3123,7 +3127,7 @@
         <span class="kw">let </span>ts = tipset_by_block_number_or_hash(ctx.chain_store(), block_param)<span class="question-mark">?</span>;
         <span class="kw">let </span>state = StateTree::new_from_root(ctx.store_owned(), ts.parent_state())<span class="question-mark">?</span>;
         <span class="kw">let </span>actor = state.get_required_actor(<span class="kw-2">&amp;</span>addr)<span class="question-mark">?</span>;
-        <span class="kw">if </span>fil_actor_interface::is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
+        <span class="kw">if </span>is_evm_actor(<span class="kw-2">&amp;</span>actor.code) {
             <span class="kw">let </span>evm_state =
                 fil_actor_interface::evm::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
             <span class="kw">if </span>!evm_state.is_alive() {
