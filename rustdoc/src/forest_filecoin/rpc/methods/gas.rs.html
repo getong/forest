@@ -275,12 +275,42 @@
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
 <a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-</span><span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET};
+</span><span class="kw">use </span>std::sync::Arc;
+
+<span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+<span class="kw">use </span><span class="kw">crate</span>::chain::{BASE_FEE_MAX_CHANGE_DENOM, BLOCK_GAS_TARGET};
+<span class="kw">use </span><span class="kw">crate</span>::interpreter::VMTrace;
 <span class="kw">use </span><span class="kw">crate</span>::message::{ChainMessage, Message <span class="kw">as </span>MessageTrait, SignedMessage};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{error::ServerError, types::<span class="kw-2">*</span>, ApiPaths, Ctx, Permission, RpcMethod};
+<span class="kw">use </span><span class="kw">crate</span>::shim::executor::ApplyRet;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Protocol},
     crypto::{Signature, SignatureType, SECP_SIG_LEN},
@@ -292,6 +322,8 @@
 <span class="kw">use </span>num::BigInt;
 <span class="kw">use </span>num_traits::{FromPrimitive, Zero};
 <span class="kw">use </span>rand_distr::{Distribution, Normal};
+
+<span class="kw">use </span><span class="kw">super</span>::state::InvocResult;
 
 <span class="kw">const </span>MIN_GAS_PREMIUM: f64 = <span class="number">100000.0</span>;
 
@@ -447,8 +479,84 @@
         ctx: Ctx&lt;<span class="kw">impl </span>Blockstore + Send + Sync + <span class="lifetime">'static</span>&gt;,
         (msg, tsk): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
-        estimate_gas_limit(<span class="kw-2">&amp;</span>ctx, msg, <span class="kw-2">&amp;</span>tsk).<span class="kw">await
-    </span>}
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>::estimate_gas_limit(<span class="kw-2">&amp;</span>ctx, msg, <span class="kw-2">&amp;</span>tsk).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">impl </span>GasEstimateGasLimit {
+    <span class="kw">pub async fn </span>estimate_call_with_gas&lt;DB&gt;(
+        data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
+        <span class="kw-2">mut </span>msg: Message,
+        ApiTipsetKey(tsk): <span class="kw-2">&amp;</span>ApiTipsetKey,
+        trace_config: VMTrace,
+    ) -&gt; anyhow::Result&lt;(InvocResult, ApplyRet, Vec&lt;ChainMessage&gt;, Arc&lt;Tipset&gt;)&gt;
+    <span class="kw">where
+        </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
+    {
+        msg.set_gas_limit(BLOCK_GAS_LIMIT);
+        msg.set_gas_fee_cap(TokenAmount::from_atto(<span class="number">0</span>));
+        msg.set_gas_premium(TokenAmount::from_atto(<span class="number">0</span>));
+
+        <span class="kw">let </span>curr_ts = data.chain_store().load_required_tipset_or_heaviest(tsk)<span class="question-mark">?</span>;
+        <span class="kw">let </span>from_a = data
+            .state_manager
+            .resolve_to_key_addr(<span class="kw-2">&amp;</span>msg.from, <span class="kw-2">&amp;</span>curr_ts)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>pending = data.mpool.pending_for(<span class="kw-2">&amp;</span>from_a);
+        <span class="kw">let </span>prior_messages: Vec&lt;ChainMessage&gt; = pending
+            .map(|s| s.into_iter().map(ChainMessage::Signed).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
+            .unwrap_or_default();
+
+        <span class="kw">let </span>ts = data.mpool.cur_tipset.lock().clone();
+        <span class="comment">// Pretend that the message is signed. This has an influence on the gas
+        // cost. We obviously can't generate a valid signature. Instead, we just
+        // fill the signature with zeros. The validity is not checked.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>chain_msg = <span class="kw">match </span>from_a.protocol() {
+            Protocol::Secp256k1 =&gt; ChainMessage::Signed(SignedMessage::new_unchecked(
+                msg,
+                Signature::new_secp256k1(<span class="macro">vec!</span>[<span class="number">0</span>; SECP_SIG_LEN]),
+            )),
+            Protocol::Delegated =&gt; ChainMessage::Signed(SignedMessage::new_unchecked(
+                msg,
+                <span class="comment">// In Lotus, delegated signatures have the same length as SECP256k1.
+                // This may or may not change in the future.
+                </span>Signature::new(SignatureType::Delegated, <span class="macro">vec!</span>[<span class="number">0</span>; SECP_SIG_LEN]),
+            )),
+            <span class="kw">_ </span>=&gt; ChainMessage::Unsigned(msg),
+        };
+
+        <span class="kw">let </span>(invoc_res, apply_ret) = data
+            .state_manager
+            .call_with_gas(
+                <span class="kw-2">&amp;mut </span>chain_msg,
+                <span class="kw-2">&amp;</span>prior_messages,
+                <span class="prelude-val">Some</span>(ts.clone()),
+                trace_config,
+            )
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>((invoc_res, apply_ret, prior_messages, ts))
+    }
+
+    <span class="kw">pub async fn </span>estimate_gas_limit&lt;DB&gt;(
+        data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
+        msg: Message,
+        tsk: <span class="kw-2">&amp;</span>ApiTipsetKey,
+    ) -&gt; anyhow::Result&lt;i64&gt;
+    <span class="kw">where
+        </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
+    {
+        <span class="kw">let </span>(res, ..) = <span class="self">Self</span>::estimate_call_with_gas(data, msg, tsk, VMTrace::NotTraced).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">match </span>res.msg_rct {
+            <span class="prelude-val">Some</span>(rct) =&gt; {
+                <span class="kw">if </span>rct.exit_code().value() != <span class="number">0 </span>{
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(-<span class="number">1</span>);
+                }
+                <span class="prelude-val">Ok</span>(rct.gas_used() <span class="kw">as </span>i64)
+            }
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(-<span class="number">1</span>),
+        }
+    }
 }
 
 <span class="doccomment">/// Estimates the gas parameters for a given message
@@ -470,75 +578,17 @@
     </span>}
 }
 
-<span class="kw">async fn </span>estimate_gas_limit&lt;DB&gt;(
-    data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
-    msg: Message,
-    ApiTipsetKey(tsk): <span class="kw-2">&amp;</span>ApiTipsetKey,
-) -&gt; <span class="prelude-ty">Result</span>&lt;i64, ServerError&gt;
-<span class="kw">where
-    </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
-{
-    <span class="kw">let </span><span class="kw-2">mut </span>msg = msg;
-    msg.set_gas_limit(BLOCK_GAS_LIMIT);
-    msg.set_gas_fee_cap(TokenAmount::from_atto(<span class="number">0</span>));
-    msg.set_gas_premium(TokenAmount::from_atto(<span class="number">0</span>));
-
-    <span class="kw">let </span>curr_ts = data.chain_store().load_required_tipset_or_heaviest(tsk)<span class="question-mark">?</span>;
-    <span class="kw">let </span>from_a = data
-        .state_manager
-        .resolve_to_key_addr(<span class="kw-2">&amp;</span>msg.from, <span class="kw-2">&amp;</span>curr_ts)
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="kw">let </span>pending = data.mpool.pending_for(<span class="kw-2">&amp;</span>from_a);
-    <span class="kw">let </span>prior_messages: Vec&lt;ChainMessage&gt; = pending
-        .map(|s| s.into_iter().map(ChainMessage::Signed).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
-        .unwrap_or_default();
-
-    <span class="kw">let </span>ts = data.mpool.cur_tipset.lock().clone();
-    <span class="comment">// Pretend that the message is signed. This has an influence on the gas
-    // cost. We obviously can't generate a valid signature. Instead, we just
-    // fill the signature with zeros. The validity is not checked.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>chain_msg = <span class="kw">match </span>from_a.protocol() {
-        Protocol::Secp256k1 =&gt; ChainMessage::Signed(SignedMessage::new_unchecked(
-            msg,
-            Signature::new_secp256k1(<span class="macro">vec!</span>[<span class="number">0</span>; SECP_SIG_LEN]),
-        )),
-        Protocol::Delegated =&gt; ChainMessage::Signed(SignedMessage::new_unchecked(
-            msg,
-            <span class="comment">// In Lotus, delegated signatures have the same length as SECP256k1.
-            // This may or may not change in the future.
-            </span>Signature::new(SignatureType::Delegated, <span class="macro">vec!</span>[<span class="number">0</span>; SECP_SIG_LEN]),
-        )),
-        <span class="kw">_ </span>=&gt; ChainMessage::Unsigned(msg),
-    };
-
-    <span class="kw">let </span>res = data
-        .state_manager
-        .call_with_gas(<span class="kw-2">&amp;mut </span>chain_msg, <span class="kw-2">&amp;</span>prior_messages, <span class="prelude-val">Some</span>(ts))
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">match </span>res.msg_rct {
-        <span class="prelude-val">Some</span>(rct) =&gt; {
-            <span class="kw">if </span>rct.exit_code().value() != <span class="number">0 </span>{
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(-<span class="number">1</span>);
-            }
-            <span class="prelude-val">Ok</span>(rct.gas_used() <span class="kw">as </span>i64)
-        }
-        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(-<span class="number">1</span>),
-    }
-}
-
 <span class="kw">pub async fn </span>estimate_message_gas&lt;DB&gt;(
     data: <span class="kw-2">&amp;</span>Ctx&lt;DB&gt;,
-    msg: Message,
+    <span class="kw-2">mut </span>msg: Message,
     _spec: <span class="prelude-ty">Option</span>&lt;MessageSendSpec&gt;,
     tsk: ApiTipsetKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Message, ServerError&gt;
 <span class="kw">where
     </span>DB: Blockstore + Send + Sync + <span class="lifetime">'static</span>,
 {
-    <span class="kw">let </span><span class="kw-2">mut </span>msg = msg;
     <span class="kw">if </span>msg.gas_limit == <span class="number">0 </span>{
-        <span class="kw">let </span>gl = estimate_gas_limit::&lt;DB&gt;(data, msg.clone(), <span class="kw-2">&amp;</span>tsk).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>gl = GasEstimateGasLimit::estimate_gas_limit(data, msg.clone(), <span class="kw-2">&amp;</span>tsk).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>gl = gl <span class="kw">as </span>f64 * data.mpool.config.gas_limit_overestimation;
         msg.set_gas_limit((gl <span class="kw">as </span>u64).min(BLOCK_GAS_LIMIT));
     }

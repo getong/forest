@@ -1897,6 +1897,34 @@
 <a href="#1897" id="1897">1897</a>
 <a href="#1898" id="1898">1898</a>
 <a href="#1899" id="1899">1899</a>
+<a href="#1900" id="1900">1900</a>
+<a href="#1901" id="1901">1901</a>
+<a href="#1902" id="1902">1902</a>
+<a href="#1903" id="1903">1903</a>
+<a href="#1904" id="1904">1904</a>
+<a href="#1905" id="1905">1905</a>
+<a href="#1906" id="1906">1906</a>
+<a href="#1907" id="1907">1907</a>
+<a href="#1908" id="1908">1908</a>
+<a href="#1909" id="1909">1909</a>
+<a href="#1910" id="1910">1910</a>
+<a href="#1911" id="1911">1911</a>
+<a href="#1912" id="1912">1912</a>
+<a href="#1913" id="1913">1913</a>
+<a href="#1914" id="1914">1914</a>
+<a href="#1915" id="1915">1915</a>
+<a href="#1916" id="1916">1916</a>
+<a href="#1917" id="1917">1917</a>
+<a href="#1918" id="1918">1918</a>
+<a href="#1919" id="1919">1919</a>
+<a href="#1920" id="1920">1920</a>
+<a href="#1921" id="1921">1921</a>
+<a href="#1922" id="1922">1922</a>
+<a href="#1923" id="1923">1923</a>
+<a href="#1924" id="1924">1924</a>
+<a href="#1925" id="1925">1925</a>
+<a href="#1926" id="1926">1926</a>
+<a href="#1927" id="1927">1927</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1919,7 +1947,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::rpc::miner::BlockTemplate;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::state::StateGetAllClaims;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{ApiTipsetKey, MessageFilter, MessageLookup};
-<span class="kw">use </span><span class="kw">crate</span>::rpc::{<span class="self">self</span>, eth::<span class="kw-2">*</span>};
+<span class="kw">use </span><span class="kw">crate</span>::rpc::{
+    <span class="self">self</span>,
+    eth::{types::<span class="kw-2">*</span>, <span class="kw-2">*</span>},
+};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::{prelude::<span class="kw-2">*</span>, start_rpc, RPCState};
 <span class="kw">use </span><span class="kw">crate</span>::shim::actors::MarketActorStateLoad <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::address::{CurrentNetwork, Network};
@@ -3063,11 +3094,11 @@
     ]
 }
 
-<span class="kw">fn </span>eth_tests_with_tipset(shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
+<span class="kw">fn </span>eth_tests_with_tipset&lt;DB: Blockstore&gt;(store: <span class="kw-2">&amp;</span>Arc&lt;DB&gt;, shared_tipset: <span class="kw-2">&amp;</span>Tipset) -&gt; Vec&lt;RpcTest&gt; {
     <span class="kw">let </span>block_cid = shared_tipset.key().cid().unwrap();
     <span class="kw">let </span>block_hash: Hash = block_cid.into();
 
-    <span class="macro">vec!</span>[
+    <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[
         RpcTest::identity(
             EthGetBalance::request((
                 EthAddress::from_str(<span class="string">"0xff38c072f286e3b20b3954ca9f99c05fbecc64aa"</span>).unwrap(),
@@ -3189,7 +3220,32 @@
             .unwrap(),
         ),
         RpcTest::identity(EthGetTransactionHashByCid::request((block_cid,)).unwrap()),
-    ]
+    ];
+
+    <span class="kw">for </span>block <span class="kw">in </span>shared_tipset.block_headers() {
+        <span class="kw">let </span>(bls_messages, secp_messages) =
+            <span class="kw">crate</span>::chain::store::block_messages(store, block).unwrap();
+        <span class="kw">for </span>msg <span class="kw">in </span>sample_messages(bls_messages.iter(), secp_messages.iter()) {
+            <span class="kw">if let </span><span class="prelude-val">Ok</span>(eth_to_addr) = msg.to.try_into() {
+                tests.extend([RpcTest::identity(
+                    EthEstimateGas::request((
+                        EthCallMessage {
+                            from: <span class="prelude-val">None</span>,
+                            to: <span class="prelude-val">Some</span>(eth_to_addr),
+                            value: msg.value.clone().into(),
+                            data: msg.params.clone().into(),
+                            ..Default::default()
+                        },
+                        <span class="prelude-val">Some</span>(BlockNumberOrHash::BlockNumber(shared_tipset.epoch().into())),
+                    ))
+                    .unwrap(),
+                )
+                .policy_on_rejected(PolicyOnRejected::Pass)]);
+            }
+        }
+    }
+
+    tests
 }
 
 <span class="kw">fn </span>eth_state_tests_with_tipset&lt;DB: Blockstore&gt;(
@@ -3262,7 +3318,7 @@
             config.miner_address,
         )<span class="question-mark">?</span>);
         tests.extend(state_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>);
-        tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
+        tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset));
         tests.extend(gas_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
         tests.extend(mpool_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
         tests.extend(eth_state_tests_with_tipset(

@@ -1721,10 +1721,13 @@
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
 <span class="kw">use </span><span class="kw">crate</span>::rpc::state::{ApiInvocResult, InvocResult, MessageGasCost};
 <span class="kw">use </span><span class="kw">crate</span>::rpc::types::{MiningBaseInfo, SectorOnChainInfo};
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::miner::MinerStateExt <span class="kw">as _</span>;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::state_load::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::verifreg::VerifiedRegistryStateExt;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::LoadActorStateFromBlockstore;
+<span class="kw">use </span><span class="kw">crate</span>::shim::{
+    actors::{
+        miner::MinerStateExt <span class="kw">as _</span>, state_load::<span class="kw-2">*</span>, verifreg::VerifiedRegistryStateExt <span class="kw">as _</span>,
+        LoadActorStateFromBlockstore,
+    },
+    executor::ApplyRet,
+};
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
     address::{Address, Payload, Protocol},
     clock::ChainEpoch,
@@ -2236,7 +2239,8 @@
         message: <span class="kw-2">&amp;mut </span>ChainMessage,
         prior_messages: <span class="kw-2">&amp;</span>[ChainMessage],
         tipset: <span class="prelude-ty">Option</span>&lt;Arc&lt;Tipset&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;InvocResult, Error&gt; {
+        trace_config: VMTrace,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(InvocResult, ApplyRet), Error&gt; {
         <span class="kw">let </span>ts = tipset.unwrap_or_else(|| <span class="self">self</span>.cs.heaviest_tipset());
         <span class="kw">let </span>(st, <span class="kw">_</span>) = <span class="self">self
             </span>.tipset_state(<span class="kw-2">&amp;</span>ts)
@@ -2268,7 +2272,7 @@
                     timestamp: ts.min_timestamp(),
                 },
                 <span class="kw-2">&amp;</span><span class="self">self</span>.engine,
-                VMTrace::NotTraced,
+                trace_config,
             )<span class="question-mark">?</span>;
 
             <span class="kw">for </span>msg <span class="kw">in </span>prior_messages {
@@ -2283,11 +2287,7 @@
             vm.apply_message(message)
         })<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(InvocResult {
-            msg: message.message().clone(),
-            msg_rct: <span class="prelude-val">Some</span>(ret.msg_receipt()),
-            error: ret.failure_info(),
-        })
+        <span class="prelude-val">Ok</span>((InvocResult::new(message.message().clone(), <span class="kw-2">&amp;</span>ret), ret))
     }
 
     <span class="doccomment">/// Replays the given message and returns the result of executing the
