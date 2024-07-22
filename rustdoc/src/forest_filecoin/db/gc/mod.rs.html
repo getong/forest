@@ -462,6 +462,12 @@
 <a href="#462" id="462">462</a>
 <a href="#463" id="463">463</a>
 <a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -546,7 +552,7 @@
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tokio::time;
-<span class="kw">use </span>tracing::info;
+<span class="kw">use </span>tracing::{error, info};
 
 <span class="kw">const </span>SETTINGS_KEY: <span class="kw-2">&amp;</span>str = <span class="string">"LAST_GC_RUN"</span>;
 
@@ -627,8 +633,10 @@
     /// using CAR-backed storage with a snapshot, for implementation simplicity.
     </span><span class="kw">pub async fn </span>gc_loop(<span class="kw-2">&amp;mut </span><span class="self">self</span>, interval: Duration) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">loop </span>{
-            <span class="self">self</span>.gc_workflow(interval).<span class="kw">await</span><span class="question-mark">?
-        </span>}
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="self">self</span>.gc_workflow(interval).<span class="kw">await </span>{
+                <span class="macro">error!</span>(<span class="string">"GC run error: {}"</span>, err)
+            }
+        }
     }
 
     <span class="kw">fn </span>update_last_gc_run(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: ChainEpoch) -&gt; anyhow::Result&lt;()&gt; {
@@ -652,7 +660,8 @@
     </span><span class="kw">async fn </span>gc_workflow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, interval: Duration) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span>depth = <span class="self">self</span>.depth;
         <span class="kw">let </span>tipset = (<span class="self">self</span>.get_heaviest_tipset)();
-        <span class="kw">let </span>current_epoch = tipset.epoch();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>current_epoch = tipset.epoch();
         <span class="kw">let </span>last_gc_run = <span class="self">self</span>.fetch_last_gc_run()<span class="question-mark">?</span>;
         <span class="comment">// Don't run the GC if there aren't enough state-roots yet or if we're too close to the last
         // GC run. Sleep and yield to the main loop in order to refresh the heaviest tipset value.
@@ -665,6 +674,9 @@
         </span><span class="kw">if </span><span class="self">self</span>.marked.is_empty() {
             <span class="comment">// Make sure we don't run the GC too often.
             </span>time::sleep(interval).<span class="kw">await</span>;
+
+            <span class="comment">// Refresh `current_epoch` after sleeping.
+            </span>current_epoch = (<span class="self">self</span>.get_heaviest_tipset)().epoch();
 
             <span class="macro">info!</span>(<span class="string">"populate keys for GC"</span>);
             <span class="self">self</span>.populate()<span class="question-mark">?</span>;
