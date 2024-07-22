@@ -353,20 +353,19 @@
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
-<a href="#356" id="356">356</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
 <span class="kw">use </span>std::{cell::Ref, sync::Arc};
 
-<span class="kw">use </span><span class="kw">crate</span>::blocks::CachingBlockHeader;
-<span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
+<span class="kw">use </span><span class="kw">crate</span>::blocks::{CachingBlockHeader, Tipset};
 <span class="kw">use </span><span class="kw">crate</span>::chain::{index::ChainIndex, store::ChainStore};
 <span class="kw">use </span><span class="kw">crate</span>::interpreter::errors::Error;
+<span class="kw">use </span><span class="kw">crate</span>::interpreter::resolve_to_key_addr;
 <span class="kw">use </span><span class="kw">crate</span>::networks::ChainConfig;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::MinerActorStateLoad <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::shim::{
+    actors::MinerActorStateLoad <span class="kw">as _</span>,
     gas::{price_list_by_network_version, Gas, GasTracker},
     state_tree::StateTree,
     version::NetworkVersion,
@@ -374,6 +373,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::utils::encoding::from_slice_with_fallback;
 <span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>cid::Cid;
+<span class="kw">use </span>fil_actor_interface::miner;
 <span class="kw">use </span>fvm2::externs::{Consensus, Externs, Rand};
 <span class="kw">use </span>fvm_ipld_blockstore::{
     tracking::{BSStats, TrackingBlockstore},
@@ -385,8 +385,6 @@
     consensus::{ConsensusFault, ConsensusFaultType},
 };
 <span class="kw">use </span>tracing::error;
-
-<span class="kw">use </span><span class="kw">crate</span>::interpreter::resolve_to_key_addr;
 
 <span class="kw">pub struct </span>ForestExternsV2&lt;DB&gt; {
     rand: Box&lt;<span class="kw">dyn </span>Rand&gt;,
@@ -450,7 +448,7 @@
 
         <span class="kw">let </span>tbs = TrackingBlockstore::new(<span class="kw-2">&amp;</span><span class="self">self</span>.chain_index.db);
 
-        <span class="kw">let </span>ms = fil_actor_interface::miner::State::load(<span class="kw-2">&amp;</span>tbs, actor.code, actor.state)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ms = miner::State::load(<span class="kw-2">&amp;</span>tbs, actor.code, actor.state)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>worker = ms.info(<span class="kw-2">&amp;</span>tbs)<span class="question-mark">?</span>.worker;
 

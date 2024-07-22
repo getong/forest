@@ -133,13 +133,6 @@
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -198,10 +191,9 @@
         (address, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-        <span class="kw">let </span>actor = ctx
+        <span class="kw">let </span>ms: multisig::State = ctx
             .state_manager
-            .get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>ms = multisig::State::load(ctx.store(), actor.code, actor.state)<span class="question-mark">?</span>;
+            .get_actor_state_from_address(<span class="kw-2">&amp;</span>ts, <span class="kw-2">&amp;</span>address)<span class="question-mark">?</span>;
         <span class="kw">let </span>txns = ms
             .get_pending_txn(ctx.store())<span class="question-mark">?
             </span>.iter()
@@ -246,10 +238,9 @@
             )),
             std::cmp::Ordering::Equal =&gt; <span class="prelude-val">Ok</span>(BigInt::from(<span class="number">0</span>)),
             std::cmp::Ordering::Less =&gt; {
-                <span class="kw">let </span>msig_actor = ctx
+                <span class="kw">let </span>ms: multisig::State = ctx
                     .state_manager
-                    .get_required_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>end_ts.parent_state())<span class="question-mark">?</span>;
-                <span class="kw">let </span>ms = multisig::State::load(ctx.store(), msig_actor.code, msig_actor.state)<span class="question-mark">?</span>;
+                    .get_actor_state_from_address(<span class="kw-2">&amp;</span>end_ts, <span class="kw-2">&amp;</span>addr)<span class="question-mark">?</span>;
                 <span class="kw">let </span>start_lb: TokenAmount = ms.locked_balance(start_ts.epoch())<span class="question-mark">?</span>.into();
                 <span class="kw">let </span>end_lb: TokenAmount = ms.locked_balance(end_ts.epoch())<span class="question-mark">?</span>.into();
                 <span class="prelude-val">Ok</span>(start_lb.atto() - end_lb.atto())
@@ -273,12 +264,7 @@
         (addr, ApiTipsetKey(tsk)): <span class="self">Self</span>::Params,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, ServerError&gt; {
         <span class="kw">let </span>ts = ctx.chain_store().load_required_tipset_or_heaviest(<span class="kw-2">&amp;</span>tsk)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>msig_actor = ctx
-            .state_manager
-            .get_required_actor(<span class="kw-2">&amp;</span>addr, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        <span class="kw">let </span>ms = multisig::State::load(ctx.store(), msig_actor.code, msig_actor.state)<span class="question-mark">?</span>;
-
+        <span class="kw">let </span>ms: multisig::State = ctx.state_manager.get_actor_state_from_address(<span class="kw-2">&amp;</span>ts, <span class="kw-2">&amp;</span>addr)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ms.get_vesting_schedule()<span class="question-mark">?</span>)
     }
 }

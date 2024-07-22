@@ -55,21 +55,11 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
-<a href="#60" id="60">60</a>
-<a href="#61" id="61">61</a>
-<a href="#62" id="62">62</a>
-<a href="#63" id="63">63</a>
-<a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 </span><span class="kw">use </span><span class="kw">crate</span>::blocks::Tipset;
-<span class="kw">use </span><span class="kw">crate</span>::shim::actors::PowerActorStateLoad <span class="kw">as _</span>;
-<span class="kw">use </span><span class="kw">crate</span>::shim::{address::Address, state_tree::StateTree};
+<span class="kw">use </span><span class="kw">crate</span>::shim::state_tree::StateTree;
 <span class="kw">use </span>fil_actor_interface::power;
 <span class="kw">use </span>fvm_ipld_blockstore::Blockstore;
 <span class="kw">use </span>num::{BigInt, Integer};
@@ -91,18 +81,10 @@
 <span class="kw">where
     </span>DB: Blockstore,
 {
-    <span class="kw">let </span>state =
-        StateTree::new_from_root(Arc::clone(db), ts.parent_state()).map_err(|e| e.to_string())<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>act = state
-        .get_actor(<span class="kw-2">&amp;</span>Address::POWER_ACTOR)
-        .map_err(|e| e.to_string())<span class="question-mark">?
-        </span>.ok_or(<span class="string">"Failed to load power actor for calculating weight"</span>)<span class="question-mark">?</span>;
-
-    <span class="kw">let </span>state = power::State::load(db, act.code, act.state).map_err(|e| e.to_string())<span class="question-mark">?</span>;
+    <span class="kw">let </span>state_tree = StateTree::new_from_tipset(Arc::clone(db), ts).map_err(|e| e.to_string())<span class="question-mark">?</span>;
+    <span class="kw">let </span>state: power::State = state_tree.get_actor_state().map_err(|e| e.to_string())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>tpow = state.into_total_quality_adj_power();
-
     <span class="kw">let </span>log2_p = <span class="kw">if </span>tpow &gt; BigInt::zero() {
         BigInt::from(tpow.bits() - <span class="number">1</span>)
     } <span class="kw">else </span>{

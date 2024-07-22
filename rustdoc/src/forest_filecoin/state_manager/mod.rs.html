@@ -1674,24 +1674,6 @@
 <a href="#1674" id="1674">1674</a>
 <a href="#1675" id="1675">1675</a>
 <a href="#1676" id="1676">1676</a>
-<a href="#1677" id="1677">1677</a>
-<a href="#1678" id="1678">1678</a>
-<a href="#1679" id="1679">1679</a>
-<a href="#1680" id="1680">1680</a>
-<a href="#1681" id="1681">1681</a>
-<a href="#1682" id="1682">1682</a>
-<a href="#1683" id="1683">1683</a>
-<a href="#1684" id="1684">1684</a>
-<a href="#1685" id="1685">1685</a>
-<a href="#1686" id="1686">1686</a>
-<a href="#1687" id="1687">1687</a>
-<a href="#1688" id="1688">1688</a>
-<a href="#1689" id="1689">1689</a>
-<a href="#1690" id="1690">1690</a>
-<a href="#1691" id="1691">1691</a>
-<a href="#1692" id="1692">1692</a>
-<a href="#1693" id="1693">1693</a>
-<a href="#1694" id="1694">1694</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1978,14 +1960,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ts: <span class="kw-2">&amp;</span>Tipset,
     ) -&gt; anyhow::Result&lt;S&gt; {
-        <span class="kw">let </span>address = S::ACTOR.with_context(|| {
-            <span class="macro">format!</span>(
-                <span class="string">"No accociated actor address for {}, use `get_actor_state_from_address` instead."</span>,
-                std::any::type_name::&lt;S&gt;()
-            )
-        })<span class="question-mark">?</span>;
-        <span class="kw">let </span>actor = <span class="self">self</span>.get_required_actor(<span class="kw-2">&amp;</span>address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        S::load_from_blockstore(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>actor)
+        <span class="kw">let </span>state_tree = <span class="self">self</span>.get_state_tree(ts.parent_state())<span class="question-mark">?</span>;
+        state_tree.get_actor_state()
     }
 
     <span class="doccomment">/// Gets actor state from explicit actor address
@@ -1994,8 +1970,8 @@
         ts: <span class="kw-2">&amp;</span>Tipset,
         actor_address: <span class="kw-2">&amp;</span>Address,
     ) -&gt; anyhow::Result&lt;S&gt; {
-        <span class="kw">let </span>actor = <span class="self">self</span>.get_required_actor(actor_address, <span class="kw-2">*</span>ts.parent_state())<span class="question-mark">?</span>;
-        S::load_from_blockstore(<span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>actor)
+        <span class="kw">let </span>state_tree = <span class="self">self</span>.get_state_tree(ts.parent_state())<span class="question-mark">?</span>;
+        state_tree.get_actor_state_from_address(actor_address)
     }
 
     <span class="doccomment">/// Gets required actor from given [`Cid`].
@@ -2051,23 +2027,11 @@
     }
 
     <span class="doccomment">/// Returns raw work address of a miner given the state root.
-    </span><span class="kw">pub fn </span>get_miner_work_addr(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        state_cid: Cid,
-        addr: <span class="kw-2">&amp;</span>Address,
-    ) -&gt; anyhow::Result&lt;Address, Error&gt; {
+    </span><span class="kw">pub fn </span>get_miner_work_addr(<span class="kw-2">&amp;</span><span class="self">self</span>, state_cid: Cid, addr: <span class="kw-2">&amp;</span>Address) -&gt; <span class="prelude-ty">Result</span>&lt;Address, Error&gt; {
         <span class="kw">let </span>state =
             StateTree::new_from_root(<span class="self">self</span>.blockstore_owned(), <span class="kw-2">&amp;</span>state_cid).map_err(Error::other)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>act = state
-            .get_actor(addr)
-            .map_err(Error::state)<span class="question-mark">?
-            </span>.ok_or_else(|| Error::State(<span class="string">"Miner actor not found"</span>.to_string()))<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>ms = miner::State::load(<span class="self">self</span>.blockstore(), act.code, act.state)<span class="question-mark">?</span>;
-
+        <span class="kw">let </span>ms: miner::State = state.get_actor_state_from_address(addr)<span class="question-mark">?</span>;
         <span class="kw">let </span>info = ms.info(<span class="self">self</span>.blockstore()).map_err(|e| e.to_string())<span class="question-mark">?</span>;
-
         <span class="kw">let </span>addr = resolve_to_key_addr(<span class="kw-2">&amp;</span>state, <span class="self">self</span>.blockstore(), <span class="kw-2">&amp;</span>info.worker().into())<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(addr)
     }
