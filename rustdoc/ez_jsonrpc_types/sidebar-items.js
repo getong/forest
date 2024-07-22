@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Id","MaybeBatchedRequest","MaybeBatchedResponse","RequestParameters"],"mod":["map","params"],"struct":["Error","Request","Response"]};

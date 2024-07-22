@@ -1,6 +1,7 @@
 (function() {var implementors = {
 "bincode":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"type\" href=\"bincode/type.Error.html\" title=\"type bincode::Error\">Error</a>"]],
 "config":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"enum\" href=\"config/enum.ConfigError.html\" title=\"enum config::ConfigError\">ConfigError</a>"]],
+"ez_jsonrpc_types":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"struct\" href=\"ez_jsonrpc_types/params/struct.Error.html\" title=\"struct ez_jsonrpc_types::params::Error\">Error</a>"]],
 "fvm_ipld_encoding":[],
 "libipld_core":[["impl <a class=\"trait\" href=\"serde/ser/trait.Error.html\" title=\"trait serde::ser::Error\">Error</a> for <a class=\"struct\" href=\"libipld_core/error/struct.SerdeError.html\" title=\"struct libipld_core::error::SerdeError\">SerdeError</a>"]],
 "serde":[],

@@ -1925,6 +1925,60 @@
 <a href="#1925" id="1925">1925</a>
 <a href="#1926" id="1926">1926</a>
 <a href="#1927" id="1927">1927</a>
+<a href="#1928" id="1928">1928</a>
+<a href="#1929" id="1929">1929</a>
+<a href="#1930" id="1930">1930</a>
+<a href="#1931" id="1931">1931</a>
+<a href="#1932" id="1932">1932</a>
+<a href="#1933" id="1933">1933</a>
+<a href="#1934" id="1934">1934</a>
+<a href="#1935" id="1935">1935</a>
+<a href="#1936" id="1936">1936</a>
+<a href="#1937" id="1937">1937</a>
+<a href="#1938" id="1938">1938</a>
+<a href="#1939" id="1939">1939</a>
+<a href="#1940" id="1940">1940</a>
+<a href="#1941" id="1941">1941</a>
+<a href="#1942" id="1942">1942</a>
+<a href="#1943" id="1943">1943</a>
+<a href="#1944" id="1944">1944</a>
+<a href="#1945" id="1945">1945</a>
+<a href="#1946" id="1946">1946</a>
+<a href="#1947" id="1947">1947</a>
+<a href="#1948" id="1948">1948</a>
+<a href="#1949" id="1949">1949</a>
+<a href="#1950" id="1950">1950</a>
+<a href="#1951" id="1951">1951</a>
+<a href="#1952" id="1952">1952</a>
+<a href="#1953" id="1953">1953</a>
+<a href="#1954" id="1954">1954</a>
+<a href="#1955" id="1955">1955</a>
+<a href="#1956" id="1956">1956</a>
+<a href="#1957" id="1957">1957</a>
+<a href="#1958" id="1958">1958</a>
+<a href="#1959" id="1959">1959</a>
+<a href="#1960" id="1960">1960</a>
+<a href="#1961" id="1961">1961</a>
+<a href="#1962" id="1962">1962</a>
+<a href="#1963" id="1963">1963</a>
+<a href="#1964" id="1964">1964</a>
+<a href="#1965" id="1965">1965</a>
+<a href="#1966" id="1966">1966</a>
+<a href="#1967" id="1967">1967</a>
+<a href="#1968" id="1968">1968</a>
+<a href="#1969" id="1969">1969</a>
+<a href="#1970" id="1970">1970</a>
+<a href="#1971" id="1971">1971</a>
+<a href="#1972" id="1972">1972</a>
+<a href="#1973" id="1973">1973</a>
+<a href="#1974" id="1974">1974</a>
+<a href="#1975" id="1975">1975</a>
+<a href="#1976" id="1976">1976</a>
+<a href="#1977" id="1977">1977</a>
+<a href="#1978" id="1978">1978</a>
+<a href="#1979" id="1979">1979</a>
+<a href="#1980" id="1980">1980</a>
+<a href="#1981" id="1981">1981</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -1964,8 +2018,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateManager;
 <span class="kw">use </span><span class="kw">crate</span>::utils::UrlFromMultiAddr;
 <span class="kw">use </span>ahash::HashMap;
-<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
-<span class="kw">use </span>bls_signatures::Serialize;
+<span class="kw">use </span>anyhow::{bail, Context <span class="kw">as _</span>};
+<span class="kw">use </span>bls_signatures::Serialize <span class="kw">as _</span>;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>clap::{Subcommand, ValueEnum};
 <span class="kw">use </span>fil_actor_interface::market;
@@ -1976,7 +2030,10 @@
 <span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
 <span class="kw">use </span>jsonrpsee::types::ErrorCode;
 <span class="kw">use </span>serde::de::DeserializeOwned;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>serde_json::Value;
 <span class="kw">use </span>similar::{ChangeTag, TextDiff};
+<span class="kw">use </span>std::io;
 <span class="kw">use </span>std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
@@ -2021,7 +2078,26 @@
         </span><span class="attr">#[arg(long, default_value_t = -<span class="number">50</span>)]
         </span>height: i64,
     },
-    <span class="doccomment">/// Compare
+    <span class="doccomment">/// Compare two RPC providers.
+    ///
+    /// The providers are labeled `forest` and `lotus`,
+    /// but other nodes may be used (such as `venus`).
+    ///
+    /// The `lotus` node is assumed to be correct and the `forest` node will be
+    /// marked as incorrect if it deviates.
+    ///
+    /// If snapshot files are provided,
+    /// these files will be used to generate additional tests.
+    ///
+    /// Example output:
+    /// ```markdown
+    /// | RPC Method                        | Forest              | Lotus         |
+    /// |-----------------------------------|---------------------|---------------|
+    /// | Filecoin.ChainGetBlock            | Valid               | Valid         |
+    /// | Filecoin.ChainGetGenesis          | Valid               | Valid         |
+    /// | Filecoin.ChainGetMessage (67)     | InternalServerError | Valid         |
+    /// ```
+    /// The number after a method name indicates how many times an RPC call was tested.
     </span>Compare {
         <span class="doccomment">/// Forest address
         </span><span class="attr">#[clap(long, default_value = <span class="string">"/ip4/127.0.0.1/tcp/2345/http"</span>)]
@@ -2029,9 +2105,6 @@
         <span class="doccomment">/// Lotus address
         </span><span class="attr">#[clap(long, default_value = <span class="string">"/ip4/127.0.0.1/tcp/1234/http"</span>)]
         </span>lotus: UrlFromMultiAddr,
-        <span class="doccomment">/// Snapshot input paths. Supports `.car`, `.car.zst`, and `.forest.car.zst`.
-        </span><span class="attr">#[arg()]
-        </span>snapshot_files: Vec&lt;PathBuf&gt;,
         <span class="doccomment">/// Filter which tests to run according to method name. Case sensitive.
         </span><span class="attr">#[arg(long, default_value = <span class="string">""</span>)]
         </span>filter: String,
@@ -2044,39 +2117,26 @@
         <span class="doccomment">/// Cancel test run on the first failure
         </span><span class="attr">#[arg(long)]
         </span>fail_fast: bool,
-        <span class="attr">#[arg(short, long, default_value = <span class="string">"10"</span>)]
-        </span><span class="doccomment">/// The number of tipsets to use to generate test cases.
-        </span>n_tipsets: usize,
+
         <span class="attr">#[arg(long, value_enum, default_value_t = RunIgnored::Default)]
         </span><span class="doccomment">/// Behavior for tests marked as `ignored`.
         </span>run_ignored: RunIgnored,
         <span class="doccomment">/// Maximum number of concurrent requests
         </span><span class="attr">#[arg(long, default_value = <span class="string">"8"</span>)]
         </span>max_concurrent_requests: usize,
-        <span class="doccomment">/// Miner address to use for miner tests. Miner worker key must be in the key-store.
-        </span><span class="attr">#[arg(long)]
-        </span>miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
-        <span class="doccomment">/// Worker address to use where key is applicable. Worker key must be in the key-store.
-        </span><span class="attr">#[arg(long)]
-        </span>worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
-        <span class="doccomment">/// Ethereum chain ID. Default to the calibnet chain ID.
-        </span><span class="attr">#[arg(long, default_value_t = CALIBNET_CHAIN_ID)]
-        </span>eth_chain_id: EthChainIdType,
-    },
-}
 
-<span class="doccomment">/// For more information about each flag, refer to the Forest documentation at:
-/// &lt;https://docs.forest.chainsafe.io/rustdoc/forest_filecoin/tool/subcommands/api_cmd/enum.ApiCommands.html&gt;
-</span><span class="kw">struct </span>ApiTestFlags {
-    filter: String,
-    filter_file: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-    fail_fast: bool,
-    n_tipsets: usize,
-    run_ignored: RunIgnored,
-    max_concurrent_requests: usize,
-    miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
-    worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
-    eth_chain_id: EthChainIdType,
+        <span class="attr">#[command(flatten)]
+        </span>create_tests_args: CreateTestsArgs,
+    },
+    DumpTests {
+        <span class="attr">#[command(flatten)]
+        </span>create_tests_args: CreateTestsArgs,
+        <span class="doccomment">/// Which API path to dump.
+        </span><span class="attr">#[arg(long)]
+        </span>path: rpc::ApiPath,
+        <span class="attr">#[arg(long)]
+        </span>include_ignored: bool,
+    },
 }
 
 <span class="kw">impl </span>ApiCommands {
@@ -2095,40 +2155,109 @@
             <span class="self">Self</span>::Compare {
                 forest: UrlFromMultiAddr(forest),
                 lotus: UrlFromMultiAddr(lotus),
-                snapshot_files,
                 filter,
                 filter_file,
                 fail_fast,
-                n_tipsets,
                 run_ignored,
                 max_concurrent_requests,
-                miner_address,
-                worker_address,
-                eth_chain_id,
+                create_tests_args,
             } =&gt; {
-                <span class="kw">let </span>config = ApiTestFlags {
-                    filter,
-                    filter_file,
-                    fail_fast,
-                    n_tipsets,
-                    run_ignored,
-                    max_concurrent_requests,
-                    miner_address,
-                    worker_address,
-                    eth_chain_id,
-                };
+                <span class="kw">let </span>forest = rpc::Client::from_url(forest);
+                <span class="kw">let </span>lotus = rpc::Client::from_url(lotus);
 
-                compare_apis(
-                    rpc::Client::from_url(forest),
-                    rpc::Client::from_url(lotus),
-                    snapshot_files,
-                    config,
+                <span class="kw">let </span>tests = create_tests(create_tests_args)<span class="question-mark">?</span>;
+                run_tests(
+                    tests,
+                    forest,
+                    lotus,
+                    max_concurrent_requests,
+                    filter_file,
+                    filter,
+                    run_ignored,
+                    fail_fast,
                 )
                 .<span class="kw">await</span><span class="question-mark">?
             </span>}
+            <span class="self">Self</span>::DumpTests {
+                create_tests_args,
+                path,
+                include_ignored,
+            } =&gt; {
+                <span class="kw">for </span>RpcTest {
+                    request:
+                        rpc::Request {
+                            method_name,
+                            params,
+                            api_paths,
+                            ..
+                        },
+                    ignore,
+                    ..
+                } <span class="kw">in </span>create_tests(create_tests_args)<span class="question-mark">?
+                </span>{
+                    <span class="kw">if </span>!api_paths.contains(path) {
+                        <span class="kw">continue</span>;
+                    }
+                    <span class="kw">if </span>ignore.is_some() &amp;&amp; !include_ignored {
+                        <span class="kw">continue</span>;
+                    }
+
+                    <span class="kw">let </span>dialogue = Dialogue {
+                        method: method_name.into(),
+                        params: <span class="kw">match </span>params {
+                            Value::Null | Value::Bool(<span class="kw">_</span>) | Value::Number(<span class="kw">_</span>) | Value::String(<span class="kw">_</span>) =&gt; {
+                                <span class="macro">bail!</span>(<span class="string">"params may not be a primitive"</span>)
+                            }
+                            Value::Array(v) =&gt; {
+                                <span class="prelude-val">Some</span>(ez_jsonrpc_types::RequestParameters::ByPosition(v))
+                            }
+                            Value::Object(it) =&gt; <span class="prelude-val">Some</span>(ez_jsonrpc_types::RequestParameters::ByName(
+                                it.into_iter().collect(),
+                            )),
+                        },
+                        response: <span class="prelude-val">None</span>,
+                    };
+                    serde_json::to_writer(io::stdout(), <span class="kw-2">&amp;</span>dialogue)<span class="question-mark">?</span>;
+                    <span class="macro">println!</span>();
+                }
+            }
         }
         <span class="prelude-val">Ok</span>(())
     }
+}
+
+<span class="attr">#[derive(clap::Args, Debug)]
+</span><span class="kw">pub struct </span>CreateTestsArgs {
+    <span class="doccomment">/// The number of tipsets to use to generate test cases.
+    </span><span class="attr">#[arg(short, long, default_value = <span class="string">"10"</span>)]
+    </span>n_tipsets: usize,
+    <span class="doccomment">/// Miner address to use for miner tests. Miner worker key must be in the key-store.
+    </span><span class="attr">#[arg(long)]
+    </span>miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    <span class="doccomment">/// Worker address to use where key is applicable. Worker key must be in the key-store.
+    </span><span class="attr">#[arg(long)]
+    </span>worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    <span class="doccomment">/// Ethereum chain ID. Default to the calibnet chain ID.
+    </span><span class="attr">#[arg(long, default_value_t = CALIBNET_CHAIN_ID)]
+    </span>eth_chain_id: EthChainIdType,
+    <span class="doccomment">/// Snapshot input paths. Supports `.car`, `.car.zst`, and `.forest.car.zst`.
+    </span>snapshot_files: Vec&lt;PathBuf&gt;,
+}
+
+<span class="attr">#[derive(Debug, Serialize, Deserialize)]
+</span><span class="kw">pub struct </span>Dialogue {
+    method: String,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
+    </span>params: <span class="prelude-ty">Option</span>&lt;ez_jsonrpc_types::RequestParameters&gt;,
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"Option::is_none"</span>)]
+    </span>response: <span class="prelude-ty">Option</span>&lt;DialogueResponse&gt;,
+}
+
+<span class="attr">#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"lowercase"</span>)]
+</span><span class="kw">enum </span>DialogueResponse {
+    <span class="prelude-ty">Result</span>(Value),
+    Error(ez_jsonrpc_types::Error),
 }
 
 <span class="attr">#[derive(ValueEnum, Debug, Clone)]
@@ -2412,12 +2541,6 @@
     ]
 }
 
-<span class="kw">fn </span>auth_tests() -&gt; Vec&lt;RpcTest&gt; {
-    <span class="comment">// Auth commands should be tested as well. Tracking issue:
-    // https://github.com/ChainSafe/forest/issues/3639
-    </span><span class="macro">vec!</span>[]
-}
-
 <span class="kw">fn </span>beacon_tests() -&gt; Vec&lt;RpcTest&gt; {
     <span class="macro">vec!</span>[RpcTest::identity(
         BeaconGetEntry::request((<span class="number">10101</span>,)).unwrap(),
@@ -2547,9 +2670,7 @@
     miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
 ) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
     <span class="comment">// If no miner address is provided, we can't run any miner tests.
-    </span><span class="kw">let </span>miner_address = <span class="kw">if let </span><span class="prelude-val">Some</span>(miner_address) = miner_address {
-        miner_address
-    } <span class="kw">else </span>{
+    </span><span class="kw">let </span><span class="prelude-val">Some</span>(miner_address) = miner_address <span class="kw">else </span>{
         <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]);
     };
 
@@ -3020,7 +3141,7 @@
     <span class="prelude-val">Ok</span>(tests)
 }
 
-<span class="kw">fn </span>wallet_tests(config: <span class="kw-2">&amp;</span>ApiTestFlags) -&gt; Vec&lt;RpcTest&gt; {
+<span class="kw">fn </span>wallet_tests(worker_address: <span class="prelude-ty">Option</span>&lt;Address&gt;) -&gt; Vec&lt;RpcTest&gt; {
     <span class="comment">// This address has been funded by the calibnet faucet and the private keys
     // has been discarded. It should always have a non-zero balance.
     </span><span class="kw">let </span>known_wallet = Address::from_str(<span class="string">"t1c4dkec3qhrnrsa4mccy7qntkyq2hhsma4sq7lui"</span>).unwrap();
@@ -3042,7 +3163,7 @@
 
     <span class="comment">// If a worker address is provided, we can test wallet methods requiring
     // a shared key.
-    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(worker_address) = config.worker_address {
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(worker_address) = worker_address {
         <span class="kw">use </span>base64::{prelude::BASE64_STANDARD, Engine};
         <span class="kw">let </span>msg =
             BASE64_STANDARD.encode(<span class="string">"Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn"</span>.as_bytes());
@@ -3299,7 +3420,12 @@
 
 <span class="comment">// Extract tests that use chain-specific data such as block CIDs or message
 // CIDs. Right now, only the last `n_tipsets` tipsets are used.
-</span><span class="kw">fn </span>snapshot_tests(store: Arc&lt;ManyCar&gt;, config: <span class="kw-2">&amp;</span>ApiTestFlags) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
+</span><span class="kw">fn </span>snapshot_tests(
+    store: Arc&lt;ManyCar&gt;,
+    num_tipsets: usize,
+    miner_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+    eth_chain_id: u64,
+) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
     <span class="comment">// shared_tipset in the snapshot might not be finalized for the offline RPC server
     // use heaviest - 10 instead
@@ -3310,22 +3436,14 @@
         .last()
         .expect(<span class="string">"Infallible"</span>);
 
-    <span class="kw">for </span>tipset <span class="kw">in </span>shared_tipset.chain(<span class="kw-2">&amp;</span>store).take(config.n_tipsets) {
+    <span class="kw">for </span>tipset <span class="kw">in </span>shared_tipset.chain(<span class="kw-2">&amp;</span>store).take(num_tipsets) {
         tests.extend(chain_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>);
-        tests.extend(miner_tests_with_tipset(
-            <span class="kw-2">&amp;</span>store,
-            <span class="kw-2">&amp;</span>tipset,
-            config.miner_address,
-        )<span class="question-mark">?</span>);
+        tests.extend(miner_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset, miner_address)<span class="question-mark">?</span>);
         tests.extend(state_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset)<span class="question-mark">?</span>);
         tests.extend(eth_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset));
         tests.extend(gas_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
         tests.extend(mpool_tests_with_tipset(<span class="kw-2">&amp;</span>tipset));
-        tests.extend(eth_state_tests_with_tipset(
-            <span class="kw-2">&amp;</span>store,
-            <span class="kw-2">&amp;</span>tipset,
-            config.eth_chain_id,
-        )<span class="question-mark">?</span>);
+        tests.extend(eth_state_tests_with_tipset(<span class="kw-2">&amp;</span>store, <span class="kw-2">&amp;</span>tipset, eth_chain_id)<span class="question-mark">?</span>);
     }
     <span class="prelude-val">Ok</span>(tests)
 }
@@ -3378,52 +3496,37 @@
         .unique()
 }
 
-<span class="doccomment">/// Compare two RPC providers. The providers are labeled `forest` and `lotus`,
-/// but other nodes may be used (such as `venus`). The `lotus` node is assumed
-/// to be correct and the `forest` node will be marked as incorrect if it
-/// deviates.
-///
-/// If snapshot files are provided, these files will be used to generate
-/// additional tests.
-///
-/// Example output:
-/// ```markdown
-/// | RPC Method                        | Forest              | Lotus         |
-/// |-----------------------------------|---------------------|---------------|
-/// | Filecoin.ChainGetBlock            | Valid               | Valid         |
-/// | Filecoin.ChainGetGenesis          | Valid               | Valid         |
-/// | Filecoin.ChainGetMessage (67)     | InternalServerError | Valid         |
-/// ```
-/// The number after a method name indicates how many times an RPC call was tested.
-</span><span class="attr">#[allow(clippy::too_many_arguments)]
-</span><span class="kw">async fn </span>compare_apis(
-    forest: rpc::Client,
-    lotus: rpc::Client,
-    snapshot_files: Vec&lt;PathBuf&gt;,
-    config: ApiTestFlags,
-) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">fn </span>create_tests(
+    CreateTestsArgs {
+        n_tipsets,
+        miner_address,
+        worker_address,
+        eth_chain_id,
+        snapshot_files,
+    }: CreateTestsArgs,
+) -&gt; anyhow::Result&lt;Vec&lt;RpcTest&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>tests = <span class="macro">vec!</span>[];
-
     tests.extend(common_tests());
-    tests.extend(auth_tests());
     tests.extend(beacon_tests());
     tests.extend(chain_tests());
     tests.extend(mpool_tests());
     tests.extend(net_tests());
     tests.extend(node_tests());
-    tests.extend(wallet_tests(<span class="kw-2">&amp;</span>config));
+    tests.extend(wallet_tests(worker_address));
     tests.extend(eth_tests());
     tests.extend(state_tests());
-
     <span class="kw">if </span>!snapshot_files.is_empty() {
         <span class="kw">let </span>store = Arc::new(ManyCar::try_from(snapshot_files)<span class="question-mark">?</span>);
-        tests.extend(snapshot_tests(store, <span class="kw-2">&amp;</span>config)<span class="question-mark">?</span>);
+        tests.extend(snapshot_tests(
+            store,
+            n_tipsets,
+            miner_address,
+            eth_chain_id,
+        )<span class="question-mark">?</span>);
     }
-
     tests.sort_by_key(|test| test.request.method_name);
-
-    run_tests(tests, forest, lotus, <span class="kw-2">&amp;</span>config).<span class="kw">await
-</span>}
+    <span class="prelude-val">Ok</span>(tests)
+}
 
 <span class="kw">async fn </span>start_offline_server(
     snapshot_files: Vec&lt;PathBuf&gt;,
@@ -3571,21 +3674,26 @@
     result
 }
 
-<span class="kw">async fn </span>run_tests(
+<span class="attr">#[allow(clippy::too_many_arguments)]
+</span><span class="kw">async fn </span>run_tests(
     tests: <span class="kw">impl </span>IntoIterator&lt;Item = RpcTest&gt;,
     forest: <span class="kw">impl </span>Into&lt;Arc&lt;rpc::Client&gt;&gt;,
     lotus: <span class="kw">impl </span>Into&lt;Arc&lt;rpc::Client&gt;&gt;,
-    config: <span class="kw-2">&amp;</span>ApiTestFlags,
+    max_concurrent_requests: usize,
+    filter_file: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    filter: String,
+    run_ignored: RunIgnored,
+    fail_fast: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>forest = Into::&lt;Arc&lt;rpc::Client&gt;&gt;::into(forest);
     <span class="kw">let </span>lotus = Into::&lt;Arc&lt;rpc::Client&gt;&gt;::into(lotus);
-    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(config.max_concurrent_requests));
+    <span class="kw">let </span>semaphore = Arc::new(Semaphore::new(max_concurrent_requests));
     <span class="kw">let </span><span class="kw-2">mut </span>futures = FuturesUnordered::new();
 
-    <span class="kw">let </span>filter_list = <span class="kw">if let </span><span class="prelude-val">Some</span>(filter_file) = <span class="kw-2">&amp;</span>config.filter_file {
+    <span class="kw">let </span>filter_list = <span class="kw">if let </span><span class="prelude-val">Some</span>(filter_file) = <span class="kw-2">&amp;</span>filter_file {
         FilterList::new_from_file(filter_file)<span class="question-mark">?
     </span>} <span class="kw">else </span>{
-        FilterList::default().allow(config.filter.clone())
+        FilterList::default().allow(filter.clone())
     };
 
     <span class="comment">// deduplicate tests by their hash-able representations
@@ -3603,11 +3711,11 @@
          }| (<span class="kw-2">*</span>method_name, params.clone(), <span class="kw-2">*</span>api_paths, ignore.is_some()),
     ) {
         <span class="comment">// By default, do not run ignored tests.
-        </span><span class="kw">if </span><span class="macro">matches!</span>(config.run_ignored, RunIgnored::Default) &amp;&amp; test.ignore.is_some() {
+        </span><span class="kw">if </span><span class="macro">matches!</span>(run_ignored, RunIgnored::Default) &amp;&amp; test.ignore.is_some() {
             <span class="kw">continue</span>;
         }
         <span class="comment">// If in `IgnoreOnly` mode, only run ignored tests.
-        </span><span class="kw">if </span><span class="macro">matches!</span>(config.run_ignored, RunIgnored::IgnoredOnly) &amp;&amp; test.ignore.is_none() {
+        </span><span class="kw">if </span><span class="macro">matches!</span>(run_ignored, RunIgnored::IgnoredOnly) &amp;&amp; test.ignore.is_none() {
             <span class="kw">continue</span>;
         }
 
@@ -3665,7 +3773,7 @@
                 .or_insert(<span class="number">1u32</span>);
         }
 
-        <span class="kw">if </span>!failed_results.is_empty() &amp;&amp; config.fail_fast {
+        <span class="kw">if </span>!failed_results.is_empty() &amp;&amp; fail_fast {
             <span class="kw">break</span>;
         }
     }

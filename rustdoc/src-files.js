@@ -148,6 +148,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["execute_command_macro",["",[],["lib.rs"]]],\
 ["execute_command_macro_impl",["",[],["lib.rs"]]],\
 ["execute_command_tokens",["",[],["lib.rs"]]],\
+["ez_jsonrpc_types",["",[["params",[],["ser.rs"]]],["lib.rs","map.rs","params.rs"]]],\
 ["fake_simd",["",[],["lib.rs"]]],\
 ["fastrand",["",[],["global_rng.rs","lib.rs"]]],\
 ["fdlimit",["",[],["lib.rs"]]],\
