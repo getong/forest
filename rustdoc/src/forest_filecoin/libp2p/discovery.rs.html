@@ -590,6 +590,10 @@
 <a href="#590" id="590">590</a>
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -726,18 +730,22 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>peers = HashSet::new();
 
-        <span class="comment">// Kademlia config
-        </span><span class="kw">let </span>store = MemoryStore::new(local_peer_id);
-        <span class="kw">let </span>kad_config = {
-            <span class="kw">let </span><span class="kw-2">mut </span>cfg = kad::Config::default();
-            cfg.set_protocol_names(<span class="macro">vec!</span>[StreamProtocol::try_from_owned(<span class="macro">format!</span>(
-                <span class="string">"/fil/kad/{network_name}/kad/1.0.0"
-            </span>))<span class="question-mark">?</span>]);
-            cfg
-        };
-
         <span class="kw">let </span>kademlia_opt = <span class="kw">if </span>enable_kademlia {
-            <span class="kw">let </span><span class="kw-2">mut </span>kademlia = kad::Behaviour::with_config(local_peer_id, store, kad_config);
+            <span class="comment">// This is a workaround for &lt;https://github.com/ChainSafe/forest/issues/4576&gt;
+            // `go-libp2p-kad-dht` sends the remote peer id as query key during bootstrap,
+            // however, `rust-libp2p` returns empty peer list when the key it receives
+            // matches the local one. It's fine to use a random peer id as a workaround
+            // since Kademlia not used as value providers in filecoin p2p network.
+            </span><span class="kw">let </span>kad_random_peer_id = PeerId::random();
+            <span class="kw">let </span>store = MemoryStore::new(kad_random_peer_id);
+            <span class="kw">let </span>kad_config = {
+                <span class="kw">let </span><span class="kw-2">mut </span>cfg = kad::Config::default();
+                cfg.set_protocol_names(<span class="macro">vec!</span>[StreamProtocol::try_from_owned(<span class="macro">format!</span>(
+                    <span class="string">"/fil/kad/{network_name}/kad/1.0.0"
+                </span>))<span class="question-mark">?</span>]);
+                cfg
+            };
+            <span class="kw">let </span><span class="kw-2">mut </span>kademlia = kad::Behaviour::with_config(kad_random_peer_id, store, kad_config);
             <span class="comment">// `set_mode(Server)` fixes https://github.com/ChainSafe/forest/issues/3620
             // but it should not be required as the behaviour should automatically switch to server mode
             // according to the doc. It might be a bug in `libp2p`.
