@@ -790,6 +790,7 @@
 <a href="#790" id="790">790</a>
 <a href="#791" id="791">791</a>
 <a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -958,7 +959,7 @@
         keystore.put(JWT_IDENTIFIER, generate_priv_key())<span class="question-mark">?</span>;
     }
 
-    handle_admin_token(<span class="kw-2">&amp;</span>opts, <span class="kw-2">&amp;</span>keystore)<span class="question-mark">?</span>;
+    handle_admin_token(<span class="kw-2">&amp;</span>opts, <span class="kw-2">&amp;</span>config, <span class="kw-2">&amp;</span>keystore)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>keystore = Arc::new(RwLock::new(keystore));
 
@@ -1363,12 +1364,13 @@
 
 <span class="doccomment">/// Generates, prints and optionally writes to a file the administrator JWT
 /// token.
-</span><span class="kw">fn </span>handle_admin_token(opts: <span class="kw-2">&amp;</span>CliOpts, keystore: <span class="kw-2">&amp;</span>KeyStore) -&gt; anyhow::Result&lt;()&gt; {
+</span><span class="kw">fn </span>handle_admin_token(opts: <span class="kw-2">&amp;</span>CliOpts, config: <span class="kw-2">&amp;</span>Config, keystore: <span class="kw-2">&amp;</span>KeyStore) -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>ki = keystore.get(JWT_IDENTIFIER)<span class="question-mark">?</span>;
+    <span class="kw">let </span>token_exp = config.client.token_exp;
     <span class="kw">let </span>token = create_token(
         ADMIN.iter().map(ToString::to_string).collect(),
         ki.private_key(),
-        <span class="prelude-val">None</span>,
+        token_exp,
     )<span class="question-mark">?</span>;
     <span class="macro">info!</span>(<span class="string">"Admin token: {token}"</span>);
     <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = opts.save_token.as_ref() {
