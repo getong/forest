@@ -112,6 +112,15 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -156,24 +165,33 @@
     <span class="attr">#[serde(rename = <span class="string">"Allow"</span>)]
     </span>allow: Vec&lt;String&gt;,
     <span class="comment">// Expiration time (as UTC timestamp)
-    </span>exp: usize,
+    </span>exp: <span class="prelude-ty">Option</span>&lt;usize&gt;,
 }
 
 <span class="doccomment">/// Create a new JWT Token
-</span><span class="kw">pub fn </span>create_token(perms: Vec&lt;String&gt;, key: <span class="kw-2">&amp;</span>[u8], token_exp: Duration) -&gt; JWTResult&lt;String&gt; {
-    <span class="kw">let </span>exp_time = Utc::now() + token_exp;
-    <span class="kw">let </span>payload = Claims {
-        allow: perms,
-        exp: exp_time.timestamp() <span class="kw">as </span>usize,
-    };
+</span><span class="kw">pub fn </span>create_token(
+    perms: Vec&lt;String&gt;,
+    key: <span class="kw-2">&amp;</span>[u8],
+    token_exp: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
+) -&gt; JWTResult&lt;String&gt; {
+    <span class="kw">let </span>exp = token_exp.map(|exp| (Utc::now() + exp).timestamp() <span class="kw">as </span>usize);
+    <span class="kw">let </span>payload = Claims { allow: perms, exp };
     encode(<span class="kw-2">&amp;</span>Header::default(), <span class="kw-2">&amp;</span>payload, <span class="kw-2">&amp;</span>EncodingKey::from_secret(key))
 }
 
 <span class="doccomment">/// Verify JWT Token and return the allowed permissions from token
 </span><span class="kw">pub fn </span>verify_token(token: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>[u8]) -&gt; JWTResult&lt;Vec&lt;String&gt;&gt; {
-    <span class="kw">let </span>validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::default());
-    <span class="kw">let </span>token = decode::&lt;Claims&gt;(token, <span class="kw-2">&amp;</span>DecodingKey::from_secret(key), <span class="kw-2">&amp;</span>validation)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(token.claims.allow)
+    <span class="kw">let </span><span class="kw-2">mut </span>validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::default());
+    validation.required_spec_claims = Default::default();
+
+    <span class="kw">let </span>decoded = decode::&lt;Claims&gt;(token, <span class="kw-2">&amp;</span>DecodingKey::from_secret(key), <span class="kw-2">&amp;</span>validation)<span class="question-mark">?</span>;
+    <span class="comment">// Special case for admin permissions so that an SP isn't locked out of admin permissions.
+    </span><span class="kw">if </span>!decoded.claims.allow.contains(<span class="kw-2">&amp;</span><span class="string">"admin"</span>.to_string()) {
+        <span class="kw">let </span>validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::default());
+        decode::&lt;Claims&gt;(token, <span class="kw-2">&amp;</span>DecodingKey::from_secret(key), <span class="kw-2">&amp;</span>validation)<span class="question-mark">?</span>;
+    }
+
+    <span class="prelude-val">Ok</span>(decoded.claims.allow)
 }
 
 <span class="kw">pub fn </span>generate_priv_key() -&gt; KeyInfo {
@@ -199,7 +217,7 @@
         </span><span class="kw">let </span>token = create_token(
             perms_expected.clone(),
             key.private_key(),
-            Duration::try_hours(<span class="number">1</span>).expect(<span class="string">"Infallible"</span>),
+            <span class="prelude-val">Some</span>(Duration::try_hours(<span class="number">1</span>).expect(<span class="string">"Infallible"</span>)),
         )
         .unwrap();
         <span class="kw">let </span>perms = verify_token(<span class="kw-2">&amp;</span>token, key.private_key()).unwrap();
@@ -209,7 +227,7 @@
         </span><span class="kw">let </span>token = create_token(
             perms_expected.clone(),
             key.private_key(),
-            -Duration::try_hours(<span class="number">1</span>).expect(<span class="string">"Infallible"</span>),
+            <span class="prelude-val">Some</span>(-Duration::try_hours(<span class="number">1</span>).expect(<span class="string">"Infallible"</span>)),
         )
         .unwrap();
         <span class="macro">assert!</span>(verify_token(<span class="kw-2">&amp;</span>token, key.private_key()).is_err());
@@ -219,7 +237,7 @@
         </span><span class="kw">let </span>token = create_token(
             perms_expected.clone(),
             key.private_key(),
-            -Duration::try_seconds(<span class="number">10</span>).expect(<span class="string">"Infallible"</span>),
+            <span class="prelude-val">Some</span>(-Duration::try_seconds(<span class="number">10</span>).expect(<span class="string">"Infallible"</span>)),
         )
         .unwrap();
         <span class="kw">let </span>perms = verify_token(<span class="kw-2">&amp;</span>token, key.private_key()).unwrap();
