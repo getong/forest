@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ServerAddr"],"fn":["init","spawn"],"struct":["Aggregator","AggregatorHandle","Builder","ConsoleLayer","Server","ServerParts"]};
+window.SIDEBAR_ITEMS = {"enum":["ServerAddr"],"fn":["init","spawn"],"struct":["Aggregator","Builder","ConsoleLayer","Server","ServerParts"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tonic-0.11.0/src/codec/decode.rs`."><title>decode.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tonic" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../tonic/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tonic-0.12.1/src/codec/decode.rs`."><title>decode.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tonic" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -414,12 +414,21 @@
 <a href="#414" id="414">414</a>
 <a href="#415" id="415">415</a>
 <a href="#416" id="416">416</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::compression::{decompress, CompressionEncoding};
-<span class="kw">use super</span>::{DecodeBuf, Decoder, DEFAULT_MAX_RECV_MESSAGE_SIZE, HEADER_SIZE};
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::compression::{decompress, CompressionEncoding, CompressionSettings};
+<span class="kw">use super</span>::{BufferSettings, DecodeBuf, Decoder, DEFAULT_MAX_RECV_MESSAGE_SIZE, HEADER_SIZE};
 <span class="kw">use crate</span>::{body::BoxBody, metadata::MetadataMap, Code, Status};
 <span class="kw">use </span>bytes::{Buf, BufMut, BytesMut};
-<span class="kw">use </span>http::StatusCode;
+<span class="kw">use </span>http::{HeaderMap, StatusCode};
 <span class="kw">use </span>http_body::Body;
+<span class="kw">use </span>http_body_util::BodyExt;
 <span class="kw">use </span>std::{
     fmt, future,
     pin::Pin,
@@ -428,8 +437,6 @@
 };
 <span class="kw">use </span>tokio_stream::Stream;
 <span class="kw">use </span>tracing::{debug, trace};
-
-<span class="kw">const </span>BUFFER_SIZE: usize = <span class="number">8 </span>* <span class="number">1024</span>;
 
 <span class="doccomment">/// Streaming requests and responses.
 ///
@@ -445,7 +452,7 @@
     state: State,
     direction: Direction,
     buf: BytesMut,
-    trailers: <span class="prelude-ty">Option</span>&lt;MetadataMap&gt;,
+    trailers: <span class="prelude-ty">Option</span>&lt;HeaderMap&gt;,
     decompress_buf: BytesMut,
     encoding: <span class="prelude-ty">Option</span>&lt;CompressionEncoding&gt;,
     max_message_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
@@ -453,14 +460,14 @@
 
 <span class="kw">impl</span>&lt;T&gt; Unpin <span class="kw">for </span>Streaming&lt;T&gt; {}
 
-<span class="attr">#[derive(Debug, Clone, Copy)]
+<span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">enum </span>State {
     ReadHeader,
     ReadBody {
         compression: <span class="prelude-ty">Option</span>&lt;CompressionEncoding&gt;,
         len: usize,
     },
-    Error,
+    Error(Status),
 }
 
 <span class="attr">#[derive(Debug, PartialEq, Eq)]
@@ -534,16 +541,17 @@
         B::Error: Into&lt;<span class="kw">crate</span>::Error&gt;,
         D: Decoder&lt;Item = T, Error = Status&gt; + Send + <span class="lifetime">'static</span>,
     {
+        <span class="kw">let </span>buffer_size = decoder.buffer_settings().buffer_size;
         <span class="self">Self </span>{
             decoder: Box::new(decoder),
             inner: StreamingInner {
                 body: body
-                    .map_data(|<span class="kw-2">mut </span>buf| buf.copy_to_bytes(buf.remaining()))
+                    .map_frame(|frame| frame.map_data(|<span class="kw-2">mut </span>buf| buf.copy_to_bytes(buf.remaining())))
                     .map_err(|err| Status::map_error(err.into()))
                     .boxed_unsync(),
                 state: State::ReadHeader,
                 direction,
-                buf: BytesMut::with_capacity(BUFFER_SIZE),
+                buf: BytesMut::with_capacity(buffer_size),
                 trailers: <span class="prelude-val">None</span>,
                 decompress_buf: BytesMut::new(),
                 encoding,
@@ -554,7 +562,10 @@
 }
 
 <span class="kw">impl </span>StreamingInner {
-    <span class="kw">fn </span>decode_chunk(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;DecodeBuf&lt;<span class="lifetime">'_</span>&gt;&gt;, Status&gt; {
+    <span class="kw">fn </span>decode_chunk(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        buffer_settings: BufferSettings,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;DecodeBuf&lt;<span class="lifetime">'_</span>&gt;&gt;, Status&gt; {
         <span class="kw">if let </span>State::ReadHeader = <span class="self">self</span>.state {
             <span class="kw">if </span><span class="self">self</span>.buf.remaining() &lt; HEADER_SIZE {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
@@ -597,7 +608,7 @@
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Status::new(
                     Code::OutOfRange,
                     <span class="macro">format!</span>(
-                        <span class="string">"Error, message length too large: found {} bytes, the limit is: {} bytes"</span>,
+                        <span class="string">"Error, decoded message length too large: found {} bytes, the limit is: {} bytes"</span>,
                         len, limit
                     ),
                 ));
@@ -621,8 +632,15 @@
             <span class="kw">let </span>decode_buf = <span class="kw">if let </span><span class="prelude-val">Some</span>(encoding) = compression {
                 <span class="self">self</span>.decompress_buf.clear();
 
-                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = decompress(encoding, <span class="kw-2">&amp;mut </span><span class="self">self</span>.buf, <span class="kw-2">&amp;mut </span><span class="self">self</span>.decompress_buf, len)
-                {
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = decompress(
+                    CompressionSettings {
+                        encoding,
+                        buffer_growth_interval: buffer_settings.buffer_size,
+                    },
+                    <span class="kw-2">&amp;mut </span><span class="self">self</span>.buf,
+                    <span class="kw-2">&amp;mut </span><span class="self">self</span>.decompress_buf,
+                    len,
+                ) {
                     <span class="kw">let </span>message = <span class="kw">if let </span>Direction::Response(status) = <span class="self">self</span>.direction {
                         <span class="macro">format!</span>(
                             <span class="string">"Error decompressing: {}, while receiving response with status: {}"</span>,
@@ -646,24 +664,41 @@
     }
 
     <span class="comment">// Returns Some(()) if data was found or None if the loop in `poll_next` should break
-    </span><span class="kw">fn </span>poll_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;()&gt;, Status&gt;&gt; {
-        <span class="kw">let </span>chunk = <span class="kw">match </span><span class="macro">ready!</span>(Pin::new(<span class="kw-2">&amp;mut </span><span class="self">self</span>.body).poll_data(cx)) {
+    </span><span class="kw">fn </span>poll_frame(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;()&gt;, Status&gt;&gt; {
+        <span class="kw">let </span>chunk = <span class="kw">match </span><span class="macro">ready!</span>(Pin::new(<span class="kw-2">&amp;mut </span><span class="self">self</span>.body).poll_frame(cx)) {
             <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(d)) =&gt; <span class="prelude-val">Some</span>(d),
             <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)) =&gt; {
                 <span class="kw">if </span><span class="self">self</span>.direction == Direction::Request &amp;&amp; status.code() == Code::Cancelled {
                     <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>));
                 }
 
-                <span class="kw">let _ </span>= std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.state, State::Error);
+                <span class="kw">let _ </span>= std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.state, State::Error(status.clone()));
                 <span class="macro">debug!</span>(<span class="string">"decoder inner stream error: {:?}"</span>, status);
                 <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(status));
             }
             <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
         };
 
-        Poll::Ready(<span class="kw">if let </span><span class="prelude-val">Some</span>(data) = chunk {
-            <span class="self">self</span>.buf.put(data);
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(()))
+        Poll::Ready(<span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = chunk {
+            <span class="kw">match </span>frame {
+                frame <span class="kw">if </span>frame.is_data() =&gt; {
+                    <span class="self">self</span>.buf.put(frame.into_data().unwrap());
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(()))
+                }
+                frame <span class="kw">if </span>frame.is_trailers() =&gt; {
+                    <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.trailers {
+                        <span class="prelude-val">Some</span>(trailers) =&gt; {
+                            trailers.extend(frame.into_trailers().unwrap());
+                        }
+                        <span class="prelude-val">None </span>=&gt; {
+                            <span class="self">self</span>.trailers = <span class="prelude-val">Some</span>(frame.into_trailers().unwrap());
+                        }
+                    }
+
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                }
+                frame =&gt; <span class="macro">panic!</span>(<span class="string">"unexpected frame: {:?}"</span>, frame),
+            }
         } <span class="kw">else </span>{
             <span class="comment">// FIXME: improve buf usage.
             </span><span class="kw">if </span><span class="self">self</span>.buf.has_remaining() {
@@ -678,27 +713,16 @@
         })
     }
 
-    <span class="kw">fn </span>poll_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), Status&gt;&gt; {
+    <span class="kw">fn </span>response(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), Status&gt; {
         <span class="kw">if let </span>Direction::Response(status) = <span class="self">self</span>.direction {
-            <span class="kw">match </span><span class="macro">ready!</span>(Pin::new(<span class="kw-2">&amp;mut </span><span class="self">self</span>.body).poll_trailers(cx)) {
-                <span class="prelude-val">Ok</span>(trailer) =&gt; {
-                    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="kw">crate</span>::status::infer_grpc_status(trailer.as_ref(), status) {
-                        <span class="kw">if let </span><span class="prelude-val">Some</span>(e) = e {
-                            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(e));
-                        } <span class="kw">else </span>{
-                            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Ok</span>(()));
-                        }
-                    } <span class="kw">else </span>{
-                        <span class="self">self</span>.trailers = trailer.map(MetadataMap::from_headers);
-                    }
-                }
-                <span class="prelude-val">Err</span>(status) =&gt; {
-                    <span class="macro">debug!</span>(<span class="string">"decoder inner trailers error: {:?}"</span>, status);
-                    <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Err</span>(status));
-                }
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(<span class="prelude-val">Some</span>(e)) = <span class="kw">crate</span>::status::infer_grpc_status(<span class="self">self</span>.trailers.as_ref(), status) {
+                <span class="comment">// If the trailers contain a grpc-status, then we should return that as the error
+                // and otherwise stop the stream (by taking the error state)
+                </span><span class="self">self</span>.trailers.take();
+                <span class="kw">return </span><span class="prelude-val">Err</span>(e);
             }
         }
-        Poll::Ready(<span class="prelude-val">Ok</span>(()))
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -758,7 +782,7 @@
         <span class="comment">// Shortcut to see if we already pulled the trailers in the stream step
         // we need to do that so that the stream can error on trailing grpc-status
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(trailers) = <span class="self">self</span>.inner.trailers.take() {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(trailers));
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(MetadataMap::from_headers(trailers)));
         }
 
         <span class="comment">// To fetch the trailers we must clear the body and drop it.
@@ -767,20 +791,15 @@
         <span class="comment">// Since we call poll_trailers internally on poll_next we need to
         // check if it got cached again.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(trailers) = <span class="self">self</span>.inner.trailers.take() {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(trailers));
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(MetadataMap::from_headers(trailers)));
         }
 
-        <span class="comment">// Trailers were not caught during poll_next and thus lets poll for
-        // them manually.
-        </span><span class="kw">let </span>map = future::poll_fn(|cx| Pin::new(<span class="kw-2">&amp;mut </span><span class="self">self</span>.inner.body).poll_trailers(cx))
-            .<span class="kw">await
-            </span>.map_err(|e| Status::from_error(Box::new(e)));
-
-        map.map(|x| x.map(MetadataMap::from_headers))
+        <span class="comment">// We've polled through all the frames, and still no trailers, return None
+        </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
     }
 
     <span class="kw">fn </span>decode_chunk(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;T&gt;, Status&gt; {
-        <span class="kw">match </span><span class="self">self</span>.inner.decode_chunk()<span class="question-mark">? </span>{
+        <span class="kw">match </span><span class="self">self</span>.inner.decode_chunk(<span class="self">self</span>.decoder.buffer_settings())<span class="question-mark">? </span>{
             <span class="prelude-val">Some</span>(<span class="kw-2">mut </span>decode_buf) =&gt; <span class="kw">match </span><span class="self">self</span>.decoder.decode(<span class="kw-2">&amp;mut </span>decode_buf)<span class="question-mark">? </span>{
                 <span class="prelude-val">Some</span>(msg) =&gt; {
                     <span class="self">self</span>.inner.state = State::ReadHeader;
@@ -798,24 +817,21 @@
 
     <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
         <span class="kw">loop </span>{
-            <span class="kw">if let </span>State::Error = <span class="kw-2">&amp;</span><span class="self">self</span>.inner.state {
-                <span class="kw">return </span>Poll::Ready(<span class="prelude-val">None</span>);
+            <span class="kw">if let </span>State::Error(status) = <span class="kw-2">&amp;</span><span class="self">self</span>.inner.state {
+                <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status.clone())));
             }
 
-            <span class="comment">// FIXME: implement the ability to poll trailers when we _know_ that
-            // the consumer of this stream will only poll for the first message.
-            // This means we skip the poll_trailers step.
-            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(item) = <span class="self">self</span>.decode_chunk()<span class="question-mark">? </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(item) = <span class="self">self</span>.decode_chunk()<span class="question-mark">? </span>{
                 <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(item)));
             }
 
-            <span class="kw">match </span><span class="macro">ready!</span>(<span class="self">self</span>.inner.poll_data(cx))<span class="question-mark">? </span>{
+            <span class="kw">match </span><span class="macro">ready!</span>(<span class="self">self</span>.inner.poll_frame(cx))<span class="question-mark">? </span>{
                 <span class="prelude-val">Some</span>(()) =&gt; (),
                 <span class="prelude-val">None </span>=&gt; <span class="kw">break</span>,
             }
         }
 
-        Poll::Ready(<span class="kw">match </span><span class="macro">ready!</span>(<span class="self">self</span>.inner.poll_response(cx)) {
+        Poll::Ready(<span class="kw">match </span><span class="self">self</span>.inner.response() {
             <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">None</span>,
             <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)),
         })

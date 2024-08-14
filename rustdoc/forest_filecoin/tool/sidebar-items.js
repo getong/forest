@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["main","subcommands"]};
+window.SIDEBAR_ITEMS = {"mod":["main","offline_server","subcommands"]};

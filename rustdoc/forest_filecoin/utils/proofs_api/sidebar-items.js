@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["is_env_truthy"],"mod":["parameters","paramfetch"]};
+window.SIDEBAR_ITEMS = {"mod":["parameters","paramfetch"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tonic-0.11.0/src/codec/encode.rs`."><title>encode.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tonic" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../tonic/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tonic-0.12.1/src/codec/encode.rs`."><title>encode.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tonic" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -344,21 +344,38 @@
 <a href="#344" id="344">344</a>
 <a href="#345" id="345">345</a>
 <a href="#346" id="346">346</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::compression::{compress, CompressionEncoding, SingleMessageCompressionOverride};
-<span class="kw">use super</span>::{EncodeBuf, Encoder, DEFAULT_MAX_SEND_MESSAGE_SIZE, HEADER_SIZE};
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::compression::{
+    compress, CompressionEncoding, CompressionSettings, SingleMessageCompressionOverride,
+};
+<span class="kw">use super</span>::{BufferSettings, EncodeBuf, Encoder, DEFAULT_MAX_SEND_MESSAGE_SIZE, HEADER_SIZE};
 <span class="kw">use crate</span>::{Code, Status};
 <span class="kw">use </span>bytes::{BufMut, Bytes, BytesMut};
 <span class="kw">use </span>http::HeaderMap;
-<span class="kw">use </span>http_body::Body;
+<span class="kw">use </span>http_body::{Body, Frame};
 <span class="kw">use </span>pin_project::pin_project;
 <span class="kw">use </span>std::{
     pin::Pin,
     task::{ready, Context, Poll},
 };
 <span class="kw">use </span>tokio_stream::{Stream, StreamExt};
-
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>BUFFER_SIZE: usize = <span class="number">8 </span>* <span class="number">1024</span>;
-<span class="kw">const </span>YIELD_THRESHOLD: usize = <span class="number">32 </span>* <span class="number">1024</span>;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>encode_server&lt;T, U&gt;(
     encoder: T,
@@ -421,6 +438,7 @@
     max_message_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
     buf: BytesMut,
     uncompression_buf: BytesMut,
+    error: <span class="prelude-ty">Option</span>&lt;Status&gt;,
 }
 
 <span class="kw">impl</span>&lt;T, U&gt; EncodedBytes&lt;T, U&gt;
@@ -436,7 +454,8 @@
         compression_override: SingleMessageCompressionOverride,
         max_message_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
     ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>buf = BytesMut::with_capacity(BUFFER_SIZE);
+        <span class="kw">let </span>buffer_settings = encoder.buffer_settings();
+        <span class="kw">let </span>buf = BytesMut::with_capacity(buffer_settings.buffer_size);
 
         <span class="kw">let </span>compression_encoding =
             <span class="kw">if </span>compression_override == SingleMessageCompressionOverride::Disable {
@@ -446,7 +465,7 @@
             };
 
         <span class="kw">let </span>uncompression_buf = <span class="kw">if </span>compression_encoding.is_some() {
-            BytesMut::with_capacity(BUFFER_SIZE)
+            BytesMut::with_capacity(buffer_settings.buffer_size)
         } <span class="kw">else </span>{
             BytesMut::new()
         };
@@ -458,6 +477,7 @@
             max_message_size,
             buf,
             uncompression_buf,
+            error: <span class="prelude-val">None</span>,
         }
     }
 }
@@ -477,7 +497,13 @@
             max_message_size,
             buf,
             uncompression_buf,
+            error,
         } = <span class="self">self</span>.project();
+        <span class="kw">let </span>buffer_settings = encoder.buffer_settings();
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(status) = error.take() {
+            <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)));
+        }
 
         <span class="kw">loop </span>{
             <span class="kw">match </span>source.as_mut().poll_next(cx) {
@@ -497,17 +523,22 @@
                         uncompression_buf,
                         <span class="kw-2">*</span>compression_encoding,
                         <span class="kw-2">*</span>max_message_size,
+                        buffer_settings,
                         item,
                     ) {
                         <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)));
                     }
 
-                    <span class="kw">if </span>buf.len() &gt;= YIELD_THRESHOLD {
+                    <span class="kw">if </span>buf.len() &gt;= buffer_settings.yield_threshold {
                         <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(buf.split_to(buf.len()).freeze())));
                     }
                 }
                 Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status))) =&gt; {
-                    <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)));
+                    <span class="kw">if </span>buf.is_empty() {
+                        <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)));
+                    }
+                    <span class="kw-2">*</span>error = <span class="prelude-val">Some</span>(status);
+                    <span class="kw">return </span>Poll::Ready(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(buf.split_to(buf.len()).freeze())));
                 }
             }
         }
@@ -520,6 +551,7 @@
     uncompression_buf: <span class="kw-2">&amp;mut </span>BytesMut,
     compression_encoding: <span class="prelude-ty">Option</span>&lt;CompressionEncoding&gt;,
     max_message_size: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    buffer_settings: BufferSettings,
     item: T::Item,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Status&gt;
 <span class="kw">where
@@ -541,8 +573,16 @@
 
         <span class="kw">let </span>uncompressed_len = uncompression_buf.len();
 
-        compress(encoding, uncompression_buf, buf, uncompressed_len)
-            .map_err(|err| Status::internal(<span class="macro">format!</span>(<span class="string">"Error compressing: {}"</span>, err)))<span class="question-mark">?</span>;
+        compress(
+            CompressionSettings {
+                encoding,
+                buffer_growth_interval: buffer_settings.buffer_size,
+            },
+            uncompression_buf,
+            buf,
+            uncompressed_len,
+        )
+        .map_err(|err| Status::internal(<span class="macro">format!</span>(<span class="string">"Error compressing: {}"</span>, err)))<span class="question-mark">?</span>;
     } <span class="kw">else </span>{
         encoder
             .encode(item, <span class="kw-2">&amp;mut </span>EncodeBuf::new(buf))
@@ -564,13 +604,13 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>(Status::new(
             Code::OutOfRange,
             <span class="macro">format!</span>(
-                <span class="string">"Error, message length too large: found {} bytes, the limit is: {} bytes"</span>,
+                <span class="string">"Error, encoded message length too large: found {} bytes, the limit is: {} bytes"</span>,
                 len, limit
             ),
         ));
     }
 
-    <span class="kw">if </span>len &gt; std::u32::MAX <span class="kw">as </span>usize {
+    <span class="kw">if </span>len &gt; u32::MAX <span class="kw">as </span>usize {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Status::resource_exhausted(<span class="macro">format!</span>(
             <span class="string">"Cannot return body with more than 4GB of data but got {len} bytes"
         </span>)));
@@ -633,22 +673,21 @@
 }
 
 <span class="kw">impl </span>EncodeState {
-    <span class="kw">fn </span>trailers(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;HeaderMap&gt;, Status&gt; {
+    <span class="kw">fn </span>trailers(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;HeaderMap, Status&gt;&gt; {
         <span class="kw">match </span><span class="self">self</span>.role {
-            Role::Client =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+            Role::Client =&gt; <span class="prelude-val">None</span>,
             Role::Server =&gt; {
                 <span class="kw">if </span><span class="self">self</span>.is_end_stream {
-                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+                    <span class="kw">return </span><span class="prelude-val">None</span>;
                 }
 
+                <span class="self">self</span>.is_end_stream = <span class="bool-val">true</span>;
                 <span class="kw">let </span>status = <span class="kw">if let </span><span class="prelude-val">Some</span>(status) = <span class="self">self</span>.error.take() {
-                    <span class="self">self</span>.is_end_stream = <span class="bool-val">true</span>;
                     status
                 } <span class="kw">else </span>{
                     Status::new(Code::Ok, <span class="string">""</span>)
                 };
-
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(status.to_header_map()<span class="question-mark">?</span>))
+                <span class="prelude-val">Some</span>(status.to_header_map())
             }
         }
     }
@@ -665,29 +704,26 @@
         <span class="self">self</span>.state.is_end_stream
     }
 
-    <span class="kw">fn </span>poll_data(
+    <span class="kw">fn </span>poll_frame(
         <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
         cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
-    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Data, <span class="self">Self</span>::Error&gt;&gt;&gt; {
+    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;Frame&lt;<span class="self">Self</span>::Data&gt;, <span class="self">Self</span>::Error&gt;&gt;&gt; {
         <span class="kw">let </span>self_proj = <span class="self">self</span>.project();
         <span class="kw">match </span><span class="macro">ready!</span>(self_proj.inner.poll_next(cx)) {
-            <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(d)) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(d)).into(),
+            <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(d)) =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(Frame::data(d))).into(),
             <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)) =&gt; <span class="kw">match </span>self_proj.state.role {
                 Role::Client =&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(status)).into(),
                 Role::Server =&gt; {
-                    self_proj.state.error = <span class="prelude-val">Some</span>(status);
-                    <span class="prelude-val">None</span>.into()
+                    self_proj.state.is_end_stream = <span class="bool-val">true</span>;
+                    <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(Frame::trailers(status.to_header_map()<span class="question-mark">?</span>))).into()
                 }
             },
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>.into(),
+            <span class="prelude-val">None </span>=&gt; self_proj
+                .state
+                .trailers()
+                .map(|t| t.map(Frame::trailers))
+                .into(),
         }
-    }
-
-    <span class="kw">fn </span>poll_trailers(
-        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;,
-    ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;HeaderMap&gt;, Status&gt;&gt; {
-        Poll::Ready(<span class="self">self</span>.project().state.trailers())
     }
 }
 </code></pre></div></section></main></body></html>

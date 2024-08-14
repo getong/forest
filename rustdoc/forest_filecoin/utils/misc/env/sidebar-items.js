@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["env_or_default","is_env_truthy"]};

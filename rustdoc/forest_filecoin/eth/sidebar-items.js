@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["EIP_1559_TX_TYPE","EIP_LEGACY_TX_TYPE","ETH_LEGACY_HOMESTEAD_TX_CHAIN_ID"],"mod":["eip_1559_transaction","eip_155_transaction","homestead_transaction","transaction"],"type":["EthChainId"]};
+window.SIDEBAR_ITEMS = {"constant":["EIP_1559_TX_TYPE","EIP_LEGACY_TX_TYPE","ETH_LEGACY_HOMESTEAD_TX_CHAIN_ID","SAFE_EPOCH_DELAY"],"mod":["eip_1559_transaction","eip_155_transaction","homestead_transaction","transaction"],"type":["EthChainId"]};

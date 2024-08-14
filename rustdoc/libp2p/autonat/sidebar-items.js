@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PROTOCOL_NAME"],"enum":["Event","InboundFailure","InboundProbeError","InboundProbeEvent","NatStatus","OutboundFailure","OutboundProbeError","OutboundProbeEvent","ResponseError"],"struct":["Behaviour","Config","ProbeId"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_PROTOCOL_NAME"],"enum":["Event","InboundFailure","InboundProbeError","InboundProbeEvent","NatStatus","OutboundFailure","OutboundProbeError","OutboundProbeEvent","ResponseError"],"mod":["v1","v2"],"struct":["Behaviour","Config","ProbeId"]};

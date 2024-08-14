@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["channel","server"],"struct":["AxumRouter","Body","Channel","Endpoint","Error","Server","TimeoutExpired","Uri"],"type":["AxumBoxBody"]};
+window.SIDEBAR_ITEMS = {"mod":["channel","server"],"struct":["Channel","Endpoint","Error","Server","TimeoutExpired","Uri"],"trait":["Body"]};

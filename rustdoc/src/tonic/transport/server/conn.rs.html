@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tonic-0.11.0/src/transport/server/conn.rs`."><title>conn.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="tonic" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../tonic/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tonic-0.12.1/src/transport/server/conn.rs`."><title>conn.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="tonic" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -152,31 +152,13 @@
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hyper::server::conn::AddrStream;
-<span class="kw">use </span>std::net::SocketAddr;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>tokio::net::TcpStream;
 
 <span class="attr">#[cfg(feature = <span class="string">"tls"</span>)]
-</span><span class="kw">use </span><span class="kw">crate</span>::transport::Certificate;
-<span class="attr">#[cfg(feature = <span class="string">"tls"</span>)]
 </span><span class="kw">use </span>std::sync::Arc;
+<span class="attr">#[cfg(feature = <span class="string">"tls"</span>)]
+</span><span class="kw">use </span>tokio_rustls::rustls::pki_types::CertificateDer;
 <span class="attr">#[cfg(feature = <span class="string">"tls"</span>)]
 </span><span class="kw">use </span>tokio_rustls::server::TlsStream;
 
@@ -257,17 +239,6 @@
     }
 }
 
-<span class="kw">impl </span>Connected <span class="kw">for </span>AddrStream {
-    <span class="kw">type </span>ConnectInfo = TcpConnectInfo;
-
-    <span class="kw">fn </span>connect_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::ConnectInfo {
-        TcpConnectInfo {
-            local_addr: <span class="prelude-val">Some</span>(<span class="self">self</span>.local_addr()),
-            remote_addr: <span class="prelude-val">Some</span>(<span class="self">self</span>.remote_addr()),
-        }
-    }
-}
-
 <span class="kw">impl </span>Connected <span class="kw">for </span>TcpStream {
     <span class="kw">type </span>ConnectInfo = TcpConnectInfo;
 
@@ -296,12 +267,9 @@
         <span class="kw">let </span>(inner, session) = <span class="self">self</span>.get_ref();
         <span class="kw">let </span>inner = inner.connect_info();
 
-        <span class="kw">let </span>certs = <span class="kw">if let </span><span class="prelude-val">Some</span>(certs) = session.peer_certificates() {
-            <span class="kw">let </span>certs = certs.iter().map(Certificate::from_pem).collect();
-            <span class="prelude-val">Some</span>(Arc::new(certs))
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>};
+        <span class="kw">let </span>certs = session
+            .peer_certificates()
+            .map(|certs| certs.to_owned().into());
 
         TlsConnectInfo { inner, certs }
     }
@@ -315,15 +283,13 @@
 ///
 /// [ext]: crate::Request::extensions
 </span><span class="attr">#[cfg(feature = <span class="string">"tls"</span>)]
-#[cfg_attr(docsrs, doc(cfg(feature = <span class="string">"tls"</span>)))]
 #[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>TlsConnectInfo&lt;T&gt; {
     inner: T,
-    certs: <span class="prelude-ty">Option</span>&lt;Arc&lt;Vec&lt;Certificate&gt;&gt;&gt;,
+    certs: <span class="prelude-ty">Option</span>&lt;Arc&lt;Vec&lt;CertificateDer&lt;<span class="lifetime">'static</span>&gt;&gt;&gt;&gt;,
 }
 
 <span class="attr">#[cfg(feature = <span class="string">"tls"</span>)]
-#[cfg_attr(docsrs, doc(cfg(feature = <span class="string">"tls"</span>)))]
 </span><span class="kw">impl</span>&lt;T&gt; TlsConnectInfo&lt;T&gt; {
     <span class="doccomment">/// Get a reference to the underlying connection info.
     </span><span class="kw">pub fn </span>get_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
@@ -336,7 +302,7 @@
     }
 
     <span class="doccomment">/// Return the set of connected peer TLS certificates.
-    </span><span class="kw">pub fn </span>peer_certs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Vec&lt;Certificate&gt;&gt;&gt; {
+    </span><span class="kw">pub fn </span>peer_certs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Vec&lt;CertificateDer&lt;<span class="lifetime">'static</span>&gt;&gt;&gt;&gt; {
         <span class="self">self</span>.certs.clone()
     }
 }
