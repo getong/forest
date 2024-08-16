@@ -899,6 +899,10 @@
 <a href="#899" id="899">899</a>
 <a href="#900" id="900">900</a>
 <a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
@@ -918,6 +922,7 @@
     utils::flume::FlumeSenderExt <span class="kw">as _</span>,
 };
 <span class="kw">use </span>ahash::{HashMap, HashSet};
+<span class="kw">use </span>anyhow::Context <span class="kw">as _</span>;
 <span class="kw">use </span>cid::Cid;
 <span class="kw">use </span>flume::Sender;
 <span class="kw">use </span>futures::{select, stream::StreamExt <span class="kw">as _</span>};
@@ -1110,7 +1115,10 @@
         <span class="comment">// Subscribe to gossipsub topics with the network name suffix
         </span><span class="kw">for </span>topic <span class="kw">in </span>PUBSUB_TOPICS.iter() {
             <span class="kw">let </span>t = Topic::new(<span class="macro">format!</span>(<span class="string">"{topic}/{network_name}"</span>));
-            swarm.behaviour_mut().subscribe(<span class="kw-2">&amp;</span>t).unwrap();
+            swarm
+                .behaviour_mut()
+                .subscribe(<span class="kw-2">&amp;</span>t)
+                .with_context(|| <span class="macro">format!</span>(<span class="string">"Failed to subscribe gossipsub topic {t}"</span>))<span class="question-mark">?</span>;
         }
 
         <span class="kw">let </span>(network_sender_in, network_receiver_in) = flume::unbounded();
