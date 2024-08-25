@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tower-0.4.13/src/retry/future.rs`."><title>future.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tower" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tower-0.5.0/src/retry/future.rs`."><title>future.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tower" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -118,9 +118,6 @@
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Future types
 
 </span><span class="kw">use super</span>::{Policy, Retry};
@@ -157,11 +154,11 @@
             </span>future: F
         },
         <span class="comment">// Polling the future from [`Policy::retry`]
-        </span>Checking {
+        </span>Waiting {
             <span class="attr">#[pin]
-            </span>checking: P
+            </span>waiting: P
         },
-        <span class="comment">// Polling [`Service::poll_ready`] after [`Checking`] was OK.
+        <span class="comment">// Polling [`Service::poll_ready`] after [`Waiting`] was OK.
         </span>Retrying,
     }
 }
@@ -186,8 +183,8 @@
 
 <span class="kw">impl</span>&lt;P, S, Request&gt; Future <span class="kw">for </span>ResponseFuture&lt;P, S, Request&gt;
 <span class="kw">where
-    </span>P: Policy&lt;Request, S::Response, S::Error&gt; + Clone,
-    S: Service&lt;Request&gt; + Clone,
+    </span>P: Policy&lt;Request, S::Response, S::Error&gt;,
+    S: Service&lt;Request&gt;,
 {
     <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;S::Response, S::Error&gt;;
 
@@ -197,11 +194,11 @@
         <span class="kw">loop </span>{
             <span class="kw">match </span>this.state.as_mut().project() {
                 StateProj::Called { future } =&gt; {
-                    <span class="kw">let </span>result = <span class="macro">ready!</span>(future.poll(cx));
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>req) = this.request {
-                        <span class="kw">match </span>this.retry.policy.retry(req, result.as_ref()) {
-                            <span class="prelude-val">Some</span>(checking) =&gt; {
-                                this.state.set(State::Checking { checking });
+                    <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="macro">ready!</span>(future.poll(cx));
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(req) = <span class="kw-2">&amp;mut </span>this.request {
+                        <span class="kw">match </span>this.retry.policy.retry(req, <span class="kw-2">&amp;mut </span>result) {
+                            <span class="prelude-val">Some</span>(waiting) =&gt; {
+                                this.state.set(State::Waiting { waiting });
                             }
                             <span class="prelude-val">None </span>=&gt; <span class="kw">return </span>Poll::Ready(result),
                         }
@@ -210,12 +207,9 @@
                         </span><span class="kw">return </span>Poll::Ready(result);
                     }
                 }
-                StateProj::Checking { checking } =&gt; {
-                    this.retry
-                        .as_mut()
-                        .project()
-                        .policy
-                        .set(<span class="macro">ready!</span>(checking.poll(cx)));
+                StateProj::Waiting { waiting } =&gt; {
+                    <span class="macro">ready!</span>(waiting.poll(cx));
+
                     this.state.set(State::Retrying);
                 }
                 StateProj::Retrying =&gt; {

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["read_toml","set_user_perm","terminal_cleanup","write_to_file"],"mod":["mmap","progress_log","writer_checksum"]};
+window.SIDEBAR_ITEMS = {"fn":["create_new_sensitive_file","read_toml","terminal_cleanup","write_new_sensitive_file"],"mod":["mmap","progress_log","writer_checksum"]};

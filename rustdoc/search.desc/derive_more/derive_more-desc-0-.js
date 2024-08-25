@@ -1,1 +1,1 @@
-searchState.loadedDescShard("derive_more", 0, "<code>derive_more</code>")
+searchState.loadedDescShard("derive_more", 0, "What <code>#[derive(From)]</code> generates\nWhat <code>#[derive(Into)]</code> generates\nModule containing macro definitions only, without …\nWhat <code>#[derive(From)]</code> generates\nWhat <code>#[derive(Into)]</code> generates")

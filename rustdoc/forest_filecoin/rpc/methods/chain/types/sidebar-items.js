@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ObjStat"]};
+window.SIDEBAR_ITEMS = {"struct":["Event","ObjStat"]};

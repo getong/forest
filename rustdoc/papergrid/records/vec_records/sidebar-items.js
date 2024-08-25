@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["CellInfo","StrWithWidth","VecRecords"],"trait":["Cell"]};
+window.SIDEBAR_ITEMS = {"struct":["StrWithWidth","Text","VecRecords"],"trait":["Cell"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["error","p2c","pool"]};
+window.SIDEBAR_ITEMS = {"mod":["error","p2c"]};

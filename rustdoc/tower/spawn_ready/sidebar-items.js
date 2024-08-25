@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["future"],"struct":["MakeFuture","MakeSpawnReady","SpawnReady","SpawnReadyLayer"]};
+window.SIDEBAR_ITEMS = {"mod":["future"],"struct":["SpawnReady","SpawnReadyLayer"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-kad-0.46.0/src/record/store/memory.rs`."><title>memory.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="libp2p_kad" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/libp2p-kad-0.46.1/src/record/store/memory.rs`."><title>memory.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="libp2p_kad" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0 (051478957 2024-07-21)" data-channel="1.80.0" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -320,6 +320,12 @@
 <a href="#320" id="320">320</a>
 <a href="#321" id="321">321</a>
 <a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
 </pre></div><pre class="rust"><code><span class="comment">// Copyright 2019 Parity Technologies (UK) Ltd.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -474,38 +480,31 @@
         }
         .or_insert_with(Default::default);
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = providers.iter().position(|p| p.provider == record.provider) {
-            <span class="comment">// In-place update of an existing provider record.
-            </span>providers.as_mut()[i] = record;
-        } <span class="kw">else </span>{
-            <span class="comment">// It is a new provider record for that key.
-            </span><span class="kw">let </span>local_key = <span class="self">self</span>.local_key;
-            <span class="kw">let </span>key = kbucket::Key::new(record.key.clone());
-            <span class="kw">let </span>provider = kbucket::Key::from(record.provider);
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = providers.iter().position(|p| {
-                <span class="kw">let </span>pk = kbucket::Key::from(p.provider);
-                provider.distance(<span class="kw-2">&amp;</span>key) &lt; pk.distance(<span class="kw-2">&amp;</span>key)
-            }) {
-                <span class="comment">// Insert the new provider.
-                </span><span class="kw">if </span>local_key.preimage() == <span class="kw-2">&amp;</span>record.provider {
+        <span class="kw">for </span>p <span class="kw">in </span>providers.iter_mut() {
+            <span class="kw">if </span>p.provider == record.provider {
+                <span class="comment">// In-place update of an existing provider record.
+                </span><span class="kw">if </span><span class="self">self</span>.local_key.preimage() == <span class="kw-2">&amp;</span>record.provider {
+                    <span class="self">self</span>.provided.remove(p);
                     <span class="self">self</span>.provided.insert(record.clone());
                 }
-                providers.insert(i, record);
-                <span class="comment">// Remove the excess provider, if any.
-                </span><span class="kw">if </span>providers.len() &gt; <span class="self">self</span>.config.max_providers_per_key {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(p) = providers.pop() {
-                        <span class="self">self</span>.provided.remove(<span class="kw-2">&amp;</span>p);
-                    }
-                }
-            } <span class="kw">else if </span>providers.len() &lt; <span class="self">self</span>.config.max_providers_per_key {
-                <span class="comment">// The distance of the new provider to the key is larger than
-                // the distance of any existing provider, but there is still room.
-                </span><span class="kw">if </span>local_key.preimage() == <span class="kw-2">&amp;</span>record.provider {
-                    <span class="self">self</span>.provided.insert(record.clone());
-                }
-                providers.push(record);
+                <span class="kw-2">*</span>p = record;
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
         }
+
+        <span class="comment">// If the providers list is full, we ignore the new provider.
+        // This strategy can mitigate Sybil attacks, in which an attacker
+        // floods the network with fake provider records.
+        </span><span class="kw">if </span>providers.len() == <span class="self">self</span>.config.max_providers_per_key {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+
+        <span class="comment">// Otherwise, insert the new provider record.
+        </span><span class="kw">if </span><span class="self">self</span>.local_key.preimage() == <span class="kw-2">&amp;</span>record.provider {
+            <span class="self">self</span>.provided.insert(record.clone());
+        }
+        providers.push(record);
+
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -524,7 +523,9 @@
             <span class="kw">let </span>providers = e.get_mut();
             <span class="kw">if let </span><span class="prelude-val">Some</span>(i) = providers.iter().position(|p| <span class="kw-2">&amp;</span>p.provider == provider) {
                 <span class="kw">let </span>p = providers.remove(i);
-                <span class="self">self</span>.provided.remove(<span class="kw-2">&amp;</span>p);
+                <span class="kw">if </span><span class="kw-2">&amp;</span>p.provider == <span class="self">self</span>.local_key.preimage() {
+                    <span class="self">self</span>.provided.remove(<span class="kw-2">&amp;</span>p);
+                }
             }
             <span class="kw">if </span>providers.is_empty() {
                 e.remove();
@@ -543,11 +544,6 @@
     <span class="kw">fn </span>random_multihash() -&gt; Multihash&lt;<span class="number">64</span>&gt; {
         Multihash::wrap(SHA_256_MH, <span class="kw-2">&amp;</span>rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;()).unwrap()
     }
-
-    <span class="kw">fn </span>distance(r: <span class="kw-2">&amp;</span>ProviderRecord) -&gt; kbucket::Distance {
-        kbucket::Key::new(r.key.clone()).distance(<span class="kw-2">&amp;</span>kbucket::Key::from(r.provider))
-    }
-
     <span class="attr">#[test]
     </span><span class="kw">fn </span>put_get_remove_record() {
         <span class="kw">fn </span>prop(r: Record) {
@@ -570,30 +566,6 @@
             <span class="macro">assert!</span>(!store.providers(<span class="kw-2">&amp;</span>r.key).contains(<span class="kw-2">&amp;</span>r));
         }
         quickcheck(prop <span class="kw">as fn</span>(<span class="kw">_</span>))
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>providers_ordered_by_distance_to_key() {
-        <span class="kw">fn </span>prop(providers: Vec&lt;kbucket::Key&lt;PeerId&gt;&gt;) -&gt; bool {
-            <span class="kw">let </span><span class="kw-2">mut </span>store = MemoryStore::new(PeerId::random());
-            <span class="kw">let </span>key = Key::from(random_multihash());
-
-            <span class="kw">let </span><span class="kw-2">mut </span>records = providers
-                .into_iter()
-                .map(|p| ProviderRecord::new(key.clone(), p.into_preimage(), Vec::new()))
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-            <span class="kw">for </span>r <span class="kw">in </span><span class="kw-2">&amp;</span>records {
-                <span class="macro">assert!</span>(store.add_provider(r.clone()).is_ok());
-            }
-
-            records.sort_by_key(distance);
-            records.truncate(store.config.max_providers_per_key);
-
-            records == store.providers(<span class="kw-2">&amp;</span>key).to_vec()
-        }
-
-        quickcheck(prop <span class="kw">as fn</span>(<span class="kw">_</span>) -&gt; <span class="kw">_</span>)
     }
 
     <span class="attr">#[test]
@@ -622,6 +594,46 @@
         rec.expires = <span class="prelude-val">Some</span>(Instant::now());
         <span class="macro">assert!</span>(store.add_provider(rec.clone()).is_ok());
         <span class="macro">assert_eq!</span>(<span class="macro">vec!</span>[rec.clone()], store.providers(<span class="kw-2">&amp;</span>rec.key).to_vec());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>update_provided() {
+        <span class="kw">let </span>prv = PeerId::random();
+        <span class="kw">let </span><span class="kw-2">mut </span>store = MemoryStore::new(prv);
+        <span class="kw">let </span>key = random_multihash();
+        <span class="kw">let </span><span class="kw-2">mut </span>rec = ProviderRecord::new(key, prv, Vec::new());
+        <span class="macro">assert!</span>(store.add_provider(rec.clone()).is_ok());
+        <span class="macro">assert_eq!</span>(
+            <span class="macro">vec!</span>[Cow::Borrowed(<span class="kw-2">&amp;</span>rec)],
+            store.provided().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+        );
+        rec.expires = <span class="prelude-val">Some</span>(Instant::now());
+        <span class="macro">assert!</span>(store.add_provider(rec.clone()).is_ok());
+        <span class="macro">assert_eq!</span>(
+            <span class="macro">vec!</span>[Cow::Borrowed(<span class="kw-2">&amp;</span>rec)],
+            store.provided().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+        );
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>max_providers_per_key() {
+        <span class="kw">let </span>config = MemoryStoreConfig::default();
+        <span class="kw">let </span>key = kbucket::Key::new(Key::from(random_multihash()));
+
+        <span class="kw">let </span><span class="kw-2">mut </span>store = MemoryStore::with_config(PeerId::random(), config.clone());
+        <span class="kw">let </span>peers = (<span class="number">0</span>..config.max_providers_per_key)
+            .map(|<span class="kw">_</span>| PeerId::random())
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">for </span>peer <span class="kw">in </span>peers {
+            <span class="kw">let </span>rec = ProviderRecord::new(key.preimage().clone(), peer, Vec::new());
+            <span class="macro">assert!</span>(store.add_provider(rec).is_ok());
+        }
+
+        <span class="comment">// The new provider cannot be added because the key is already saturated.
+        </span><span class="kw">let </span>peer = PeerId::random();
+        <span class="kw">let </span>rec = ProviderRecord::new(key.preimage().clone(), peer, Vec::new());
+        <span class="macro">assert!</span>(store.add_provider(rec.clone()).is_ok());
+        <span class="macro">assert!</span>(!store.providers(<span class="kw-2">&amp;</span>rec.key).contains(<span class="kw-2">&amp;</span>rec));
     }
 
     <span class="attr">#[test]

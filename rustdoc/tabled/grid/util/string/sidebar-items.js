@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["count_lines","count_tabs","get_lines","replace_tab","string_dimension","string_width","string_width_multiline"],"struct":["Lines"]};
+window.SIDEBAR_ITEMS = {"fn":["count_lines","count_tabs","get_char_width","get_line_width","get_lines","get_string_width","get_text_dimension","get_text_width","replace_tab"],"struct":["Lines"]};

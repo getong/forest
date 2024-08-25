@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Budget","Overdrawn"]};
+window.SIDEBAR_ITEMS = {"mod":["tps_budget"],"trait":["Budget"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NetAddrsListen","NetAgentVersion","NetAutoNatStatus","NetConnect","NetDisconnect","NetFindPeer","NetInfo","NetListening","NetPeers","NetProtectAdd","NetVersion"],"mod":["types"]};
+window.SIDEBAR_ITEMS = {"enum":["NetAddrsListen","NetAgentVersion","NetAutoNatStatus","NetConnect","NetDisconnect","NetFindPeer","NetInfo","NetListening","NetPeers","NetProtectAdd","NetProtectList","NetProtectRemove","NetVersion"],"mod":["types"]};

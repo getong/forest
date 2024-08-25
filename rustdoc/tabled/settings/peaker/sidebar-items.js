@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["PriorityMax","PriorityMin","PriorityNone"],"trait":["Peaker"]};
+window.SIDEBAR_ITEMS = {"struct":["PriorityLeft","PriorityMax","PriorityMin","PriorityNone","PriorityRight"],"trait":["Peaker"]};

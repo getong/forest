@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Colorization","ColumnNames","ExactColorization","Theme"]};
+window.SIDEBAR_ITEMS = {"struct":["Colorization","ColumnNames","ExactColorization","Layout","Theme"]};

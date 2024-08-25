@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["auth","beacon","chain","common","eth","gas","miner","mpool","msig","net","node","state","sync","wallet"]};
+window.SIDEBAR_ITEMS = {"mod":["auth","beacon","chain","common","eth","f3","gas","miner","misc","mpool","msig","net","node","state","sync","wallet"]};
